@@ -91,6 +91,7 @@ $EFFECT_TYPE_TRANS_MASTER
 $EFFECT_TYPE_TWANG
 $ENGINE_PAR_ATK_CURVE
 $ENGINE_PAR_ATTACK
+$ENGINE_PAR_ATTACK_UNIT
 $ENGINE_PAR_BANDWIDTH
 $ENGINE_PAR_BITS
 $ENGINE_PAR_BREAK
@@ -105,17 +106,22 @@ $ENGINE_PAR_CB_TREBLE
 $ENGINE_PAR_CH_DEPTH
 $ENGINE_PAR_CH_PHASE
 $ENGINE_PAR_CH_SPEED
+$ENGINE_PAR_CH_SPEED_UNIT
 $ENGINE_PAR_COMP_ATTACK
 $ENGINE_PAR_COMP_DECAY
 $ENGINE_PAR_CUTOFF
 $ENGINE_PAR_DAMPING
 $ENGINE_PAR_DECAY
+$ENGINE_PAR_DECAY_UNIT
 $ENGINE_PAR_DECAY1
+$ENGINE_PAR_DECAY1_UNIT
 $ENGINE_PAR_DECAY2
+$ENGINE_PAR_DECAY2_UNIT
 $ENGINE_PAR_DL_DAMPING
 $ENGINE_PAR_DL_FEEDBACK
 $ENGINE_PAR_DL_PAN
 $ENGINE_PAR_DL_TIME
+$ENGINE_PAR_DL_TIME_UNIT
 $ENGINE_PAR_DRIVE
 $ENGINE_PAR_EFFECT_BYPASS
 $ENGINE_PAR_EFFECT_SUBTYPE
@@ -146,6 +152,7 @@ $ENGINE_PAR_FL_DEPTH
 $ENGINE_PAR_FL_FEEDBACK
 $ENGINE_PAR_FL_PHASE
 $ENGINE_PAR_FL_SPEED
+$ENGINE_PAR_FL_SPEED_UNIT
 $ENGINE_PAR_FORMANT
 $ENGINE_PAR_FORMANT_SHARP
 $ENGINE_PAR_FORMANT_SHIFT
@@ -160,12 +167,16 @@ $ENGINE_PAR_GAIN1
 $ENGINE_PAR_GAIN2
 $ENGINE_PAR_GAIN3
 $ENGINE_PAR_GLIDE_COEF
+$ENGINE_PAR_GLIDE_COEF_UNIT
 $ENGINE_PAR_GN_GAIN
 $ENGINE_PAR_GRAIN_LENGTH
 $ENGINE_PAR_HOLD
+$ENGINE_PAR_HOLD_UNIT
+$ENGINE_PAR_HP_CUTOFF
 $ENGINE_PAR_INSERT_EFFECT_OUTPUT_GAIN
 $ENGINE_PAR_INTMOD_BYPASS
 $ENGINE_PAR_INTMOD_FREQUENCY
+$ENGINE_PAR_INTMOD_FREQUENCY_UNIT
 $ENGINE_PAR_INTMOD_INTENSITY
 $ENGINE_PAR_INTMOD_PULSEWIDTH
 $ENGINE_PAR_INTMOD_SUBTYPE
@@ -186,6 +197,7 @@ $ENGINE_PAR_JMP_PREAMP
 $ENGINE_PAR_JMP_PRESENCE
 $ENGINE_PAR_JMP_TREBLE
 $ENGINE_PAR_LFO_DELAY
+$ENGINE_PAR_LFO_DELAY_UNIT
 $ENGINE_PAR_LFO_RAND
 $ENGINE_PAR_LFO_RECT
 $ENGINE_PAR_LFO_SAW
@@ -193,6 +205,7 @@ $ENGINE_PAR_LFO_SINE
 $ENGINE_PAR_LFO_TRI
 $ENGINE_PAR_LIM_IN_GAIN
 $ENGINE_PAR_LIM_RELEASE
+$ENGINE_PAR_LP_CUTOFF
 $ENGINE_PAR_MOD_TARGET_INTENSITY
 $ENGINE_PAR_NOISECOLOR
 $ENGINE_PAR_NOISELEVEL
@@ -202,9 +215,11 @@ $ENGINE_PAR_PH_DEPTH
 $ENGINE_PAR_PH_FEEDBACK
 $ENGINE_PAR_PH_PHASE
 $ENGINE_PAR_PH_SPEED
+$ENGINE_PAR_PH_SPEED_UNIT
 $ENGINE_PAR_RATIO
 $ENGINE_PAR_RELEASE
 $ENGINE_PAR_RELEASE_TRIGGER
+$ENGINE_PAR_RELEASE_UNIT
 $ENGINE_PAR_RESONANCE
 $ENGINE_PAR_RT_ACCEL_HI
 $ENGINE_PAR_RT_ACCEL_LO
@@ -272,6 +287,7 @@ $ENGINE_PAR_SP_OFFSET_X
 $ENGINE_PAR_SP_OFFSET_Y
 $ENGINE_PAR_SP_SIZE
 $ENGINE_PAR_SPEED
+$ENGINE_PAR_SPEED_UNIT
 $ENGINE_PAR_START_CRITERIA_CC_MAX
 $ENGINE_PAR_START_CRITERIA_CC_MIN
 $ENGINE_PAR_START_CRITERIA_CONTROLLER
@@ -372,6 +388,7 @@ $FILTER_TYPE_LP4POLE
 $FILTER_TYPE_LP6POLE
 $FILTER_TYPE_PHASER
 $FILTER_TYPE_PRO52
+$FILTER_TYPE_SIMPLE_LPHP
 $FILTER_TYPE_SV_BP2
 $FILTER_TYPE_SV_BP4
 $FILTER_TYPE_SV_HP1
@@ -497,6 +514,7 @@ $NI_CB_TYPE_INIT
 $NI_CB_TYPE_LISTENER
 $NI_CB_TYPE_MIDI_IN
 $NI_CB_TYPE_NOTE
+$NI_CB_TYPE_PERSISTENCE_CHANGED
 $NI_CB_TYPE_NRPN
 $NI_CB_TYPE_PGS
 $NI_CB_TYPE_POLY_AT
@@ -516,7 +534,26 @@ $NI_SIGNAL_TRANSP_START
 $NI_SIGNAL_TRANSP_STOP
 $NI_SIGNAL_TYPE
 $NI_SONG_POSITION
+$NI_SYNC_UNIT_ABS
+$NI_SYNC_UNIT_WHOLE
+$NI_SYNC_UNIT_WHOLE_TRIPLET
+$NI_SYNC_UNIT_HALF
+$NI_SYNC_UNIT_HALF_TRIPLET
+$NI_SYNC_UNIT_QUARTER
+$NI_SYNC_UNIT_QUARTER_TRIPLET
+$NI_SYNC_UNIT_8TH
+$NI_SYNC_UNIT_8TH_TRIPLET
+$NI_SYNC_UNIT_16TH
+$NI_SYNC_UNIT_16TH_TRIPLET
+$NI_SYNC_UNIT_32ND
+$NI_SYNC_UNIT_32ND_TRIPLET
+$NI_SYNC_UNIT_64TH
+$NI_SYNC_UNIT_64TH_TRIPLET
+$NI_SYNC_UNIT_256TH
+$NI_SYNC_UNIT_ZONE
 $NI_TRANSPORT_RUNNING
+$NI_VL_TMPRO_STANDARD
+$NI_VL_TMPRO_HQ
 $NOTE_HELD
 $NUM_GROUPS
 $NUM_OUTPUT_CHANNELS
@@ -570,7 +607,7 @@ _delay_event_for_loading_slots(<unknown>)
 _get_engine_par(<parameter>,<group>,<slot>,<generic>):integer
 _get_engine_par_disp(<parameter>,<group>,<slot>,<generic>):string
 _get_folder(<path variable>):string
-_load_ir_sample(<file name>,<slot>,<generic>):integer
+_load_ir_sample(<filename>,<slot>,<generic>):integer
 _num_slices(<group-index>):integer
 _pgs_create_key(<key-id>,<size>)
 _pgs_get_key_val(<key-id>,<index>):integer
@@ -578,7 +615,7 @@ _pgs_key_exists(<key-id>):boolean
 _pgs_set_key_val(<key-id>,<index>,<value>)
 _read_persistent_var(<variable>)
 _reset_rls_trig_counter(<note>)
-_set_engine_par(<parameter>,<value>,<group>,<slot>,<generic>)
+_set_engine_par(<parameter>,<value>,<group>,<slot>,<generic>):integer
 _set_skin_offset(<offset>)
 _slice_idx_loop_end(<group-index>,<loop-index>):integer
 _slice_idx_loop_start(<group-index>,<loop-index>):integer
@@ -594,6 +631,7 @@ array_equal(<array-variable>,<array-variable>):boolean
 attach_level_meter(<uiID>,<groupIdx>,<slotIdx>,<channelIdx>,<busIdx>)
 attach_zone(<waveform>,<zone-id>,<parameter>)
 by_marks(<bit-mark>):integer
+by_track(<track-index>):integer
 cc_delivery_request(<controller-number>)
 change_listener_par(<signal_type>,<parameter>)
 change_note(<ID-number>,<new-note-number>)
@@ -614,16 +652,15 @@ find_group(<group-name>):integer
 find_mod(<group-idx>,<mod-name>):integer
 find_target(<group-idx>,<mod-idx>,<target-name>):integer
 find_zone(<sample-name>):integer
-fs_get_filename(<ui-ID>,<return-parameter>):string
-fs_navigate(<ui-ID>,<direction>)
-get_control_arr(<ui-ID>,<control-parameter>):integer
-get_control_par(<ui-ID>,<control-parameter>):integer
-get_control_par_arr(<ui-ID>,<control-parameter>,<index>):integer
-get_control_par_str(<ui-ID>,<control-parameter>):string
+fs_get_filename(<ui-id>,<return-parameter>):string
+fs_navigate(<ui-id>,<direction>)
+get_control_par(<ui-id>,<control-parameter>):integer
+get_control_par_arr(<ui-id>,<control-parameter>,<index>):integer
+get_control_par_str(<ui-id>,<control-parameter>):string
 get_engine_par(<parameter>,<group>,<slot>,<generic>):integer
 get_engine_par_disp(<parameter>,<group>,<slot>,<generic>):string
-get_engine_par_disp_m(<unknown>):string
-get_engine_par_m(<unknown>)
+get_engine_par_disp_m(<parameter>,<instrument-slot-id>,<unknown>,<unknown>):string
+get_engine_par_m(<parameter>,<instrument-slot-id>,<unknown>,<unknown>)
 get_event_ids(<array-variable>)
 get_event_par(<ID-number>,<parameter>):integer
 get_event_par_arr(<ID-number>,<parameter>,<group-idx>):integer
@@ -639,9 +676,10 @@ get_menu_item_str(<menu_id>,<index>):string
 get_menu_item_value(<menu_id>,<index>):integer
 get_menu_item_visibility(<menu_id>,<index>):integer
 get_purge_state(<group-index>):integer
-get_sample_length(<zone-ID>):integer
+get_sample_length(<zone-id>):integer
 get_ui_id(<variable>):integer
 get_ui_wf_property(<waveform>,<property>,<index>):integer
+get_voice_limit(<voice­type>)
 group_name(<group-index>):string
 hide_part(<variable>,<value>)
 ignore_controller()
@@ -654,7 +692,7 @@ load_array_str(<array-or-string-array-variable>,<path-text>):integer
 load_ir_sample(<file name>,<slot>,<generic>):integer
 load_ir_sample_m(<unknown>)
 load_midi_file(<path variable>):integer
-load_patch(<text>,<channel>)
+load_patch(<path>,<channel>)
 lsb(<variable>):integer
 make_instr_persistent(<variable>)
 make_perfview()
@@ -673,6 +711,7 @@ mf_get_length():integer
 mf_get_mark(<event-id>,<mark>):integer
 mf_get_next(<track-index>)
 mf_get_next_at(<track-index>,<pos>)
+mf_get_note_length()
 mf_get_num_tracks():integer
 mf_get_pos():integer
 mf_get_prev(<track-index>)
@@ -697,7 +736,7 @@ move_control_px(<variable>,<x-position>,<y-position>)
 ms_to_ticks(<microseconds>):integer
 msb(<variable>):integer
 note_off(<ID-number>)
-num_elements(<array-variable>):integer
+num_elements(<array-or-string-array-variable>):integer
 num_slices(<group-index>):integer
 num_slices_zone(<zone-id>):integer
 output_channel_name(<output-number>):integer
@@ -723,18 +762,15 @@ save_array(<array-or-string-array-variable>,<mode>):integer
 save_array_str(<array-or-string-array-variable>,<path-text>):integer
 save_midi_file(<path variable>):integer
 search(<array-variable>,<value>):integer
-set_control_arr(<ui-ID>,<control-parameter>,<value>)
 set_control_help(<variable>,<text>)
-set_control_par(<ui-ID>,<control-parameter>,<value>)
-set_control_par_arr(<ui-ID>,<control-parameter>,<value>,<index>)
-set_control_par_str(<ui-ID>,<control-parameter>,<text>)
+set_control_par(<ui-id>,<control-parameter>,<value>)
+set_control_par_arr(<ui-id>,<control-parameter>,<value>,<index>)
+set_control_par_str(<ui-id>,<control-parameter>,<text>)
 set_controller(<controller-number>,<controller-value>)
-set_engine_par(<parameter>,<value>,<group>,<slot>,<generic>)
-set_engine_par_disp_m(<unknown>)
-set_engine_par_m(<unknown>)
+set_engine_par(<parameter>,<value>,<group>,<slot>,<generic>):integer
+set_engine_par_m(<parameter>,<value>,<instrument-slot-id>,<unknown>,<unknown>)
 set_event_mark(<ID-number>,<bit-mark>)
 set_event_par(<ID-number>,<index>,<value>)
-set_event_par_arr(<ID-number>,<parameter>,<value>,<group-idx>)
 set_event_par_arr(<ID-number>,<parameter>,<value>,<group-idx>)
 set_key_color(<note-number>,<key-color-constant>)
 set_key_name(<key-number>,<key-name>)
@@ -760,6 +796,7 @@ set_text(<variable>,<text>)
 set_ui_height(<height>)
 set_ui_height_px(<height>)
 set_ui_wf_property(<waveform>,<property>,<index>,<value>)
+set_voice_limit(<voice­type>,<value>)
 sh_left(<expression>,<amount>):integer
 sh_right(<expression>,<amount>):integer
 show_library_tab()
@@ -771,7 +808,7 @@ slice_start(<group-index>,<slice-index>):integer
 sort(<array-variable>,<direction>)
 stop_wait(<callbackID>,<par>)
 ticks_to_ms(<ticks>):integer
-unload_slot(<unknown>)
+unload_slot(<instrument-slot-id>)
 wait(<wait-time>)
 wait_ticks(<wait-time>)
 will_never_terminate(<event-id>)
@@ -801,6 +838,7 @@ end function
 end if
 end macro
 end on
+end_on
 end property
 end select
 end taskfunc
@@ -826,6 +864,7 @@ on note
 on nrpn
 on persistence_changed
 on pgs_changed
+on_pgs_changed
 on poly_at
 on release
 on rpn
