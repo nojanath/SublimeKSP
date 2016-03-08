@@ -1,0 +1,19 @@
+<snippet>
+	<content><![CDATA[
+on listener
+	select NI_SIGNAL_TYPE
+		case NI_SIGNAL_TRANSP_START
+			${1}
+		case NI_SIGNAL_TRANSP_STOP
+			${2}
+		case NI_SIGNAL_TIMER_BEAT
+			${3}
+		case NI_SIGNAL_TIMER_MS
+			${4}
+	end select
+end on
+]]></content>
+	<description>listener callback</description>
+	<tabTrigger>lcb</tabTrigger>
+	<scope>source.ksp</scope>
+</snippet>

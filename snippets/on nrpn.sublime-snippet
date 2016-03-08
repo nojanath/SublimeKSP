@@ -1,0 +1,10 @@
+<snippet>
+    <content><![CDATA[
+on nrpn
+	${0}
+end on
+]]></content>
+	<description>NRPN callback</description>
+    <tabTrigger>nrpn</tabTrigger>
+    <scope>source.ksp</scope>
+</snippet>

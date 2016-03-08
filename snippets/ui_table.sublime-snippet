@@ -1,0 +1,6 @@
+<snippet>
+    <content><![CDATA[declare ui_table ${1:name}[${2:columns}](${3:width}, ${4:height}, ${5:value})]]></content>
+	<description>ui_table</description>
+    <tabTrigger>ui_table</tabTrigger>
+    <scope>source.ksp</scope>
+</snippet>

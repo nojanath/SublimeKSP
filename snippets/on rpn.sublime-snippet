@@ -1,0 +1,10 @@
+<snippet>
+    <content><![CDATA[
+on rpn
+	${0}
+end on
+]]></content>
+	<description>RPN callback</description>
+    <tabTrigger>rpn</tabTrigger>
+    <scope>source.ksp</scope>
+</snippet>

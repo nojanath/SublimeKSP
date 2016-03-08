@@ -1,0 +1,10 @@
+<snippet>
+    <content><![CDATA[
+on ui_update
+	${0}
+end on
+]]></content>
+	<description>UI update callback</description>
+    <tabTrigger>upd</tabTrigger>
+    <scope>source.ksp</scope>
+</snippet>

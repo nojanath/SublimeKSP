@@ -1,0 +1,10 @@
+<snippet>
+    <content><![CDATA[
+if ${1:condition}
+	${0}
+end
+]]></content>
+	<description>if</description>
+    <tabTrigger>if</tabTrigger>
+    <scope>source.ksp</scope>
+</snippet>

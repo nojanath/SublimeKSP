@@ -1,0 +1,96 @@
+[
+	{
+		"caption": "Tools","mnemonic": "T","id": "tools",
+		"children":
+		[
+			{
+				"command": "compile_ksp",
+				"context":
+				[{
+					"key": "selector",
+					"operator": "equal",
+					"operand": "source.ksp"
+				}],
+				"caption": "KSP: Compile",
+				"mnemonic": "C",
+				"id": "compile"
+			},
+			{
+				"command": "ksp_recompile",
+				"context":
+				[{
+					"key": "selector",
+					"operator": "equal",
+					"operand": "source.ksp"
+				}],
+				"caption": "KSP: Recompile last script",
+				"mnemonic": "R",
+				"id": "recompile"
+			},
+			{
+				"command": "ksp_uncompress_code",
+				"args": {},
+				"caption": "KSP: Uncompress selected compiled code",
+				"mnemonic": "U",
+				"id": "uncompress"
+			},
+			{"caption": "-"}, //separator
+			{
+				"command": "ksp_global_setting_toggle",
+				"args": {"setting": "ksp_compact_output", "default": false},
+				"caption": "KSP: Compact output",
+				"mnemonic": "p",
+				"id": "compact_output",
+				"checkbox": true
+			},
+			{
+				"command": "ksp_global_setting_toggle",
+				"args": {"setting": "ksp_compact_variables", "default": false},
+				"caption": "KSP: Compact variables",
+				"mnemonic": "v",
+				"id": "compact_variables"
+			},
+			{
+				"command": "ksp_global_setting_toggle",
+				"args": {"setting": "ksp_extra_checks", "default": true},
+				"caption": "KSP: Extra syntax checks",
+				"mnemonic": "x",
+				"id": "extra_syntax_checks"
+			},
+			{
+				"command": "ksp_global_setting_toggle",
+				"args": {"setting": "ksp_signal_empty_ifcase", "default": true},
+				"caption": "KSP: Signal error on empty if/case statements",
+				"mnemonic": "e",
+				"id": "signal_empty_ifcase"
+			},
+			{
+				"command": "ksp_global_setting_toggle",
+				"args": {"setting": "ksp_optimize_code", "default": false},
+				"caption": "KSP: Optimize compiled code",
+				"mnemonic": "t",
+				"id": "optimize_compiled"
+			},
+			{
+				"command": "ksp_global_setting_toggle",
+				"args": {"setting": "ksp_comment_inline_functions", "default": false},
+				"caption": "KSP: Insert comments when expanding functions",
+				"mnemonic": "I",
+				"id": "comment_inline_functions"
+			},
+			{
+				"command": "copy_as_bb_code",
+				"caption": "KSP: Copy as BB code",
+				"mnemonic": "B",
+				"id": "copy_as_bb_code"
+			},
+			{"caption":"-"}, //separator
+			{
+				"command": "ksp_about",
+				"caption": "KSP: About SublimeKSP",
+				"mnemonic": "A",
+				"id": "about"
+			},
+		]
+	}
+]

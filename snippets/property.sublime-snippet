@@ -1,0 +1,15 @@
+<snippet>
+    <content><![CDATA[
+property ${1}
+	function get -> result
+		result := ${2:_${1}}
+	end function
+	function set(value)
+		${3:_${1}} := value
+	end function
+end property
+]]></content>
+	<description>property</description>
+    <tabTrigger>pro</tabTrigger>
+    <scope>source.ksp</scope>
+</snippet>

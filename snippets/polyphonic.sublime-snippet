@@ -1,0 +1,6 @@
+<snippet>
+    <content><![CDATA[declare polyphonic ${1:name}]]></content>
+	<description>polyphonic</description>
+    <tabTrigger>poly</tabTrigger>
+    <scope>source.ksp</scope>
+</snippet>

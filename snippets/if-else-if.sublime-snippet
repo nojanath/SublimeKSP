@@ -1,0 +1,12 @@
+<snippet>
+    <content><![CDATA[
+if ${1:condition}
+	${2}
+else if ${3:condition}
+	${4}
+end if
+]]></content>
+	<description>if else if</description>
+    <tabTrigger>iei</tabTrigger>
+    <scope>source.ksp</scope>
+</snippet>

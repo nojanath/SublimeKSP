@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>name</key>
+	<string>Miscellaneous</string>
+	<key>scope</key>
+	<string>source.ksp</string>
+	<key>settings</key>
+	<dict>
+		<key>highlightPairs</key>
+		<array>
+			<array>
+				<string>(</string>
+				<string>)</string>
+			</array>
+			<array>
+				<string>[</string>
+				<string>]</string>
+			</array>
+			<array>
+				<string>{</string>
+				<string>}</string>
+			</array>
+		</array>
+		<key>increaseIndentPattern</key>
+		<string>\s*(on [a-z_]+|if|else|for|select|family|macro|function|while|taskfunc|case).*?$</string>
+		<key>decreaseIndentPattern</key>
+		<string>\s*end (if|else|for|select|family|macro|function|while|taskfunc|case).*?$</string>
+		<key>shellVariables</key>
+		<array>
+			<dict>
+				<key>name</key>
+				<string>TM_COMMENT_START_2</string>
+				<key>value</key>
+				<string>{ </string>
+			</dict>
+			<dict>
+				<key>name</key>
+				<string>TM_COMMENT_END_2</string>
+				<key>value</key>
+				<string> }</string>
+			</dict>
+		</array>
+		<key>smartTypingPairs</key>
+		<array>
+			<array>
+				<string>(</string>
+				<string>)</string>
+			</array>
+			<array>
+				<string>[</string>
+				<string>]</string>
+			</array>
+			<array>
+				<string>{</string>
+				<string>}</string>
+			</array>
+			<array>
+				<string>"</string>
+				<string>"</string>
+			</array>
+			<array>
+				<string>'</string>
+				<string>'</string>
+			</array>
+		</array>
+	</dict>
+	<key>uuid</key>
+	<string>c733860c-c86b-4244-98bd-d6a23c1d48cf</string>
+</dict>
+</plist>

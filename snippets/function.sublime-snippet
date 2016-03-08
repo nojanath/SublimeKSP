@@ -1,0 +1,10 @@
+<snippet>
+    <content><![CDATA[
+function ${1:name}
+	${0}
+end function
+]]></content>
+	<description>function</description>
+    <tabTrigger>fun</tabTrigger>
+    <scope>source.ksp</scope>
+</snippet>

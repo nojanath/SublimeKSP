@@ -1,0 +1,13 @@
+{
+    "extensions":["ksp"],
+    //"color_scheme": "Packages/SublimeKSP/KScript Light.tmTheme",
+    "word_separators": "/\\()\"'-:,;<>~#^&*|+=[]{}`~?",
+    //"detect_indentation": true,
+    "auto_indent": true,
+
+    // Makes auto indent a little smarter, e.g., by indenting the next line
+    // after an if statement in C. Requires auto_indent to be enabled.
+    "smart_indent": true,
+    "match_brackets_angle": false,
+    //"scroll_past_end": true,
+}
