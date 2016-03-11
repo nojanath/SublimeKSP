@@ -21,9 +21,10 @@ These are the notable changes from [Nils' official 1.1 plugin](http://nilsliberg
 
 ### Manual Installation
 
+* Download zip or tar.gz from Releases page
 * Open Sublime Text 3
 * Select `Preferences` -> `Browse Packages...`
-* Unzip the zip-file into this folder
+* Extract the downloaded archive into this folder
 
 ### Documentation
 There isn't documentation specifically for this plugin (yet). The best source of 
