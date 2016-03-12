@@ -19,13 +19,6 @@ These are the notable changes from [Nils' official 1.1 plugin](http://nilsliberg
   * Type “KSP” or "Kontakt" and select "KSP (Kontakt Script Processor)"
   * Hit Enter to install
 
-### Manual Installation
-
-* Download zip or tar.gz from Releases page
-* Open Sublime Text 3
-* Select `Preferences` -> `Browse Packages...`
-* Extract the downloaded archive into this folder
-
 ### Documentation
 There isn't documentation specifically for this plugin (yet). The best source of 
 information is for Nil's [KScript Editor](http://nilsliberg.se/ksp/scripts/tutorial/editor.html). 
