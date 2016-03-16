@@ -615,7 +615,7 @@ _pgs_key_exists(<key-id>):boolean
 _pgs_set_key_val(<key-id>,<index>,<value>)
 _read_persistent_var(<variable>)
 _reset_rls_trig_counter(<note>)
-_set_engine_par(<parameter>,<value>,<group>,<slot>,<generic>):integer
+_set_engine_par(<parameter>,<value>,<group>,<slot>,<generic>)
 _set_skin_offset(<offset>)
 _slice_idx_loop_end(<group-index>,<loop-index>):integer
 _slice_idx_loop_start(<group-index>,<loop-index>):integer
@@ -767,7 +767,7 @@ set_control_par(<ui-id>,<control-parameter>,<value>)
 set_control_par_arr(<ui-id>,<control-parameter>,<value>,<index>)
 set_control_par_str(<ui-id>,<control-parameter>,<text>)
 set_controller(<controller-number>,<controller-value>)
-set_engine_par(<parameter>,<value>,<group>,<slot>,<generic>):integer
+set_engine_par(<parameter>,<value>,<group>,<slot>,<generic>)
 set_engine_par_m(<parameter>,<value>,<instrument-slot-id>,<unknown>,<unknown>)
 set_event_mark(<ID-number>,<bit-mark>)
 set_event_par(<ID-number>,<index>,<value>)
@@ -838,7 +838,6 @@ end function
 end if
 end macro
 end on
-end_on
 end property
 end select
 end taskfunc
@@ -864,7 +863,6 @@ on note
 on nrpn
 on persistence_changed
 on pgs_changed
-on_pgs_changed
 on poly_at
 on release
 on rpn
