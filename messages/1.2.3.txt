@@ -1,0 +1,3 @@
+KSP (Kontakt Script Processor)
+==============================
+* Fixed errors in ksp_compiler3/ksp_builtins_data.py that were preventing some autocompletions from working like set_engine_par.
