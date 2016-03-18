@@ -838,6 +838,7 @@ end function
 end if
 end macro
 end on
+end_on
 end property
 end select
 end taskfunc
@@ -863,6 +864,7 @@ on note
 on nrpn
 on persistence_changed
 on pgs_changed
+on_pgs_changed
 on poly_at
 on release
 on rpn
