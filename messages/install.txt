@@ -1,5 +1,3 @@
-KSP (Kontakt Script Processor)
-==============================
 Thanks for installing my fork of Nils Liberg's SublimeKSP plugin.
 
 If you like this plugin go to Nils' site at http://nilsliberg.se/ksp/ and leave him a donation for his awesome work.
