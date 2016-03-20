@@ -2,7 +2,7 @@
     <content><![CDATA[
 if ${1:condition}
 	${0}
-end
+end if
 ]]></content>
 	<description>if</description>
     <tabTrigger>if</tabTrigger>
