@@ -26,7 +26,7 @@
 		<key>increaseIndentPattern</key>
 		<string>\s*(on [a-z_]+|if|else|for|select|family|macro|function|while|taskfunc|case).*?$</string>
 		<key>decreaseIndentPattern</key>
-		<string>\s*end (if|else|for|select|family|macro|function|while|taskfunc|case).*?$</string>
+		<string>\s*end (on|if|else|for|select|family|macro|function|while|taskfunc|case).*?$</string>
 		<key>shellVariables</key>
 		<array>
 			<dict>
