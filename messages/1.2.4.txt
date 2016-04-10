@@ -1,0 +1,4 @@
+* Added snippet for on init callback.  Use icb as the tab trigger.
+* Added snippet for ui_menu.  Use ui_menu as the tab trigger.
+* Fixed if snippet so end if is properly expanded
+* Removed commented out options from KSP.sublime-settings
