@@ -62,7 +62,7 @@ with pull requests, just open an [issue](https://github.com/nojanath/SublimeKSP/
 
 ### New Preprocessor Functions
 
-Added to the compiler are a set of new functions that making programming in Kontakt scipt nicer. These functions are used near the beginning of the compiling process, before the parser. 
+Added to the compiler are a set of new functions that making programming in Kontakt script nicer. These functions are used near the beginning of the compiling process, before the parser. 
 They work in a similar way to the C preprocessor. Syntax highlighting for these new commands has also been included. These new additions will not effect any of your current programs.
 
 * New constant type called define, these are always global and can be declared anywhere, even outside of 
@@ -72,7 +72,7 @@ callbacks.
 	define CONST_TEXT := "String"
     ```
     
-* Use pers keyword to make a variable persistent:
+* Use pers keyword to make a variable persistent, this would be the same as writing make_persistent(variable) in the next line:
     ```
 	declare pers value
 	```
@@ -127,7 +127,9 @@ arguments that each will take.
 	set_waveform_properties(waveform, bar_color, zero_line_color)
 	set_knob_properties(knob, text, default)
 	set_bounds(volumeSlider, x, y, width, height)
+	```
 	
+	```
 	declare pers ui_switch onSwitch
 	set_switch_properties(onSwitch, "", "")
 	set_bounds(onSwitch, 0, 0, 20, 20)
@@ -135,7 +137,7 @@ arguments that each will take.
 	declare pers ui_slider volumeSliders[4](0, 1000000)
 	for i := 0 to num_elements(volumeSliders) - 1
 		set_slider_properties(volumeSliders[i], 500000, "Knob")
-		set_bounds(10 + i * 50, 10) { We do not need to set a width and height, so they can just be left out. }
+		set_bounds(10 + i * 50, 10) // We do not need to set a width and height, so they can just be left out. 
 	end for
     ```
 
@@ -154,5 +156,5 @@ number of times. The number of times is set in the same way a 'for' loop works.
 	end on 
 	```
 
-* New single line comments. Use // to start a comment, unlike the default {} these comments always finish at
-the end of a line. {} comments still work as normal.
+* New single line comments. Use `//` to start a comment, unlike the default `{}` these comments always finish at
+the end of a line. `{}` comments still work as normal. Sublime hotkey <kbd>Ctrl</kbd><kbd>/</kbd> will now use `//`, and block comment hotkey <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>/</kbd> will use `{}`.
