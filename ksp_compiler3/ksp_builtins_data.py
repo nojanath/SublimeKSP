@@ -718,7 +718,7 @@ mf_get_prev(<track-index>)
 mf_get_prev_at(<track-index>,<pos>)
 mf_get_track_idx():integer
 mf_insert_event(<track>,<pos>,<command>,<byte1>,<byte2>):integer
-mf_insert_file(<path>,<track-offset>,<position-offset>,<mode>):integer
+mf_insert_file(<path-name>,<track-offset>,<position-offset>,<mode>):integer
 mf_remove_event(<event-id>)
 mf_reset()
 mf_set_buffer_size(<size>)
