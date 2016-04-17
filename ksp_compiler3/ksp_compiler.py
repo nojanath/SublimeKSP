@@ -111,7 +111,6 @@ def prefix_with_ns(name, namespaces, function_parameter_names=None, force_prefix
 		return name # don't add prefix
 
 	# add namespace to name
-	print(prefix + '.'.join(namespaces + [unprefixed_name]))
 	return prefix + '.'.join(namespaces + [unprefixed_name])
 
 def prefix_ID_with_ns(id, namespaces, function_parameter_names=None, force_prefixing=False):
@@ -1522,7 +1521,6 @@ class KSPCompiler(object):
 		return code
 
 	def parse_code(self):
-		print(self.code)
 		self.module = parse(self.code)
 
 	def sort_functions_and_insert_local_variables_into_on_init(self):

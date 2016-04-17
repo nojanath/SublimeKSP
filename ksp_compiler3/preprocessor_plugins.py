@@ -1,8 +1,22 @@
+# preprocessor_plugins.py
+# Written by Sam Windell
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version:
+# http://www.gnu.org/licenses/gpl-2.0.html
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 
 
 #=================================================================================================
 #=================================================================================================
 # TO DO:
+#	Check for bugs when using prefixes: $%@!
 # 	Clean up functions.
 # 	Test for bugs when using namespaces.
 # 	Add a time and date comment to the output Kontakt script.
@@ -11,6 +25,7 @@
 #		declare array[6] := (get_ui_id(silder), 0) 
 #	Some kind of multi-dimentional array would be nice.
 #	Improve the error messages given by the compiler.
+#	Improve the set_control_properties() command, (and the list used in the function)
 
 
 
@@ -55,6 +70,7 @@ def pre_macro_functions(lines):
 # For these, the macros have been expaned.
 def post_macro_functions(lines):
 	handle_ui_arrays(lines)
+	multi_dimensional_arrays(lines)
 	inline_declare_assignment(lines)
 	variable_persistence_shorthand(lines)
 	ui_property_functions(lines)
@@ -66,6 +82,134 @@ def post_macro_functions(lines):
 # For all of these functions, the 'lines' argument is a collections.deque of Line objects. All 
 # code of this deque has already been imported with the 'import' command, and all comments have 
 # been removed.
+
+
+
+# Create multidimentional arrays. They are declared like this:
+#	declare presetValues[10, 4, 5]
+# You set and get values using the same pattern:
+#	presetValues[5, 0, 0] := 100
+#	message(presetValues[5, 0, 0])
+# Each multidimentional has a set of built-in constants for the size of each dimension:
+#	message(presetValues.SIZE_D1)
+#	message(presetValues.SIZE_D2) // etc.. 
+# This functions replaces the multidimensional array declaration with a property with appropriate
+# get and set functions to be sorted by the compiler further down the line.
+def multi_dimensional_arrays(lines):
+
+	dimensions = []
+	num_dimensions = []
+	name = []
+	line_numbers = []
+
+	for i in range(len(lines)):
+		line = lines[i].command.strip()
+		if re.search(r"^\s*declare\s+.*" + varname_re_string + r"\s*\[\s*\w+\s*(\s*\,\s*\w+\s*)+\s*\]", line):
+
+			variable_name = line[: line.find("[")]
+			for keyword in declare_keywords:
+				variable_name = variable_name.replace(keyword, "")
+			variable_name = variable_name.strip()
+
+			prefix = ""
+			if re.search(var_prefix_re, variable_name):
+				prefix = variable_name[0]
+				variable_name = re.sub(var_prefix_re, "", variable_name)
+			name.append(variable_name)
+
+			dimensions_split = line[line.find("[") + 1 : line.find("]")].split(",") 
+			num_dimensions.append(len(dimensions_split))
+			dimensions.append(dimensions_split)
+
+			line_numbers.append(i)
+
+			new_text = line.replace(variable_name, prefix + "_" + variable_name)
+			new_text = re.sub(r'\,', '*', new_text)
+			lines[i].command = new_text
+
+	if line_numbers:
+		# add the text from the start of the file to the first declaration
+		new_lines = collections.deque()
+		for i in range(0, line_numbers[0] + 1):
+			new_lines.append(lines[i])
+
+		# for each declaration create the elements and fill in the gaps
+		for i in range(len(line_numbers)):
+	
+			for ii in range(num_dimensions[i]):
+				current_text = "declare const " + name[i] + ".SIZE_D" + str(ii + 1) + " := " + dimensions[i][ii]
+				new_lines.append(lines[i].copy(current_text))
+
+			# start property
+			current_text = "property " + name[i]
+			new_lines.append(lines[i].copy(current_text))
+
+			# start get function
+			# it might look something like this: function get(v1, v2, v3) -> result
+			current_text = "function get(v1"
+			for ii in range(1, num_dimensions[i]):
+				current_text = current_text + ", v" + str(ii + 1) 
+			current_text = current_text + ") -> result"
+			new_lines.append(lines[i].copy(current_text))
+
+			# get function body
+			current_text = "result := _" + name[i] + "["
+			for ii in range(num_dimensions[i]):
+				if ii != num_dimensions[i] - 1: 
+					for iii in range(num_dimensions[i] - 1, ii, -1):
+						current_text = current_text + dimensions[i][iii] + " * "
+				current_text = current_text + "v" + str(ii + 1)
+				if ii != num_dimensions[i] - 1:
+					current_text = current_text + " + "
+			current_text = current_text + "]"
+			new_lines.append(lines[i].copy(current_text))
+
+			# end get function
+			new_lines.append(lines[i].copy("end function"))
+
+			# start set function
+			# it might look something like this: function set(v1, v2, v3, val)
+			current_text = "function set(v1"
+			for ii in range(1, num_dimensions[i]):
+				current_text = current_text + ", v" + str(ii + 1) 
+			current_text = current_text + ", val)"
+			new_lines.append(lines[i].copy(current_text))
+
+			# set function body
+			current_text = "_" + name[i] + "["
+			for ii in range(num_dimensions[i]):
+				if ii != num_dimensions[i] - 1: 
+					for iii in range(num_dimensions[i] - 1, ii, -1):
+						current_text = current_text + dimensions[i][iii] + " * "
+				current_text = current_text + "v" + str(ii + 1)
+				if ii != num_dimensions[i] - 1:
+					current_text = current_text + " + "
+			current_text = current_text + "] := val"
+			new_lines.append(lines[i].copy(current_text))
+
+			# end set function
+			new_lines.append(lines[i].copy("end function"))		
+
+			# end property
+			new_lines.append(lines[i].copy("end property"))
+
+
+			if i + 1 < len(line_numbers):
+				for ii in range(line_numbers[i] + 1, line_numbers[i + 1] + 1):
+					new_lines.append(lines[ii])
+
+		# add the text from the last declaration to the end of the document
+		for i in range(line_numbers[len(line_numbers) - 1] + 1, len(lines)):
+			new_lines.append(lines[i])
+
+		# both lines and new lines are deques of Line objects, replace lines with new lines
+		for i in range(len(lines)):
+			lines.pop()
+		lines.extend(new_lines)	
+
+		for line_obj in lines:
+			print(line_obj.command)
+
 
 
 def ui_property_functions(lines):
@@ -324,7 +468,7 @@ def variable_persistence_shorthand(lines):
 
 	for i in range(len(lines)):
 		line = lines[i].command.strip()
-		if line.replace("	", "").replace(" ", "").find("declarepers") != -1:
+		if re.search(r"^\s*declare\s+pers\s+", line):
 
 			variable_name = line
 			for word in declare_keywords:

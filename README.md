@@ -62,17 +62,21 @@ with pull requests, just open an [issue](https://github.com/nojanath/SublimeKSP/
 
 ### New Preprocessor Functions
 
-Added to the compiler are a set of new functions that making programming in Kontakt scipt nicer. These functions are used near the beginning of the compiling process, before the parser. 
+Added to the compiler are a set of new functions that making programming in Kontakt script nicer. These functions are used near the beginning of the compiling process, before the parser. 
 They work in a similar way to the C preprocessor. Syntax highlighting for these new commands has also been included. These new additions will not effect any of your current programs.
 
+
+* New single line comments. Use `//` to start a comment, unlike the default `{}` these comments always finish at
+the end of a line. `{}` comments still work as normal. Sublime hotkey <kbd>Ctrl</kbd><kbd>/</kbd> will now use `//`, and block comment hotkey <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>/</kbd> will use `{}`.
+
 * New constant type called define, these are always global and can be declared anywhere, even outside of 
-callbacks. 
+callbacks. These are different from the original declare const, because they are substituted before macros and functions are built.
     ```
 	define NUM_CONTROLS := 90
 	define CONST_TEXT := "String"
     ```
     
-* Use pers keyword to make a variable persistent:
+* Use pers keyword to make a variable persistent, this would be the same as writing make_persistent(variable) in the next line:
     ```
 	declare pers value
 	```
@@ -82,13 +86,23 @@ callbacks.
 	declare modId := find_mod(0, "lfo")
 	```
 
-* Declare arrays of ui controls. Use square brackets to state the num elements. Regular const cannot be
-used here, only the new define or a number. For ui_tables the first square bracket is for the num
-elements, the second for the number of columns. The UI ID of each can be accessed with (using 0 as an
+* Declare (single dimension) arrays of UI controls. Use square brackets to state the num elements. Regular const cannot be
+used here, only the new define or a number. For ui_tables the first square bracket is for the number of
+elements in the array, the second for the number of columns. The UI ID of each can be accessed with (using 0 as an
 example) arrayName[0], or if you need the actual variable names it's arrayName0.
     ```
 	declare pers ui_slider volumeSliders[40](0, 100)
 	declare ui_table tables[40] [100] (2, 4, 100)
+	```
+
+* Multidimensional arrays. You can now create arrays with multiple dimensions. These can be either integers or strings. They will work with the pers keyword. Each array also has built-in constants
+for the number of elements in each dimension. They follow this pattern: `<array-name>.SIZE_D1` or `<array-name>.SIZE_D2`, etc.
+	```
+	declare array[10, 30] // 2D array
+	array[5, 6] := 100
+	message(array[5, 6])
+	message(array.SIZE_D1)
+	declare !text[5, 5, 5] // 3D array
 	```
 
 * When you declare an array and initialise its elements on the same line, it is now optional to include
@@ -111,8 +125,8 @@ They can only be used in the init callback and not in loops or 'if' statements.
 	list_add(controlIds, get_ui_id(slider1))
 	```
 
-* New commands for setting ui control properties. These commands take an optional number of arguments so
-you do not bloat the compiled code unecessarily. There is a command for each UI type, they have been 
+* New commands for setting UI control properties. These commands take an optional number of arguments so
+you do not bloat the compiled code necessarily. There is a command for each UI type, they have been 
 chosen to set the most commonly used properties of each type. There is also a command called 
 set_bounds(x, y, width, height) that works for any UI type. Below is a list of all the commands and the 
 arguments that each will take.
@@ -127,7 +141,9 @@ arguments that each will take.
 	set_waveform_properties(waveform, bar_color, zero_line_color)
 	set_knob_properties(knob, text, default)
 	set_bounds(volumeSlider, x, y, width, height)
+	```
 	
+	```
 	declare pers ui_switch onSwitch
 	set_switch_properties(onSwitch, "", "")
 	set_bounds(onSwitch, 0, 0, 20, 20)
@@ -135,7 +151,7 @@ arguments that each will take.
 	declare pers ui_slider volumeSliders[4](0, 1000000)
 	for i := 0 to num_elements(volumeSliders) - 1
 		set_slider_properties(volumeSliders[i], 500000, "Knob")
-		set_bounds(10 + i * 50, 10) { We do not need to set a width and height, so they can just be left out. }
+		set_bounds(10 + i * 50, 10) // We do not need to set a width and height, so they can just be left out. 
 	end for
     ```
 
@@ -153,6 +169,3 @@ number of times. The number of times is set in the same way a 'for' loop works.
 		iterate_macro(addMenuItems) := 0 to NUM_MENUS - 1
 	end on 
 	```
-
-* New single line comments. Use // to start a comment, unlike the default {} these comments always finish at
-the end of a line. {} comments still work as normal.
