@@ -169,9 +169,3 @@ number of times. The number of times is set in the same way a 'for' loop works.
 		iterate_macro(addMenuItems) := 0 to NUM_MENUS - 1
 	end on 
 	```
-<<<<<<< HEAD
-=======
-
-* New single line comments. Use `//` to start a comment, unlike the default `{}` these comments always finish at
-the end of a line. `{}` comments still work as normal. Sublime hotkey <kbd>Ctrl</kbd><kbd>/</kbd> will now use `//`, and block comment hotkey <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>/</kbd> will use `{}`.
->>>>>>> origin/master
