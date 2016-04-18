@@ -21,6 +21,7 @@ import ksp_compiler_extras as comp_extras
 import ksp_builtins
 from ksp_parser import parse
 from taskfunc import taskfunc_code
+from logger import logger_code
 from collections import OrderedDict
 import hashlib
 import ply.lex as lex
@@ -1474,10 +1475,20 @@ class KSPCompiler(object):
 
 	def do_imports_and_convert_to_line_objects(self):
 		# if the code contains tcm.init, then add taskfunc code at the end
+		source = self.source
 		if re.search(r'(?m)^\s*tcm.init', self.source):
-			source = self.source + taskfunc_code
-		else:
-			source = self.source
+			source = source + taskfunc_code
+
+		# if the code contain activate_logger, then add the extra code
+		if re.search(r"(?m)^\s*activate_logger", source):
+			source = source + logger_code
+			m = re.search(r"(?m)^\s*on\s+pgs_changed", source)
+			if m:
+				source = source[: m.end()] + "\ncheckPrintFlag()\n" + source[m.end() :]
+			else:
+				source = source + "\non pgs_changed\ncheckPrintFlag()\nend on\n"
+
+
 		self.lines = parse_lines_and_handle_imports(source,
 													read_file_function=self.read_file_func,
 													preprocessor_func=self.examine_pragmas)

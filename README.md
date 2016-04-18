@@ -169,3 +169,22 @@ number of times. The number of times is set in the same way a 'for' loop works.
 		iterate_macro(addMenuItems) := 0 to NUM_MENUS - 1
 	end on 
 	```
+
+* New debugging functionality. Built into the compiler is a bit of script that is activated with the command `activate_logger(directory)` in the init callback of your main script (not an imported one).
+The directory is the absolute file path of folder where you wish to log messages to, for example `activate_logger("C:/")`. When activated, you can use
+the function `print()` to print massages to a .nki file in this folder. If you remove the `activate_logger()` line, the program will also remove any `print()` lines. This means you can 
+easily switch between debugging mode or not, and leave no footprint when it's inactive. The logger is an .nka file that can be read by a simple exe program (currently in development), 
+so you can read the log in real-time.
+	```
+	on init
+		activate_logger("C:/Users/Sam/Desktop/")
+		print("Logger has begun!")
+		declare ui_switch mySwitch
+	end on
+
+	on ui_control(mySwitch)
+		print("Switch pressed, value: " & mySwitch)
+	end on
+	```
+
+
