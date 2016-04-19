@@ -28,15 +28,12 @@
 #	Improve the set_control_properties() command, (and the list used in the function)
 
 # IDEAS:
-#	*	Built-in system for printing messages for debugging. Use a ui_label, and functions print(), clear(), 
-#		printError(). System would be activated/deactived with a command in the init callback. Leaves no 
-#		footprint when inactive. Option to use save_array to make a viewing messages easier? Maybe it should 
-#		only be save_array instead of ui_label? Is there a program that can be used to read the .nka file in
-#		realtime? Maybe this program can be written?
-
+#
 
 import re
 import collections
+
+
 
 #=================================================================================================
 #=================================================================================================
@@ -88,6 +85,12 @@ def post_macro_functions(lines):
 # For all of these functions, the 'lines' argument is a collections.deque of Line objects. All 
 # code of this deque has already been imported with the 'import' command, and all comments have 
 # been removed.
+
+
+
+
+
+
 
 
 def remove_print(lines):

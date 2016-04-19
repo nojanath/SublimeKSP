@@ -63,7 +63,7 @@ with pull requests, just open an [issue](https://github.com/nojanath/SublimeKSP/
 ### New Preprocessor Functions
 
 Added to the compiler are a set of new functions that making programming in Kontakt script nicer. These functions are used near the beginning of the compiling process, before the parser. 
-They work in a similar way to the C preprocessor. Syntax highlighting for these new commands has also been included. These new additions will not effect any of your current programs.
+They work in a similar way to the C preprocessor. Syntax highlighting for these new commands has also been included. These new additions will not negatively effect any of your current programs.
 
 
 * New single line comments. Use `//` to start a comment, unlike the default `{}` these comments always finish at
@@ -172,7 +172,7 @@ number of times. The number of times is set in the same way a 'for' loop works.
 
 * New debugging functionality. Built into the compiler is a bit of script that is activated with the command `activate_logger(directory)` in the init callback of your main script (not an imported one).
 The directory is the absolute file path of folder where you wish to log messages to, for example `activate_logger("C:/")`. When activated, you can use
-the function `print()` to print massages to a .nki file in this folder. If you remove the `activate_logger()` line, the program will also remove any `print()` lines. This means you can 
+the function `print()` to print massages to a .nka file in this folder. If you remove the `activate_logger()` line, the program will also remove any `print()` lines. This means you can 
 easily switch between debugging mode or not, and leave no footprint when it's inactive. The logger is an .nka file that can be read by a simple exe program (currently in development), 
 so you can read the log in real-time.
 	```
@@ -186,5 +186,7 @@ so you can read the log in real-time.
 		print("Switch pressed, value: " & mySwitch)
 	end on
 	```
+In the example about if you were to just comment out the activate_logger() line, the script would compile fine. The logger is not active, therefore the print functions will be automatically
+omitted, leaving zero bloat in the output code.
 
-
+* Compiled code now contains a comment with the time and date it was compiled on.

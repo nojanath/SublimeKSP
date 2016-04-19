@@ -26,6 +26,7 @@ from collections import OrderedDict
 import hashlib
 import ply.lex as lex
 import preprocessor_plugins
+import time
 ##from cStringIO import StringIO
 
 variable_prefixes = '$%@!'
@@ -1597,6 +1598,8 @@ class KSPCompiler(object):
 		emitter = ksp_ast.Emitter(buffer, compact=self.compact)
 		self.module.emit(emitter)
 		self.compiled_code = buffer.getvalue()
+		localtime = time.asctime( time.localtime(time.time()) )
+		self.compiled_code = "{ Compiled on " + localtime + " }\n" + self.compiled_code
 
 	def uncompress_variable_names(self, compiled_code):
 		def sub_func(match_obj):
