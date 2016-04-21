@@ -9,6 +9,7 @@ These are the notable changes from [Nils' official 1.1 plugin](http://nilsliberg
 * Supports Kontakt 5.5 thanks to mk282 on vi-control.net
 * default_syntax.py has been removed since this can be set elsewhere
 * Now available in Package Control which supports auto updates
+* A whole set of new extended syntax, such as UI arrays, multidimensional arrays, make_persistent() shorthand and much more.
 
 ### Installation
 
@@ -173,7 +174,7 @@ number of times. The number of times is set in the same way a 'for' loop works.
 * New debugging functionality. Built into the compiler is a bit of script that is activated with the command `activate_logger(directory)` in the init callback of your main script (not an imported one).
 The directory is the absolute file path of folder where you wish to log messages to, for example `activate_logger("C:/")`. When activated, you can use
 the function `print()` to print massages to a .nka file in this folder. If you remove the `activate_logger()` line, the program will also remove any `print()` lines. This means you can 
-easily switch between debugging mode or not, and leave no footprint when it's inactive. The logger is an .nka file that can be read by a simple exe program (currently in development), 
+easily switch between debugging mode or not, and leave no footprint when it's inactive. The logger is an .nka file that can be read by a simple exe program (https://github.com/SamWindell/LogFileReader), 
 so you can read the log in real-time.
 	```
 	on init
