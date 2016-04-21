@@ -10,9 +10,7 @@
 	<string>KSP</string>
 	<key>patterns</key>
 	<array>
-
-		<!-- New comment type added to syntax highlighting -->
-		<dict>
+		<dict> <!-- New comment type added to syntax highlighting. -->
 			<key>begin</key>
 			<string>//</string>
 			<key>comment</key>
@@ -22,7 +20,6 @@
 			<key>name</key>
 			<string>comment.block.source.ksp</string>
 		</dict>
-
 		<dict>
 			<key>captures</key>
 			<dict>

@@ -21,22 +21,18 @@ import ksp_compiler_extras as comp_extras
 import ksp_builtins
 from ksp_parser import parse
 from taskfunc import taskfunc_code
-from logger import logger_code
 from collections import OrderedDict
 import hashlib
 import ply.lex as lex
-import preprocessor_plugins
+from logger import logger_code
 import time
+from preprocessor_plugins import pre_macro_functions, post_macro_functions
 ##from cStringIO import StringIO
 
 variable_prefixes = '$%@!'
 
 
 # regular expressions:
-
-# new
-
-# orginal
 new_comment_re = r'(?<!["\'])\/\/.*' # this is a single line new comment type // 
 var_prefix_re = r"[%!@$]"
 white_space = r'(?ms)(\s*(\{[^\n]*?\})?\s*)' # regexp for normal white space/comments
@@ -51,11 +47,6 @@ import_re = re.compile(r'^\s*import\s+"(?P<filename>.+?)"(\s+as\s(?P<asname>[a-z
 macro_start_re = re.compile(r'^\s*macro(?=\W)')
 macro_end_re = re.compile(r'^\s*end\s+macro')
 line_continuation_re = re.compile(r'\.\.\.\s*\n', re.MULTILINE)
-for_re = re.compile(r"^((\s*for)(\(|\s+))")
-end_for_re = re.compile(r"^\s*end\s+for")
-while_re = re.compile(r"^((\s*while)(\(|\s+))")
-end_while_re = re.compile(r"^\s*end\s+while")
-commas_not_in_parenth = re.compile(r",(?![^()]*\))") # All commas that are not in parenthesis
 
 
 
@@ -1622,9 +1613,9 @@ class KSPCompiler(object):
 			#     (description,                  function,                                                                    condition, time-weight)
 			tasks = [
 				 ('scanning and importing code', 		lambda: self.do_imports_and_convert_to_line_objects(),                       True,      1),
-				 ('pre-macro preprocessor plugins', 	lambda: preprocessor_plugins.pre_macro_functions(self.lines),	  			  True,      1),
+				 ('pre-macro preprocessor plugins', 	lambda: pre_macro_functions(self.lines),	  			  True,      1),
 				 ('expand macros',               		lambda: self.expand_macros(),                                                True,      1),
-				 ('post-macro preprocessor plugins',	lambda: preprocessor_plugins.post_macro_functions(self.lines),	  			  True,      1),
+				 ('post-macro preprocessor plugins',	lambda: post_macro_functions(self.lines),	  			  True,      1),
 				 ('convert lines to code block', 		lambda: self.convert_lines_to_code(),       		            			  True,      1),
 				 ('parse code',                  		lambda: self.parse_code(),                                                   True,      1),
 				 ('various tasks',               		lambda: ASTModifierFixReferencesAndFamilies(self.module, self.lines),        True,      1),

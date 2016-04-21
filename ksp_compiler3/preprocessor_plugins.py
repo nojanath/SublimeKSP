@@ -16,23 +16,22 @@
 #=================================================================================================
 #=================================================================================================
 # TO DO:
-#	Check for bugs when using prefixes: $%@!
 # 	Clean up functions.
 # 	Test for bugs when using namespaces.
-# 	Add a time and date comment to the output Kontakt script.
 #	Re-evalulate the usefulness of the declare list command.
 #	This should throw an exception, a non constant is used in the array initialisation:
 #		declare array[6] := (get_ui_id(silder), 0) 
-#	Some kind of multi-dimentional array would be nice.
 #	Improve the error messages given by the compiler.
-#	Improve the set_control_properties() command, (and the list used in the function)
+#	Improve the set_control_properties() command, maybe 
 
 # IDEAS:
-#
+#	iterate_macro to work with single like commands as well as macros:
+#		iterate_macro(add_menu_item(lfoDesination#n#, destinationMenuNames[i], i)) := 0 to NUM_OSC - 1
+#		
 
 import re
 import collections
-
+import ksp_compiler 
 
 
 #=================================================================================================
@@ -46,8 +45,6 @@ commas_not_in_parenth = re.compile(r",(?![^()]*\))") # All commas that are not i
 list_add_re = re.compile(r"^\s*list_add\s*\(")
 
 # 'Regular expressions for 'blocks'
-macro_start_re = re.compile(r'^\s*macro(?=\W)')
-macro_end_re = re.compile(r'^\s*end\s+macro')
 for_re = re.compile(r"^((\s*for)(\(|\s+))")
 end_for_re = re.compile(r"^\s*end\s+for")
 while_re = re.compile(r"^((\s*while)(\(|\s+))")
@@ -89,10 +86,6 @@ def post_macro_functions(lines):
 
 
 
-
-
-
-
 def remove_print(lines):
 	print_line_numbers = []
 	logger_active_flag = False
@@ -108,16 +101,7 @@ def remove_print(lines):
 			lines[print_line_numbers[i]].command = ""
 
 
-
-
-# Create multidimentional arrays. They are declared like this:
-#	declare presetValues[10, 4, 5]
-# You set and get values using the same pattern:
-#	presetValues[5, 0, 0] := 100
-#	message(presetValues[5, 0, 0])
-# Each multidimentional has a set of built-in constants for the size of each dimension:
-#	message(presetValues.SIZE_D1)
-#	message(presetValues.SIZE_D2) // etc.. 
+# Create multidimentional arrays. 
 # This functions replaces the multidimensional array declaration with a property with appropriate
 # get and set functions to be sorted by the compiler further down the line.
 def multi_dimensional_arrays(lines):
@@ -407,16 +391,16 @@ def handle_lists(lines):
 					if re.sub(var_prefix_re, "", list_names[ii]) in line:
 						find_list_name = True
 						if loop_flag == True:
-							raise ParseException(lines[i], "list_add() cannot be used in loops or if statements.\n")
+							raise ksp_compiler.ParseException(lines[i], "list_add() cannot be used in loops or if statements.\n")
 						if init_flag == False:
-							raise ParseException(lines[i], "list_add() can only be used in the init callback.\n")
+							raise ksp_compiler.ParseException(lines[i], "list_add() can only be used in the init callback.\n")
 
 						value = line[line.find(",") + 1 : len(line) - 1]
 						lines[i].command = list_names[ii] + "[" + str(iterators[ii]) + "] := " + value
 						iterators[ii] += 1
 				if not find_list_name:
 					undeclared_name = line[line.find("(") + 1 : line.find(",")]
-					raise ParseException(lines[i], undeclared_name + " had not been declared.\n") 
+					raise ksp_compiler.ParseException(lines[i], undeclared_name + " had not been declared.\n") 
 
 
 
@@ -565,10 +549,10 @@ def handle_iterate_macro(lines):
 					maxv = eval(params[params.find(to_stmt) + len(to_stmt) :])
 
 				if (minv > maxv and to_stmt == "to") or (minv < maxv and to_stmt == "downto"):
-					raise ParseException(lines[index], "Min and max values are incorrectly weighted (For example, min > max when it should be min < max)./n")
+					raise ksp_compiler.ParseException(lines[index], "Min and max values are incorrectly weighted (For example, min > max when it should be min < max)./n")
 
 			except:
-				raise ParseException(lines[index], "Incorrect values in iterate_macro statement. Native 'declare const' variables cannot be used here, instead a 'define' const must be used. " + \
+				raise ksp_compiler.ParseException(lines[index], "Incorrect values in iterate_macro statement. Native 'declare const' variables cannot be used here, instead a 'define' const must be used. " + \
 						"The macro you are iterating must have only have 1 integer parameter, this will be replaced by the values in the chosen range.\n")
 
 			macro_name.append(name)
@@ -640,7 +624,7 @@ def handle_define_lines(lines):
 				# remove the line
 				lines[index].command = re.sub(r'[^\r\n]', '', line)
 			else:
-				raise ParseException(lines[index], "Syntax error.\n")
+				raise ksp_compiler.ParseException(lines[index], "Syntax error.\n")
 
 	# if at least one define const exsists
 	if define_titles:
@@ -655,7 +639,7 @@ def handle_define_lines(lines):
 			try:
 				eval(define_values[i])
 			except:
-				raise ParseException(lines[define_line_pos[i]], "Undeclared variable in define statement.\n")
+				raise ksp_compiler.ParseException(lines[define_line_pos[i]], "Undeclared variable in define statement.\n")
 
 		# scan the code can replace any occurances of the variable with it's value
 		for line_obj in lines:
@@ -698,7 +682,7 @@ def handle_ui_arrays(lines):
 						try:
 							num_element = eval(ls_line[ls_line.find("[") + 1 : ls_line.find("]")])
 						except:
-							raise ParseException(lines[index], "Incorrect number of elements. Native 'declare const' variables cannot be used here, instead a 'define' const must be used.\n")
+							raise ksp_compiler.ParseException(lines[index], "Incorrect number of elements. Native 'declare const' variables cannot be used here, instead a 'define' const must be used.\n")
 
 						# find the variable name
 						variable_name = line[: line.find("[")].replace(ui_type, "")

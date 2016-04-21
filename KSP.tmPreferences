@@ -30,7 +30,7 @@
 		<key>shellVariables</key>
 		<array>
 			<!-- New double-forwardslash comment type to be used as the default in sublime. 
-			Sublime hotkey ctrl+/ now uses this comment type. Hotkey ctrl+shift+/ uses the default {} comment type. --> 
+			Sublime hotkey ctrl+/ now uses this comment type. Hotskey ctrl+shift+/ uses the default {} comment type. -->
 			<dict>
 				<key>name</key>
 				<string>TM_COMMENT_START</string>
