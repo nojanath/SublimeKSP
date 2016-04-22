@@ -688,6 +688,7 @@ def handle_ui_arrays(lines):
 						variable_name = line[: line.find("[")].replace(ui_type, "")
 						for word in keywords_only:
 							variable_name = variable_name.replace(word, "")
+						variable_name = re.sub(r"\s", "", variable_name)
 						variable_name_no_pre = re.sub(var_prefix_re, "", variable_name)
 
 						if re.search(r"\s+pers\s+", line):
