@@ -413,9 +413,9 @@ def calculate_open_size_array(lines):
 
 	for i in range(len(lines)):
 		line = lines[i].command
-		ls_line = line.replace(" ", "").replace("	", "")
+		ls_line = re.sub(r"\s*", "", line)
 		if "[]:=(" in ls_line:
-			commma_sep = line[line.find("(") + 1 : len(line) - 1]
+			commma_sep = ls_line[ls_line.find("(") + 1 : len(ls_line) - 1]
 			string_list = re.split(commas_not_in_parenth, commma_sep)
 			num_elements = len(string_list)
 
