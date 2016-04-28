@@ -25,9 +25,11 @@
 #	Improve the set_control_properties() command, maybe 
 
 # IDEAS:
-#	iterate_macro to work with single like commands as well as macros:
-#		iterate_macro(add_menu_item(lfoDesination#n#, destinationMenuNames[i], i)) := 0 to NUM_OSC - 1
-#		
+#	-	iterate_macro to work with single like commands as well as macros:
+#			iterate_macro(add_menu_item(lfoDesination#n#, destinationMenuNames[i], i)) := 0 to NUM_OSC - 1
+#	-	'tidy compiled code' option in the menu, auto adds indents/spaces for functions/callbacks to made 
+#		reading/debugging the output easier
+#	-	multidimensional ui arrays
 
 import re
 import collections
@@ -76,6 +78,7 @@ def post_macro_functions(lines):
 	ui_property_functions(lines)
 	handle_lists(lines)
 	calculate_open_size_array(lines)
+	expand_string_array_declaration(lines)
 
 
 #=================================================================================================
@@ -258,14 +261,14 @@ def ui_property_functions(lines):
 		line = lines[i].command.strip()
 		for ii in range(len(property_text)):
 			if line.startswith(property_text[ii]):
-				commma_sep = line[line.find(",") + 1 : len(line) - 1]
+				comma_sep = line[line.find(",") + 1 : len(line) - 1]
 				line_numbers.append(i)
 				prop_numbers.append(ii)
 
 				variable_name = line[line.find("(") + 1 : line.find(",")]
 				var_names.append(variable_name)
 
-				string_list = re.split(commas_not_in_parenth, commma_sep)
+				string_list = re.split(commas_not_in_parenth, comma_sep)
 				params.append(string_list)
 				num_params.append(len(string_list))
 				lines[i].command = ""
@@ -406,6 +409,56 @@ def handle_lists(lines):
 
 def calculate_open_size_array(lines):
 
+	array_name = []
+	strings = []
+	line_numbers = []
+	num_ele = []
+
+	for i in range(len(lines)):
+		line = lines[i].command
+		ls_line = re.sub(r"\s", "", line)
+		if "[]:=(" in ls_line:
+			comma_sep = ls_line[ls_line.find("(") + 1 : len(ls_line) - 1]
+			string_list = re.split(commas_not_in_parenth, comma_sep)
+			num_elements = len(string_list)
+			name = line[: line.find("[")].replace("declare", "").strip()
+			name = re.sub(var_prefix_re, "", name)
+
+			lines[i].command = line[: line.find("[") + 1] + str(num_elements) + line[line.find("[") + 1 :]
+
+			array_name.append(name)
+			line_numbers.append(i)
+			num_ele.append(num_elements)
+
+
+	if line_numbers:
+		# add the text from the start of the file to the first declaration
+		new_lines = collections.deque()
+		for i in range(0, line_numbers[0] + 1):
+			new_lines.append(lines[i])
+
+		# for each declaration create the elements and fill in the gaps
+		for i in range(len(line_numbers)):
+
+			current_text = "declare const " + array_name[i] + ".SIZE := " + str(num_ele[i])
+			new_lines.append(lines[i].copy(current_text))
+
+			if i + 1 < len(line_numbers):
+				for ii in range(line_numbers[i] + 1, line_numbers[i + 1] + 1):
+					new_lines.append(lines[ii])
+
+		# add the text from the last declaration to the end of the document
+		for i in range(line_numbers[len(line_numbers) - 1] + 1, len(lines)):
+			new_lines.append(lines[i])
+
+		# both lines and new lines are deques of Line objects, replace lines with new lines
+		for i in range(len(lines)):
+			lines.pop()
+		lines.extend(new_lines)	
+
+
+def expand_string_array_declaration(lines):
+
 	string_var_names = []
 	strings = []
 	line_numbers = []
@@ -413,17 +466,10 @@ def calculate_open_size_array(lines):
 
 	for i in range(len(lines)):
 		line = lines[i].command
-		ls_line = re.sub(r"\s*", "", line)
-		if "[]:=(" in ls_line:
-			commma_sep = ls_line[ls_line.find("(") + 1 : len(ls_line) - 1]
-			string_list = re.split(commas_not_in_parenth, commma_sep)
-			num_elements = len(string_list)
-
-			lines[i].command = line[: line.find("[") + 1] + str(num_elements) + line[line.find("[") + 1 :]
 		# convert text array declaration to multiline
 		if re.search(r'\s+!\w+', line) != None and "declare" in line and ":=" in line:
-			commma_sep = line[line.find("(") + 1 : len(line) - 1]
-			string_list = re.split(commas_not_in_parenth, commma_sep)
+			comma_sep = line[line.find("(") + 1 : len(line) - 1]
+			string_list = re.split(commas_not_in_parenth, comma_sep)
 			num_elements = len(string_list)
 			
 			search_obj = re.search(r'\s+!\w+', line)

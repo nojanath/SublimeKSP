@@ -107,9 +107,11 @@ for the number of elements in each dimension. They follow this pattern: `<array-
 	```
 
 * When you declare an array and initialise its elements on the same line, it is now optional to include
-the number of elements beforehand.
+the number of elements beforehand. These auto generated number of elements can be accessed with the constant
+name.SIZE.
     ```
 	declare array[] := (79, 34, 22)
+	message(array.SIZE)
 	```
 
 * You can now declare and initialise a string array on the same line like you would an integer array.
