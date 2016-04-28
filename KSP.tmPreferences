@@ -29,6 +29,14 @@
 		<string>\s*end (on|if|else|for|select|family|macro|function|while|taskfunc|case).*?$</string>
 		<key>shellVariables</key>
 		<array>
+			<!-- New double-forwardslash comment type to be used as the default in sublime. 
+			Sublime hotkey ctrl+/ now uses this comment type. Hotskey ctrl+shift+/ uses the default {} comment type. -->
+			<dict>
+				<key>name</key>
+				<string>TM_COMMENT_START</string>
+				<key>value</key>
+				<string>// </string>
+			</dict>
 			<dict>
 				<key>name</key>
 				<string>TM_COMMENT_START_2</string>

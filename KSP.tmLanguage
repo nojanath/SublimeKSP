@@ -10,6 +10,16 @@
 	<string>KSP</string>
 	<key>patterns</key>
 	<array>
+		<dict> <!-- New comment type added to syntax highlighting. -->
+			<key>begin</key>
+			<string>//</string>
+			<key>comment</key>
+			<string>Comment</string>
+			<key>end</key>
+			<string>\n|\r</string>
+			<key>name</key>
+			<string>comment.block.source.ksp</string>
+		</dict>
 		<dict>
 			<key>captures</key>
 			<dict>
@@ -211,7 +221,7 @@
 		</dict>
 		<dict>
 			<key>begin</key>
-			<string>(declare) +(global |local )?(ui_label|ui_button|ui_switch|ui_slider|ui_menu|ui_value_edit|ui_waveform|ui_knob|ui_table|call|step|ui_text_edit|ui_level_meter|ui_file_selector) *([a-zA-Z0-9_.]+) *\(</string>
+			<string>(declare|define) +(global |local |pers )?(ui_label|ui_button|ui_switch|ui_slider|ui_menu|ui_value_edit|ui_waveform|ui_knob|ui_table|call|step|ui_text_edit|ui_level_meter|ui_file_selector) *([a-zA-Z0-9_.]+) *\(</string>
 			<key>beginCaptures</key>
 			<dict>
 				<key>1</key>
@@ -251,7 +261,7 @@
 			<key>comment</key>
 			<string>Other keywords</string>
 			<key>match</key>
-			<string>\b(function|taskfunc|macro|declare|const|polyphonic|end|local|global|family|import|as|property|override|declare|ui_label|ui_button|ui_switch|ui_slider|ui_menu|ui_value_edit|ui_waveform|ui_knob|ui_table|call|step|ui_text_edit|ui_level_meter|ui_file_selector)\b</string>
+			<string>\b(define|pers|list|function|taskfunc|macro|declare|const|polyphonic|end|local|global|family|import|as|property|override|declare|ui_label|ui_button|ui_switch|ui_slider|ui_menu|ui_value_edit|ui_waveform|ui_knob|ui_table|call|step|ui_text_edit|ui_level_meter|ui_file_selector)\b</string>
 			<key>name</key>
 			<string>keyword.other.source.ksp</string>
 		</dict>
@@ -281,6 +291,7 @@
 			<key>name</key>
 			<string>comment.block.source.ksp</string>
 		</dict>
+
 		<dict>
 			<key>begin</key>
 			<string>\{</string>
@@ -304,7 +315,7 @@
 			<key>comment</key>
 			<string>Builtin function with arguments</string>
 			<key>match</key>
-			<string>\b(END_USE_CODE|RESET_CONDITION|SET_CONDITION|USE_CODE_IF|USE_CODE_IF_NOT|_delay_event_for_loading_slots|_get_engine_par|_get_engine_par_disp|_get_folder|_load_ir_sample|_num_slices|_pgs_create_key|_pgs_get_key_val|_pgs_key_exists|_pgs_set_key_val|_read_persistent_var|_reset_rls_trig_counter|_set_engine_par|_set_skin_offset|_slice_idx_loop_end|_slice_idx_loop_start|_slice_length|_slice_loop_count|_slice_start|_will_never_terminate|abs|add_menu_item|add_text_line|allow_group|array_equal|attach_level_meter|attach_zone|by_marks|by_track|cc_delivery_request|change_listener_par|change_note|change_pan|change_time_with_pitch|change_tune|change_velo|change_vol|dec|delete_event_mark|disallow_group|dont_use_machine_mode|event_status|exit|fade_in|fade_out|find_group|find_mod|find_target|find_zone|fs_get_filename|fs_navigate|get_control_par|get_control_par_arr|get_control_par_str|get_engine_par|get_engine_par_disp|get_engine_par_disp_m|get_engine_par_m|get_event_ids|get_event_par|get_event_par_arr|get_folder|get_key_color|get_key_name|get_key_triggerstate|get_key_type|get_keyrange_min_note|get_keyrange_max_note|get_keyrange_name|get_menu_item_str|get_menu_item_value|get_menu_item_visibility|get_purge_state|get_sample_length|get_ui_id|get_ui_wf_property|get_voice_limit|group_name|hide_part|ignore_controller|ignore_event|ignore_midi|in_range|inc|load_array|load_array_str|load_ir_sample|load_ir_sample_m|load_midi_file|load_patch|lsb|make_instr_persistent|make_perfview|make_persistent|message|mf_get_buffer_size|mf_get_byte_one|mf_get_byte_two|mf_get_channel|mf_get_command|mf_get_event_par|mf_get_first|mf_get_id|mf_get_last|mf_get_length|mf_get_mark|mf_get_next|mf_get_next_at|mf_get_note_length|mf_get_num_tracks|mf_get_pos|mf_get_prev|mf_get_prev_at|mf_get_track_idx|mf_insert_event|mf_insert_file|mf_remove_event|mf_reset|mf_set_buffer_size|mf_set_byte_one|mf_set_byte_two|mf_set_channel|mf_set_command|mf_set_event_par|mf_set_export_area|mf_set_length|mf_set_mark|mf_set_pos|move_control|move_control_px|ms_to_ticks|msb|note_off|num_elements|num_slices|num_slices_zone|output_channel_name|pgs_create_key|pgs_create_str_key|pgs_get_key_val|pgs_get_str_key_val|pgs_key_exists|pgs_set_key_val|pgs_set_str_key_val|pgs_str_key_exists|play_note|purge_group|random|read_persistent_var|redirect_midi|redirect_output|remove_keyrange|reset_engine|reset_ksp_timer|reset_rls_trig_counter|save_array|save_array_str|save_midi_file|search|set_control_help|set_control_par|set_control_par_arr|set_control_par_str|set_controller|set_engine_par|set_engine_par_m|set_event_mark|set_event_par|set_event_par_arr|set_key_color|set_key_name|set_key_pressed|set_key_pressed_support|set_key_type|set_keyrange|set_knob_defval|set_knob_label|set_knob_unit|set_listener|set_menu_item_str|set_menu_item_value|set_menu_item_visibility|set_midi|set_nrpn|set_rpn|set_script_title|set_skin_offset|set_snapshot_type|set_table_steps_shown|set_text|set_ui_height|set_ui_height_px|set_ui_wf_property|set_voice_limit|sh_left|sh_right|show_library_tab|slice_idx_loop_end|slice_idx_loop_start|slice_length|slice_loop_count|slice_start|sort|stop_wait|ticks_to_ms|unload_slot|wait|wait_ticks|will_never_terminate|zone_slice_idx_loop_end|zone_slice_idx_loop_start|zone_slice_length|zone_slice_loop_count|zone_slice_start)\b</string>
+			<string>\b(list_add|set_bounds|set_slider_properties|set_switch_properties|set_label_properties|set_menu_properties|set_table_properties|set_button_properties|set_level_meter_properties|set_waveform_properties|set_knob_properties|END_USE_CODE|RESET_CONDITION|SET_CONDITION|USE_CODE_IF|USE_CODE_IF_NOT|_delay_event_for_loading_slots|_get_engine_par|_get_engine_par_disp|_get_folder|_load_ir_sample|_num_slices|_pgs_create_key|_pgs_get_key_val|_pgs_key_exists|_pgs_set_key_val|_read_persistent_var|_reset_rls_trig_counter|_set_engine_par|_set_skin_offset|_slice_idx_loop_end|_slice_idx_loop_start|_slice_length|_slice_loop_count|_slice_start|_will_never_terminate|abs|add_menu_item|add_text_line|allow_group|array_equal|attach_level_meter|attach_zone|by_marks|by_track|cc_delivery_request|change_listener_par|change_note|change_pan|change_time_with_pitch|change_tune|change_velo|change_vol|dec|delete_event_mark|disallow_group|dont_use_machine_mode|event_status|exit|fade_in|fade_out|find_group|find_mod|find_target|find_zone|fs_get_filename|fs_navigate|get_control_par|get_control_par_arr|get_control_par_str|get_engine_par|get_engine_par_disp|get_engine_par_disp_m|get_engine_par_m|get_event_ids|get_event_par|get_event_par_arr|get_folder|get_key_color|get_key_name|get_key_triggerstate|get_key_type|get_keyrange_min_note|get_keyrange_max_note|get_keyrange_name|get_menu_item_str|get_menu_item_value|get_menu_item_visibility|get_purge_state|get_sample_length|get_ui_id|get_ui_wf_property|get_voice_limit|group_name|hide_part|ignore_controller|ignore_event|ignore_midi|in_range|inc|load_array|load_array_str|load_ir_sample|load_ir_sample_m|load_midi_file|load_patch|lsb|make_instr_persistent|make_perfview|make_persistent|message|mf_get_buffer_size|mf_get_byte_one|mf_get_byte_two|mf_get_channel|mf_get_command|mf_get_event_par|mf_get_first|mf_get_id|mf_get_last|mf_get_length|mf_get_mark|mf_get_next|mf_get_next_at|mf_get_note_length|mf_get_num_tracks|mf_get_pos|mf_get_prev|mf_get_prev_at|mf_get_track_idx|mf_insert_event|mf_insert_file|mf_remove_event|mf_reset|mf_set_buffer_size|mf_set_byte_one|mf_set_byte_two|mf_set_channel|mf_set_command|mf_set_event_par|mf_set_export_area|mf_set_length|mf_set_mark|mf_set_pos|move_control|move_control_px|ms_to_ticks|msb|note_off|num_elements|num_slices|num_slices_zone|output_channel_name|pgs_create_key|pgs_create_str_key|pgs_get_key_val|pgs_get_str_key_val|pgs_key_exists|pgs_set_key_val|pgs_set_str_key_val|pgs_str_key_exists|play_note|purge_group|random|read_persistent_var|redirect_midi|redirect_output|remove_keyrange|reset_engine|reset_ksp_timer|reset_rls_trig_counter|save_array|save_array_str|save_midi_file|search|set_control_help|set_control_par|set_control_par_arr|set_control_par_str|set_controller|set_engine_par|set_engine_par_m|set_event_mark|set_event_par|set_event_par_arr|set_key_color|set_key_name|set_key_pressed|set_key_pressed_support|set_key_type|set_keyrange|set_knob_defval|set_knob_label|set_knob_unit|set_listener|set_menu_item_str|set_menu_item_value|set_menu_item_visibility|set_midi|set_nrpn|set_rpn|set_script_title|set_skin_offset|set_snapshot_type|set_table_steps_shown|set_text|set_ui_height|set_ui_height_px|set_ui_wf_property|set_voice_limit|sh_left|sh_right|show_library_tab|slice_idx_loop_end|slice_idx_loop_start|slice_length|slice_loop_count|slice_start|sort|stop_wait|ticks_to_ms|unload_slot|wait|wait_ticks|will_never_terminate|zone_slice_idx_loop_end|zone_slice_idx_loop_start|zone_slice_length|zone_slice_loop_count|zone_slice_start)\b</string>
 			<key>name</key>
 			<string>support.function.source.ksp</string>
 		</dict>
