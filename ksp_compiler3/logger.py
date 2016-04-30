@@ -5,7 +5,7 @@ macro activate_logger(directory)
 	logger[0] := "--- Logger Started ---"
 	declare logger_count := 1
 	declare @logger_filepath
-	logger_filepath := directory & "logger.nka"
+	logger_filepath := directory & "logger" & CURRENT_SCRIPT_SLOT & ".nka"
 	pgs_create_key(logger_flag, 1)
 	pgs_set_key_val(logger_flag, 0, 1)
 end macro
