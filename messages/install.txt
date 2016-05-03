@@ -1,4 +1,4 @@
-Thanks for installing my fork of Nils Liberg's SublimeKSP plugin.
+See the Wiki at https://github.com/nojanath/SublimeKSP/wiki for the latest features and updates.
 
 If you like this plugin go to Nils' site at http://nilsliberg.se/ksp/ and leave him a donation for his awesome work.
 
