@@ -17,18 +17,14 @@
 #=================================================================================================
 # TO DO:
 # 	Clean up functions.
-# 	Test for bugs when using namespaces.
-#	Re-evalulate the usefulness of the declare list command.
 #	This should throw an exception, a non constant is used in the array initialisation:
 #		declare array[6] := (get_ui_id(silder), 0) 
 #	Improve the error messages given by the compiler.
-#	Improve the set_control_properties() command, maybe 
+#	Improve the set_control_properties() command
 
 # IDEAS:
 #	-	iterate_macro to work with single like commands as well as macros:
 #			iterate_macro(add_menu_item(lfoDesination#n#, destinationMenuNames[i], i)) := 0 to NUM_OSC - 1
-#	-	'tidy compiled code' option in the menu, auto adds indents/spaces for functions/callbacks to made 
-#		reading/debugging the output easier
 #	-	multidimensional ui arrays
 
 import re
@@ -43,7 +39,8 @@ var_prefix_re = r"[%!@$]"
 
 varname_re_string = r'((\b|[$%!@])[0-9]*[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_0-9]+)*)\b'
 varname_re = re.compile(varname_re_string)
-commas_not_in_parenth = re.compile(r",(?![^()]*\))") # All commas that are not in parenthesis
+
+commas_not_in_parenth = re.compile(r",(?![^\(\)\[\]]*[\)\]])") # All commas that are not in parenthesis
 list_add_re = re.compile(r"^\s*list_add\s*\(")
 
 # 'Regular expressions for 'blocks'
@@ -72,13 +69,13 @@ def pre_macro_functions(lines):
 # For these, the macros have been expaned.
 def post_macro_functions(lines):
 	handle_ui_arrays(lines)
-	multi_dimensional_arrays(lines)
 	inline_declare_assignment(lines)
+	multi_dimensional_arrays(lines)
 	variable_persistence_shorthand(lines)
 	ui_property_functions(lines)
-	handle_lists(lines)
 	calculate_open_size_array(lines)
-	expand_string_array_declaration(lines)
+	handle_lists(lines)
+	expand_string_array_declaration(lines)	
 
 
 #=================================================================================================
@@ -116,8 +113,7 @@ def multi_dimensional_arrays(lines):
 
 	for i in range(len(lines)):
 		line = lines[i].command.strip()
-		if re.search(r"^\s*declare\s+.*" + varname_re_string + r"\s*\[\s*\w+\s*(\s*\,\s*\w+\s*)+\s*\]", line):
-
+		if re.search(r"declare\s+" + varname_re_string + "\s*\[\w*(,\s*\w)+\]", line):
 			variable_name = line[: line.find("[")]
 			for keyword in declare_keywords:
 				variable_name = variable_name.replace(keyword, "")
@@ -260,17 +256,21 @@ def ui_property_functions(lines):
 	for i in range(len(lines)):
 		line = lines[i].command.strip()
 		for ii in range(len(property_text)):
-			if line.startswith(property_text[ii]):
-				comma_sep = line[line.find(",") + 1 : len(line) - 1]
+			# if line.startswith(property_text[ii]):
+			if re.search(r"^\s*" + property_text[ii] + r"\s*\(", line):
+				comma_sep = line[line.find("(") + 1 : len(line) - 1].strip()
 				line_numbers.append(i)
 				prop_numbers.append(ii)
 
-				variable_name = line[line.find("(") + 1 : line.find(",")]
-				var_names.append(variable_name)
-
 				string_list = re.split(commas_not_in_parenth, comma_sep)
-				params.append(string_list)
-				num_params.append(len(string_list))
+				variable_name = string_list[0]
+				var_names.append(variable_name)
+				param_list = string_list[1:]
+
+				params.append(param_list)
+				num_params.append(len(param_list))
+				if len(param_list) > max_num_props[ii]:
+					raise ksp_compiler.ParseException(lines[i], "Too many arguments, expected %d, got %d.\n" % (max_num_props[ii], len(param_list)))
 				lines[i].command = ""
 
 	if line_numbers:
@@ -313,9 +313,19 @@ def inline_declare_assignment(lines):
 	for i in range(len(lines)):
 		line = lines[i].command.strip()
 		ls_line = re.sub(r"\s", "", line)
-		if ls_line.startswith("declare") == True and re.search(r':=', line) != None and re.search(r'const\s', line) == None:
-			pre_assignment_text = line[: line.find(":=")]
-			if not "[" in pre_assignment_text:
+		# if ls_line.startswith("declare") == True and re.search(r':=', line) != None and re.search(r'const\s', line) == None:
+		if re.search(r"^\s*declare\s+(polyphonic|pers|global|local)?\s*" + varname_re_string + "\s*:=", line):
+			int_flag = False
+			value = line[line.find(":=") + 2 :]
+			if not "{" in value:
+				try:
+					eval(value)
+					int_flag = True
+				except:
+					pass
+
+			if int_flag == False:
+				pre_assignment_text = line[: line.find(":=")]
 				variable_name = pre_assignment_text
 				for keyword in declare_keywords:
 					variable_name = variable_name.replace(keyword, "")

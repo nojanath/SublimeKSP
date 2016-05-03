@@ -137,6 +137,7 @@ class CompileKspThread(threading.Thread):
         compact = settings.get('ksp_compact_output', False)
         compactVars = settings.get('ksp_compact_variables', False)
         check = settings.get('ksp_extra_checks', True)
+        autoIndent = settings.get('ksp_auto_indent', True)
         optimize = settings.get('ksp_optimize_code', False)
         comments_on_expansion = settings.get('ksp_comment_inline_functions', False)
         check_empty_compound_statements = settings.get('ksp_signal_empty_ifcase', True)
@@ -152,7 +153,8 @@ class CompileKspThread(threading.Thread):
                                                      read_file_func=self.read_file_function,
                                                      optimize=optimize and check,
                                                      extra_syntax_checks=check,
-                                                     check_empty_compound_statements=check_empty_compound_statements)
+                                                     check_empty_compound_statements=check_empty_compound_statements,
+                                                     autoIndent=autoIndent)
             if self.compiler.compile(callback=self.compile_on_progress):
                 last_compiler = self.compiler
                 code = self.compiler.compiled_code

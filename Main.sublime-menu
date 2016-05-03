@@ -73,6 +73,13 @@
 			},
 			{
 				"command": "ksp_global_setting_toggle",
+				"args": {"setting": "ksp_auto_indent", "default": false},
+				"caption": "KSP: Indent compiled code",
+				// "mnemonic": "",
+				"id": "auto_indent"
+			},
+			{
+				"command": "ksp_global_setting_toggle",
 				"args": {"setting": "ksp_comment_inline_functions", "default": false},
 				"caption": "KSP: Insert comments when expanding functions",
 				"mnemonic": "I",

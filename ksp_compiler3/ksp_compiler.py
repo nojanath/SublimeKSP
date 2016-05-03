@@ -1445,13 +1445,15 @@ def default_read_file_func(filepath):
 	return open(filepath, 'r').read()
 
 class KSPCompiler(object):
-	def __init__(self, source, compact=True, compactVars=False, comments_on_expansion=True, read_file_func=default_read_file_func, extra_syntax_checks=False, optimize=False, check_empty_compound_statements=False):
+	def __init__(self, source, compact=True, compactVars=False, comments_on_expansion=True, read_file_func=default_read_file_func, extra_syntax_checks=False, optimize=False, check_empty_compound_statements=False, autoIndent=False):
 		self.source = source
 		self.compact = compact
+		self.autoIndent = autoIndent
 		self.compactVars = compactVars
 		self.comments_on_expansion = comments_on_expansion
 		self.read_file_func = read_file_func
 		self.optimize = optimize
+		print("OPTIM " + str(optimize))
 		self.check_empty_compound_statements = check_empty_compound_statements
 		self.extra_syntax_checks = extra_syntax_checks or optimize
 		self.abort_requested = False
@@ -1473,7 +1475,15 @@ class KSPCompiler(object):
 
 		# if the code contain activate_logger, then add the extra code
 		if re.search(r"(?m)^\s*activate_logger", source):
-			source = source + logger_code
+			amended_logger_code = logger_code
+			if re.search(r"(?m)^\s*activate_logger.*\.nka", source):
+				m = re.search(r"/[^/]*.nka", source)
+				filename = m.group(0).replace("/", "").replace(".nka", "").replace("-", "")
+				filename = re.sub(r"\s", "", filename)
+				amended_logger_code = amended_logger_code.replace("#name#", filename)
+			else:
+				amended_logger_code = amended_logger_code.replace("#name#", "logger").replace("logger_filepath := filepath", "logger_filepath := filepath & \"logger.nka\"")
+			source = source + amended_logger_code
 			m = re.search(r"(?m)^\s*on\s+pgs_changed", source)
 			if m:
 				source = source[: m.end()] + "\ncheckPrintFlag()\n" + source[m.end() :]
@@ -1584,13 +1594,37 @@ class KSPCompiler(object):
 		comp_extras.clear_symbol_table()
 		self.used_variables = set()
 
+	def auto_indent(self):
+		if self.autoIndent:
+			lines = self.compiled_code.split("\n")
+			indent_count = 0
+			inc_indent = ["function", "if", "on", "while", "select", "else", "case"]
+			dec_indent = ["end", "else", "case"]
+			for index in range(len(lines)):
+				for starters in dec_indent:
+					if lines[index].strip().startswith(starters) and not re.search(r"^\s*select", lines[index - 1]):
+						indent_count -= 1
+						if re.search(r"^\s*end\s+select", lines[index]):
+							indent_count -= 1
+
+				lines[index] = "	" * indent_count + lines[index]
+		
+				for starters in inc_indent:
+					if lines[index].strip().startswith(starters):
+						indent_count += 1
+
+			s = "\n"
+			self.compiled_code = s.join(lines)
+
 	def generate_compiled_code(self):
 		buffer = StringIO()
 		emitter = ksp_ast.Emitter(buffer, compact=self.compact)
 		self.module.emit(emitter)
 		self.compiled_code = buffer.getvalue()
+
 		localtime = time.asctime( time.localtime(time.time()) )
 		self.compiled_code = "{ Compiled on " + localtime + " }\n" + self.compiled_code
+
 
 	def uncompress_variable_names(self, compiled_code):
 		def sub_func(match_obj):
@@ -1638,6 +1672,7 @@ class KSPCompiler(object):
 				 ('checking empty if-stmts',     		lambda: comp_extras.ASTVisitorCheckNoEmptyIfCaseStatements(self.module),     self.check_empty_compound_statements, 1),
 				 ('compact variable names',      		self.compact_names,                                                          self.compactVars, 1),
 				 ('generate code',               		self.generate_compiled_code,                                                 True,      1),
+				 ('auto indent',                		self.auto_indent,                                                            self.autoIndent,      1),
 			]
 
 
