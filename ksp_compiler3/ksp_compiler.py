@@ -1445,15 +1445,13 @@ def default_read_file_func(filepath):
 	return open(filepath, 'r').read()
 
 class KSPCompiler(object):
-	def __init__(self, source, compact=True, compactVars=False, comments_on_expansion=True, read_file_func=default_read_file_func, extra_syntax_checks=False, optimize=False, check_empty_compound_statements=False, autoIndent=False):
+	def __init__(self, source, compact=True, compactVars=False, comments_on_expansion=True, read_file_func=default_read_file_func, extra_syntax_checks=False, optimize=False, check_empty_compound_statements=False):
 		self.source = source
 		self.compact = compact
-		self.autoIndent = autoIndent
 		self.compactVars = compactVars
 		self.comments_on_expansion = comments_on_expansion
 		self.read_file_func = read_file_func
 		self.optimize = optimize
-		print("OPTIM " + str(optimize))
 		self.check_empty_compound_statements = check_empty_compound_statements
 		self.extra_syntax_checks = extra_syntax_checks or optimize
 		self.abort_requested = False
@@ -1473,22 +1471,56 @@ class KSPCompiler(object):
 		if re.search(r'(?m)^\s*tcm.init', self.source):
 			source = source + taskfunc_code
 
+			# (?m)^\w:(\/[a-zA-Z_\-\s0-9\.]+)*\/$
+			# (?m)^\w:(\/[a-zA-Z_\-\s0-9\.]+)*\.nka$
+
 		# if the code contain activate_logger, then add the extra code
-		if re.search(r"(?m)^\s*activate_logger", source):
+		m = re.search(r"(?m)^\s*activate_logger.*\)", source)
+		if m:
 			amended_logger_code = logger_code
-			if re.search(r"(?m)^\s*activate_logger.*\.nka", source):
-				m = re.search(r"/[^/]*.nka", source)
-				filename = m.group(0).replace("/", "").replace(".nka", "").replace("-", "")
+
+			activate_line = m.group(0).strip()
+			activate_line = re.sub(new_comment_re, '', activate_line)
+			filepath_m = re.search(r"\".*\"", str(activate_line))
+			if not filepath_m:
+				raise ParseException(Line("", [(None, 1)], None), 'No filepath in activate_logger.\n')
+			filepath = filepath_m.group(0).replace("\"", "")
+			print(filepath)
+			valid_file_path_flag = False
+			if re.search(r"(?m)^\w:(\/[a-zA-Z_\-\s0-9\.]+)*\.nka$", filepath):
+				valid_file_path_flag = True
+				m = re.search(r"/[^/]*.nka", filepath)
+				filename = "_" + m.group(0).replace("/", "").replace(".nka", "").replace("-", "")
 				filename = re.sub(r"\s", "", filename)
 				amended_logger_code = amended_logger_code.replace("#name#", filename)
-			else:
+			if re.search(r"(?m)^\w:(\/[a-zA-Z_\-\s0-9\.]+)*\/$", filepath):
+				valid_file_path_flag = True
 				amended_logger_code = amended_logger_code.replace("#name#", "logger").replace("logger_filepath := filepath", "logger_filepath := filepath & \"logger.nka\"")
+			if valid_file_path_flag == False:
+				raise ParseException(Line("", [(None, 1)], None), 'Filepath of activate_logger is invalid.\nFilepaths must be in this format: "C:/Users/Name/log_file.nka"')
 			source = source + amended_logger_code
+
 			m = re.search(r"(?m)^\s*on\s+pgs_changed", source)
 			if m:
 				source = source[: m.end()] + "\ncheckPrintFlag()\n" + source[m.end() :]
 			else:
-				source = source + "\non pgs_changed\ncheckPrintFlag()\nend on\n"
+				source = source + "\non pgs_changed\ncheckPrintFlag()\nend on\n"			
+
+		# if re.search(r"(?m)^\s*activate_logger", source):
+		# 	amended_logger_code = logger_code
+		# 	if re.search(r"(?m)^\s*activate_logger.*\.nka", source):
+		# 		m = re.search(r"/[^/]*.nka", source)
+		# 		filename = m.group(0).replace("/", "").replace(".nka", "").replace("-", "")
+		# 		filename = re.sub(r"\s", "", filename)
+		# 		amended_logger_code = amended_logger_code.replace("#name#", filename)
+		# 	else:
+		# 		amended_logger_code = amended_logger_code.replace("#name#", "logger").replace("logger_filepath := filepath", "logger_filepath := filepath & \"logger.nka\"")
+		# 	source = source + amended_logger_code
+		# 	m = re.search(r"(?m)^\s*on\s+pgs_changed", source)
+		# 	if m:
+		# 		source = source[: m.end()] + "\ncheckPrintFlag()\n" + source[m.end() :]
+		# 	else:
+		# 		source = source + "\non pgs_changed\ncheckPrintFlag()\nend on\n"
 
 
 		self.lines = parse_lines_and_handle_imports(source,
@@ -1594,28 +1626,6 @@ class KSPCompiler(object):
 		comp_extras.clear_symbol_table()
 		self.used_variables = set()
 
-	def auto_indent(self):
-		if self.autoIndent:
-			lines = self.compiled_code.split("\n")
-			indent_count = 0
-			inc_indent = ["function", "if", "on", "while", "select", "else", "case"]
-			dec_indent = ["end", "else", "case"]
-			for index in range(len(lines)):
-				for starters in dec_indent:
-					if lines[index].strip().startswith(starters) and not re.search(r"^\s*select", lines[index - 1]):
-						indent_count -= 1
-						if re.search(r"^\s*end\s+select", lines[index]):
-							indent_count -= 1
-
-				lines[index] = "	" * indent_count + lines[index]
-		
-				for starters in inc_indent:
-					if lines[index].strip().startswith(starters):
-						indent_count += 1
-
-			s = "\n"
-			self.compiled_code = s.join(lines)
-
 	def generate_compiled_code(self):
 		buffer = StringIO()
 		emitter = ksp_ast.Emitter(buffer, compact=self.compact)
@@ -1672,7 +1682,6 @@ class KSPCompiler(object):
 				 ('checking empty if-stmts',     		lambda: comp_extras.ASTVisitorCheckNoEmptyIfCaseStatements(self.module),     self.check_empty_compound_statements, 1),
 				 ('compact variable names',      		self.compact_names,                                                          self.compactVars, 1),
 				 ('generate code',               		self.generate_compiled_code,                                                 True,      1),
-				 ('auto indent',                		self.auto_indent,                                                            self.autoIndent,      1),
 			]
 
 
