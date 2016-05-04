@@ -113,7 +113,7 @@ def multi_dimensional_arrays(lines):
 
 	for i in range(len(lines)):
 		line = lines[i].command.strip()
-		if re.search(r"declare\s+" + varname_re_string + "\s*\[\w*(,\s*\w)+\]", line):
+		if re.search(r"^\s*declare\s+(pers\s+)?" + varname_re_string + "\s*\[\w*\s*(,\s*\w+\s*)+\]", line):
 			variable_name = line[: line.find("[")]
 			for keyword in declare_keywords:
 				variable_name = variable_name.replace(keyword, "")
