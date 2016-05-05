@@ -1500,11 +1500,12 @@ class KSPCompiler(object):
 				raise ParseException(Line("", [(None, 1)], None), 'Filepath of activate_logger is invalid.\nFilepaths must be in this format: "C:/Users/Name/log_file.nka"')
 			source = source + amended_logger_code
 
-			m = re.search(r"(?m)^\s*on\s+pgs_changed", source)
+			m = re.search(r"(?m)^\s*on\s+persistence_changed", source)
 			if m:
-				source = source[: m.end()] + "\ncheckPrintFlag()\n" + source[m.end() :]
+				persistence_end = source.find("end on", m.end())
+				source = source[: persistence_end] + "\ncheckPrintFlag()\n" + source[persistence_end :]
 			else:
-				source = source + "\non pgs_changed\ncheckPrintFlag()\nend on\n"			
+				source = source + "\non persistence_changed\ncheckPrintFlag()\nend on\n"			
 
 		# if re.search(r"(?m)^\s*activate_logger", source):
 		# 	amended_logger_code = logger_code

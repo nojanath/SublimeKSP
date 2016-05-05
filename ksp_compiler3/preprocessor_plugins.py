@@ -26,6 +26,8 @@
 #	-	iterate_macro to work with single like commands as well as macros:
 #			iterate_macro(add_menu_item(lfoDesination#n#, destinationMenuNames[i], i)) := 0 to NUM_OSC - 1
 #	-	multidimensional ui arrays
+#	-	built in bounds checking for arrays/pgs, the compiler auto adds print() messages to check that you 
+#		accessing valid elements.
 
 import re
 import collections
