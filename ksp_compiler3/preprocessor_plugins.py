@@ -682,7 +682,7 @@ def handle_define_lines(lines):
 				# remove the line
 				lines[index].command = re.sub(r'[^\r\n]', '', line)
 			else:
-				raise ksp_compiler.ParseException(lines[index], "Syntax error.\n")
+				raise ksp_compiler.ParseException(lines[index], "Syntax error in define.\n")
 
 	# if at least one define const exsists
 	if define_titles:
@@ -695,7 +695,7 @@ def handle_define_lines(lines):
 		# do any maths if needed
 		for i in range(len(define_values)):
 			try:
-				eval(define_values[i])
+				define_values[i] = eval(define_values[i])
 			except:
 				raise ksp_compiler.ParseException(lines[define_line_pos[i]], "Undeclared variable in define statement.\n")
 
@@ -706,7 +706,7 @@ def handle_define_lines(lines):
 				if re.search(r"\b" + item + r"\b", line):
 					# character_before = line[line.find(item) - 1 : line.find(item)]  
 					# if character_before.isalpha() == False and character_before.isdiget() == False:  
-					line_obj.command = line_obj.command.replace(item, define_values[index])
+					line_obj.command = line_obj.command.replace(item, str(define_values[index]))
 
 
 def handle_ui_arrays(lines):
