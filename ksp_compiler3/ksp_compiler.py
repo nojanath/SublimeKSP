@@ -1507,22 +1507,6 @@ class KSPCompiler(object):
 			else:
 				source = source + "\non persistence_changed\ncheckPrintFlag()\nend on\n"			
 
-		# if re.search(r"(?m)^\s*activate_logger", source):
-		# 	amended_logger_code = logger_code
-		# 	if re.search(r"(?m)^\s*activate_logger.*\.nka", source):
-		# 		m = re.search(r"/[^/]*.nka", source)
-		# 		filename = m.group(0).replace("/", "").replace(".nka", "").replace("-", "")
-		# 		filename = re.sub(r"\s", "", filename)
-		# 		amended_logger_code = amended_logger_code.replace("#name#", filename)
-		# 	else:
-		# 		amended_logger_code = amended_logger_code.replace("#name#", "logger").replace("logger_filepath := filepath", "logger_filepath := filepath & \"logger.nka\"")
-		# 	source = source + amended_logger_code
-		# 	m = re.search(r"(?m)^\s*on\s+pgs_changed", source)
-		# 	if m:
-		# 		source = source[: m.end()] + "\ncheckPrintFlag()\n" + source[m.end() :]
-		# 	else:
-		# 		source = source + "\non pgs_changed\ncheckPrintFlag()\nend on\n"
-
 
 		self.lines = parse_lines_and_handle_imports(source,
 													read_file_function=self.read_file_func,
