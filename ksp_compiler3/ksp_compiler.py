@@ -1471,14 +1471,41 @@ class KSPCompiler(object):
 		if re.search(r'(?m)^\s*tcm.init', self.source):
 			source = source + taskfunc_code
 
+			# (?m)^\w:(\/[a-zA-Z_\-\s0-9\.]+)*\/$
+			# (?m)^\w:(\/[a-zA-Z_\-\s0-9\.]+)*\.nka$
+
 		# if the code contain activate_logger, then add the extra code
-		if re.search(r"(?m)^\s*activate_logger", source):
-			source = source + logger_code
-			m = re.search(r"(?m)^\s*on\s+pgs_changed", source)
+		m = re.search(r"(?m)^\s*activate_logger.*\)", source)
+		if m:
+			amended_logger_code = logger_code
+
+			activate_line = m.group(0).strip()
+			activate_line = re.sub(new_comment_re, '', activate_line)
+			filepath_m = re.search(r"\".*\"", str(activate_line))
+			if not filepath_m:
+				raise ParseException(Line("", [(None, 1)], None), 'No filepath in activate_logger.\n')
+			filepath = filepath_m.group(0).replace("\"", "")
+			print(filepath)
+			valid_file_path_flag = False
+			if re.search(r"(?m)^\w:(\/[a-zA-Z_\-\s0-9\.]+)*\.nka$", filepath):
+				valid_file_path_flag = True
+				m = re.search(r"/[^/]*.nka", filepath)
+				filename = "_" + m.group(0).replace("/", "").replace(".nka", "").replace("-", "")
+				filename = re.sub(r"\s", "", filename)
+				amended_logger_code = amended_logger_code.replace("#name#", filename)
+			if re.search(r"(?m)^\w:(\/[a-zA-Z_\-\s0-9\.]+)*\/$", filepath):
+				valid_file_path_flag = True
+				amended_logger_code = amended_logger_code.replace("#name#", "logger").replace("logger_filepath := filepath", "logger_filepath := filepath & \"logger.nka\"")
+			if valid_file_path_flag == False:
+				raise ParseException(Line("", [(None, 1)], None), 'Filepath of activate_logger is invalid.\nFilepaths must be in this format: "C:/Users/Name/log_file.nka"')
+			source = source + amended_logger_code
+
+			m = re.search(r"(?m)^\s*on\s+persistence_changed", source)
 			if m:
-				source = source[: m.end()] + "\ncheckPrintFlag()\n" + source[m.end() :]
+				persistence_end = source.find("end on", m.end())
+				source = source[: persistence_end] + "\ncheckPrintFlag()\n" + source[persistence_end :]
 			else:
-				source = source + "\non pgs_changed\ncheckPrintFlag()\nend on\n"
+				source = source + "\non persistence_changed\ncheckPrintFlag()\nend on\n"			
 
 
 		self.lines = parse_lines_and_handle_imports(source,
@@ -1589,8 +1616,10 @@ class KSPCompiler(object):
 		emitter = ksp_ast.Emitter(buffer, compact=self.compact)
 		self.module.emit(emitter)
 		self.compiled_code = buffer.getvalue()
+
 		localtime = time.asctime( time.localtime(time.time()) )
 		self.compiled_code = "{ Compiled on " + localtime + " }\n" + self.compiled_code
+
 
 	def uncompress_variable_names(self, compiled_code):
 		def sub_func(match_obj):

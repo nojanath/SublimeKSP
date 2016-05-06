@@ -55,7 +55,7 @@ class Emitter:
         if self.compact:
             indent = ''
         else:
-            indent = ' ' * self.indent_num
+            indent = '  ' * self.indent_num
         for (i, line) in enumerate(lines):
             if line:
                 if self.beginning_of_line:

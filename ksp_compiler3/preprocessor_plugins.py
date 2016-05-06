@@ -17,17 +17,17 @@
 #=================================================================================================
 # TO DO:
 # 	Clean up functions.
-# 	Test for bugs when using namespaces.
-#	Re-evalulate the usefulness of the declare list command.
 #	This should throw an exception, a non constant is used in the array initialisation:
 #		declare array[6] := (get_ui_id(silder), 0) 
 #	Improve the error messages given by the compiler.
-#	Improve the set_control_properties() command, maybe 
+#	Improve the set_control_properties() command
 
 # IDEAS:
-#	iterate_macro to work with single like commands as well as macros:
-#		iterate_macro(add_menu_item(lfoDesination#n#, destinationMenuNames[i], i)) := 0 to NUM_OSC - 1
-#		
+#	-	iterate_macro to work with single like commands as well as macros:
+#			iterate_macro(add_menu_item(lfoDesination#n#, destinationMenuNames[i], i)) := 0 to NUM_OSC - 1
+#	-	multidimensional ui arrays
+#	-	built in bounds checking for arrays/pgs, the compiler auto adds print() messages to check that you 
+#		accessing valid elements.
 
 import re
 import collections
@@ -41,7 +41,8 @@ var_prefix_re = r"[%!@$]"
 
 varname_re_string = r'((\b|[$%!@])[0-9]*[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_0-9]+)*)\b'
 varname_re = re.compile(varname_re_string)
-commas_not_in_parenth = re.compile(r",(?![^()]*\))") # All commas that are not in parenthesis
+
+commas_not_in_parenth = re.compile(r",(?![^\(\)\[\]]*[\)\]])") # All commas that are not in parenthesis
 list_add_re = re.compile(r"^\s*list_add\s*\(")
 
 # 'Regular expressions for 'blocks'
@@ -70,12 +71,13 @@ def pre_macro_functions(lines):
 # For these, the macros have been expaned.
 def post_macro_functions(lines):
 	handle_ui_arrays(lines)
-	multi_dimensional_arrays(lines)
 	inline_declare_assignment(lines)
+	multi_dimensional_arrays(lines)
 	variable_persistence_shorthand(lines)
 	ui_property_functions(lines)
-	handle_lists(lines)
 	calculate_open_size_array(lines)
+	handle_lists(lines)
+	expand_string_array_declaration(lines)	
 
 
 #=================================================================================================
@@ -113,8 +115,7 @@ def multi_dimensional_arrays(lines):
 
 	for i in range(len(lines)):
 		line = lines[i].command.strip()
-		if re.search(r"^\s*declare\s+.*" + varname_re_string + r"\s*\[\s*\w+\s*(\s*\,\s*\w+\s*)+\s*\]", line):
-
+		if re.search(r"^\s*declare\s+(pers\s+)?" + varname_re_string + "\s*\[\w*\s*(,\s*\w+\s*)+\]", line):
 			variable_name = line[: line.find("[")]
 			for keyword in declare_keywords:
 				variable_name = variable_name.replace(keyword, "")
@@ -257,17 +258,21 @@ def ui_property_functions(lines):
 	for i in range(len(lines)):
 		line = lines[i].command.strip()
 		for ii in range(len(property_text)):
-			if line.startswith(property_text[ii]):
-				commma_sep = line[line.find(",") + 1 : len(line) - 1]
+			# if line.startswith(property_text[ii]):
+			if re.search(r"^\s*" + property_text[ii] + r"\s*\(", line):
+				comma_sep = line[line.find("(") + 1 : len(line) - 1].strip()
 				line_numbers.append(i)
 				prop_numbers.append(ii)
 
-				variable_name = line[line.find("(") + 1 : line.find(",")]
+				string_list = re.split(commas_not_in_parenth, comma_sep)
+				variable_name = string_list[0]
 				var_names.append(variable_name)
+				param_list = string_list[1:]
 
-				string_list = re.split(commas_not_in_parenth, commma_sep)
-				params.append(string_list)
-				num_params.append(len(string_list))
+				params.append(param_list)
+				num_params.append(len(param_list))
+				if len(param_list) > max_num_props[ii]:
+					raise ksp_compiler.ParseException(lines[i], "Too many arguments, expected %d, got %d.\n" % (max_num_props[ii], len(param_list)))
 				lines[i].command = ""
 
 	if line_numbers:
@@ -310,9 +315,19 @@ def inline_declare_assignment(lines):
 	for i in range(len(lines)):
 		line = lines[i].command.strip()
 		ls_line = re.sub(r"\s", "", line)
-		if ls_line.startswith("declare") == True and re.search(r':=', line) != None and re.search(r'const\s', line) == None:
-			pre_assignment_text = line[: line.find(":=")]
-			if not "[" in pre_assignment_text:
+		# if ls_line.startswith("declare") == True and re.search(r':=', line) != None and re.search(r'const\s', line) == None:
+		if re.search(r"^\s*declare\s+(polyphonic|pers|global|local)?\s*" + varname_re_string + "\s*:=", line):
+			int_flag = False
+			value = line[line.find(":=") + 2 :]
+			if not "{" in value:
+				try:
+					eval(value)
+					int_flag = True
+				except:
+					pass
+
+			if int_flag == False:
+				pre_assignment_text = line[: line.find(":=")]
 				variable_name = pre_assignment_text
 				for keyword in declare_keywords:
 					variable_name = variable_name.replace(keyword, "")
@@ -406,6 +421,56 @@ def handle_lists(lines):
 
 def calculate_open_size_array(lines):
 
+	array_name = []
+	strings = []
+	line_numbers = []
+	num_ele = []
+
+	for i in range(len(lines)):
+		line = lines[i].command
+		ls_line = re.sub(r"\s", "", line)
+		if "[]:=(" in ls_line:
+			comma_sep = ls_line[ls_line.find("(") + 1 : len(ls_line) - 1]
+			string_list = re.split(commas_not_in_parenth, comma_sep)
+			num_elements = len(string_list)
+			name = line[: line.find("[")].replace("declare", "").strip()
+			name = re.sub(var_prefix_re, "", name)
+
+			lines[i].command = line[: line.find("[") + 1] + str(num_elements) + line[line.find("[") + 1 :]
+
+			array_name.append(name)
+			line_numbers.append(i)
+			num_ele.append(num_elements)
+
+
+	if line_numbers:
+		# add the text from the start of the file to the first declaration
+		new_lines = collections.deque()
+		for i in range(0, line_numbers[0] + 1):
+			new_lines.append(lines[i])
+
+		# for each declaration create the elements and fill in the gaps
+		for i in range(len(line_numbers)):
+
+			current_text = "declare const " + array_name[i] + ".SIZE := " + str(num_ele[i])
+			new_lines.append(lines[i].copy(current_text))
+
+			if i + 1 < len(line_numbers):
+				for ii in range(line_numbers[i] + 1, line_numbers[i + 1] + 1):
+					new_lines.append(lines[ii])
+
+		# add the text from the last declaration to the end of the document
+		for i in range(line_numbers[len(line_numbers) - 1] + 1, len(lines)):
+			new_lines.append(lines[i])
+
+		# both lines and new lines are deques of Line objects, replace lines with new lines
+		for i in range(len(lines)):
+			lines.pop()
+		lines.extend(new_lines)	
+
+
+def expand_string_array_declaration(lines):
+
 	string_var_names = []
 	strings = []
 	line_numbers = []
@@ -413,17 +478,10 @@ def calculate_open_size_array(lines):
 
 	for i in range(len(lines)):
 		line = lines[i].command
-		ls_line = re.sub(r"\s*", "", line)
-		if "[]:=(" in ls_line:
-			commma_sep = ls_line[ls_line.find("(") + 1 : len(ls_line) - 1]
-			string_list = re.split(commas_not_in_parenth, commma_sep)
-			num_elements = len(string_list)
-
-			lines[i].command = line[: line.find("[") + 1] + str(num_elements) + line[line.find("[") + 1 :]
 		# convert text array declaration to multiline
 		if re.search(r'\s+!\w+', line) != None and "declare" in line and ":=" in line:
-			commma_sep = line[line.find("(") + 1 : len(line) - 1]
-			string_list = re.split(commas_not_in_parenth, commma_sep)
+			comma_sep = line[line.find("(") + 1 : len(line) - 1]
+			string_list = re.split(commas_not_in_parenth, comma_sep)
 			num_elements = len(string_list)
 			
 			search_obj = re.search(r'\s+!\w+', line)
@@ -624,7 +682,7 @@ def handle_define_lines(lines):
 				# remove the line
 				lines[index].command = re.sub(r'[^\r\n]', '', line)
 			else:
-				raise ksp_compiler.ParseException(lines[index], "Syntax error.\n")
+				raise ksp_compiler.ParseException(lines[index], "Syntax error in define.\n")
 
 	# if at least one define const exsists
 	if define_titles:
@@ -637,7 +695,7 @@ def handle_define_lines(lines):
 		# do any maths if needed
 		for i in range(len(define_values)):
 			try:
-				eval(define_values[i])
+				define_values[i] = eval(define_values[i])
 			except:
 				raise ksp_compiler.ParseException(lines[define_line_pos[i]], "Undeclared variable in define statement.\n")
 
@@ -648,7 +706,7 @@ def handle_define_lines(lines):
 				if re.search(r"\b" + item + r"\b", line):
 					# character_before = line[line.find(item) - 1 : line.find(item)]  
 					# if character_before.isalpha() == False and character_before.isdiget() == False:  
-					line_obj.command = line_obj.command.replace(item, define_values[index])
+					line_obj.command = line_obj.command.replace(item, str(define_values[index]))
 
 
 def handle_ui_arrays(lines):
