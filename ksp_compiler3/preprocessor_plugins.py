@@ -222,32 +222,31 @@ def multi_dimensional_arrays(lines):
 
 def ui_property_functions(lines):
 
-	property_text = [
-	"set_slider_properties",
-	"set_switch_properties",
-	"set_label_properties",
-	"set_menu_properties",
-	"set_table_properties",
-	"set_button_properties",
-	"set_level_meter_properties",
-	"set_waveform_properties",
-	"set_knob_properties",
-	"set_bounds" ]
+	ui_control_properties = [
+	"set_slider_properties(ui-id, default, picture, mouse_behaviour)",
+	"set_switch_properties(ui-id, text, picture, text_alignment, font_type, textpos_y)",
+	"set_label_properties(ui-id, text, picture, text_alignment, font_type, textpos_y)",
+	"set_menu_properties(ui-id, picture, font_type, text_alignment, textpos_y)",
+	"set_table_properties(ui-id, bar_color, zero_line_color)",
+	"set_button_properties(ui-id, text, picture, text_alignment, font_type, textpos_y)",
+	"set_level_meter_properties(ui-id, bg_color, off_color, on_color, overload_color)",
+	"set_waveform_properties(ui-id, bar_color, zero_line_color)",
+	"set_knob_properties(ui-id, text, default)",
+	"set_bounds(ui-id, x, y, width, height)"
+	]
 
-	property_params = [
-	"default", "picture", "mouse_behaviour",
-	"text", "picture", "text_alignment", "font_type", "textpos_y",
-	"text", "picture", "text_alignment", "font_type", "textpos_y",
-	"picture", "font_type", "text_alignment", "textpos_y",
-	"bar_color", "zero_line_color",
-	"text", "picture", "text_alignment", "font_type", "textpos_y",
-	"bg_color", "off_color", "on_color", "overload_color",
-	"bar_color", "zero_line_color",
-	"text", "default",
-	"x", "y", "width", "height" ]
+	ui_func_names = []
+	ui_func_args = []
+	ui_func_size = []
 
-	max_num_props = [
-	3,	5,	5,	4,	2,	5,	4,	2,	2,	4 ]
+	for ui_func in ui_control_properties:
+		m = re.search(r"^\s*\w*", ui_func)
+		ui_func_names.append(m.group(0))
+		m = re.search(r"(?<=ui\-id,).*(?=\))", ui_func)
+		arg_list = m.group(0).replace(" ", "").split(",")
+		ui_func_args.append(arg_list)
+		ui_func_size.append(len(arg_list))
+
 
 	line_numbers = []
 	prop_numbers = []
@@ -257,9 +256,8 @@ def ui_property_functions(lines):
 
 	for i in range(len(lines)):
 		line = lines[i].command.strip()
-		for ii in range(len(property_text)):
-			# if line.startswith(property_text[ii]):
-			if re.search(r"^\s*" + property_text[ii] + r"\s*\(", line):
+		for ii in range(len(ui_func_names)):
+			if re.search(r"^\s*" + ui_func_names[ii] + r"\s*\(", line):
 				comma_sep = line[line.find("(") + 1 : len(line) - 1].strip()
 				line_numbers.append(i)
 				prop_numbers.append(ii)
@@ -271,8 +269,8 @@ def ui_property_functions(lines):
 
 				params.append(param_list)
 				num_params.append(len(param_list))
-				if len(param_list) > max_num_props[ii]:
-					raise ksp_compiler.ParseException(lines[i], "Too many arguments, expected %d, got %d.\n" % (max_num_props[ii], len(param_list)))
+				if len(param_list) > ui_func_size[ii]:
+					raise ksp_compiler.ParseException(lines[i], "Too many arguments, expected %d, got %d.\n" % (ui_func_size[ii], len(param_list)))
 				lines[i].command = ""
 
 	if line_numbers:
@@ -286,10 +284,10 @@ def ui_property_functions(lines):
 	
 			sum_max = 0			
 			for ii in range(0, prop_numbers[i]):
-				sum_max += max_num_props[ii]
+				sum_max += ui_func_size[ii]
 
 			for ii in range(num_params[i]):
-				current_text = var_names[i] + " -> " + property_params[sum_max + ii] + " := " + params[i][ii]
+				current_text = var_names[i] + " -> " + ui_func_args[prop_numbers[i]][ii] + " := " + params[i][ii]
 				new_lines.append(lines[i].copy(current_text))	
 
 			if i + 1 < len(line_numbers):
@@ -477,7 +475,7 @@ def expand_string_array_declaration(lines):
 	num_ele = []
 
 	for i in range(len(lines)):
-		line = lines[i].command
+		line = lines[i].command.strip()
 		# convert text array declaration to multiline
 		if re.search(r'\s+!\w+', line) != None and "declare" in line and ":=" in line:
 			comma_sep = line[line.find("(") + 1 : len(line) - 1]
