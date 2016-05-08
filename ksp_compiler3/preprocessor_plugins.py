@@ -86,8 +86,6 @@ def post_macro_functions(lines):
 # been removed.
 
 
-
-
 def remove_print(lines):
 	print_line_numbers = []
 	logger_active_flag = False
