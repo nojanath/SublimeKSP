@@ -31,7 +31,6 @@ from preprocessor_plugins import pre_macro_functions, post_macro_functions
 
 variable_prefixes = '$%@!'
 
-
 # regular expressions:
 new_comment_re = r'(?<!["\'])\/\/.*' # this is a single line new comment type // 
 var_prefix_re = r"[%!@$]"
@@ -1485,7 +1484,6 @@ class KSPCompiler(object):
 			if not filepath_m:
 				raise ParseException(Line("", [(None, 1)], None), 'No filepath in activate_logger.\n')
 			filepath = filepath_m.group(0).replace("\"", "")
-			print(filepath)
 			valid_file_path_flag = False
 			if re.search(r"(?m)^\w:(\/[a-zA-Z_\-\s0-9\.]+)*\.nka$", filepath):
 				valid_file_path_flag = True

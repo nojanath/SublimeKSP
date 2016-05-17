@@ -1,4 +1,5 @@
 logger_code = """
+// #name# is generated from the given filepath by the compiler.
 // Activate the logger, if this is not called then the other functions will not be included in the code.
 macro activate_logger(filepath)
 	declare !#name#[32768]
@@ -9,7 +10,7 @@ macro activate_logger(filepath)
 	logger_filepath := filepath
 end macro
 
-// Function goes at the end of the persistence_changed callback
+// This function is put at the end of the persistence_changed callback.
 function checkPrintFlag()
 	while 1=1
 		// Only save array if there have been changes, for efficency.
@@ -17,11 +18,11 @@ function checkPrintFlag()
 			save_array_str(!#name#, logger_filepath)
 		end if
 		logger_previous_count := logger_count
-		wait(200000)
+		wait(200000) // The time interval that the logger refreshes.
 	end while
 end function
 
-// Print text to the logger, can be used anywhere
+// Print text to the logger, can be used anywhere.
 function print(text)
 	!#name#[logger_count] := text
 	inc(logger_count)
