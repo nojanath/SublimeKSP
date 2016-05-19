@@ -413,7 +413,8 @@ def handle_lists(lines):
 			if re.search(list_add_re, line):
 				find_list_name = False
 				for ii in range(len(list_names)):
-					if re.sub(var_prefix_re, "", list_names[ii]) in line:
+					list_title = re.sub(var_prefix_re, "", list_names[ii])
+					if re.search(r"\b" + list_title + r"\b", line): #re.sub(var_prefix_re, "", list_names[ii]) in line:
 						find_list_name = True
 						if loop_flag == True:
 							raise ksp_compiler.ParseException(lines[i], "list_add() cannot be used in loops or if statements.\n")
@@ -423,6 +424,7 @@ def handle_lists(lines):
 						value = line[line.find(",") + 1 : len(line) - 1]
 						lines[i].command = list_names[ii] + "[" + str(iterators[ii]) + "] := " + value
 						iterators[ii] += 1
+						break
 				if not find_list_name:
 					undeclared_name = line[line.find("(") + 1 : line.find(",")]
 					raise ksp_compiler.ParseException(lines[i], undeclared_name + " had not been declared.\n") 
@@ -673,20 +675,18 @@ def handle_define_lines(lines):
 	define_line_pos = []
 	for index in range(len(lines)):
 		line = lines[index].command 
-		ls_line = line.lstrip() # remove whitespace from beginning
 		if re.search(r"^\s*define\s+", line):
 			if re.search(r"^\s*define\s+" + varname_re_string + r"\s*:=", line):
-				text_without_define = ls_line.replace('define', '').lstrip()
+				text_without_define = re.sub(r"^\s*define\s*", "", line)
 				colon_bracket_pos = text_without_define.find(":=")
 
-				# find the title
-				title = text_without_define[0 : (colon_bracket_pos - len(text_without_define))]
-				title = re.sub(r"\s", "", title)
+				# before the assign operator is the title
+				title = text_without_define[ : colon_bracket_pos].strip()
 				define_titles.append(title)
 
-				# find the value
-				value = text_without_define[colon_bracket_pos + 2 : len(text_without_define)]
-				define_values.append(value.lstrip())
+				# after the assign operator is the value
+				value = text_without_define[colon_bracket_pos + 2 : ].strip()
+				define_values.append(value)
 
 				define_line_pos.append(index)
 				# remove the line
