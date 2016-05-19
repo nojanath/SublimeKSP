@@ -23,9 +23,11 @@
 #	Improve the set_control_properties() command
 
 # IDEAS:
+#	-	multidimensional ui arrays
+#	-	declare const array, or maybe something like c++ enum?
+#	-	+=, -=
 #	-	iterate_macro to work with single like commands as well as macros:
 #			iterate_macro(add_menu_item(lfoDesination#n#, destinationMenuNames[i], i)) := 0 to NUM_OSC - 1
-#	-	multidimensional ui arrays
 #	-	built in bounds checking for arrays/pgs, the compiler auto adds print() messages to check that you 
 #		accessing valid elements.
 
@@ -41,7 +43,7 @@ var_prefix_re = r"[%!@$]"
 
 string_or_placeholder_re =  r'({\d+}|\"[^"]*\")'
 varname_re_string = r'((\b|[$%!@])[0-9]*[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_0-9]+)*)\b'
-variable_or_int = r"(\b|[$%!@])[a-zA-Z0-9_\.]*\b"
+variable_or_int = r"[^\]]+"
 
 commas_not_in_parenth = re.compile(r",(?![^\(\)\[\]]*[\)\]])") # All commas that are not in parenthesis
 list_add_re = re.compile(r"^\s*list_add\s*\(")
@@ -109,6 +111,7 @@ def multi_dimensional_arrays(lines):
 	num_dimensions = []
 	name = []
 	line_numbers = []
+	new_declare = []
 
 	for i in range(len(lines)):
 		line = lines[i].command.strip()
@@ -129,8 +132,26 @@ def multi_dimensional_arrays(lines):
 			line_numbers.append(i)
 
 			new_text = line.replace(variable_name, prefix + "_" + variable_name)
-			new_text = re.sub(r',', '*', new_text)
+			new_text = new_text.replace("[", "[(").replace("]", ")]").replace(",", ")*(")
 			lines[i].command = new_text
+			
+
+			# # This is slow.
+			# new_text = lines[i].command.replace(variable_name, prefix + "_" + variable_name)
+			# new_text = new_text[: new_text.find("[") + 1]
+			# for i in range(len(dimensions_split)):
+			# 	new_text = new_text + "(" + dimensions_split[i] + ")"
+			# 	if not i == len(dimensions_split) - 1:
+			# 		new_text = new_text + "*"
+			# new_text = new_text + "]"
+			# new_declare.append(new_text)
+
+			# This following line should work.. but for some unknown reason it doesn't...
+			# lines[i].command = new_text
+
+	# Because something is going on above, this has to be done in a separate loop.
+	# for i in range(len(line_numbers)):
+	# 	lines[line_numbers[i]].command = new_declare[i]
 
 	if line_numbers:
 		# add the text from the start of the file to the first declaration
@@ -468,7 +489,6 @@ def expand_string_array_declaration(lines):
 	for i in range(len(lines)):
 		line = lines[i].command.strip()
 		# convert text array declaration to multiline
-		print(line)
 		# m = re.search(r"^\s*declare\s+" + varname_re_string + r"\s*\[\s*" + variable_or_int + r"\s*\]\s*:=\s*\(\s*{\d+}(\s*,\s*{\d+})*\s*\)", line)
 		m = re.search(r"^\s*declare\s+" + varname_re_string + r"\s*\[\s*" + variable_or_int + r"\s*\]\s*:=\s*\(\s*" + string_or_placeholder_re + r"(\s*,\s*" + string_or_placeholder_re + r")*\s*\)", line)
 		if m:
@@ -656,17 +676,17 @@ def handle_define_lines(lines):
 		ls_line = line.lstrip() # remove whitespace from beginning
 		if re.search(r"^\s*define\s+", line):
 			if re.search(r"^\s*define\s+" + varname_re_string + r"\s*:=", line):
-				text_without_define_helper = ls_line.replace('define ', '').replace("#", "")
-				text_without_define = text_without_define_helper.lstrip()
+				text_without_define = ls_line.replace('define', '').lstrip()
 				colon_bracket_pos = text_without_define.find(":=")
 
 				# find the title
-				title = text_without_define[0 : (colon_bracket_pos - len(text_without_define))].replace(" ", "")
+				title = text_without_define[0 : (colon_bracket_pos - len(text_without_define))]
+				title = re.sub(r"\s", "", title)
 				define_titles.append(title)
 
 				# find the value
 				value = text_without_define[colon_bracket_pos + 2 : len(text_without_define)]
-				define_values.append(value)
+				define_values.append(value.lstrip())
 
 				define_line_pos.append(index)
 				# remove the line
@@ -685,8 +705,11 @@ def handle_define_lines(lines):
 		# do any maths if needed
 		for i in range(len(define_values)):
 			try:
-				define_values[i] = re.sub(r"\s+mod\s+", " % ", define_values[i])
-				define_values[i] = eval(define_values[i])
+				if not re.search(r"^#.*#$", define_values[i]):
+					define_values[i] = re.sub(r"\s+mod\s+", " % ", define_values[i])
+					define_values[i] = eval(define_values[i])
+				else:
+					define_values[i] = define_values[i][1 : len(define_values[i]) - 1]
 			except:
 				raise ksp_compiler.ParseException(lines[define_line_pos[i]], "Undeclared variable in define statement.\n")
 

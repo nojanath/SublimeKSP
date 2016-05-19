@@ -1669,17 +1669,19 @@ class KSPCompiler(object):
 
 
 			# keep only tasks where the execution-condition is true
-			tasks = [(desc, func, time) for (desc, func, condition, time) in tasks if condition]
+			tasks = [(desc, func, task_time) for (desc, func, condition, task_time) in tasks if condition]
 
 			total_time = float(sum(t[-1] for t in tasks))
 			time_so_far = 0
-			for (desc, func, time) in tasks:
+			for (desc, func, task_time) in tasks:
+				# start_time = time.time()
 				if callback:
 					callback(desc, 100 * time_so_far/total_time) # parameters are: description, percent done
 				func()
-				time_so_far += time
+				time_so_far += task_time
 				if self.abort_requested:
 					return False
+				# print(desc + "  ==  " + str(time.time() - start_time))
 			return True
 		except ksp_ast.ParseException as e:
 			#raise  # TEMPORARY

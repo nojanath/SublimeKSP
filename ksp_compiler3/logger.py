@@ -25,6 +25,6 @@ end function
 // Print text to the logger, can be used anywhere.
 function print(text)
 	!#name#[logger_count] := text
-	inc(logger_count)
+	logger_count := (logger_count + 1) mod 32768
 end function
 """

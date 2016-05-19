@@ -19,6 +19,7 @@ These are the notable changes from [Nils' official 1.1 plugin](http://nilsliberg
   * Type “Install Package”
   * Type “KSP” or "Kontakt" and select "KSP (Kontakt Script Processor)"
   * Hit Enter to install
+  * Restart Sublime
 
 ### Documentation
 See the [Wiki](https://github.com/nojanath/SublimeKSP/wiki) on Github.
