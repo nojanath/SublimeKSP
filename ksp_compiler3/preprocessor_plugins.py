@@ -414,7 +414,7 @@ def handle_lists(lines):
 				find_list_name = False
 				for ii in range(len(list_names)):
 					list_title = re.sub(var_prefix_re, "", list_names[ii])
-					if re.search(r"\b" + list_title + r"\b", line): #re.sub(var_prefix_re, "", list_names[ii]) in line:
+					if re.search(r"list_add\s*\(\s*\b" + list_title + r"\b", line): #re.sub(var_prefix_re, "", list_names[ii]) in line:
 						find_list_name = True
 						if loop_flag == True:
 							raise ksp_compiler.ParseException(lines[i], "list_add() cannot be used in loops or if statements.\n")
