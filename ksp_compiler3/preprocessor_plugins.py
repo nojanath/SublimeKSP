@@ -619,7 +619,6 @@ def variable_persistence_shorthand(lines):
 	line_numbers = []
 	variable_names = []
 
-
 	for i in range(len(lines)):
 		line = lines[i].command.strip()
 		if re.search(r"^\s*declare\s+pers\s+", line):
@@ -672,13 +671,21 @@ def handle_iterate_macro(lines):
 	macro_name = []
 	line_numbers = []
 	downto = []
+	is_single_line = []
 
 	for index in range(len(lines)):
 		line = lines[index].command
-		if re.search(r"^\s*iterate_macro\(", line):
-			name = line[line.find("(") + 1 : line.find(")")]
-			params = line[line.find(")") + 1:]
+		if re.search(r"^\s*iterate_macro\s*\(", line):
+			m = re.search(r"^\s*iterate_macro\s*\((.+)\)\s*(:=.+)", line)
+			name = m.group(1)
+			params = m.group(2)
 			try:
+
+				find_n = False
+				if "#n#" in name:
+					find_n = True
+				is_single_line.append(find_n)
+
 				if "downto" in params:
 					to_stmt = "downto"
 					downto.append(True)
@@ -726,6 +733,8 @@ def handle_iterate_macro(lines):
 
 			for ii in range(int(min_val[i]), int(max_val[i]) + offset, step):
 				current_text = macro_name[i] + "(" + str(ii) + ")"
+				if is_single_line[i]:
+					current_text = macro_name[i].replace("#n#", str(ii))
 				new_lines.append(lines[line_numbers[i]].copy(current_text))
 
 			if i + 1 < len(line_numbers):
