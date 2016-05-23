@@ -14,20 +14,13 @@
 
 
 #=================================================================================================
-#=================================================================================================
-# TO DO:
-# 	Write function to replace lines deque since this something often done.
-#	This should throw an exception, a non constant is used in the array initialisation:
-#		declare array[6] := (get_ui_id(silder), 0) 
-
 # IDEAS:
-#	-	multidimensional ui arrays
-#	-	+=, -=
-#	-	add alternative to pers keyword that reads the persistent variable as well.
-#	-	iterate_macro to work with single like commands as well as macros:
-#			iterate_macro(add_menu_item(lfoDesination#n#, destinationMenuNames[i], i)) := 0 to NUM_OSC - 1
-#	-	built in bounds checking for arrays/pgs, the compiler auto adds print() messages to check that you 
-#		accessing valid elements.
+#	-	Multidimensional UI arrays.
+#	-	+= -=
+#	-	Add alternative to pers keyword that reads the persistent variable as well.
+#	-	Built in bounds checking for arrays/pgs, the compiler auto adds print() messages to check that you 
+#		accessing valid elements. Would be too slow?
+
 
 import re
 import collections
@@ -42,7 +35,7 @@ string_or_placeholder_re =  r'({\d+}|\"[^"]*\")'
 varname_re_string = r'((\b|[$%!@])[0-9]*[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_0-9]+)*)\b'
 variable_or_int = r"[^\]]+"
 
-commas_not_in_parenth = re.compile(r",(?![^\(\)\[\]]*[\)\]])") # All commas that are not in parenthesis
+commas_not_in_parenth = re.compile(r",(?![^\(\)\[\]]*[\)\]])") # All commas that are not in parenthesis.
 list_add_re = re.compile(r"^\s*list_add\s*\(")
 
 # 'Regular expressions for 'blocks'
@@ -60,14 +53,13 @@ keywords_re = r"(?<=)(declare|const|pers|polyphonic|list)(?=\s)"
 
 #=================================================================================================
 # These functions are called by the main compiler.
-
-# For these, the macros have not yet been expaned.
+# This function is called before the macros have been expanded.
 def pre_macro_functions(lines):
 	remove_print(lines)
 	handle_define_lines(lines)
 	handle_iterate_macro(lines)
 
-# For these, the macros have been expaned.
+# This function is called after the macros have been expanded.
 def post_macro_functions(lines):
 	handle_const_block(lines)
 	handle_ui_arrays(lines)
@@ -80,13 +72,32 @@ def post_macro_functions(lines):
 	calculate_open_size_array(lines)
 	expand_string_array_declaration(lines)	
 
+# Take the orginal deque of line objects, and for every new line number, add in the line_inserts.
+def replace_lines(lines, line_nums, line_inserts):
+	new_lines = collections.deque() # Start with an empty deque and build it up.
+	# Add the text from the start of the file to the first line number we want to insert at.
+	for i in range(0, line_nums[0] + 1):
+		new_lines.append(lines[i])
+
+	# For each line number insert any additional lines.
+	for i in range(len(line_nums)):
+		new_lines.extend(line_inserts[i])
+		# Append the lines between the line_nums.
+		if i + 1 < len(line_nums):
+			for ii in range(line_nums[i] + 1, line_nums[i + 1] + 1):
+				new_lines.append(lines[ii])
+
+	# Add the text from the last line_num to the end of the document.
+	for i in range(line_nums[len(line_nums) - 1] + 1, len(lines)):
+		new_lines.append(lines[i])
+
+	# Replace lines with new lines.
+	for i in range(len(lines)):
+		lines.pop() # Why pop?
+	lines.extend(new_lines)	
 
 #=================================================================================================
-# For all of these functions, the 'lines' argument is a collections.deque of Line objects. All 
-# code of this deque has already been imported with the 'import' command, and all comments have 
-# been removed.
-
-
+# Remove print functions when the activate_logger() is not present.
 def remove_print(lines):
 	print_line_numbers = []
 	logger_active_flag = False
@@ -100,7 +111,6 @@ def remove_print(lines):
 	if logger_active_flag == False:
 		for i in range(len(print_line_numbers)):
 			lines[print_line_numbers[i]].command = ""
-
 
 # Create multidimentional arrays. 
 # This functions replaces the multidimensional array declaration with a property with appropriate
@@ -134,23 +144,18 @@ def multi_dimensional_arrays(lines):
 			new_text = new_text.replace("[", "[(").replace("]", ")]").replace(",", ")*(")
 			lines[i].command = new_text
 			
-
 	if line_numbers:
-		# add the text from the start of the file to the first declaration
-		new_lines = collections.deque()
-		for i in range(0, line_numbers[0] + 1):
-			new_lines.append(lines[i])
-
-		# for each declaration create the elements and fill in the gaps
+		line_inserts = collections.deque()
 		for i in range(len(line_numbers)):
+			added_lines = []
 	
 			for ii in range(num_dimensions[i]):
 				current_text = "declare const " + name[i] + ".SIZE_D" + str(ii + 1) + " := " + dimensions[i][ii]
-				new_lines.append(lines[line_numbers[i]].copy(current_text))
+				added_lines.append(lines[line_numbers[i]].copy(current_text))
 
 			# start property
 			current_text = "property " + name[i]
-			new_lines.append(lines[i].copy(current_text))
+			added_lines.append(lines[i].copy(current_text))
 
 			# start get function
 			# it might look something like this: function get(v1, v2, v3) -> result
@@ -158,7 +163,7 @@ def multi_dimensional_arrays(lines):
 			for ii in range(1, num_dimensions[i]):
 				current_text = current_text + ", v" + str(ii + 1) 
 			current_text = current_text + ") -> result"
-			new_lines.append(lines[i].copy(current_text))
+			added_lines.append(lines[i].copy(current_text))
 
 			# get function body
 			current_text = "result := _" + name[i] + "["
@@ -170,10 +175,10 @@ def multi_dimensional_arrays(lines):
 				if ii != num_dimensions[i] - 1:
 					current_text = current_text + " + "
 			current_text = current_text + "]"
-			new_lines.append(lines[i].copy(current_text))
+			added_lines.append(lines[i].copy(current_text))
 
 			# end get function
-			new_lines.append(lines[i].copy("end function"))
+			added_lines.append(lines[i].copy("end function"))
 
 			# start set function
 			# it might look something like this: function set(v1, v2, v3, val)
@@ -181,7 +186,7 @@ def multi_dimensional_arrays(lines):
 			for ii in range(1, num_dimensions[i]):
 				current_text = current_text + ", v" + str(ii + 1) 
 			current_text = current_text + ", val)"
-			new_lines.append(lines[i].copy(current_text))
+			added_lines.append(lines[i].copy(current_text))
 
 			# set function body
 			current_text = "_" + name[i] + "["
@@ -193,32 +198,19 @@ def multi_dimensional_arrays(lines):
 				if ii != num_dimensions[i] - 1:
 					current_text = current_text + " + "
 			current_text = current_text + "] := val"
-			new_lines.append(lines[i].copy(current_text))
+			added_lines.append(lines[i].copy(current_text))
 
 			# end set function
-			new_lines.append(lines[i].copy("end function"))		
-
+			added_lines.append(lines[i].copy("end function"))
 			# end property
-			new_lines.append(lines[i].copy("end property"))
+			added_lines.append(lines[i].copy("end property"))
 
+			line_inserts.append(added_lines)
+		replace_lines(lines, line_numbers, line_inserts)
 
-			if i + 1 < len(line_numbers):
-				for ii in range(line_numbers[i] + 1, line_numbers[i + 1] + 1):
-					new_lines.append(lines[ii])
-
-		# add the text from the last declaration to the end of the document
-		for i in range(line_numbers[len(line_numbers) - 1] + 1, len(lines)):
-			new_lines.append(lines[i])
-
-		# both lines and new lines are deques of Line objects, replace lines with new lines
-		for i in range(len(lines)):
-			lines.pop()
-		lines.extend(new_lines)	
-
-
-
-
+# Handle the new property functions.
 def ui_property_functions(lines):
+	# These can be easily changed.
 	ui_control_properties = [
 	"set_slider_properties(ui-id, default, picture, mouse_behaviour)",
 	"set_switch_properties(ui-id, text, picture, text_alignment, font_type, textpos_y)",
@@ -243,7 +235,6 @@ def ui_property_functions(lines):
 		arg_list = m.group(0).replace(" ", "").split(",")
 		ui_func_args.append(arg_list)
 		ui_func_size.append(len(arg_list))
-
 
 	line_numbers = []
 	prop_numbers = []
@@ -273,36 +264,22 @@ def ui_property_functions(lines):
 				lines[i].command = ""
 
 	if line_numbers:
-		# add the text from the start of the file to the first declaration
-		new_lines = collections.deque()
-		for i in range(0, line_numbers[0] + 1):
-			new_lines.append(lines[i])
-
-		# for each declaration create the elements and fill in the gaps
+		line_inserts = collections.deque()
 		for i in range(len(line_numbers)):
-	
+			added_lines = []
+
 			sum_max = 0			
 			for ii in range(0, prop_numbers[i]):
 				sum_max += ui_func_size[ii]
-
 			for ii in range(num_params[i]):
 				current_text = var_names[i] + " -> " + ui_func_args[prop_numbers[i]][ii] + " := " + params[i][ii]
-				new_lines.append(lines[line_numbers[i]].copy(current_text))	
+				added_lines.append(lines[line_numbers[i]].copy(current_text))
 
-			if i + 1 < len(line_numbers):
-				for ii in range(line_numbers[i] + 1, line_numbers[i + 1] + 1):
-					new_lines.append(lines[ii])
+			line_inserts.append(added_lines)
+		replace_lines(lines, line_numbers, line_inserts)
 
-		# add the text from the last declaration to the end of the document
-		for i in range(line_numbers[len(line_numbers) - 1] + 1, len(lines)):
-			new_lines.append(lines[i])
-
-		# both lines and new lines are deques of Line objects, replace lines with new lines
-		for i in range(len(lines)):
-			lines.pop()
-		lines.extend(new_lines)	
-
-
+# When a variable is declared and initialised on the same line, check to see if the value needs to be
+# moved over to the next line.
 def inline_declare_assignment(lines):
 	line_numbers = []
 	var_text = []
@@ -329,31 +306,17 @@ def inline_declare_assignment(lines):
 				lines[i].command = pre_assignment_text
 
 	if line_numbers:
-		# add the text from the start of the file to the first declaration
-		new_lines = collections.deque()
-		for i in range(0, line_numbers[0] + 1):
-			new_lines.append(lines[i])
-
-		# for each declaration create the elements and fill in the gaps
+		line_inserts = collections.deque()
 		for i in range(len(line_numbers)):
+			added_lines = []
 
-			# new_lines.append(Line(var_text[i], [(filename, int(line_numbers[i]) + 2)]))	
-			new_lines.append(lines[line_numbers[i]].copy(var_text[i]))	
-			# lines[i].copy(var_text[i])
+			added_lines.append(lines[line_numbers[i]].copy(var_text[i]))	
 
-			if i + 1 < len(line_numbers):
-				for ii in range(line_numbers[i] + 1, line_numbers[i + 1] + 1):
-					new_lines.append(lines[ii])
+			line_inserts.append(added_lines)
+		replace_lines(lines, line_numbers, line_inserts)
 
-		# add the text from the last declaration to the end of the document
-		for i in range(line_numbers[len(line_numbers) - 1] + 1, len(lines)):
-			new_lines.append(lines[i])
-
-		# both lines and new lines are deques of Line objects, replace lines with new lines
-		for i in range(len(lines)):
-			lines.pop()
-		lines.extend(new_lines)	
-
+# Handle const blocks. Constants are replaced by declare const. If they are not assigned a value, 
+# they will be equal to the previous const in the list + 1.
 def handle_const_block(lines):
 	line_number = None
 	num_elements = None
@@ -405,6 +368,8 @@ def handle_const_block(lines):
 			num_elements += 1
 
 
+# Handle list blocks. The list block is coverted to list_add() commands for the regular list function
+# to deal with them further down the line.
 def find_list_block(lines):
 
 	list_block = False
@@ -424,7 +389,7 @@ def find_list_block(lines):
 			else:
 				lines[i].command = "list_add(" + list_name + ", " + lines[i].command + ")"
 
-
+# Convert lists and list_add() into commands that Kontakt can understand.
 def handle_lists(lines):
 	list_names = []
 	line_numbers = []
@@ -479,31 +444,19 @@ def handle_lists(lines):
 					raise ksp_compiler.ParseException(lines[i], undeclared_name + " had not been declared.\n") 
 
 	if line_numbers:
-		# add the text from the start of the file to the first declaration
-		new_lines = collections.deque()
-		for i in range(0, line_numbers[0] + 1):
-			new_lines.append(lines[i])
-
-		# for each declaration create the elements and fill in the gaps
+		line_inserts = collections.deque()
 		for i in range(len(line_numbers)):
+			added_lines = []
 
 			list_name = re.sub(r"[$%!@]", "", list_names[i])
 			current_text = "declare const " + list_name + ".SIZE := " + str(iterators[i])
-			new_lines.append(lines[line_numbers[i]].copy(current_text))
+			added_lines.append(lines[line_numbers[i]].copy(current_text))
 
-			if i + 1 < len(line_numbers):
-				for ii in range(line_numbers[i] + 1, line_numbers[i + 1] + 1):
-					new_lines.append(lines[ii])
-
-		# add the text from the last declaration to the end of the document
-		for i in range(line_numbers[len(line_numbers) - 1] + 1, len(lines)):
-			new_lines.append(lines[i])
-
-		# both lines and new lines are deques of Line objects, replace lines with new lines
-		for i in range(len(lines)):
-			lines.pop()
-		lines.extend(new_lines)	
+			line_inserts.append(added_lines)
+		replace_lines(lines, line_numbers, line_inserts)
 		
+# When an array size is left with an open number of elements, use the list of initialisers to provide the array size.
+# Const variables are also generated for the array size. 
 def calculate_open_size_array(lines):
 	array_name = []
 	strings = []
@@ -526,45 +479,27 @@ def calculate_open_size_array(lines):
 			line_numbers.append(i)
 			num_ele.append(num_elements)
 
-
 	if line_numbers:
-		# add the text from the start of the file to the first declaration
-		new_lines = collections.deque()
-		for i in range(0, line_numbers[0] + 1):
-			new_lines.append(lines[i])
-
-		# for each declaration create the elements and fill in the gaps
+		line_inserts = collections.deque()
 		for i in range(len(line_numbers)):
+			added_lines = []
 
 			current_text = "declare const " + array_name[i] + ".SIZE := " + str(num_ele[i])
-			new_lines.append(lines[line_numbers[i]].copy(current_text))
+			added_lines.append(lines[line_numbers[i]].copy(current_text))
 
-			if i + 1 < len(line_numbers):
-				for ii in range(line_numbers[i] + 1, line_numbers[i + 1] + 1):
-					new_lines.append(lines[ii])
+			line_inserts.append(added_lines)
+		replace_lines(lines, line_numbers, line_inserts)
 
-		# add the text from the last declaration to the end of the document
-		for i in range(line_numbers[len(line_numbers) - 1] + 1, len(lines)):
-			new_lines.append(lines[i])
-
-		# both lines and new lines are deques of Line objects, replace lines with new lines
-		for i in range(len(lines)):
-			lines.pop()
-		lines.extend(new_lines)	
-
-
+# Convert the single-line list of strings to one string per line for Kontakt to understand.
 def expand_string_array_declaration(lines):
 	string_var_names = []
 	strings = []
 	line_numbers = []
 	num_ele = []
 
-
-
 	for i in range(len(lines)):
 		line = lines[i].command.strip()
 		# convert text array declaration to multiline
-		# m = re.search(r"^\s*declare\s+" + varname_re_string + r"\s*\[\s*" + variable_or_int + r"\s*\]\s*:=\s*\(\s*{\d+}(\s*,\s*{\d+})*\s*\)", line)
 		m = re.search(r"^\s*declare\s+" + varname_re_string + r"\s*\[\s*" + variable_or_int + r"\s*\]\s*:=\s*\(\s*" + string_or_placeholder_re + r"(\s*,\s*" + string_or_placeholder_re + r")*\s*\)", line)
 		if m:
 			if m.group(2) == "!":
@@ -581,40 +516,23 @@ def expand_string_array_declaration(lines):
 			else:
 				raise ksp_compiler.ParseException(lines[i], "Expected integers, got strings.\n")
 
-			
 	# for some reason this doesnt work in the loop above...?
 	for lineno in line_numbers: 
 		lines[lineno].command = lines[lineno].command[: lines[lineno].command.find(":")]
 
-
 	if line_numbers:
-		# add the text from the start of the file to the first declaration
-		new_lines = collections.deque()
-		for i in range(0, line_numbers[0] + 1):
-			new_lines.append(lines[i])
-
-		# for each declaration create the elements and fill in the gaps
+		line_inserts = collections.deque()
 		for i in range(len(line_numbers)):
+			added_lines = []
 
 			for ii in range(num_ele[i]):
 				current_text = string_var_names[i] + "[" + str(ii) + "] := " + strings[i][ii] 
-				new_lines.append(lines[line_numbers[i]].copy(current_text))
+				added_lines.append(lines[line_numbers[i]].copy(current_text))
 
-			if i + 1 < len(line_numbers):
-				for ii in range(line_numbers[i] + 1, line_numbers[i + 1] + 1):
-					new_lines.append(lines[ii])
+			line_inserts.append(added_lines)
+		replace_lines(lines, line_numbers, line_inserts)
 
-		# add the text from the last declaration to the end of the document
-		for i in range(line_numbers[len(line_numbers) - 1] + 1, len(lines)):
-			new_lines.append(lines[i])
-
-		# both lines and new lines are deques of Line objects, replace lines with new lines
-		for i in range(len(lines)):
-			lines.pop()
-		lines.extend(new_lines)	
-
-
-
+# Handle the variable persistence shorthands.
 def variable_persistence_shorthand(lines):
 	line_numbers = []
 	variable_names = []
@@ -638,32 +556,17 @@ def variable_persistence_shorthand(lines):
 			lines[i].command = lines[i].command.replace("pers", "")
 
 	if line_numbers:
-		# add the text from the start of the file to the first declaration
-		new_lines = collections.deque()
-		for i in range(0, line_numbers[0] + 1):
-			new_lines.append(lines[i])
-
-		# for each declaration create the elements and fill in the gaps
-		for i in range(len(variable_names)):
+		line_inserts = collections.deque()
+		for i in range(len(line_numbers)):
+			added_lines = []
 
 			current_text = "make_persistent(" + variable_names[i] + ")"
-			new_lines.append(lines[line_numbers[i]].copy(current_text))
+			added_lines.append(lines[line_numbers[i]].copy(current_text))
 
-			if i + 1 < len(line_numbers):
-				for ii in range(line_numbers[i] + 1, line_numbers[i + 1] + 1):
-					new_lines.append(lines[ii])
+			line_inserts.append(added_lines)
+		replace_lines(lines, line_numbers, line_inserts)
 
-		# add the text from the last declaration to the end of the document
-		for i in range(line_numbers[len(line_numbers) - 1] + 1, len(lines)):
-			new_lines.append(lines[i])
-
-		# both lines and new lines are deques of Line objects, replace lines with new lines
-		for i in range(len(lines)):
-			lines.pop()
-		lines.extend(new_lines)	
-
-
-
+# Create a list of macro calls based on the iterate macro start and end values.
 def handle_iterate_macro(lines):
 	min_val = []
 	max_val = []
@@ -705,8 +608,10 @@ def handle_iterate_macro(lines):
 					raise ksp_compiler.ParseException(lines[index], "Min and max values are incorrectly weighted (For example, min > max when it should be min < max)./n")
 
 			except:
-				raise ksp_compiler.ParseException(lines[index], "Incorrect values in iterate_macro statement. Normal 'declare const' variables cannot be used here, instead a 'define' const must be used. " + \
-						"The macro you are iterating must have only have 1 integer parameter, this will be replaced by the values in the chosen range.\n")
+				raise ksp_compiler.ParseException(lines[index], ""\
+					"Incorrect values in iterate_macro statement.\n\nNormal 'declare const' variables cannot be used here, "\
+					"instead a 'define' const or literal must be used. The macro you are iterating must have only have 1 integer parameter, "\
+					"this will be replaced by the values in the chosen range.\n")
 
 			macro_name.append(name)
 			min_val.append(minv)
@@ -714,16 +619,12 @@ def handle_iterate_macro(lines):
 			step_val.append(step)
 			line_numbers.append(index)
 
-			lines[index].command = re.sub(r'[^\r\n]', '', line)
+			lines[index].command = ""
 
 	if line_numbers:
-		# add the text from the start of the file to the first array declaration
-		new_lines = collections.deque()
-		for i in range(0, line_numbers[0] + 1):
-			new_lines.append(lines[i])
-
-		# for each array declaration create the elements and fill in the gaps
+		line_inserts = collections.deque()
 		for i in range(len(line_numbers)):
+			added_lines = []
 
 			step = int(step_val[i])
 			offset = 1
@@ -735,22 +636,13 @@ def handle_iterate_macro(lines):
 				current_text = macro_name[i] + "(" + str(ii) + ")"
 				if is_single_line[i]:
 					current_text = macro_name[i].replace("#n#", str(ii))
-				new_lines.append(lines[line_numbers[i]].copy(current_text))
+				added_lines.append(lines[line_numbers[i]].copy(current_text))
 
-			if i + 1 < len(line_numbers):
-				for ii in range(line_numbers[i] + 1, line_numbers[i + 1] + 1):
-					new_lines.append(lines[ii])
+			line_inserts.append(added_lines)
+		replace_lines(lines, line_numbers, line_inserts)
 
-		# add the text from the last array declaration to the end of the document
-		for i in range(line_numbers[len(line_numbers) - 1] + 1, len(lines)):
-			new_lines.append(lines[i])
-
-		# both lines and new lines are deques of Line objects, replace lines with new lines
-		for i in range(len(lines)):
-			lines.pop()
-		lines.extend(new_lines)	
-
-
+# Find all define declarations and then scan the document and replace all occurances with their value.
+# define command's have no scope, they are completely global at the moment.
 def handle_define_lines(lines):
 	define_titles = []
 	define_values = []
@@ -800,11 +692,9 @@ def handle_define_lines(lines):
 			line = line_obj.command 
 			for index, item in enumerate(define_titles):
 				if re.search(r"\b" + item + r"\b", line):
-					# character_before = line[line.find(item) - 1 : line.find(item)]  
-					# if character_before.isalpha() == False and character_before.isdiget() == False:  
 					line_obj.command = line_obj.command.replace(item, str(define_values[index]))
 
-
+# For each UI array declaration, create a list of 'declare ui_control' lines and the UI ID of each to an array.
 def handle_ui_arrays(lines):
 	ui_declaration = []
 	variable_names = []
@@ -813,11 +703,10 @@ def handle_ui_arrays(lines):
 	table_elements = []
 	pers_state = []
 
-	# find all of the array declarations
+	# Find all of the array declarations.
 	for index in range(len(lines)):
 		line = lines[index].command 
-		ls_line = line.lstrip() # remove whitespace from beginning
-		# if re.search(r"^\s*declare\s+", line) and line.find("[") != -1 :
+		ls_line = line.lstrip()
 		m = re.search(r"^\s*declare\s+(pers\s+)?" + ui_type_re + "\s*" + varname_re_string + "\s*\[[^\]]+\]", ls_line)
 		if m:
 			is_pers = False
@@ -837,7 +726,7 @@ def handle_ui_arrays(lines):
 				try:
 					num_element = eval(ls_line[ls_line.find("[") + 1 : ls_line.find("]")])
 				except:
-					raise ksp_compiler.ParseException(lines[index], "Invalid number of elements. Native 'declare const' variables cannot be used here, instead a 'define' const must be used.\n")			
+					raise ksp_compiler.ParseException(lines[index], "Invalid number of elements. Native 'declare const' variables cannot be used here, instead a 'define' const or a literal must be used.\n")			
 
 				pers_state.append(is_pers)
 				# if there are parameters
@@ -855,20 +744,14 @@ def handle_ui_arrays(lines):
 				variable_names.append(variable_name_no_pre)
 				lines[index].command  = "declare " + variable_name_no_pre + "[" + str(num_element) + "]"
 
-	# if at least one ui array exsists
-	if ui_declaration:
-		# add the text from the start of the file to the first array declaration
-		new_lines = collections.deque()
-		for i in range(0, line_numbers[0] + 1):
-			new_lines.append(lines[i])
-
-		# for each array declaration create the elements and fill in the gaps
-		for i in range(len(ui_declaration)):
+	if line_numbers:
+		line_inserts = collections.deque()
+		for i in range(len(line_numbers)):
+			added_lines = []
 
 			num_eles = int(num_elements[i])
 
 			for ii in range(0, num_eles):
-
 				if "(" in ui_declaration[i]:
 					if "[" in ui_declaration[i]:
 						parameter_start = ui_declaration[i].find("[")
@@ -877,28 +760,16 @@ def handle_ui_arrays(lines):
 					current_text = ui_declaration[i][:parameter_start] + str(ii) + ui_declaration[i][parameter_start:]
 				else:
 					current_text = ui_declaration[i] + str(ii)
-
 				if pers_state[i] == True:
 					current_text = current_text.strip()
 					current_text = current_text[: 7] + " pers " + current_text[8 :]
 
-
 				# add individual ui declaration
-				new_lines.append(lines[line_numbers[i]].copy(current_text))
+				added_lines.append(lines[line_numbers[i]].copy(current_text))
 
 				# add ui to array
 				add_to_array_text = variable_names[i] + "[" + str(ii) + "]" + " := get_ui_id(" + variable_names[i] + str(ii) + ")"
-				new_lines.append(lines[i].copy(add_to_array_text))
+				added_lines.append(lines[i].copy(add_to_array_text))
 
-			if i + 1 < len(line_numbers):
-				for ii in range(line_numbers[i] + 1, line_numbers[i + 1] + 1):
-					new_lines.append(lines[ii])
-
-		# add the text from the last array declaration to the end of the document
-		for i in range(line_numbers[len(line_numbers) - 1] + 1, len(lines)):
-			new_lines.append(lines[i])
-
-		# both lines and new lines are deques of Line objects, replace lines with new lines
-		for i in range(len(lines)):
-			lines.pop()
-		lines.extend(new_lines)
+			line_inserts.append(added_lines)
+		replace_lines(lines, line_numbers, line_inserts)
