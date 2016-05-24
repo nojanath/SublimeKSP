@@ -296,7 +296,7 @@ def inline_declare_assignment(lines):
 		if m:
 			int_flag = False
 			value = line[line.find(":=") + 2 :]
-			if not "{" in value:
+			if not re.search(string_or_placeholder_re, line):
 				try:
 					eval(value)
 					int_flag = True
@@ -670,7 +670,8 @@ def handle_iterate_macro(lines):
 		replace_lines(lines, line_numbers, line_inserts)
 
 # Find all define declarations and then scan the document and replace all occurrences with their value.
-# define command's have no scope, they are completely global at the moment.
+# define command's have no scope, they are completely global at the moment. There is some hidden define
+# functionality... you can use define as a text substitution macro by wrapping the value in #.
 def handle_define_lines(lines):
 	define_titles = []
 	define_values = []
