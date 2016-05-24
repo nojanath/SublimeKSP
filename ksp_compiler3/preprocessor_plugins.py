@@ -19,7 +19,7 @@
 #	-	+= -=
 #	-	Add alternative to pers keyword that reads the persistent variable as well.
 #	-	Built in bounds checking for arrays/pgs, the compiler auto adds print() messages to check that you 
-#		accessing valid elements. Would be too slow?
+#		are accessing valid elements. Would be too slow?
 #	-	UI functions to receive arguments in any order: set_bounds(slider, width := 50, x := 20)
 
 
