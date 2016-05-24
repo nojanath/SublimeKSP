@@ -221,7 +221,7 @@
 		</dict>
 		<dict>
 			<key>begin</key>
-			<string>(declare|define) +(global |local |pers )?(ui_label|ui_button|ui_switch|ui_slider|ui_menu|ui_value_edit|ui_waveform|ui_knob|ui_table|call|step|ui_text_edit|ui_level_meter|ui_file_selector) *([a-zA-Z0-9_.]+) *\(</string>
+			<string>(declare|define) +(global |local |pers |read )?(ui_label|ui_button|ui_switch|ui_slider|ui_menu|ui_value_edit|ui_waveform|ui_knob|ui_table|call|step|ui_text_edit|ui_level_meter|ui_file_selector) *([a-zA-Z0-9_.]+) *\(</string>
 			<key>beginCaptures</key>
 			<dict>
 				<key>1</key>
@@ -261,7 +261,7 @@
 			<key>comment</key>
 			<string>Other keywords</string>
 			<key>match</key>
-			<string>\b(define|pers|list|function|taskfunc|macro|declare|const|polyphonic|end|local|global|family|import|as|property|override|declare|ui_label|ui_button|ui_switch|ui_slider|ui_menu|ui_value_edit|ui_waveform|ui_knob|ui_table|call|step|ui_text_edit|ui_level_meter|ui_file_selector)\b</string>
+			<string>\b(define|pers|read|list|function|taskfunc|macro|declare|const|polyphonic|end|local|global|family|import|as|property|override|declare|ui_label|ui_button|ui_switch|ui_slider|ui_menu|ui_value_edit|ui_waveform|ui_knob|ui_table|call|step|ui_text_edit|ui_level_meter|ui_file_selector)\b</string>
 			<key>name</key>
 			<string>keyword.other.source.ksp</string>
 		</dict>
