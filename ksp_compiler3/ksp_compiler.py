@@ -276,10 +276,14 @@ def parse_lines(s, filename=None, namespaces=None):
 	lines = s.replace('\r\n', '\n').replace('\r', '\n').split('\n')
 	# encode lines numbers as '[[[lineno]]]' at the beginning of each line
 	lines = ['[[[%.5d]]]%s' % (lineno+1, x) for (lineno, x) in enumerate(lines)]
+	for i in range(len(lines)):
+		m = re.search(r"^(?:(?!\/\/|[\"\']).|[\"\'][^\"\']*[\"\'])*(\/\/.*$)", lines[i])
+		if m:
+			lines[i] = lines[i].replace(m.group(1), "")
 	s = '\n'.join(lines)
 
 	# remove comments and multi-line indicators ('...\n')
-	s = re.sub(new_comment_re, '', s)
+	# s = re.sub(new_comment_re, '', s)
 	s = comment_re.sub('', s)
 	s = line_continuation_re.sub('', s)
 
