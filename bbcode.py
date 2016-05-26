@@ -24,7 +24,7 @@ class CopyAsBbCode(sublime_plugin.ApplicationCommand):
     def is_visible(self):
         # only show the command when a file with KSP syntax highlighting is visible
         view = sublime.active_window().active_view()
-        return 'KSP.tmLanguage' in view.settings().get('syntax', '')
+        return 'KSP.sublime-syntax' in view.settings().get('syntax', '')
 
     def apply_style(self, scopes, plist, text):
         style = {}

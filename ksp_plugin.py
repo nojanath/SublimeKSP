@@ -22,7 +22,7 @@ class KspRecompile(sublime_plugin.ApplicationCommand):
         # only show the command when a file with KSP syntax highlighting is visible
         view = sublime.active_window().active_view()
         if view:
-            return 'KSP.tmLanguage' in view.settings().get('syntax', '')
+            return 'KSP.sublime-syntax' in view.settings().get('syntax', '')
 
     def run(self, *args):
         sublime.active_window().run_command('compile_ksp', {'recompile': True})
@@ -38,7 +38,7 @@ class CompileKspCommand(sublime_plugin.ApplicationCommand):
         # only show the command when a file with KSP syntax highlighting is visible
         view = sublime.active_window().active_view()
         if view:
-            return 'KSP.tmLanguage' in view.settings().get('syntax', '')
+            return 'KSP.sublime-syntax' in view.settings().get('syntax', '')
 
     def run(self, *args, **kwargs):
         # wait until any previous thread is finished
@@ -324,7 +324,7 @@ class KspGlobalSettingToggleCommand(sublime_plugin.ApplicationCommand):
         # only show the command when a file with KSP syntax highlighting is visible
         view = sublime.active_window().active_view()
         if view:
-            return 'KSP.tmLanguage' in view.settings().get('syntax', '')
+            return 'KSP.sublime-syntax' in view.settings().get('syntax', '')
 
 class KspIndentListener(sublime_plugin.EventListener):
     def on_text_command(self, view, command_name, args):
@@ -439,7 +439,7 @@ class KspUncompressCode(sublime_plugin.TextCommand):
         # only show the command when a file with KSP syntax highlighting is visible
         #view = sublime.active_window().active_view()
         #if view and len(self.view.sel()):
-        return 'KSP.tmLanguage' in self.view.settings().get('syntax', '')
+        return 'KSP.sublime-syntax' in self.view.settings().get('syntax', '')
 
     #def is_enabled(self):
     #    return len(self.view.sel()) >= 1
@@ -452,7 +452,7 @@ class KspAboutCommand(sublime_plugin.ApplicationCommand):
         # only show the command when a file with KSP syntax highlighting is visible
         view = sublime.active_window().active_view()
         if view:
-            return 'KSP.tmLanguage' in view.settings().get('syntax', '')
+            return 'KSP.sublime-syntax' in view.settings().get('syntax', '')
 
 class KspFixLineEndings(sublime_plugin.EventListener):
 
@@ -469,7 +469,7 @@ class KspFixLineEndings(sublime_plugin.EventListener):
             return False
 
     def set_ksp_syntax(self, view):
-        view.set_syntax_file("Packages/KSP (Kontakt Script Processor)/KSP.tmLanguage")
+        view.set_syntax_file("Packages/KSP (Kontakt Script Processor)/KSP.sublime-syntax")
 
     def on_load(self, view):
         if self.is_probably_ksp_file(view):
