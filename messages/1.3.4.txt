@@ -1,0 +1,6 @@
+Version:
+- 1.3.4
+
+Bug fixes:
+- Fixed syntax highlighting bug introduced in 1.3.3
+
