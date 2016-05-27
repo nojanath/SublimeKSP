@@ -63,8 +63,10 @@ read_re = r"\b" + read_keyword + "\b"
 # This function is called before the macros have been expanded.
 def pre_macro_functions(lines):
 	remove_print(lines)
+	handle_define_literals(lines)
 	handle_define_lines(lines)
 	handle_iterate_macro(lines)
+	handle_literate_macro(lines)
 
 # This function is called after the macros have been expanded.
 def post_macro_functions(lines):
@@ -668,6 +670,94 @@ def handle_iterate_macro(lines):
 
 			line_inserts.append(added_lines)
 		replace_lines(lines, line_numbers, line_inserts)
+
+def handle_literate_macro(lines):
+	literal_vals = []
+	macro_name = []
+	line_numbers = []
+	is_single_line = []
+
+	for index in range(len(lines)):
+		line = lines[index].command
+		if re.search(r"^\s*literate_macro\(", line):
+			name = line[line.find("(") + 1 : line.find(")")]
+			params = line[line.find(")") + 1:]
+
+			find_n = False
+			if "#l#" in name:
+				find_n = True
+			is_single_line.append(find_n)
+
+			try:
+				literal = params[params.find("on") + 2 : ].strip()
+
+			except:
+				raise ksp_compiler.ParseException(lines[index], "Incorrect values in literate_macro statement. " + \
+						"The macro you are iterating must have only have 1 string parameter, this will be replaced by the value of the defined literal.\n")
+
+			if len(literal):
+				macro_name.append(name)
+				literal_vals.append(literal.split(","))
+				line_numbers.append(index)
+
+			lines[index].command = re.sub(r'[^\r\n]', '', line)
+
+	if line_numbers:
+		line_inserts = collections.deque()
+		for i in range(len(line_numbers)):
+			added_lines = []
+
+			for ii in literal_vals[i]:
+				current_text = macro_name[i] + "(" + str(ii) + ")"
+				if is_single_line[i]:
+					current_text = macro_name[i].replace("#l#", str(ii))
+				added_lines.append(lines[line_numbers[i]].copy(current_text))
+
+			line_inserts.append(added_lines)
+		replace_lines(lines, line_numbers, line_inserts)
+
+# Find all define literal declarations and then scan the document and replace all occurrences with their value.
+# define command's have no scope, they are completely global at the moment.
+def handle_define_literals(lines):
+	define_titles = []
+	define_values = []
+	define_line_pos = []
+	for index in range(len(lines)):
+		line = lines[index].command 
+		if re.search(r"^\s*define\s+literals\s+", line):
+			if re.search(r"^\s*define\s+literals\s+" + varname_re_string + r"\s*:=", line):
+				text_without_define = re.sub(r"^\s*define\s+literals\s*", "", line)
+				colon_bracket_pos = text_without_define.find(":=")
+
+				# before the assign operator is the title
+				title = text_without_define[ : colon_bracket_pos].strip()
+				define_titles.append(title)
+
+				# after the assign operator is the value
+				value = text_without_define[colon_bracket_pos + 2 : ].strip()
+				m = re.search("^\((([a-zA-Z_][a-zA-Z0-9_.]*)?(\s*,\s*[a-zA-Z_][a-zA-Z0-9_.]*)*)\)$", value)
+				if not m:
+					raise ksp_compiler.ParseException(lines[index], "Syntax error in define literals: Comma separated identifier list in () expected.\n")
+
+				value = m.group(1)
+				define_values.append(value)
+
+				define_line_pos.append(index)
+				# remove the line
+				lines[index].command = re.sub(r'[^\r\n]', '', line)
+			else:
+				raise ksp_compiler.ParseException(lines[index], "Syntax error in define literals.\n")
+
+	# if at least one define const exsists
+	if define_titles:
+		# scan the code can replace any occurances of the variable with it's value
+		for line_obj in lines:
+			line = line_obj.command 
+			for index, item in enumerate(define_titles):
+				if re.search(r"\b" + item + r"\b", line):
+					# character_before = line[line.find(item) - 1 : line.find(item)]  
+					# if character_before.isalpha() == False and character_before.isdiget() == False:  
+					line_obj.command = line_obj.command.replace(item, str(define_values[index]))
 
 # Find all define declarations and then scan the document and replace all occurrences with their value.
 # define command's have no scope, they are completely global at the moment. There is some hidden define
