@@ -79,7 +79,7 @@ contexts:
       captures:
         1: keyword.other.source.ksp
         2: meta.function-call.source.ksp
-    - match: '(declare|define) +(literals| global |local |pers |read )?(ui_label|ui_button|ui_switch|ui_slider|ui_menu|ui_value_edit|ui_waveform|ui_knob|ui_table|call|step|ui_text_edit|ui_level_meter|ui_file_selector) *([a-zA-Z0-9_.]+) *\('
+    - match: '(declare|define) +(literals |global |local |pers |read )?(ui_label|ui_button|ui_switch|ui_slider|ui_menu|ui_value_edit|ui_waveform|ui_knob|ui_table|call|step|ui_text_edit|ui_level_meter|ui_file_selector) *([a-zA-Z0-9_.]+) *\('
       comment: Declaration of UI variable
       captures:
         1: keyword.other.source.ksp
