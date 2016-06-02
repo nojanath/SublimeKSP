@@ -17,7 +17,6 @@
 # IDEAS:
 #	-	Multidimensional UI arrays.
 #	-	+= -=
-#	-	Add alternative to pers keyword that reads the persistent variable as well.
 #	-	Built in bounds checking for arrays/pgs, the compiler auto adds print() messages to check that you 
 #		are accessing valid elements. Would be too slow?
 #	-	UI functions to receive arguments in any order: set_bounds(slider, width := 50, x := 20)
@@ -50,6 +49,7 @@ init_re = r"^\s*on\s+init"
 
 pers_keyword = "pers" # The keyword that will make a variable persistent.
 read_keyword = "read" # The keyword that will make a variable persistent and then read the persistent value.
+multi_dim_ui_flag = " { UI ARRAY }"
 
 ui_type_re = r"(?<=)(ui_button|ui_switch|ui_knob|ui_label|ui_level_meter|ui_menu|ui_slider|ui_table|ui_text_edit|ui_waveform|ui_value_edit)(?=\s)"
 keywords_re = r"(?<=)(declare|const|" + pers_keyword + "|" + read_keyword + "|polyphonic|list)(?=\s)"
@@ -140,7 +140,6 @@ def multi_dimensional_arrays(lines):
 				variable_name = variable_name[1:]
 			else:
 				prefix = ""
-			name.append(variable_name)
 
 			dimensions_split = line[line.find("[") + 1 : line.find("]")].split(",") 
 			num_dimensions.append(len(dimensions_split))
@@ -148,7 +147,13 @@ def multi_dimensional_arrays(lines):
 
 			line_numbers.append(i)
 
-			new_text = line.replace(variable_name, prefix + "_" + variable_name)
+			underscore = ""
+			if multi_dim_ui_flag in line:
+				line = line.replace(multi_dim_ui_flag, "")
+			else:
+				underscore = "_"
+			name.append(underscore + variable_name.strip())
+			new_text = line.replace(variable_name, prefix + underscore + variable_name)
 			new_text = new_text.replace("[", "[(").replace("]", ")]").replace(",", ")*(")
 			lines[i].command = new_text
 			
@@ -162,7 +167,7 @@ def multi_dimensional_arrays(lines):
 				added_lines.append(lines[line_numbers[i]].copy(current_text))
 
 			# start property
-			current_text = "property " + name[i]
+			current_text = "property " + name[i][1:]
 			added_lines.append(lines[i].copy(current_text))
 
 			# start get function
@@ -174,7 +179,7 @@ def multi_dimensional_arrays(lines):
 			added_lines.append(lines[i].copy(current_text))
 
 			# get function body
-			current_text = "result := _" + name[i] + "["
+			current_text = "result := " + name[i] + "["
 			for ii in range(num_dimensions[i]):
 				if ii != num_dimensions[i] - 1: 
 					for iii in range(num_dimensions[i] - 1, ii, -1):
@@ -197,7 +202,7 @@ def multi_dimensional_arrays(lines):
 			added_lines.append(lines[i].copy(current_text))
 
 			# set function body
-			current_text = "_" + name[i] + "["
+			current_text = name[i] + "["
 			for ii in range(num_dimensions[i]):
 				if ii != num_dimensions[i] - 1: 
 					for iii in range(num_dimensions[i] - 1, ii, -1):
@@ -820,6 +825,7 @@ def handle_ui_arrays(lines):
 	line_numbers = []
 	num_elements = []
 	pers_text = []
+	multidimensional = []
 
 	# Find all of the array declarations.
 	for index in range(len(lines)):
@@ -839,8 +845,14 @@ def handle_ui_arrays(lines):
 					proceed = False
 
 			if proceed:
+				array_size = ls_line[ls_line.find("[") + 1 : ls_line.find("]")]
+				is_multi_dimensional = "," in array_size
+				underscore = ""
+				if is_multi_dimensional:
+					underscore = "_"
+				string_between_brackets = array_size.replace(",", "*")
 				try:
-					num_element = eval(ls_line[ls_line.find("[") + 1 : ls_line.find("]")])
+					num_element = eval(string_between_brackets)
 				except:
 					raise ksp_compiler.ParseException(lines[index], "Invalid number of elements. Native 'declare const' variables cannot be used here, instead a 'define' const or a literal must be used.\n")			
 
@@ -850,15 +862,19 @@ def handle_ui_arrays(lines):
 					if ui_type == "ui_table":
 						first_close_bracket = ls_line.find("]") + 1
 						table_elements = ls_line[ls_line.find("[", first_close_bracket) + 1 : ls_line.find("]", first_close_bracket)]
-						ui_declaration.append("declare " + ui_type + " " + var_name + "[" + table_elements + "]" + ls_line[ls_line.find("(") : ls_line.find(")") + 1]) 
+						ui_declaration.append("declare " + ui_type + " " + underscore + var_name + "[" + table_elements + "]" + ls_line[ls_line.find("(") : ls_line.find(")") + 1]) 
 					else:
-						ui_declaration.append("declare " + ui_type + " " + var_name + ls_line[ls_line.find("(") : ls_line.find(")") + 1]) 
+						ui_declaration.append("declare " + ui_type + " " + underscore + var_name + ls_line[ls_line.find("(") : ls_line.find(")") + 1]) 
 				else:
-					ui_declaration.append("declare " + ui_type + " " + var_name) 
+					ui_declaration.append("declare " + ui_type + " " + underscore + var_name) 
 				line_numbers.append(index)
 				num_elements.append(num_element)
+				if is_multi_dimensional:
+					variable_name_no_pre = "_" + variable_name_no_pre
 				variable_names.append(variable_name_no_pre)
-				lines[index].command  = "declare " + variable_name_no_pre + "[" + str(num_element) + "]"
+				lines[index].command  = "declare " + variable_name_no_pre + "[" + str(array_size) + "]"
+				if is_multi_dimensional:
+					lines[index].command = lines[index].command + multi_dim_ui_flag
 
 	if line_numbers:
 		line_inserts = collections.deque()
