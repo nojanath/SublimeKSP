@@ -119,9 +119,9 @@ def split_args(arg_string, line):
 	cur_arg = ''
 	unmatched_left_paren = 0
 	for ch in arg_string + ',':    # extra ',' to include the last argument
-		if ch == '(':
+		if ch == '(' or ch == '[':
 			unmatched_left_paren += 1
-		elif ch == ')':
+		elif ch == ')' or ch == ']':
 			unmatched_left_paren -= 1
 		if ch == ',' and unmatched_left_paren == 0:
 			cur_arg = cur_arg.strip()
