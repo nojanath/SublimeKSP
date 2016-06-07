@@ -32,8 +32,7 @@
 
 import re
 import collections
-import ksp_compiler 
-
+import ksp_compiler
 
 #=================================================================================================
 # Regular expressions
@@ -561,7 +560,8 @@ def find_list_block(lines):
 		if m:
 			list_block = True
 			list_name = m.group(1)
-			lines[i].command = "declare list " + list_name + "[]"
+			# lines[i].command = "declare list " + list_name + "[]"
+			lines[i].command = "declare " + lines[i].command
 		elif list_block and not line.strip() == "":
 			if re.search(r"^\s*end\s+list", line):
 				list_block = False
@@ -589,13 +589,38 @@ def handle_lists(lines):
 	loop_flag    = None
 	iterators    = []
 	is_matrix    = []
+
+	matrix_size_lists = []
 	matrix_list_add_line_nums = []
 	matrix_list_add_text = []
+	matric_list_add_commands = []
 
 	list_add_array_template = [
-	"for i := 0 to #arraySize# - 1",
-	"	#listName#[i + #iterator#] := #arrayName#[i]",
+	"for i := 0 to #size# - 1",
+	"	#list#[i + #offset#] := #arr#[i]",
 	"end for"]
+	list_add_array_tokens = ["#size#", "#list#", "#offset#", "#arr#"]
+
+	def replace_tokens(template, tokens, values):
+		new_text = []
+		for text in template:
+			for i in range(len(tokens)):
+				text = text.replace(tokens[i], str(values[i]))
+			new_text.append(text)
+		return new_text
+
+	list_matrix_template = [
+	"declare #list#.sizes[#size#] := (#sizeList#)",
+	"declare #list#.pos[#size#] := (#posList#)",
+	"property #list#",
+	"	function get(d1, d2) -> result",
+	"		result := _#list#[#list#.pos[d1] + d2]",
+	"	end function",
+	"	function set(d1, d2, val)",
+	"		_#list#[#list#.pos[d1] + d2] := val",
+	"	end function",
+	"end property"]
+	list_matrix_tokens = ["#list#", "#size#", "#sizeList#", "#posList#"]
 
 	array_names, array_sizes = find_all_arrays(lines)
 
@@ -629,9 +654,10 @@ def handle_lists(lines):
 				is_matrix_type = "," in m.group(5)
 				if is_matrix_type:
 					prefix = ""
-					if m.group(1):
-						prefix = m.group(1)
+					if m.group(3):
+						prefix = m.group(3)
 					name = prefix + "_" + re.sub(var_prefix_re, "", name)
+
 			list_names.append(name)
 			is_matrix.append(is_matrix_type)
 
@@ -652,22 +678,24 @@ def handle_lists(lines):
 							raise ksp_compiler.ParseException(lines[i], "list_add() can only be used in the init callback.\n")
 
 						value = line[line.find(",") + 1 : len(line) - 1].strip()
+
+						size = None
+						def increase_iterator(amount):
+							iterators[ii] = iterators[ii] + " + " + str(amount)
+							return amount				
+
 						if not is_matrix[ii] or not value in array_names:
 							lines[i].command = list_names[ii] + "[" + str(iterators[ii]) + "] := " + value
-							iterators[ii] = iterators[ii] + " + 1"
+							size = increase_iterator(1)
 						else:
 							array_location = array_names.index(value)
-							list_add_array_text = []
-							for text in list_add_array_template:
-								new_text = text.replace("#arraySize#", array_sizes[array_location])
-								new_text = new_text.replace("#listName#", "_" + list_title)
-								new_text = new_text.replace("#iterator#", str(iterators[ii]))
-								new_text = new_text.replace("#arrayName#", value)
-								list_add_array_text.append(new_text)
-							iterators[ii] = iterators[ii] + " + " + array_sizes[array_location]
-							matrix_list_add_text.append(list_add_array_text)
+							new_text = replace_tokens(list_add_array_template, list_add_array_tokens, [array_sizes[array_location], "_" + list_title, iterators[ii], value])
+							matrix_list_add_text.append(new_text)
 							matrix_list_add_line_nums.append(i)
-							lines[i].command = ""
+							lines[i].command = "{MATRIX_LIST_ADD}"
+							size = increase_iterator(array_sizes[array_location])						
+						if is_matrix[ii]:
+							matrix_size_lists.append([list_title, size])
 						break
 				if not find_list_name:
 					undeclared_name = line[line.find("(") + 1 : line.find(",")].strip()
@@ -678,24 +706,63 @@ def handle_lists(lines):
 		for i in range(len(line_numbers)):
 			added_lines = []
 
-			list_name = re.sub(r"[$%!@]", "", list_names[i])
+			list_name = re.sub(var_prefix_re, "", list_names[i])
+			if is_matrix[i]:
+				list_name = list_name[1:]
+				size_list = []
+				pos_list = ["0"]
+				for j in range(len(matrix_size_lists)):
+					if matrix_size_lists[j][0] == list_name:
+						size_list.append(str(matrix_size_lists[j][1]))
+				size_counter = "0"
+				for j in range(1, len(size_list)-1):
+					size_counter = size_counter + "+" + size_list[j]
+					pos_list.append(size_counter)
+				new_text = replace_tokens(list_matrix_template, list_matrix_tokens, [list_name, iterators[i], ", ".join(size_list), ", ".join(pos_list)])
+				for text in new_text:
+					added_lines.append(lines[line_numbers[i]].copy(text))		
+
 			current_text = "declare const " + list_name + ".SIZE := " + str(iterators[i])
 			added_lines.append(lines[line_numbers[i]].copy(current_text))
 
 			line_inserts.append(added_lines)
+
 		replace_lines(lines, line_numbers, line_inserts)
 
 	if matrix_list_add_line_nums:
 		line_inserts = collections.deque()
-		for i in range(len(matrix_list_add_line_nums)):
+		line_nums = []
+		for i in range(len(lines)):
+			if lines[i].command == "{MATRIX_LIST_ADD}":
+				lines[i].command = ""
+				line_nums.append(i)
+
+		for i in range(len(line_nums)):
 			added_lines = []
 
 			text_list = matrix_list_add_text[i]
 			for text in text_list:
-				added_lines.append(lines[matrix_list_add_line_nums[i]].copy(text))
+				added_lines.append(lines[line_nums[i]].copy(text))
 
 			line_inserts.append(added_lines)
-		replace_lines(lines, matrix_list_add_line_nums, line_inserts)
+		replace_lines(lines, line_nums, line_inserts)
+		
+	# if matrix_list_add_line_nums:
+	# 	line_inserts = collections.deque()
+	# 	line_nums = []
+	# 	for i in range(len(lines)):
+	# 		if lines[i].command = "{MATRIX_LIST_ADD}":
+	# 			line_nums.append(i)
+
+	# 	for i in range(len(matrix_list_add_line_nums)):
+	# 		added_lines = []
+
+	# 		text_list = matrix_list_add_text[i]
+	# 		for text in text_list:
+	# 			added_lines.append(lines[matrix_list_add_line_nums[i]].copy(text))
+
+	# 		line_inserts.append(added_lines)
+	# 	replace_lines(lines, matrix_list_add_line_nums, line_inserts)
 		
 # When an array size is left with an open number of elements, use the list of initialisers to provide the array size.
 # Const variables are also generated for the array size. 
