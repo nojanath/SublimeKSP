@@ -85,11 +85,11 @@ def post_macro_functions(lines):
 	handle_ui_arrays(lines)
 	inline_declare_assignment(lines)
 	multi_dimensional_arrays(lines)
+	calculate_open_size_array(lines)
 	find_list_block(lines)
 	handle_lists(lines)
 	variable_persistence_shorthand(lines)
 	ui_property_functions(lines)
-	calculate_open_size_array(lines)
 	expand_string_array_declaration(lines)	
 	handle_array_concatenate(lines)
 	# for line_obj in lines:
@@ -569,18 +569,40 @@ def find_list_block(lines):
 			else:
 				lines[i].command = "list_add(" + list_name + ", " + lines[i].command + ")"
 
+def find_all_arrays(lines):
+	array_names = []
+	array_sizes = []
+	for i in range(len(lines)):
+		line = lines[i].command
+		m = re.search(r"^\s*declare\s+%s?%s\s*(?:\[(%s)\])" % (any_pers_re, varname_re_string, variable_or_int), line)
+		if m:
+			array_names.append(re.sub(var_prefix_re, "", m.group(2)))
+			array_sizes.append(m.group(5))
+
+	return (array_names, array_sizes)
+
 # Convert lists and list_add() into commands that Kontakt can understand.
 def handle_lists(lines):
-	list_names = []
+	list_names   = []
 	line_numbers = []
-	init_flag = None
-	loop_flag = None
-	iterators = []
+	init_flag    = None
+	loop_flag    = None
+	iterators    = []
+	is_matrix    = []
+	matrix_list_add_line_nums = []
+	matrix_list_add_text = []
+
+	list_add_array_template = [
+	"for i := 0 to #arraySize# - 1",
+	"	#listName#[i + #iterator#] := #arrayName#[i]",
+	"end for"]
+
+	array_names, array_sizes = find_all_arrays(lines)
 
 	for i in range(len(lines)):
 		line = lines[i].command
 		# m = re.search(r"^\s*declare\s+%s?list\s*%s" % (any_pers_re, varname_re_string), line)
-		m = re.search(r"^\s*declare\s+%s?list\s*%s(?:\[(%s)?\])?" % (any_pers_re, varname_re_string, variable_or_int), line)		
+		m = re.search(r"^\s*declare\s+%s?list\s*%s\s*(?:\[(%s)?\])?" % (any_pers_re, varname_re_string, variable_or_int), line)		
 		if re.search(r"^\s*on\s+init", line):
 			init_flag = True
 		elif re.search(r"^\s*end\s+on", line):
@@ -588,9 +610,7 @@ def handle_lists(lines):
 				for ii in range(len(iterators)):
 					list_declare_line = lines[line_numbers[ii]].command
 					square_bracket_pos = list_declare_line.find("[]") 
-					if square_bracket_pos != -1:
-						print(square_bracket_pos)
-						lines[line_numbers[ii]].command = list_declare_line[: square_bracket_pos + 1] + str(iterators[ii]) + "]"
+					lines[line_numbers[ii]].command = list_declare_line[: square_bracket_pos + 1] + str(iterators[ii]) + "]"
 				init_flag = False
 		elif re.search(for_re, line) or re.search(while_re, line) or re.search(if_re, line):
 			loop_flag = True
@@ -601,32 +621,56 @@ def handle_lists(lines):
 			is_pers = ""
 			if m.group(1):
 				is_pers = " " + m.group(1)
-			list_names.append(name)
 			line_numbers.append(i)
-			iterators.append(0)
-			# The number of elements is populated once the whole init callback is scanned.
-			size_text = ""
+			iterators.append("0")
+
+			is_matrix_type = False
 			if m.group(5):
-				size_text = m.group(5)
-			lines[i].command = "declare " + is_pers + name + "[%s]" % size_text
+				is_matrix_type = "," in m.group(5)
+				if is_matrix_type:
+					prefix = ""
+					if m.group(1):
+						prefix = m.group(1)
+					name = prefix + "_" + re.sub(var_prefix_re, "", name)
+			list_names.append(name)
+			is_matrix.append(is_matrix_type)
+
+			# The number of elements is populated once the whole init callback is scanned.
+			lines[i].command = "declare " + is_pers + name + "[]"
 		else:
 			if re.search(list_add_re, line):
 				find_list_name = False
 				for ii in range(len(list_names)):
 					list_title = re.sub(var_prefix_re, "", list_names[ii])
-					if re.search(r"list_add\s*\(\s*[$%!@]?" + list_title + r"\b", line): #re.sub(var_prefix_re, "", list_names[ii]) in line:
+					if is_matrix[ii]:
+						list_title = list_title[1:]
+					if re.search(r"list_add\s*\(\s*%s?%s\b" % (var_prefix_re, list_title), line):
 						find_list_name = True
 						if loop_flag:
 							raise ksp_compiler.ParseException(lines[i], "list_add() cannot be used in loops or if statements.\n")
 						if not init_flag:
 							raise ksp_compiler.ParseException(lines[i], "list_add() can only be used in the init callback.\n")
 
-						value = line[line.find(",") + 1 : len(line) - 1]
-						lines[i].command = list_names[ii] + "[" + str(iterators[ii]) + "] := " + value
-						iterators[ii] += 1
+						value = line[line.find(",") + 1 : len(line) - 1].strip()
+						if not is_matrix[ii] or not value in array_names:
+							lines[i].command = list_names[ii] + "[" + str(iterators[ii]) + "] := " + value
+							iterators[ii] = iterators[ii] + " + 1"
+						else:
+							array_location = array_names.index(value)
+							list_add_array_text = []
+							for text in list_add_array_template:
+								new_text = text.replace("#arraySize#", array_sizes[array_location])
+								new_text = new_text.replace("#listName#", "_" + list_title)
+								new_text = new_text.replace("#iterator#", str(iterators[ii]))
+								new_text = new_text.replace("#arrayName#", value)
+								list_add_array_text.append(new_text)
+							iterators[ii] = iterators[ii] + " + " + array_sizes[array_location]
+							matrix_list_add_text.append(list_add_array_text)
+							matrix_list_add_line_nums.append(i)
+							lines[i].command = ""
 						break
 				if not find_list_name:
-					undeclared_name = line[line.find("(") + 1 : line.find(",")]
+					undeclared_name = line[line.find("(") + 1 : line.find(",")].strip()
 					raise ksp_compiler.ParseException(lines[i], undeclared_name + " had not been declared.\n") 
 
 	if line_numbers:
@@ -640,6 +684,18 @@ def handle_lists(lines):
 
 			line_inserts.append(added_lines)
 		replace_lines(lines, line_numbers, line_inserts)
+
+	if matrix_list_add_line_nums:
+		line_inserts = collections.deque()
+		for i in range(len(matrix_list_add_line_nums)):
+			added_lines = []
+
+			text_list = matrix_list_add_text[i]
+			for text in text_list:
+				added_lines.append(lines[matrix_list_add_line_nums[i]].copy(text))
+
+			line_inserts.append(added_lines)
+		replace_lines(lines, matrix_list_add_line_nums, line_inserts)
 		
 # When an array size is left with an open number of elements, use the list of initialisers to provide the array size.
 # Const variables are also generated for the array size. 
