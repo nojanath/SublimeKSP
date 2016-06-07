@@ -21,6 +21,14 @@
 #		are accessing valid elements. Would be too slow?
 #	-	UI functions to receive arguments in any order: set_bounds(slider, width := 50, x := 20)
 
+	# Create an array of arrays, like this:
+	# list engineParData[]
+	# 	(ENGINE_PAR_RESONANCE, ENGINE_PAR_CUTOFF)
+	# 	(ENGINE_PAR_IRC_LENGTH_RATIO_LR, ENGINE_PAR_SEND_EFFECT_OUTPUT_GAIN)
+	# 	(ENGINE_PAR_RV_SIZE, ENGINE_PAR_RV_DAMPING, ENGINE_PAR_SEND_EFFECT_DRY_LEVEL, ENGINE_PAR_SEND_EFFECT_OUTPUT_GAIN)
+	# end list
+	# Would need to make an array of sizes, positions and a property
+
 
 import re
 import collections
@@ -49,14 +57,16 @@ init_re = r"^\s*on\s+init"
 
 pers_keyword = "pers" # The keyword that will make a variable persistent.
 read_keyword = "read" # The keyword that will make a variable persistent and then read the persistent value.
+concat_syntax = "concat" # The name of the function to concat arrays.
+
 multi_dim_ui_flag = " { UI ARRAY }"
 
 ui_type_re = r"(?<=)(ui_button|ui_switch|ui_knob|ui_label|ui_level_meter|ui_menu|ui_slider|ui_table|ui_text_edit|ui_waveform|ui_value_edit)(?=\s)"
 keywords_re = r"(?<=)(declare|const|" + pers_keyword + "|" + read_keyword + "|polyphonic|list)(?=\s)"
 
-any_pers_re = r"(" + pers_keyword + "\s+|" + read_keyword + "\s+)"
-pers_re = r"\b" + pers_keyword + "\b"
-read_re = r"\b" + read_keyword + "\b"
+any_pers_re = r"(%s\s+|%s\s+)" % (pers_keyword, read_keyword)
+pers_re = r"\b%s\b" % pers_keyword
+read_re = r"\b%s\b" % read_keyword
 
 
 #=================================================================================================
@@ -70,6 +80,7 @@ def pre_macro_functions(lines):
 
 # This function is called after the macros have been expanded.
 def post_macro_functions(lines):
+	incrementor(lines)
 	handle_const_block(lines)
 	handle_ui_arrays(lines)
 	inline_declare_assignment(lines)
@@ -80,6 +91,9 @@ def post_macro_functions(lines):
 	ui_property_functions(lines)
 	calculate_open_size_array(lines)
 	expand_string_array_declaration(lines)	
+	handle_array_concatenate(lines)
+	# for line_obj in lines:
+	# 	print(line_obj.command)
 
 # Take the original deque of line objects, and for every new line number, add in the line_inserts.
 def replace_lines(lines, line_nums, line_inserts):
@@ -102,7 +116,7 @@ def replace_lines(lines, line_nums, line_inserts):
 
 	# Replace lines with new lines.
 	for i in range(len(lines)):
-		lines.pop() # Why pop?
+		lines.pop()
 	lines.extend(new_lines)	
 
 #=================================================================================================
@@ -120,6 +134,142 @@ def remove_print(lines):
 	if not logger_active_flag:
 		for i in range(len(print_line_numbers)):
 			lines[print_line_numbers[i]].command = ""
+
+def incrementor(lines):
+	start_keyword = "START_INC"
+	end_keyword = "END_INC"
+	names = []
+	it_vals = []
+	step = []
+
+	for i in range(len(lines)):
+		line = lines[i].command
+		m = re.search(r"^\s*%s\s*\(" % start_keyword, line)
+		if m:
+			mm = re.search(r"^\s*%s\s*\(\s*%s\s*\,\s*(\d+)s*\,\s*(\d+)\s*\)" % (start_keyword, varname_re_string), line)
+			if mm:
+				lines[i].command = ""
+				names.append(mm.group(1))
+				it_vals.append(eval(mm.group(4)))
+				step.append(eval(mm.group(5)))
+			else:
+				raise ksp_compiler.ParseException(lines[i], "Incorrect parameters. Expected: START_INC(<name>, <literal-num-or-define>, <literal-num-or-define>)\n")	
+		elif re.search(r"^\s*%s" % end_keyword, line):
+			lines[i].command = ""
+			names.pop()
+			it_vals.pop()
+			step.pop()
+		elif names:
+			for j in range(len(names)):
+				mm = re.search(r"\b%s\b" % names[j], line)
+				if mm:
+					# lines[i].command = line.replace(names[j], str(it_vals[j]))
+					lines[i].command = re.sub(r"\b%s\b" % names[j], str(it_vals[j]), lines[i].command)
+					it_vals[j] += step[j]
+					
+
+# Function for concatenating multi arrays into one. 
+def handle_array_concatenate(lines):
+	line_numbers = []
+	parent_array = []
+	child_arrays = []
+	num_args     = []
+	init_line_num = None
+
+	for i in range(len(lines)):
+		line = lines[i].command
+		if re.search(init_re, line):
+			init_line_num = i
+		m = re.search(r"(^\s*declare\s+)?%s\s*(\[(.*)\])?\s*:=\s*%s\s*\(([^\)]*)" % (varname_re_string, concat_syntax), line)
+		if m:
+			search_list = m.group(7).split(",")
+			# Why doesn't this work? It seems to make makes all previous lists in child_arrays empty. Extend seems to work, but
+			# append doesn't. This has been bodged for now.
+			# child_arrays.append(search_list)
+			# print(child_arrays)
+			child_arrays.extend(search_list)
+			parent_array.append(m.group(2))
+			num_args.append(len(search_list))
+			line_numbers.append(i)
+			size = None
+			if re.search(r"\bdeclare\b", line):
+				if not m.group(5):
+					raise ksp_compiler.ParseException(lines[i], "No array size given. Leave brackets [] empty to have the size auto generated.\n")	
+				if not m.group(6):
+					sizes = []
+					for j in range(0, i):
+						line2 = lines[j].command
+						for arg in search_list:
+							try: # The regex doesn't like it when there are [] or () in the arg list.
+								mm = re.search(r"^\s*declare\s+%s?%s\s*(\[.*\])" % (var_prefix_re, arg.strip()), line2)
+								if mm:
+									sizes.append(mm.group(1))
+									search_list.remove(arg)
+									break
+							except:
+								raise ksp_compiler.ParseException(lines[i], "Syntax error.\n") 
+					if search_list:  # If everything was found, then the list will be empty.
+						raise ksp_compiler.ParseException(lines[i], "Undeclared array(s) in %s function: %s\n" % (concat_syntax, ', '.join(search_list).strip()))
+					size = re.sub(r"[\[\]]", "", '+'.join(sizes))
+				else:
+					size = m.group(6)
+				lines[i].command = "declare %s[%s]" % (m.group(2), size) 
+			else:
+				lines[i].command = ""
+
+	if line_numbers:
+		line_inserts = collections.deque()
+		for i in range(len(line_numbers)):
+			added_lines = []
+			
+			# We have to calculate the start and end points in the arg list, because the append isn't working.
+			s = 0
+			if i != 0:
+				for j in range(i):
+					s += num_args[j]
+
+			offsets = ["0"]
+			for j in range(s, s + num_args[i]):
+				offsets.append("num_elements(%s)" % child_arrays[j])
+
+			add_offset = ""
+			if num_args[i] != 1:
+				add_offset = " + concat_offset"
+				added_lines.append(lines[line_numbers[i]].copy("concat_offset := 0"))
+
+			offset_command = "concat_offset := concat_offset + #offset#"
+			template_text = [
+			"for concat_it := 0 to num_elements(#arg#)-1",
+			"	#parent#[concat_it%s] := #arg#[concat_it]" % add_offset,
+			"end for"]
+
+			for j in range(num_args[i]):
+				if j != 0 and num_args[i] != 1:
+					current_text = offset_command.replace("#offset#", offsets[j])
+					added_lines.append(lines[line_numbers[i]].copy(current_text))
+				for text in template_text:
+					current_text = text.replace("#arg#", child_arrays[s + j]).replace("#parent#", parent_array[i])
+					added_lines.append(lines[line_numbers[i]].copy(current_text))
+
+			line_inserts.append(added_lines)
+		replace_lines(lines, line_numbers, line_inserts)
+
+		# Add declare variables at the start on the init callback.
+		new_lines = collections.deque()
+		for i in range(0, init_line_num + 1):
+			new_lines.append(lines[i])
+
+		new_lines.append(lines[init_line_num].copy("	declare concat_it"))
+		new_lines.append(lines[init_line_num].copy("	declare concat_offset"))
+		for i in range(init_line_num + 1, len(lines)):
+			new_lines.append(lines[i])
+
+		for i in range(len(lines)):
+			lines.pop()
+		lines.extend(new_lines)	
+
+
+
 
 # Create multidimensional arrays. 
 # This functions replaces the multidimensional array declaration with a property with appropriate
@@ -163,7 +313,7 @@ def multi_dimensional_arrays(lines):
 			added_lines = []
 	
 			for ii in range(num_dimensions[i]):
-				current_text = "declare const " + name[i] + ".SIZE_D" + str(ii + 1) + " := " + dimensions[i][ii]
+				current_text = "declare const " + name[i][1:] + ".SIZE_D" + str(ii + 1) + " := " + dimensions[i][ii]
 				added_lines.append(lines[line_numbers[i]].copy(current_text))
 
 			# start property
@@ -299,8 +449,8 @@ def inline_declare_assignment(lines):
 
 	for i in range(len(lines)):
 		line = lines[i].command.strip()
-		m = re.search(r"^\s*declare\s+(polyphonic|" + pers_keyword + "|" + read_keyword + "|global|local)?\s*" + varname_re_string + "\s*:=", line)
-		if m:
+		m = re.search(r"^\s*declare\s+(polyphonic|%s|%s|global|local)?\s*%s\s*:=" % (pers_keyword, read_keyword, varname_re_string), line)
+		if m and not re.search(r"\b%s\s*\(" % concat_syntax, line):
 			int_flag = False
 			value = line[line.find(":=") + 2 :]
 			if not re.search(string_or_placeholder_re, line):
@@ -429,15 +579,18 @@ def handle_lists(lines):
 
 	for i in range(len(lines)):
 		line = lines[i].command
-		m = re.search(r"^\s*declare\s+" + any_pers_re + "?list\s*" + varname_re_string, line)
+		# m = re.search(r"^\s*declare\s+%s?list\s*%s" % (any_pers_re, varname_re_string), line)
+		m = re.search(r"^\s*declare\s+%s?list\s*%s(?:\[(%s)?\])?" % (any_pers_re, varname_re_string, variable_or_int), line)		
 		if re.search(r"^\s*on\s+init", line):
 			init_flag = True
 		elif re.search(r"^\s*end\s+on", line):
 			if init_flag:
 				for ii in range(len(iterators)):
 					list_declare_line = lines[line_numbers[ii]].command
-					square_bracket_pos = list_declare_line.find("[]") + 1
-					lines[line_numbers[ii]].command = list_declare_line[: square_bracket_pos] + str(iterators[ii]) + "]"
+					square_bracket_pos = list_declare_line.find("[]") 
+					if square_bracket_pos != -1:
+						print(square_bracket_pos)
+						lines[line_numbers[ii]].command = list_declare_line[: square_bracket_pos + 1] + str(iterators[ii]) + "]"
 				init_flag = False
 		elif re.search(for_re, line) or re.search(while_re, line) or re.search(if_re, line):
 			loop_flag = True
@@ -452,7 +605,10 @@ def handle_lists(lines):
 			line_numbers.append(i)
 			iterators.append(0)
 			# The number of elements is populated once the whole init callback is scanned.
-			lines[i].command = "declare " + is_pers + name + "[]"
+			size_text = ""
+			if m.group(5):
+				size_text = m.group(5)
+			lines[i].command = "declare " + is_pers + name + "[%s]" % size_text
 		else:
 			if re.search(list_add_re, line):
 				find_list_name = False
