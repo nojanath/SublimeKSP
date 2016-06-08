@@ -84,15 +84,15 @@ def post_macro_functions(lines):
 	handle_ui_arrays(lines)
 	inline_declare_assignment(lines)
 	multi_dimensional_arrays(lines)
-	calculate_open_size_array(lines)
 	find_list_block(lines)
+	calculate_open_size_array(lines)
+	# for line_obj in lines:
+	# 	print(line_obj.command)
 	handle_lists(lines)
 	variable_persistence_shorthand(lines)
 	ui_property_functions(lines)
 	expand_string_array_declaration(lines)	
 	handle_array_concatenate(lines)
-	# for line_obj in lines:
-	# 	print(line_obj.command)
 
 # Take the original deque of line objects, and for every new line number, add in the line_inserts.
 def replace_lines(lines, line_nums, line_inserts):
@@ -553,13 +553,20 @@ def find_list_block(lines):
 
 	list_block = False
 	list_name = None
+	line_numbers = []
+	new_list_add_text = []
+	index = 0
+	is_matrix = False
 
 	for i in range(len(lines)):
 		line = lines[i].command
-		m = re.search(r"^\s*list\s+" + varname_re_string, line)
+		m = re.search(r"^\s*list\s*%s\s*(?:\[(%s)?\])?" % (varname_re_string, variable_or_int), line)
 		if m:
+			index = 0
 			list_block = True
 			list_name = m.group(1)
+			if m.group(4):
+				is_matrix = "," in m.group(4)
 			# lines[i].command = "declare list " + list_name + "[]"
 			lines[i].command = "declare " + lines[i].command
 		elif list_block and not line.strip() == "":
@@ -567,7 +574,25 @@ def find_list_block(lines):
 				list_block = False
 				lines[i].command = ""
 			else:
-				lines[i].command = "list_add(" + list_name + ", " + lines[i].command + ")"
+				string_list = re.search(commas_not_in_parenth, lines[i].command)
+				if not string_list or not is_matrix:
+					lines[i].command = "list_add(" + list_name + ", " + lines[i].command + ")"
+				else:
+					new_name = list_name + str(index)
+					lines[i].command = "declare %s[] := (%s)" % (new_name, lines[i].command)
+					line_numbers.append(i)
+					new_list_add_text.append("list_add(" + list_name + ", " + new_name + ")")
+				index += 1
+
+	if line_numbers:
+		line_inserts = collections.deque()
+		for i in range(len(line_numbers)):
+			added_lines = []
+
+			added_lines.append(lines[line_numbers[i]].copy(new_list_add_text[i]))
+
+			line_inserts.append(added_lines)
+		replace_lines(lines, line_numbers, line_inserts)		
 
 def find_all_arrays(lines):
 	array_names = []
@@ -593,7 +618,7 @@ def handle_lists(lines):
 	matrix_size_lists = []
 	matrix_list_add_line_nums = []
 	matrix_list_add_text = []
-	matric_list_add_commands = []
+	matrix_list_flag = "{MATRIX_LIST_ADD}"
 
 	list_add_array_template = [
 	"for i := 0 to #size# - 1",
@@ -623,6 +648,7 @@ def handle_lists(lines):
 	list_matrix_tokens = ["#list#", "#size#", "#sizeList#", "#posList#"]
 
 	array_names, array_sizes = find_all_arrays(lines)
+	print(array_names)
 
 	for i in range(len(lines)):
 		line = lines[i].command
@@ -678,13 +704,14 @@ def handle_lists(lines):
 							raise ksp_compiler.ParseException(lines[i], "list_add() can only be used in the init callback.\n")
 
 						value = line[line.find(",") + 1 : len(line) - 1].strip()
+						value = re.sub(var_prefix_re, "", value)
 
 						size = None
 						def increase_iterator(amount):
 							iterators[ii] = iterators[ii] + " + " + str(amount)
-							return amount				
+							return amount	
 
-						if not is_matrix[ii] or not value in array_names:
+						if not is_matrix[ii] or (is_matrix[ii] and not value in array_names):
 							lines[i].command = list_names[ii] + "[" + str(iterators[ii]) + "] := " + value
 							size = increase_iterator(1)
 						else:
@@ -692,7 +719,7 @@ def handle_lists(lines):
 							new_text = replace_tokens(list_add_array_template, list_add_array_tokens, [array_sizes[array_location], "_" + list_title, iterators[ii], value])
 							matrix_list_add_text.append(new_text)
 							matrix_list_add_line_nums.append(i)
-							lines[i].command = "{MATRIX_LIST_ADD}"
+							lines[i].command = matrix_list_flag
 							size = increase_iterator(array_sizes[array_location])						
 						if is_matrix[ii]:
 							matrix_size_lists.append([list_title, size])
@@ -715,12 +742,12 @@ def handle_lists(lines):
 					if matrix_size_lists[j][0] == list_name:
 						size_list.append(str(matrix_size_lists[j][1]))
 				size_counter = "0"
-				for j in range(1, len(size_list)-1):
+				for j in range(len(size_list)-1):
 					size_counter = size_counter + "+" + size_list[j]
 					pos_list.append(size_counter)
 				new_text = replace_tokens(list_matrix_template, list_matrix_tokens, [list_name, iterators[i], ", ".join(size_list), ", ".join(pos_list)])
 				for text in new_text:
-					added_lines.append(lines[line_numbers[i]].copy(text))		
+					added_lines.append(lines[line_numbers[i]].copy(text))	
 
 			current_text = "declare const " + list_name + ".SIZE := " + str(iterators[i])
 			added_lines.append(lines[line_numbers[i]].copy(current_text))
@@ -733,7 +760,7 @@ def handle_lists(lines):
 		line_inserts = collections.deque()
 		line_nums = []
 		for i in range(len(lines)):
-			if lines[i].command == "{MATRIX_LIST_ADD}":
+			if lines[i].command == matrix_list_flag:
 				lines[i].command = ""
 				line_nums.append(i)
 
@@ -746,23 +773,7 @@ def handle_lists(lines):
 
 			line_inserts.append(added_lines)
 		replace_lines(lines, line_nums, line_inserts)
-		
-	# if matrix_list_add_line_nums:
-	# 	line_inserts = collections.deque()
-	# 	line_nums = []
-	# 	for i in range(len(lines)):
-	# 		if lines[i].command = "{MATRIX_LIST_ADD}":
-	# 			line_nums.append(i)
 
-	# 	for i in range(len(matrix_list_add_line_nums)):
-	# 		added_lines = []
-
-	# 		text_list = matrix_list_add_text[i]
-	# 		for text in text_list:
-	# 			added_lines.append(lines[matrix_list_add_line_nums[i]].copy(text))
-
-	# 		line_inserts.append(added_lines)
-	# 	replace_lines(lines, matrix_list_add_line_nums, line_inserts)
 		
 # When an array size is left with an open number of elements, use the list of initialisers to provide the array size.
 # Const variables are also generated for the array size. 
@@ -774,11 +785,13 @@ def calculate_open_size_array(lines):
 	for i in range(len(lines)):
 		line = lines[i].command
 		ls_line = re.sub(r"\s", "", line)
-		if "[]:=(" in ls_line:
+		m = re.search(r"^\s*declare\s+%s?%s\s*\[\s*\]\s*:=\s*\(" % (any_pers_re, varname_re_string), line)		
+		if m:
 			comma_sep = ls_line[ls_line.find("(") + 1 : len(ls_line) - 1]
 			string_list = re.split(commas_not_in_parenth, comma_sep)
 			num_elements = len(string_list)
-			name = line[: line.find("[")].replace("declare", "").strip()
+			# name = line[: line.find("[")].replace("declare", "").strip()
+			name = m.group(2)
 			name = re.sub(var_prefix_re, "", name)
 
 			lines[i].command = line[: line.find("[") + 1] + str(num_elements) + line[line.find("[") + 1 :]
