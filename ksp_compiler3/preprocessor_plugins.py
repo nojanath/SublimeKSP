@@ -151,7 +151,7 @@ def incrementor(lines):
 		line = lines[i].command
 		m = re.search(r"^\s*%s\s*\(" % start_keyword, line)
 		if m:
-			mm = re.search(r"^\s*%s\s*\(\s*%s\s*\,\s*(\d+)s*\,\s*(\d+)\s*\)" % (start_keyword, varname_re_string), line)
+			mm = re.search(r"^\s*%s\s*\(\s*%s\s*\,\s*(.+)s*\,\s*(.+)\s*\)" % (start_keyword, varname_re_string), line)
 			if mm:
 				lines[i].command = ""
 				names.append(mm.group(1))
