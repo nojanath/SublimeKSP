@@ -15,19 +15,10 @@
 
 #=================================================================================================
 # IDEAS:
-#	-	Multidimensional UI arrays.
 #	-	+= -=
-#	-	Built in bounds checking for arrays/pgs, the compiler auto adds print() messages to check that you 
-#		are accessing valid elements. Would be too slow?
 #	-	UI functions to receive arguments in any order: set_bounds(slider, width := 50, x := 20)
 
-	# Create an array of arrays, like this:
-	# list engineParData[]
-	# 	(ENGINE_PAR_RESONANCE, ENGINE_PAR_CUTOFF)
-	# 	(ENGINE_PAR_IRC_LENGTH_RATIO_LR, ENGINE_PAR_SEND_EFFECT_OUTPUT_GAIN)
-	# 	(ENGINE_PAR_RV_SIZE, ENGINE_PAR_RV_DAMPING, ENGINE_PAR_SEND_EFFECT_DRY_LEVEL, ENGINE_PAR_SEND_EFFECT_OUTPUT_GAIN)
-	# end list
-	# Would need to make an array of sizes, positions and a property
+# BUG: commas in strings in list blocks. Can't replicate it?
 
 
 import re
@@ -86,13 +77,13 @@ def post_macro_functions(lines):
 	multi_dimensional_arrays(lines)
 	find_list_block(lines)
 	calculate_open_size_array(lines)
-	# for line_obj in lines:
-	# 	print(line_obj.command)
 	handle_lists(lines)
 	variable_persistence_shorthand(lines)
 	ui_property_functions(lines)
 	expand_string_array_declaration(lines)	
 	handle_array_concatenate(lines)
+	# for line_obj in lines:
+	# 	print(line_obj.command)
 
 # Take the original deque of line objects, and for every new line number, add in the line_inserts.
 def replace_lines(lines, line_nums, line_inserts):
@@ -117,6 +108,21 @@ def replace_lines(lines, line_nums, line_inserts):
 	for i in range(len(lines)):
 		lines.pop()
 	lines.extend(new_lines)	
+
+def simplify_maths_addition(string):
+	parts = string.split("+")
+	count = 0
+	while count < len(parts) - 1:
+		try:
+			# simplified = eval(parts[count] + "+" + parts[count+1])
+			simplified = int(parts[count]) + int(parts[count+1])
+
+			parts[count] = str(simplified)
+			parts.remove(parts[count + 1])
+		except:
+			count += 1
+			pass
+	return("+".join(parts))
 
 #=================================================================================================
 # Remove print functions when the activate_logger() is not present.
@@ -209,7 +215,7 @@ def handle_array_concatenate(lines):
 								raise ksp_compiler.ParseException(lines[i], "Syntax error.\n") 
 					if search_list:  # If everything was found, then the list will be empty.
 						raise ksp_compiler.ParseException(lines[i], "Undeclared array(s) in %s function: %s\n" % (concat_syntax, ', '.join(search_list).strip()))
-					size = re.sub(r"[\[\]]", "", '+'.join(sizes))
+					size = simplify_maths_addition(re.sub(r"[\[\]]", "", '+'.join(sizes)))
 				else:
 					size = m.group(6)
 				lines[i].command = "declare %s[%s]" % (m.group(2), size) 
@@ -530,7 +536,7 @@ def handle_const_block(lines):
 
 			lines[i].command = "declare const " + const_block_name + "." + text + " := " + assignment_text
 			current_assignment_list.append(current_val)
-			current_val = assignment_text + "+1"
+			current_val = simplify_maths_addition(assignment_text + "+1")
 			try:
 				eval(current_val)
 			except:
@@ -614,6 +620,7 @@ def handle_lists(lines):
 	loop_flag    = None
 	iterators    = []
 	is_matrix    = []
+	init_line_num = None
 
 	matrix_size_lists = []
 	matrix_list_add_line_nums = []
@@ -648,7 +655,7 @@ def handle_lists(lines):
 	list_matrix_tokens = ["#list#", "#size#", "#sizeList#", "#posList#"]
 
 	array_names, array_sizes = find_all_arrays(lines)
-	print(array_names)
+	# print(array_names)
 
 	for i in range(len(lines)):
 		line = lines[i].command
@@ -708,7 +715,7 @@ def handle_lists(lines):
 
 						size = None
 						def increase_iterator(amount):
-							iterators[ii] = iterators[ii] + " + " + str(amount)
+							iterators[ii] = simplify_maths_addition(iterators[ii] + " + " + str(amount))
 							return amount	
 
 						if not is_matrix[ii] or (is_matrix[ii] and not value in array_names):
@@ -733,23 +740,23 @@ def handle_lists(lines):
 		for i in range(len(line_numbers)):
 			added_lines = []
 
+			size_list = []
 			list_name = re.sub(var_prefix_re, "", list_names[i])
 			if is_matrix[i]:
 				list_name = list_name[1:]
-				size_list = []
 				pos_list = ["0"]
 				for j in range(len(matrix_size_lists)):
 					if matrix_size_lists[j][0] == list_name:
 						size_list.append(str(matrix_size_lists[j][1]))
 				size_counter = "0"
 				for j in range(len(size_list)-1):
-					size_counter = size_counter + "+" + size_list[j]
+					size_counter = simplify_maths_addition(size_counter + "+" + size_list[j])
 					pos_list.append(size_counter)
-				new_text = replace_tokens(list_matrix_template, list_matrix_tokens, [list_name, iterators[i], ", ".join(size_list), ", ".join(pos_list)])
+				new_text = replace_tokens(list_matrix_template, list_matrix_tokens, [list_name, str(len(size_list)), ", ".join(size_list), ", ".join(pos_list)])
 				for text in new_text:
 					added_lines.append(lines[line_numbers[i]].copy(text))	
 
-			current_text = "declare const " + list_name + ".SIZE := " + str(iterators[i])
+			current_text = "declare const " + list_name + ".SIZE := " + str(len(size_list))
 			added_lines.append(lines[line_numbers[i]].copy(current_text))
 
 			line_inserts.append(added_lines)
@@ -1128,7 +1135,7 @@ def handle_ui_arrays(lines):
 			is_pers = m.group(1)
 			ui_type = m.group(2).strip()
 			var_name = m.group(3).strip()
-			variable_name_no_pre = re.sub(var_prefix_re, "", var_name)
+			variable_name = re.sub(var_prefix_re, "", var_name)
 
 			# Check that if it is a table, it is actually an array.
 			proceed = True
@@ -1142,11 +1149,21 @@ def handle_ui_arrays(lines):
 				underscore = ""
 				if is_multi_dimensional:
 					underscore = "_"
-				string_between_brackets = array_size.replace(",", "*")
-				try:
-					num_element = eval(string_between_brackets)
-				except:
-					raise ksp_compiler.ParseException(lines[index], "Invalid number of elements. Native 'declare const' variables cannot be used here, instead a 'define' const or a literal must be used.\n")			
+				# string_between_brackets = "(" + array_size.replace(",", ")*(") + ")"
+				string_between_brackets = 1
+				dimension_list = array_size.split(",")
+				for dimension in dimension_list:
+					try:
+						string_between_brackets = string_between_brackets * int(eval(dimension))
+					except:
+						raise ksp_compiler.ParseException(lines[index], "Invalid number of elements. Native 'declare const' variables cannot be used here, instead a 'define' const or a literal must be used.\n")			
+				num_element = string_between_brackets
+				# try:
+				# 	num_element = eval(string_between_brackets)
+				# 	print("BETWEEN:@ " + str(num_element))
+				# 	print("BETWEEN TEXT:  " + string_between_brackets)
+				# except:
+				# 	raise ksp_compiler.ParseException(lines[index], "Invalid number of elements. Native 'declare const' variables cannot be used here, instead a 'define' const or a literal must be used.\n")			
 
 				pers_text.append(is_pers)
 				# if there are parameters
@@ -1162,9 +1179,9 @@ def handle_ui_arrays(lines):
 				line_numbers.append(index)
 				num_elements.append(num_element)
 				if is_multi_dimensional:
-					variable_name_no_pre = "_" + variable_name_no_pre
-				variable_names.append(variable_name_no_pre)
-				lines[index].command  = "declare " + variable_name_no_pre + "[" + str(array_size) + "]"
+					variable_name = "_" + variable_name
+				variable_names.append(variable_name)
+				lines[index].command  = "declare " + variable_name + "[" + str(array_size) + "]"
 				if is_multi_dimensional:
 					lines[index].command = lines[index].command + multi_dim_ui_flag
 
