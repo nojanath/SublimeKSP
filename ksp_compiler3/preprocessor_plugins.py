@@ -628,8 +628,8 @@ def handle_lists(lines):
 	matrix_list_flag = "{MATRIX_LIST_ADD}"
 
 	list_add_array_template = [
-	"for i := 0 to #size# - 1",
-	"	#list#[i + #offset#] := #arr#[i]",
+	"for list_it := 0 to #size# - 1",
+	"	#list#[list_it + #offset#] := #arr#[list_it]",
 	"end for"]
 	list_add_array_tokens = ["#size#", "#list#", "#offset#", "#arr#"]
 
@@ -663,6 +663,7 @@ def handle_lists(lines):
 		m = re.search(r"^\s*declare\s+%s?list\s*%s\s*(?:\[(%s)?\])?" % (any_pers_re, varname_re_string, variable_or_int), line)		
 		if re.search(r"^\s*on\s+init", line):
 			init_flag = True
+			init_line_num = i
 		elif re.search(r"^\s*end\s+on", line):
 			if init_flag:
 				for ii in range(len(iterators)):
@@ -762,6 +763,19 @@ def handle_lists(lines):
 			line_inserts.append(added_lines)
 
 		replace_lines(lines, line_numbers, line_inserts)
+
+		# Add declare variables at the start on the init callback.
+		new_lines = collections.deque()
+		for i in range(0, init_line_num + 1):
+			new_lines.append(lines[i])
+
+		new_lines.append(lines[init_line_num].copy("	declare list_it"))
+		for i in range(init_line_num + 1, len(lines)):
+			new_lines.append(lines[i])
+
+		for i in range(len(lines)):
+			lines.pop()
+		lines.extend(new_lines)
 
 	if matrix_list_add_line_nums:
 		line_inserts = collections.deque()
