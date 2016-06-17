@@ -777,7 +777,7 @@ set_bounds(<control>, <x>, <y>, <width>, <height>)
 set_control_par_arr(<ui-id>,<control-parameter>,<value>,<index>)
 set_control_par_str(<ui-id>,<control-parameter>,<text>)
 set_controller(<controller-number>,<controller-value>)
-set_engine_par(<parameter>,<value>,<group>,<slot>,<generic>)
+set_engine_par(<parameter>,<value>,<group>,<slot>,<generic>):integer
 set_engine_par_m(<parameter>,<value>,<instrument-slot-id>,<unknown>,<unknown>)
 set_event_mark(<ID-number>,<bit-mark>)
 set_event_par(<ID-number>,<index>,<value>)
