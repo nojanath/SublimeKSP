@@ -757,7 +757,13 @@ def handle_lists(lines):
 				for text in new_text:
 					added_lines.append(lines[line_numbers[i]].copy(text))	
 
-			current_text = "declare const " + list_name + ".SIZE := " + str(len(size_list))
+			const_size = 0
+			if len(size_list) == 0:
+				const_size = iterators[i]
+			else:
+				const_size = len(size_list)
+
+			current_text = "declare const " + list_name + ".SIZE := " + str(const_size)
 			added_lines.append(lines[line_numbers[i]].copy(current_text))
 
 			line_inserts.append(added_lines)
