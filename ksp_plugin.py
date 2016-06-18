@@ -122,7 +122,6 @@ class CompileKspThread(threading.Thread):
 
     def run(self, *args):
         global last_compiler
-
         #view = sublime.active_window().active_view()
         view = self.view
         code = view.substr(sublime.Region(0, view.size()))
@@ -220,7 +219,7 @@ for f in functions:
 
 # for a certain set of functions with return values one often discards the return value
 # add them to the second set too
-for func in ['play_note', 'load_array_str']:
+for func in ['play_note', 'load_array_str', "set_engine_par"]:
     for a, b in builtin_compl_funcs1:
         if b == func or b.startswith(func + '('):
             builtin_compl_funcs2.append((a, b))
