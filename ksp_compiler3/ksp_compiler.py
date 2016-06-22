@@ -1489,17 +1489,19 @@ class KSPCompiler(object):
 				raise ParseException(Line("", [(None, 1)], None), 'No filepath in activate_logger.\n')
 			filepath = filepath_m.group(0).replace("\"", "")
 			valid_file_path_flag = False
-			if re.search(r"(?m)^\w:(\/[a-zA-Z_\-\s0-9\.]+)*\.nka$", filepath):
+			if re.search(r"(?m)^(?:\w:)?(\/[a-zA-Z_\-\s0-9\.]+)*\.nka$", filepath):
+			# if re.search(r"(?m)^(\/[a-zA-Z_\-\s0-9\.]+)*\.nka$", filepath):
 				valid_file_path_flag = True
 				m = re.search(r"/[^/]*.nka", filepath)
 				filename = "_" + m.group(0).replace("/", "").replace(".nka", "").replace("-", "")
 				filename = re.sub(r"\s", "", filename)
 				amended_logger_code = amended_logger_code.replace("#name#", filename)
-			if re.search(r"(?m)^\w:(\/[a-zA-Z_\-\s0-9\.]+)*\/$", filepath):
+			if re.search(r"(?m)^(?:\w:)?(\/[a-zA-Z_\-\s0-9\.]+)*\/$", filepath):
+			# if re.search(r"(?m)^(\/[a-zA-Z_\-\s0-9\.]+)*\/$", filepath):
 				valid_file_path_flag = True
 				amended_logger_code = amended_logger_code.replace("#name#", "logger").replace("logger_filepath := filepath", "logger_filepath := filepath & \"logger.nka\"")
 			if valid_file_path_flag == False:
-				raise ParseException(Line("", [(None, 1)], None), 'Filepath of activate_logger is invalid.\nFilepaths must be in this format: "C:/Users/Name/log_file.nka"')
+				raise ParseException(Line("", [(None, 1)], None), 'Filepath of activate_logger is invalid.\nFilepaths must be in this format: "C:/Users/Name/LogFile.nka" or "/Users/Name/LogFile.nka"')
 			source = source + amended_logger_code
 
 			m = re.search(r"(?m)^\s*on\s+persistence_changed", source)
