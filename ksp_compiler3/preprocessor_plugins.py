@@ -82,8 +82,8 @@ def post_macro_functions(lines):
 	ui_property_functions(lines)
 	expand_string_array_declaration(lines)	
 	handle_array_concatenate(lines)
-	# for line_obj in lines:
-	# 	print(line_obj.command)
+	for line_obj in lines:
+		print(line_obj.command)
 
 # Take the original deque of line objects, and for every new line number, add in the line_inserts.
 def replace_lines(lines, line_nums, line_inserts):
@@ -516,11 +516,6 @@ def handle_const_block(lines):
 					assignment_text = assignment_text + ", "
 			assignment_text = assignment_text + ")"
 
-			try:
-				eval(num_elements)
-			except:
-				pass
-
 			size_declaration = "declare const " + const_block_name + ".SIZE := " + str(num_elements)
 			array_size_text.append(size_declaration)
 			lines[start_line_num].command = lines[start_line_num].command.replace("]", str(num_elements) + "]")
@@ -535,12 +530,9 @@ def handle_const_block(lines):
 				text = line[: line.find(":=")].strip()
 
 			lines[i].command = "declare const " + const_block_name + "." + text + " := " + assignment_text
-			current_assignment_list.append(current_val)
+			current_assignment_list.append(assignment_text)
 			current_val = simplify_maths_addition(assignment_text + "+1")
-			try:
-				eval(current_val)
-			except:
-				pass
+
 			num_elements += 1
 
 	if line_numbers:
