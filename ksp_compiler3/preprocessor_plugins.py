@@ -126,6 +126,33 @@ def simplify_maths_addition(string):
 	return("+".join(parts))
 
 #=================================================================================================
+# This isnt going to work....
+# def call_return_functions_anywhere(lines):
+# 	new_lines = collections.deque()
+# 	function_start_lineno = 0
+# 	function_name_list = []
+# 	function_name = ""
+# 	is_return_func = False
+# 	any_func_re = r"(function|taskfunc)"
+
+# 	for i in range(len(lines)):
+# 		line = lines[i].command.strip()
+# 		m = re.search(r"^%s\s+([^\(\-\s]+)(?:\s*\(.*\))?\s*\-\>\s*.+$" % any_func_re, line)
+# 		if m:
+# 			is_return_func = True
+# 			function_name = m.group(2)
+# 			function_start_lineno = i
+# 		elif is_return_func and re.search(r"^end\s+%s$" % any_func_re, line):
+# 			is_return_func = False
+# 			if i - function_start_lineno > 2:
+# 				function_name_list.append(function_name)
+
+# 	print(function_name_list)
+
+# 	for i in range(len(lines)):
+# 		line = lines[i].command.strip()
+
+
 def callbacks_are_functions(lines):
 	in_block = False
 	callback_name = None
@@ -138,7 +165,6 @@ def callbacks_are_functions(lines):
 			function_name = re.sub(r"(\s|\()", "_", line)
 			function_name = re.sub(r"\)", "", function_name)
 			new_lines.append(lines[i].copy("function " + function_name))
-			print(line)
 		elif in_block and re.search(r"^end\s+on$", line):
 			in_block = False
 			new_lines.append(lines[i].copy("end function"))
@@ -302,6 +328,20 @@ def handle_array_concatenate(lines):
 		lines.extend(new_lines)	
 
 
+def inspect_family_state(lines, text_lineno):
+
+	current_family_names = []
+
+	for i in range(len(lines)):
+		if i == text_lineno:
+			return (".".join(current_family_names))
+			break
+		line = lines[i].command.strip()
+		m = re.search(r"^family\s+(.+)$", line)
+		if m:
+			current_family_names.append(m.group(1))
+		elif re.search(r"^end\s+family$", line):
+			current_family_names.pop()
 
 
 # Create multidimensional arrays. 
@@ -311,6 +351,8 @@ def multi_dimensional_arrays(lines):
 	dimensions = []
 	num_dimensions = []
 	name = []
+	property_names = []
+	data_array_names = []
 	line_numbers = []
 
 	for i in range(len(lines)):
@@ -335,8 +377,18 @@ def multi_dimensional_arrays(lines):
 				line = line.replace(multi_dim_ui_flag, "")
 			else:
 				underscore = "_"
-			name.append(underscore + variable_name.strip())
-			new_text = line.replace(variable_name, prefix + underscore + variable_name)
+			current_family_prefix = inspect_family_state(lines, i)
+			fam_prefix = ""
+			if current_family_prefix:
+				fam_prefix = current_family_prefix + "."
+
+			data_array_name = fam_prefix + underscore + variable_name.strip()
+			data_array_names.append(data_array_name)
+						
+			property_names.append(variable_name.strip())
+
+
+			new_text = line.replace(variable_name, prefix + underscore + variable_name.strip())
 			new_text = new_text.replace("[", "[(").replace("]", ")]").replace(",", ")*(")
 			lines[i].command = new_text
 			
@@ -346,11 +398,11 @@ def multi_dimensional_arrays(lines):
 			added_lines = []
 	
 			for ii in range(num_dimensions[i]):
-				current_text = "declare const " + name[i][1:] + ".SIZE_D" + str(ii + 1) + " := " + dimensions[i][ii]
+				current_text = "declare const " + property_names[i] + ".SIZE_D" + str(ii + 1) + " := " + dimensions[i][ii]
 				added_lines.append(lines[line_numbers[i]].copy(current_text))
 
 			# start property
-			current_text = "property " + name[i][1:]
+			current_text = "property " + property_names[i]
 			added_lines.append(lines[i].copy(current_text))
 
 			# start get function
@@ -362,7 +414,7 @@ def multi_dimensional_arrays(lines):
 			added_lines.append(lines[i].copy(current_text))
 
 			# get function body
-			current_text = "result := " + name[i] + "["
+			current_text = "result := " + data_array_names[i] + "["
 			for ii in range(num_dimensions[i]):
 				if ii != num_dimensions[i] - 1: 
 					for iii in range(num_dimensions[i] - 1, ii, -1):
@@ -385,7 +437,7 @@ def multi_dimensional_arrays(lines):
 			added_lines.append(lines[i].copy(current_text))
 
 			# set function body
-			current_text = name[i] + "["
+			current_text = data_array_names[i] + "["
 			for ii in range(num_dimensions[i]):
 				if ii != num_dimensions[i] - 1: 
 					for iii in range(num_dimensions[i] - 1, ii, -1):
