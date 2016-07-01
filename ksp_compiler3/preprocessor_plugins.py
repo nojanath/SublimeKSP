@@ -70,7 +70,7 @@ def pre_macro_functions(lines):
 
 # This function is called after the macros have been expanded.
 def post_macro_functions(lines):
-	callbacks_are_functions(lines)
+	# callbacks_are_functions(lines)
 	incrementor(lines)
 	handle_const_block(lines)
 	handle_ui_arrays(lines)
@@ -83,8 +83,8 @@ def post_macro_functions(lines):
 	ui_property_functions(lines)
 	expand_string_array_declaration(lines)	
 	handle_array_concatenate(lines)
-	for line_obj in lines:
-		print(line_obj.command)
+	# for line_obj in lines:
+	# 	print(line_obj.command)
 
 # Take the original deque of line objects, and for every new line number, add in the line_inserts.
 def replace_lines(lines, line_nums, line_inserts):
@@ -367,14 +367,19 @@ def multi_dimensional_arrays(lines):
 				prefix = ""
 
 			dimensions_split = line[line.find("[") + 1 : line.find("]")].split(",") 
+			# for i in range(len(dimensions_split)):
+			# 	dimensions_split[i] = "(" + dimensions_split[i] + ")"
+			# print(dimensions_split)
 			num_dimensions.append(len(dimensions_split))
 			dimensions.append(dimensions_split)
 
 			line_numbers.append(i)
 
 			underscore = ""
+			property_name = variable_name.strip()
 			if multi_dim_ui_flag in line:
 				line = line.replace(multi_dim_ui_flag, "")
+				property_name = property_name[1:]
 			else:
 				underscore = "_"
 			current_family_prefix = inspect_family_state(lines, i)
@@ -384,8 +389,9 @@ def multi_dimensional_arrays(lines):
 
 			data_array_name = fam_prefix + underscore + variable_name.strip()
 			data_array_names.append(data_array_name)
-						
-			property_names.append(variable_name.strip())
+
+									
+			property_names.append(property_name)
 
 
 			new_text = line.replace(variable_name, prefix + underscore + variable_name.strip())
@@ -418,7 +424,8 @@ def multi_dimensional_arrays(lines):
 			for ii in range(num_dimensions[i]):
 				if ii != num_dimensions[i] - 1: 
 					for iii in range(num_dimensions[i] - 1, ii, -1):
-						current_text = current_text + dimensions[i][iii] + " * "
+						current_text = current_text + "(" + dimensions[i][iii] + ")" + " * "
+						# current_text = current_text + dimensions[i][iii] + " * "
 				current_text = current_text + "v" + str(ii + 1)
 				if ii != num_dimensions[i] - 1:
 					current_text = current_text + " + "
@@ -441,7 +448,8 @@ def multi_dimensional_arrays(lines):
 			for ii in range(num_dimensions[i]):
 				if ii != num_dimensions[i] - 1: 
 					for iii in range(num_dimensions[i] - 1, ii, -1):
-						current_text = current_text + dimensions[i][iii] + " * "
+						current_text = current_text + "(" + dimensions[i][iii] + ")" + " * "
+						# current_text = current_text + dimensions[i][iii] + " * "
 				current_text = current_text + "v" + str(ii + 1)
 				if ii != num_dimensions[i] - 1:
 					current_text = current_text + " + "
