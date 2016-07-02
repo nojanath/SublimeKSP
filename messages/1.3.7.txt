@@ -1,0 +1,7 @@
+Version: 1.3.7
+
+Bug fixes:
+- pers and read now work inside families
+- Fixed bug with size calculations in multidimensional arrays
+- Multidimensional arrays now work inside familes
+- First value in const block is now set correctly
