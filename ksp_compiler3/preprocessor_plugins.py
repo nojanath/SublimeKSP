@@ -152,31 +152,31 @@ def simplify_maths_addition(string):
 # 	for i in range(len(lines)):
 # 		line = lines[i].command.strip()
 
-
-def callbacks_are_functions(lines):
-	in_block = False
-	callback_name = None
-	new_lines = collections.deque()
-	for i in range(len(lines)):
-		line = lines[i].command.strip()
-		if re.search(r"^on\s+\w+(\s*\(.+\))?$", line) and not re.search(init_re, line):
-			in_block = True
-			callback_name = lines[i]
-			function_name = re.sub(r"(\s|\()", "_", line)
-			function_name = re.sub(r"\)", "", function_name)
-			new_lines.append(lines[i].copy("function " + function_name))
-		elif in_block and re.search(r"^end\s+on$", line):
-			in_block = False
-			new_lines.append(lines[i].copy("end function"))
-			new_lines.append(callback_name)
-			new_lines.append(lines[i].copy(function_name))
-			new_lines.append(callback_name.copy("end on"))
-		else:
-			new_lines.append(lines[i])
+# I think this is too clunky at the moment, it's inefficent for functions for each callback to be generated.
+# def callbacks_are_functions(lines):
+# 	in_block = False
+# 	callback_name = None
+# 	new_lines = collections.deque()
+# 	for i in range(len(lines)):
+# 		line = lines[i].command.strip()
+# 		if re.search(r"^on\s+\w+(\s*\(.+\))?$", line) and not re.search(init_re, line):
+# 			in_block = True
+# 			callback_name = lines[i]
+# 			function_name = re.sub(r"(\s|\()", "_", line)
+# 			function_name = re.sub(r"\)", "", function_name)
+# 			new_lines.append(lines[i].copy("function " + function_name))
+# 		elif in_block and re.search(r"^end\s+on$", line):
+# 			in_block = False
+# 			new_lines.append(lines[i].copy("end function"))
+# 			new_lines.append(callback_name)
+# 			new_lines.append(lines[i].copy(function_name))
+# 			new_lines.append(callback_name.copy("end on"))
+# 		else:
+# 			new_lines.append(lines[i])
 	
-	for i in range(len(lines)):
-		lines.pop()
-	lines.extend(new_lines)	
+# 	for i in range(len(lines)):
+# 		lines.pop()
+# 	lines.extend(new_lines)	
 
 
 # Remove print functions when the activate_logger() is not present.
