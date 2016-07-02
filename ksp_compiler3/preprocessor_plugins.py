@@ -70,6 +70,7 @@ def pre_macro_functions(lines):
 
 # This function is called after the macros have been expanded.
 def post_macro_functions(lines):
+	# callbacks_are_functions(lines)
 	incrementor(lines)
 	handle_const_block(lines)
 	handle_ui_arrays(lines)
@@ -82,8 +83,8 @@ def post_macro_functions(lines):
 	ui_property_functions(lines)
 	expand_string_array_declaration(lines)	
 	handle_array_concatenate(lines)
-	for line_obj in lines:
-		print(line_obj.command)
+	# for line_obj in lines:
+	# 	print(line_obj.command)
 
 # Take the original deque of line objects, and for every new line number, add in the line_inserts.
 def replace_lines(lines, line_nums, line_inserts):
@@ -125,6 +126,59 @@ def simplify_maths_addition(string):
 	return("+".join(parts))
 
 #=================================================================================================
+# This isnt going to work....
+# def call_return_functions_anywhere(lines):
+# 	new_lines = collections.deque()
+# 	function_start_lineno = 0
+# 	function_name_list = []
+# 	function_name = ""
+# 	is_return_func = False
+# 	any_func_re = r"(function|taskfunc)"
+
+# 	for i in range(len(lines)):
+# 		line = lines[i].command.strip()
+# 		m = re.search(r"^%s\s+([^\(\-\s]+)(?:\s*\(.*\))?\s*\-\>\s*.+$" % any_func_re, line)
+# 		if m:
+# 			is_return_func = True
+# 			function_name = m.group(2)
+# 			function_start_lineno = i
+# 		elif is_return_func and re.search(r"^end\s+%s$" % any_func_re, line):
+# 			is_return_func = False
+# 			if i - function_start_lineno > 2:
+# 				function_name_list.append(function_name)
+
+# 	print(function_name_list)
+
+# 	for i in range(len(lines)):
+# 		line = lines[i].command.strip()
+
+# I think this is too clunky at the moment, it's inefficent for functions for each callback to be generated.
+# def callbacks_are_functions(lines):
+# 	in_block = False
+# 	callback_name = None
+# 	new_lines = collections.deque()
+# 	for i in range(len(lines)):
+# 		line = lines[i].command.strip()
+# 		if re.search(r"^on\s+\w+(\s*\(.+\))?$", line) and not re.search(init_re, line):
+# 			in_block = True
+# 			callback_name = lines[i]
+# 			function_name = re.sub(r"(\s|\()", "_", line)
+# 			function_name = re.sub(r"\)", "", function_name)
+# 			new_lines.append(lines[i].copy("function " + function_name))
+# 		elif in_block and re.search(r"^end\s+on$", line):
+# 			in_block = False
+# 			new_lines.append(lines[i].copy("end function"))
+# 			new_lines.append(callback_name)
+# 			new_lines.append(lines[i].copy(function_name))
+# 			new_lines.append(callback_name.copy("end on"))
+# 		else:
+# 			new_lines.append(lines[i])
+	
+# 	for i in range(len(lines)):
+# 		lines.pop()
+# 	lines.extend(new_lines)	
+
+
 # Remove print functions when the activate_logger() is not present.
 def remove_print(lines):
 	print_line_numbers = []
@@ -274,6 +328,20 @@ def handle_array_concatenate(lines):
 		lines.extend(new_lines)	
 
 
+def inspect_family_state(lines, text_lineno):
+
+	current_family_names = []
+
+	for i in range(len(lines)):
+		if i == text_lineno:
+			return (".".join(current_family_names))
+			break
+		line = lines[i].command.strip()
+		m = re.search(r"^family\s+(.+)$", line)
+		if m:
+			current_family_names.append(m.group(1))
+		elif re.search(r"^end\s+family$", line):
+			current_family_names.pop()
 
 
 # Create multidimensional arrays. 
@@ -283,6 +351,8 @@ def multi_dimensional_arrays(lines):
 	dimensions = []
 	num_dimensions = []
 	name = []
+	property_names = []
+	data_array_names = []
 	line_numbers = []
 
 	for i in range(len(lines)):
@@ -297,18 +367,34 @@ def multi_dimensional_arrays(lines):
 				prefix = ""
 
 			dimensions_split = line[line.find("[") + 1 : line.find("]")].split(",") 
+			# for i in range(len(dimensions_split)):
+			# 	dimensions_split[i] = "(" + dimensions_split[i] + ")"
+			# print(dimensions_split)
 			num_dimensions.append(len(dimensions_split))
 			dimensions.append(dimensions_split)
 
 			line_numbers.append(i)
 
 			underscore = ""
+			property_name = variable_name.strip()
 			if multi_dim_ui_flag in line:
 				line = line.replace(multi_dim_ui_flag, "")
+				property_name = property_name[1:]
 			else:
 				underscore = "_"
-			name.append(underscore + variable_name.strip())
-			new_text = line.replace(variable_name, prefix + underscore + variable_name)
+			current_family_prefix = inspect_family_state(lines, i)
+			fam_prefix = ""
+			if current_family_prefix:
+				fam_prefix = current_family_prefix + "."
+
+			data_array_name = fam_prefix + underscore + variable_name.strip()
+			data_array_names.append(data_array_name)
+
+									
+			property_names.append(property_name)
+
+
+			new_text = line.replace(variable_name, prefix + underscore + variable_name.strip())
 			new_text = new_text.replace("[", "[(").replace("]", ")]").replace(",", ")*(")
 			lines[i].command = new_text
 			
@@ -318,11 +404,11 @@ def multi_dimensional_arrays(lines):
 			added_lines = []
 	
 			for ii in range(num_dimensions[i]):
-				current_text = "declare const " + name[i][1:] + ".SIZE_D" + str(ii + 1) + " := " + dimensions[i][ii]
+				current_text = "declare const " + property_names[i] + ".SIZE_D" + str(ii + 1) + " := " + dimensions[i][ii]
 				added_lines.append(lines[line_numbers[i]].copy(current_text))
 
 			# start property
-			current_text = "property " + name[i][1:]
+			current_text = "property " + property_names[i]
 			added_lines.append(lines[i].copy(current_text))
 
 			# start get function
@@ -334,11 +420,12 @@ def multi_dimensional_arrays(lines):
 			added_lines.append(lines[i].copy(current_text))
 
 			# get function body
-			current_text = "result := " + name[i] + "["
+			current_text = "result := " + data_array_names[i] + "["
 			for ii in range(num_dimensions[i]):
 				if ii != num_dimensions[i] - 1: 
 					for iii in range(num_dimensions[i] - 1, ii, -1):
-						current_text = current_text + dimensions[i][iii] + " * "
+						current_text = current_text + "(" + dimensions[i][iii] + ")" + " * "
+						# current_text = current_text + dimensions[i][iii] + " * "
 				current_text = current_text + "v" + str(ii + 1)
 				if ii != num_dimensions[i] - 1:
 					current_text = current_text + " + "
@@ -357,11 +444,12 @@ def multi_dimensional_arrays(lines):
 			added_lines.append(lines[i].copy(current_text))
 
 			# set function body
-			current_text = name[i] + "["
+			current_text = data_array_names[i] + "["
 			for ii in range(num_dimensions[i]):
 				if ii != num_dimensions[i] - 1: 
 					for iii in range(num_dimensions[i] - 1, ii, -1):
-						current_text = current_text + dimensions[i][iii] + " * "
+						current_text = current_text + "(" + dimensions[i][iii] + ")" + " * "
+						# current_text = current_text + dimensions[i][iii] + " * "
 				current_text = current_text + "v" + str(ii + 1)
 				if ii != num_dimensions[i] - 1:
 					current_text = current_text + " + "
@@ -877,11 +965,16 @@ def variable_persistence_shorthand(lines):
 	line_numbers = []
 	variable_names = []
 	is_read = []
+	fam_count = 0
 
 	for i in range(len(lines)):
 		line = lines[i].command.strip()
 		m = re.search(r"^\s*declare\s+" + any_pers_re, line)
-		if m:
+		if re.search(r"^family\s+.+", line):
+			fam_count += 1
+		elif re.search(r"^end\s+family$", line):
+			fam_count -= 1
+		elif m:
 			is_read.append(read_keyword in m.group(1))
 			variable_name = line
 			variable_name = re.sub(ui_type_re, "", variable_name)
@@ -893,6 +986,14 @@ def variable_persistence_shorthand(lines):
 				variable_name = variable_name.replace(variable_name[variable_name.find("(") : ], "")
 			if variable_name.find(":=") != -1:
 				variable_name = variable_name.replace(variable_name[variable_name.find(":=") : ], "")
+
+			if fam_count != 0: # Counting the family state is much faster than inspecting on every line.
+				fam_pre = inspect_family_state(lines, i)
+				symbol_prefix = re.search("(%s)" % var_prefix_re, variable_name)
+				if symbol_prefix:
+					variable_name = variable_name.replace(symbol_prefix.group(1), "")
+				if fam_pre:
+					variable_name = fam_pre + "." + variable_name.strip()
 
 			variable_names.append(variable_name.strip())
 			line_numbers.append(i)
@@ -1137,6 +1238,7 @@ def handle_ui_arrays(lines):
 	num_elements = []
 	pers_text = []
 	multidimensional = []
+	family_prefixes = []
 
 	# Find all of the array declarations.
 	for index in range(len(lines)):
@@ -1156,6 +1258,11 @@ def handle_ui_arrays(lines):
 					proceed = False
 
 			if proceed:
+				current_family_name = inspect_family_state(lines, index)
+				if current_family_name:
+					family_prefixes.append(current_family_name + ".")
+				else:
+					family_prefixes.append("")
 				array_size = ls_line[ls_line.find("[") + 1 : ls_line.find("]")]
 				is_multi_dimensional = "," in array_size
 				underscore = ""
@@ -1221,7 +1328,7 @@ def handle_ui_arrays(lines):
 				added_lines.append(lines[line_numbers[i]].copy(current_text))
 
 				# Add ID to array.
-				add_to_array_text = variable_names[i] + "[" + str(ii) + "]" + " := get_ui_id(" + variable_names[i] + str(ii) + ")"
+				add_to_array_text = family_prefixes[i] + variable_names[i] + "[" + str(ii) + "]" + " := get_ui_id(" + family_prefixes[i]+ variable_names[i] + str(ii) + ")"
 				added_lines.append(lines[i].copy(add_to_array_text))
 
 			line_inserts.append(added_lines)
