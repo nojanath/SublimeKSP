@@ -965,11 +965,16 @@ def variable_persistence_shorthand(lines):
 	line_numbers = []
 	variable_names = []
 	is_read = []
+	fam_count = 0
 
 	for i in range(len(lines)):
 		line = lines[i].command.strip()
 		m = re.search(r"^\s*declare\s+" + any_pers_re, line)
-		if m:
+		if re.search(r"^family\s+.+", line):
+			fam_count += 1
+		elif re.search(r"^end\s+family$", line):
+			fam_count -= 1
+		elif m:
 			is_read.append(read_keyword in m.group(1))
 			variable_name = line
 			variable_name = re.sub(ui_type_re, "", variable_name)
@@ -981,6 +986,14 @@ def variable_persistence_shorthand(lines):
 				variable_name = variable_name.replace(variable_name[variable_name.find("(") : ], "")
 			if variable_name.find(":=") != -1:
 				variable_name = variable_name.replace(variable_name[variable_name.find(":=") : ], "")
+
+			if fam_count != 0: # Counting the family state is much faster than inspecting on every line.
+				fam_pre = inspect_family_state(lines, i)
+				symbol_prefix = re.search("(%s)" % var_prefix_re, variable_name)
+				if symbol_prefix:
+					variable_name = variable_name.replace(symbol_prefix.group(1), "")
+				if fam_pre:
+					variable_name = fam_pre + "." + variable_name.strip()
 
 			variable_names.append(variable_name.strip())
 			line_numbers.append(i)
@@ -1225,6 +1238,7 @@ def handle_ui_arrays(lines):
 	num_elements = []
 	pers_text = []
 	multidimensional = []
+	family_prefixes = []
 
 	# Find all of the array declarations.
 	for index in range(len(lines)):
@@ -1244,6 +1258,11 @@ def handle_ui_arrays(lines):
 					proceed = False
 
 			if proceed:
+				current_family_name = inspect_family_state(lines, index)
+				if current_family_name:
+					family_prefixes.append(current_family_name + ".")
+				else:
+					family_prefixes.append("")
 				array_size = ls_line[ls_line.find("[") + 1 : ls_line.find("]")]
 				is_multi_dimensional = "," in array_size
 				underscore = ""
@@ -1309,7 +1328,7 @@ def handle_ui_arrays(lines):
 				added_lines.append(lines[line_numbers[i]].copy(current_text))
 
 				# Add ID to array.
-				add_to_array_text = variable_names[i] + "[" + str(ii) + "]" + " := get_ui_id(" + variable_names[i] + str(ii) + ")"
+				add_to_array_text = family_prefixes[i] + variable_names[i] + "[" + str(ii) + "]" + " := get_ui_id(" + family_prefixes[i]+ variable_names[i] + str(ii) + ")"
 				added_lines.append(lines[i].copy(add_to_array_text))
 
 			line_inserts.append(added_lines)
