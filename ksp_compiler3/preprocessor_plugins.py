@@ -52,7 +52,7 @@ concat_syntax = "concat" # The name of the function to concat arrays.
 multi_dim_ui_flag = " { UI ARRAY }"
 
 ui_type_re = r"(?<=)(ui_button|ui_switch|ui_knob|ui_label|ui_level_meter|ui_menu|ui_slider|ui_table|ui_text_edit|ui_waveform|ui_value_edit)(?=\s)"
-keywords_re = r"(?<=)(declare|const|" + pers_keyword + "|" + read_keyword + "|polyphonic|list)(?=\s)"
+keywords_re = r"(?<=)(declare|const|%s|%s|polyphonic|list)(?=\s)" % (pers_keyword, read_keyword)
 
 any_pers_re = r"(%s\s+|%s\s+)" % (pers_keyword, read_keyword)
 pers_re = r"\b%s\b" % pers_keyword
@@ -70,6 +70,7 @@ def pre_macro_functions(lines):
 
 # This function is called after the macros have been expanded.
 def post_macro_functions(lines):
+	handle_structs(lines)
 	# callbacks_are_functions(lines)
 	incrementor(lines)
 	handle_const_block(lines)
@@ -83,8 +84,8 @@ def post_macro_functions(lines):
 	ui_property_functions(lines)
 	expand_string_array_declaration(lines)	
 	handle_array_concatenate(lines)
-	# for line_obj in lines:
-	# 	print(line_obj.command)
+	for line_obj in lines:
+		print(line_obj.command)
 
 # Take the original deque of line objects, and for every new line number, add in the line_inserts.
 def replace_lines(lines, line_nums, line_inserts):
@@ -178,6 +179,123 @@ def simplify_maths_addition(string):
 # 		lines.pop()
 # 	lines.extend(new_lines)	
 
+def handle_structs(lines):
+	struct_syntax = "\&"
+
+
+	struct_names = []
+	struct_members = []
+	struct_commands = []
+
+	current_struct_members = []
+	current_struct_commands = []
+	in_struct_flag = False
+	for i in range(len(lines)):
+		line = lines[i].command.strip()
+		m = re.search(r"^struct\s+%s$" % varname_re_string, line)
+		if m:
+			current_struct_members = []
+			current_struct_commands = []
+			struct_names.append(m.group(1))
+			if in_struct_flag:
+				raise ksp_compiler.ParseException(lines[i], "Struct definitions cannot be nested.\n")	 
+			in_struct_flag = True
+			lines[i].command = ""
+		elif re.search(r"^end\s+struct$", line):
+			in_struct_flag = False
+			struct_members.append(current_struct_members)
+			struct_commands.append(current_struct_commands)
+			lines[i].command = ""
+			
+		elif in_struct_flag:
+			if line:
+				if not line.startswith("declare"):
+					raise ksp_compiler.ParseException(lines[i], "Structs may only consist of variable declarations.\n")
+				variable_name = isolate_variable_name(line)
+				current_struct_members.append(variable_name)
+				current_struct_commands.append(line)
+			lines[i].command = ""
+
+
+	for i in range(len(struct_members)):
+		j = 0
+		counter = 0
+		still_structs_flag = False
+		while j < len(struct_members[i]) or still_structs_flag == True:
+			m = re.search(r"^([^%s]+\.)?%s\s*%s\s+%s" % (struct_syntax, struct_syntax, varname_re_string, varname_re_string), struct_members[i][j])
+			if m:
+				struct_members[i].remove(struct_members[i][j])
+				struct_commands[i].remove(struct_commands[i][j])
+				struct_num = struct_names.index(m.group(2))
+				struct_variable = m.group(5).strip()
+				if m.group(1):
+					struct_variable = m.group(1) + struct_variable
+				if struct_num == i:
+					raise ksp_compiler.ParseException(lines[0], "Declared struct cannot be the same as struct parent.\n")
+
+				insert_location = j
+				for member_idx in range(len(struct_members[struct_num])):
+					var_name = struct_variable + "." + struct_members[struct_num][member_idx]
+					struct_members[i].insert(insert_location, var_name)
+					new_command = re.sub(r"\b%s\b" % struct_members[struct_num][member_idx], var_name, struct_commands[struct_num][member_idx])
+					struct_commands[i].insert(insert_location, new_command)
+					insert_location += 1
+				for member in struct_members[i]:
+					mm = re.search(r"^(?:[^%s]+\.)?%s\s*%s\s+%s" % (struct_syntax, struct_syntax, varname_re_string, varname_re_string), member)
+					if mm:
+						still_structs_flag = True
+			j += 1
+
+			if j >= len(struct_members[i]) and still_structs_flag:# and still_structs_flag == True:
+				still_structs_flag = False
+				j = 0
+				counter += 1
+				if counter > 100000:
+					break
+					print("ERROR! Too many iterations while building structs.")
+
+	def make_command_an_array(variable_name, command, array_size_string):
+		if "[" in command:
+			new_command = command[: command.find("[")+1] + array_size_string + ", " + command[command.find("[")+1 :]
+		else:
+			new_command = re.sub(r"\b%s\b" % variable_name, "%s[%s]" % (variable_name, array_size_string), command)
+		return(new_command)
+
+	def add_prefix_to_struct_commands(command_list, member_list, prefix):
+		new_command_list = []
+		for i in range(len(command_list)):
+			new_command = re.sub(r"\b%s\b" % member_list[i], prefix + "." + member_list[i], command_list[i])
+			new_command_list.append(new_command)
+		return(new_command_list)
+
+	new_lines = collections.deque()
+	for i in range(len(lines)):
+		line = lines[i].command.strip()
+		m = re.search(r"^declare\s+%s\s*%s\s+%s(?:\[(.*)\])?$" % (struct_syntax, varname_re_string, varname_re_string), line)
+		if m:
+			struct_name = m.group(1)
+			variable_name = m.group(4)
+			try:
+				struct_name_index = struct_names.index(struct_name)
+			except ValueError:
+				raise ksp_compiler.ParseException(lines[i], "Undeclared struct %s\n" % struct_name)
+
+			new_command_list = struct_commands[struct_name_index]
+			if m.group(7):
+				print
+				for j in range(len(new_command_list)):
+					new_command_list[j] = make_command_an_array(struct_members[struct_name_index][j], new_command_list[j], m.group(7))
+			new_command_list = add_prefix_to_struct_commands(new_command_list, struct_members[struct_name_index], variable_name)
+			# print(new_command_list)
+
+			for command in new_command_list:
+				new_lines.append(lines[i].copy(command))
+		else:
+			new_lines.append(lines[i])
+
+	for i in range(len(lines)):
+		lines.pop()
+	lines.extend(new_lines)	
 
 # Remove print functions when the activate_logger() is not present.
 def remove_print(lines):
@@ -960,6 +1078,20 @@ def expand_string_array_declaration(lines):
 			line_inserts.append(added_lines)
 		replace_lines(lines, line_numbers, line_inserts)
 
+def isolate_variable_name(declare_string):
+	variable_name = declare_string
+	variable_name = re.sub(ui_type_re, "", variable_name)
+	variable_name = re.sub(keywords_re, "", variable_name)
+
+	if variable_name.find("[") != -1:
+		variable_name = variable_name.replace(variable_name[variable_name.find("[") : ], "")
+	if variable_name.find("(") != -1:
+		variable_name = variable_name.replace(variable_name[variable_name.find("(") : ], "")
+	if variable_name.find(":=") != -1:
+		variable_name = variable_name.replace(variable_name[variable_name.find(":=") : ], "")
+
+	return(variable_name.strip())
+
 # Handle the variable persistence shorthands.
 def variable_persistence_shorthand(lines):
 	line_numbers = []
@@ -976,16 +1108,8 @@ def variable_persistence_shorthand(lines):
 			fam_count -= 1
 		elif m:
 			is_read.append(read_keyword in m.group(1))
-			variable_name = line
-			variable_name = re.sub(ui_type_re, "", variable_name)
-			variable_name = re.sub(keywords_re, "", variable_name)
 
-			if variable_name.find("[") != -1:
-				variable_name = variable_name.replace(variable_name[variable_name.find("[") : ], "")
-			if variable_name.find("(") != -1:
-				variable_name = variable_name.replace(variable_name[variable_name.find("(") : ], "")
-			if variable_name.find(":=") != -1:
-				variable_name = variable_name.replace(variable_name[variable_name.find(":=") : ], "")
+			variable_name = isolate_variable_name(line)
 
 			if fam_count != 0: # Counting the family state is much faster than inspecting on every line.
 				fam_pre = inspect_family_state(lines, i)
@@ -1183,24 +1307,36 @@ def handle_define_lines(lines):
 	define_titles = []
 	define_values = []
 	define_line_pos = []
+	define_args = []
 	for index in range(len(lines)):
-		line = lines[index].command 
-		if re.search(r"^\s*define\s+", line):
-			if re.search(r"^\s*define\s+" + varname_re_string + r"\s*:=", line):
-				text_without_define = re.sub(r"^\s*define\s*", "", line)
-				colon_bracket_pos = text_without_define.find(":=")
-
-				# before the assign operator is the title
-				title = text_without_define[ : colon_bracket_pos].strip()
-				define_titles.append(title)
-
-				# after the assign operator is the value
-				value = text_without_define[colon_bracket_pos + 2 : ].strip()
-				define_values.append(value)
-
+		line = lines[index].command.strip()
+		if re.search(r"^define\s+", line):
+			m = re.search(r"^define\s+%s(?:\((.+)\))?\s*:=(.+)$" % varname_re_string, line)
+			if m:
+				define_titles.append(m.group(1))
+				define_values.append(m.group(5).strip())
 				define_line_pos.append(index)
+
+				args = m.group(4)
+				if args:
+					# args = args.split(",")
+					args = ksp_compiler.split_args(args, lines[index])
+				define_args.append(args)
+
+				# text_without_define = re.sub(r"^\s*define\s*", "", line)
+				# colon_bracket_pos = text_without_define.find(":=")
+
+				# # before the assign operator is the title
+				# title = text_without_define[ : colon_bracket_pos].strip()
+				# define_titles.append(title)
+
+				# # after the assign operator is the value
+				# value = text_without_define[colon_bracket_pos + 2 : ].strip()
+				# define_values.append(value)
+
 				# remove the line
-				lines[index].command = re.sub(r'[^\r\n]', '', line)
+				lines[index].command = "" #re.sub(r'[^\r\n]', '', line)
+
 			else:
 				raise ksp_compiler.ParseException(lines[index], "Syntax error in define.\n")
 
@@ -1208,9 +1344,11 @@ def handle_define_lines(lines):
 	if define_titles:
 		# Check each of the values to see if they contain any other define consts.
 		for i in range(len(define_values)):
-			for ii in range(len(define_titles)):
-				if define_titles[ii] in define_values[i]:
-					define_values[i] = define_values[i].replace(define_titles[ii], define_values[ii])
+			if not define_args[i]:
+				for ii in range(len(define_titles)):
+					define_values[i] = re.sub(r"\b%s\b" % define_titles[ii], define_values[ii], define_values[i])
+					# if define_titles[ii] in define_values[i]:
+					# 	define_values[i] = define_values[i].replace(define_titles[ii], define_values[ii])
 
 		# Do any maths if needed.
 		for i in range(len(define_values)):
@@ -1227,7 +1365,38 @@ def handle_define_lines(lines):
 		for line_obj in lines:
 			line = line_obj.command 
 			for index, item in enumerate(define_titles):
-				if re.search(r"\b" + item + r"\b", line):
+				if define_args[index]:
+					macro_match_iter = re.finditer(r"\b(%s)\s*\(" % item, line)
+					for match in macro_match_iter:
+						
+						match_pos = (match.start())
+						parenthesis_count = 0
+						arg_string = ""
+						first_bracket = False
+						for char in line[match_pos: ]:
+							if char == ")":
+								parenthesis_count -= 1
+							if parenthesis_count >= 1:
+								arg_string = arg_string + char
+							elif first_bracket:
+								break
+							if char == "(":
+								first_bracket = True
+								parenthesis_count += 1
+
+						if arg_string:
+							found_args = ksp_compiler.split_args(arg_string, line_obj)
+							if len(found_args) != len(define_args[index]):
+								raise ksp_compiler.ParseException(line_obj, "Incorrect number of arguments for %s define macro. Expected %d, got %d.\n" % (item, len(define_args[index]), len(found_args)))
+							else:
+								new_define_value = str(define_values[index])
+								for arg_idx, arg in enumerate(define_args[index]):
+									new_define_value = re.sub(r"\b%s\b" % arg, found_args[arg_idx], new_define_value)
+								line_obj.command = re.sub(r"\b%s\s*\(\s*%s\s*\)" % (item, arg_string), new_define_value, line_obj.command)
+						else:
+							raise ksp_compiler.ParseException(line_obj, "No arguments found for define macro: %s.\n" % item)
+
+				if re.search(r"\b%s\b" % item, line):
 					line_obj.command = line_obj.command.replace(item, str(define_values[index]))
 
 # For each UI array declaration, create a list of 'declare ui_control' lines and the UI ID of each to an array.
