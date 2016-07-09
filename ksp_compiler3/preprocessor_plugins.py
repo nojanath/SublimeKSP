@@ -24,7 +24,7 @@ import re
 import math
 import collections
 import ksp_compiler
-
+from simple_eval import SimpleEval
 
 #=================================================================================================
 # Regular expressions
@@ -59,6 +59,8 @@ any_pers_re = r"(%s\s+|%s\s+)" % (pers_keyword, read_keyword)
 pers_re = r"\b%s\b" % pers_keyword
 read_re = r"\b%s\b" % read_keyword
 
+maths_string_evaluator = SimpleEval()
+
 
 #=================================================================================================
 # This function is called before the macros have been expanded.
@@ -85,8 +87,8 @@ def post_macro_functions(lines):
 	ui_property_functions(lines)
 	expand_string_array_declaration(lines)  
 	handle_array_concatenate(lines)
-	for line_obj in lines:
-		print(line_obj.command)
+	# for line_obj in lines:
+	# 	print(line_obj.command)
 
 # Take the original deque of line objects, and for every new line number, add in the line_inserts.
 def replace_lines(lines, line_nums, line_inserts):
@@ -129,14 +131,13 @@ def simplify_maths_addition(string):
 
 def try_evaluation(expression, line, name):
 	try:
-		final = eval(expression)
+		final = maths_string_evaluator.eval(str(expression).strip())
 	except:
 		raise ksp_compiler.ParseException(line, 
-			"Undeclared variables in %s value.\n" % name)		
-	if not isinstance(final, int) and not final.is_integer():
-		raise ksp_compiler.ParseException(line, 
-			"Invalid %s value (%f). This expression is evaluated in the Python language, use the int() function when dividing values to avoid floating point numbers, eg: int(5/3).\n" % (name, final))
+			"Invalid syntax in %s value. Only define constants, numbers or maths operations can be used here." % name)		
+
 	return (final)
+
 
 #=================================================================================================
 # This isnt going to work....
@@ -1181,7 +1182,6 @@ def handle_iterate_macro(lines):
 				to_stmt = "to"
 				downto.append(False)
 
-
 			minv = try_evaluation(params[params.find(":=") + 2 : params.find(to_stmt)], lines[index], "min")
 			# minv = eval(params[params.find(":=") + 2 : params.find(to_stmt)])
 			if "step" in params:
@@ -1374,8 +1374,9 @@ def handle_define_lines(lines):
 		# Do any maths if needed.
 		for i in range(len(define_values)):
 				if not re.search(r"^#.*#$", define_values[i]):
-					define_values[i] = re.sub(r"\s+mod\s+", " % ", define_values[i])			
-					define_values[i] = try_evaluation(define_values[i], define_line_pos[i], "define")
+					if not re.search(string_or_placeholder_re, define_values[i]):
+						define_values[i] = re.sub(r"\s+mod\s+", " % ", define_values[i])			
+						define_values[i] = try_evaluation(define_values[i], lines[define_line_pos[i]], "define")
 					# try:
 					# 	define_values[i] = eval(define_values[i]) #.replace("/", "//")
 					# 	if not isinstance(define_values[i], int):
@@ -1471,10 +1472,10 @@ def handle_ui_arrays(lines):
 					# dimension_int = try_evaluation(dimension, lines[index], "dimension") 
 					# string_between_brackets = string_between_brackets * dimension_int
 					# dimension_list[d_num] = str(dimension_int)
-					try:
-						string_between_brackets = string_between_brackets * int(eval(dimension))
-					except:
-						raise ksp_compiler.ParseException(lines[index], "Invalid number of elements. Native 'declare const' variables cannot be used here, instead a 'define' const or a literal must be used.\n")          
+					string_between_brackets = string_between_brackets * try_evaluation(dimension, lines[index], "UI array size")
+					# try:
+					# except:
+					# 	raise ksp_compiler.ParseException(lines[index], "Invalid number of elements. Native 'declare const' variables cannot be used here, instead a 'define' const or a literal must be used.\n")          
 
 				# array_size = ", ".join(dimension_list)
 				# print("arrays size " + array_size)
