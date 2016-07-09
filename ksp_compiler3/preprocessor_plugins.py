@@ -73,7 +73,7 @@ def pre_macro_functions(lines):
 
 # This function is called after the macros have been expanded.
 def post_macro_functions(lines):
-	handle_structs(lines)
+	# handle_structs(lines)
 	# callbacks_are_functions(lines)
 	incrementor(lines)
 	handle_const_block(lines)
@@ -359,6 +359,7 @@ def incrementor(lines):
 					lines[i].command = re.sub(r"\b%s\b" % names[j], str(it_vals[j]), lines[i].command)
 					it_vals[j] += step[j]
 					
+
 
 # Function for concatenating multi arrays into one. 
 def handle_array_concatenate(lines):
