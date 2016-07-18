@@ -1,0 +1,65 @@
+struct MenuWithButtons
+	// Only variable or struct declarations are allowed in a struct.
+	declare pers ui_menu menu
+	declare pers ui_switch switchL
+	declare pers ui_switch switchR
+	// Use the & symbol when declaring a struct to help the compiler identify the type.
+	// The ampersand goes before the type, not the name.
+	// You cannot make the whole struct pers or read, that must be done on the individual members instead.
+	declare &ArrayTest arrays
+	declare @name 
+	declare !nameArray[2]
+end struct
+
+struct ArrayTest
+	declare array[2]
+	declare array2D[2, 3]
+end struct
+
+on init
+	declare i
+	declare j
+
+	// Single MenuWithButtons.
+	declare &MenuWithButtons soundMenu
+	soundMenu.menu -> width := 20
+	soundMenu.switchL -> text := "<"
+	soundMenu.switchR -> text := ">"
+	soundMenu.arrays.array[0] := 1
+	soundMenu.arrays.array2D[0, 0] := 1
+	soundMenu.name := "name" // Only use type symbols (%$@!) when declaring.
+	soundMenu.nameArray[0] := "name"
+
+	// Array of MenuWithButtons.
+	declare &MenuWithButtons otherMenus[4]
+	for i := 0 to 3
+		otherMenus[i].menu -> width := 20
+		otherMenus[i].switchL -> text := "<"
+		otherMenus[i].switchR -> text := ">"
+		otherMenus[i].arrays.array[0] := 1
+		otherMenus[i].arrays.array2D[0, 0] := 1
+		otherMenus[i].name := "name"
+		otherMenus[i].nameArray[0] := "name"
+	end for
+
+	// Multi dimensional array of MenuWithButtons.
+	declare &MenuWithButtons lotsOfMenus[2, 2]
+	for i := 0 to 1
+		for j := 0 to 1
+			lotsOfMenus[i, j].menu -> width := 20
+			lotsOfMenus[i, j].switchL -> text := "<"
+			lotsOfMenus[i, j].switchR -> text := ">"
+			lotsOfMenus[i, j].arrays.array[0] := 1
+			lotsOfMenus[i, j].arrays.array2D[0, 0] := 1
+			lotsOfMenus[i, j].name := "name"
+			lotsOfMenus[i, j].nameArray[0] := "name"
+		end for
+	end for
+end on
+
+on ui_control(soundMenu.menu)
+end on
+on ui_control(otherMenus.menu0)
+end on
+on ui_control(_lotsOfMenus.menu0)
+end on
