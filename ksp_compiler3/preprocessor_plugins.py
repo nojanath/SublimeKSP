@@ -95,8 +95,8 @@ def post_macro_functions(lines):
 	incrementor(lines)
 	handle_const_block(lines)
 	handle_ui_arrays(lines)
-	for line_obj in lines:
-		print(line_obj.command)
+	# for line_obj in lines:
+	# 	print(line_obj.command)
 	inline_declare_assignment(lines)
 	multi_dimensional_arrays(lines)
 	find_list_block(lines)
