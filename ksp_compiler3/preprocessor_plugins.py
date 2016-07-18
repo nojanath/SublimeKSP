@@ -91,12 +91,12 @@ def pre_macro_functions(lines):
 # This function is called after the macros have been expanded.
 def post_macro_functions(lines):
 	handle_structs(lines)
+	for line_obj in lines:
+		print(line_obj.command)
 	# callbacks_are_functions(lines)
 	incrementor(lines)
 	handle_const_block(lines)
 	handle_ui_arrays(lines)
-	# for line_obj in lines:
-	# 	print(line_obj.command)
 	inline_declare_assignment(lines)
 	multi_dimensional_arrays(lines)
 	find_list_block(lines)
@@ -218,9 +218,11 @@ def handle_structs(lines):
 	struct_names = []
 	struct_members = []
 	struct_commands = []
+	struct_prefixes = []
 
 	current_struct_members = []
 	current_struct_commands = []
+	current_struct_prefixes = []
 	in_struct_flag = False
 	for i in range(len(lines)):
 		line = lines[i].command.strip()
@@ -228,6 +230,7 @@ def handle_structs(lines):
 		if m:
 			current_struct_members = []
 			current_struct_commands = []
+			current_struct_prefixes = []
 			struct_names.append(m.group(1))
 			if in_struct_flag:
 				raise ksp_compiler.ParseException(lines[i], "Struct definitions cannot be nested.\n")    
@@ -237,6 +240,7 @@ def handle_structs(lines):
 			in_struct_flag = False
 			struct_members.append(current_struct_members)
 			struct_commands.append(current_struct_commands)
+			struct_prefixes.append(current_struct_prefixes)
 			lines[i].command = ""
 			
 		elif in_struct_flag:
@@ -244,8 +248,15 @@ def handle_structs(lines):
 				if not line.startswith("declare"):
 					raise ksp_compiler.ParseException(lines[i], "Structs may only consist of variable declarations.\n")
 				variable_name = isolate_variable_name(line)
-				current_struct_members.append(variable_name)
-				current_struct_commands.append(line)
+				prefix_match = re.match(var_prefix_re, variable_name)
+				variable_name_no_pre = variable_name
+				if prefix_match:
+					current_struct_prefixes.append(variable_name.strip()[:1])
+					variable_name_no_pre = variable_name.strip()[1:]
+				else:
+					current_struct_prefixes.append("")
+				current_struct_members.append(variable_name_no_pre)
+				current_struct_commands.append(line.replace(variable_name, variable_name_no_pre))
 			lines[i].command = ""
 
 
@@ -258,6 +269,7 @@ def handle_structs(lines):
 			if m:
 				struct_members[i].remove(struct_members[i][j])
 				struct_commands[i].remove(struct_commands[i][j])
+				del struct_prefixes[i][j]
 				struct_num = struct_names.index(m.group(2))
 				struct_variable = m.group(5).strip()
 				if m.group(1):
@@ -269,6 +281,7 @@ def handle_structs(lines):
 				for member_idx in range(len(struct_members[struct_num])):
 					var_name = struct_variable + "." + struct_members[struct_num][member_idx]
 					struct_members[i].insert(insert_location, var_name)
+					struct_prefixes[i].insert(insert_location, struct_prefixes[struct_num][member_idx])
 					new_command = re.sub(r"\b%s\b" % struct_members[struct_num][member_idx], var_name, struct_commands[struct_num][member_idx])
 					struct_commands[i].insert(insert_location, new_command)
 					insert_location += 1
@@ -283,8 +296,8 @@ def handle_structs(lines):
 				j = 0
 				counter += 1
 				if counter > 100000:
+					raise ksp_compiler.ParseException(lines[0], "ERROR! Too many iterations while building structs.")
 					break
-					print("ERROR! Too many iterations while building structs.")
 
 	def make_command_an_array(variable_name, command, array_size_string):
 		if "[" in command:
@@ -293,12 +306,21 @@ def handle_structs(lines):
 			new_command = re.sub(r"\b%s\b" % variable_name, "%s[%s]" % (variable_name, array_size_string), command)
 		return(new_command)
 
-	def add_prefix_to_struct_commands(command_list, member_list, prefix):
+	def add_prefix_to_struct_commands(command_list, member_list, prefix, prefix_symbol_list):
 		new_command_list = []
 		for i in range(len(command_list)):
-			new_command = re.sub(r"\b%s\b" % member_list[i], prefix + "." + member_list[i], command_list[i])
+			new_command = re.sub(r"\b%s\b" % member_list[i], prefix_symbol_list[i] + prefix + "." + member_list[i], command_list[i])
+			#new_command = re.sub(r"\b%s\b" % member_list[i], prefix + "." + member_list[i], command_list[i])
 			new_command_list.append(new_command)
 		return(new_command_list)
+
+	def resolve_string_array_prefix_symbols(command):
+		# m = re.search(r"\@[\w\_]%s\s*\[" % variable_name_re, command)
+		if "@" in command and "[" in command:
+			command = command.replace("@", "!")
+		return(command)
+
+
 
 	new_lines = collections.deque()
 	for i in range(len(lines)):
@@ -309,18 +331,19 @@ def handle_structs(lines):
 			variable_name = m.group(4)
 			try:
 				struct_name_index = struct_names.index(struct_name)
-			except ValueError:
+			except ValueError: # TODO: Is this the correct exception?
 				raise ksp_compiler.ParseException(lines[i], "Undeclared struct %s\n" % struct_name)
 
-			new_command_list = struct_commands[struct_name_index]
+			new_command_list = list(struct_commands[struct_name_index])
 			if m.group(7):
-				# print
 				for j in range(len(new_command_list)):
 					new_command_list[j] = make_command_an_array(struct_members[struct_name_index][j], new_command_list[j], m.group(7))
-			new_command_list = add_prefix_to_struct_commands(new_command_list, struct_members[struct_name_index], variable_name)
-			# print(new_command_list)
+
+
+			new_command_list = add_prefix_to_struct_commands(new_command_list, struct_members[struct_name_index], variable_name, struct_prefixes[struct_name_index])
 
 			for command in new_command_list:
+				command = resolve_string_array_prefix_symbols(command)
 				new_lines.append(lines[i].copy(command))
 		else:
 			new_lines.append(lines[i])
