@@ -32,6 +32,7 @@ var_prefix_re = r"[%!@$]"
 
 string_or_placeholder_re =  r'({\d+}|\"[^"]*\")'
 varname_re_string = r'((\b|[$%!@])[0-9]*[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_0-9]+)*)\b'
+variable_name_re = r'(?P<whole>(?P<prefix>\b|[$%!@])(?P<name>[a-zA-Z_][a-zA-Z0-9_\.]*))\b'
 variable_or_int = r"[^\]]+"
 
 commas_not_in_parenth = re.compile(r",(?![^\(\)\[\]]*[\)\]])") # All commas that are not in parenthesis.
@@ -56,8 +57,24 @@ ui_type_re = r"(?<=)(ui_button|ui_switch|ui_knob|ui_label|ui_level_meter|ui_menu
 keywords_re = r"(?<=)(declare|const|%s|%s|polyphonic|list)(?=\s)" % (pers_keyword, read_keyword)
 
 any_pers_re = r"(%s\s+|%s\s+)" % (pers_keyword, read_keyword)
+persistence_re = r"(?:\b(?P<persistence>%s|%s)\s+)?" % (pers_keyword, read_keyword)
 pers_re = r"\b%s\b" % pers_keyword
 read_re = r"\b%s\b" % read_keyword
+
+
+multiple_dimensions_re = r"\[(?P<dimensions>[^\]]+(?:\,[^\]]+)+)\]" # Match square brackets with 2 or more comma separated dimensions.
+multidimensional_array_re = r"^declare\s+%s%s\s*%s(?P<uiArray>%s)?$" % (persistence_re, variable_name_re, multiple_dimensions_re, multi_dim_ui_flag)
+const_block_start_re = r"^const\s+%s$" % variable_name_re
+const_block_end_re = r"^end\s+const$"
+const_block_member_re = r"^%s(?:$|\s*\:=\s*(?P<value>.+))" % variable_name_re
+list_block_start_re = r"^list\s*%s\s*(?:\[(?P<size>%s)?\])?$" % (variable_name_re, variable_or_int)
+list_block_end_re = r"^end\s+list$"
+
+family_start_re = r"^family\s+.+"
+family_end_re = r"^end\s+family$"
+init_callback_re = r"^on\s+init$"
+end_on_re = r"^end\s+on$"
+
 
 maths_string_evaluator = SimpleEval()
 
@@ -73,22 +90,24 @@ def pre_macro_functions(lines):
 
 # This function is called after the macros have been expanded.
 def post_macro_functions(lines):
-	# handle_structs(lines)
+	handle_structs(lines)
 	# callbacks_are_functions(lines)
 	incrementor(lines)
 	handle_const_block(lines)
 	handle_ui_arrays(lines)
+	for line_obj in lines:
+		print(line_obj.command)
 	inline_declare_assignment(lines)
 	multi_dimensional_arrays(lines)
 	find_list_block(lines)
+	# for line_obj in lines:
+	# 	print(line_obj.command)
 	calculate_open_size_array(lines)
 	handle_lists(lines)
 	variable_persistence_shorthand(lines)
 	ui_property_functions(lines)
 	expand_string_array_declaration(lines)  
-	handle_array_concatenate(lines)
-	# for line_obj in lines:
-	# 	print(line_obj.command)
+	# handle_array_concatenate(lines)
 
 # Take the original deque of line objects, and for every new line number, add in the line_inserts.
 def replace_lines(lines, line_nums, line_inserts):
@@ -340,7 +359,7 @@ def incrementor(lines):
 			if mm:
 				lines[i].command = ""
 				names.append(mm.group(1))
-				it_val = try_evaluation(mm.group(4), lines[i], "iteration")
+				it_val = try_evaluation(mm.group(4), lines[i], "start")
 				step_val = try_evaluation(mm.group(5), lines[i], "step")
 				it_vals.append(it_val)
 				step.append(step_val)
@@ -358,7 +377,6 @@ def incrementor(lines):
 					# lines[i].command = line.replace(names[j], str(it_vals[j]))
 					lines[i].command = re.sub(r"\b%s\b" % names[j], str(it_vals[j]), lines[i].command)
 					it_vals[j] += step[j]
-					
 
 
 # Function for concatenating multi arrays into one. 
@@ -461,11 +479,9 @@ def handle_array_concatenate(lines):
 			lines.pop()
 		lines.extend(new_lines) 
 
-
+# If the given line is in at least 1 family, return the family prefixes.
 def inspect_family_state(lines, text_lineno):
-
 	current_family_names = []
-
 	for i in range(len(lines)):
 		if i == text_lineno:
 			return (".".join(current_family_names))
@@ -478,130 +494,249 @@ def inspect_family_state(lines, text_lineno):
 			current_family_names.pop()
 
 
+class MultiDimensionalArray(object):
+	def __init__(self, name, prefix, dimensions_string, persistence, family_prefix, line):
+		self.name = name
+		self.prefix = prefix
+		if not prefix:
+			self.prefix = ""
+		self.dimensions = ksp_compiler.split_args(dimensions_string, line) # TODO: check spilt args, what about commas_not_in_paren
+		self.persistence = persistence
+		if not persistence:
+			self.persistence = ""
+		self.raw_array_name = family_prefix + "_" + self.name
+
+	def get_raw_array_declaration(self):
+		new_name = self.prefix + "_" + self.name
+		total_array_size = "*".join(["(" + dim + ")" for dim in self.dimensions])
+		return("declare %s %s [%s]" % (self.persistence, new_name, total_array_size))
+
+	def build_property_and_constants(self, line):
+		property_template = [
+		"property #propName#",
+			"function get(#dimList#) -> result",
+				"result := #rawArrayName#[#calculatedDimList#]",
+			"end function",
+			"function set(#dimList#, val)",
+				"#rawArrayName#[#calculatedDimList#] := val",
+			"end function ",
+		"end property"]		
+		const_template = "declare const #name#.SIZE_D#dimNum# := #val#"
+
+		new_lines = collections.deque()
+		# Build the declare const lines and add them to the new_line deque.
+		for dim_num, dim_size in enumerate(self.dimensions):
+			declare_const_text = const_template.replace("#name#", self.name).replace("#dimNum#", str(dim_num + 1)).replace("#val#", dim_size)
+			new_lines.append(line.copy(declare_const_text))
+		# Build the list of arguments, eg: "d1, d2, d3"
+		dimension_arg_list = ["d" + str(dim_num + 1) for dim_num in range(len(self.dimensions))]
+		dimension_arg_string = ",".join(dimension_arg_list)
+		# Create the maths for mapping multiple dimensions to a single dimension array, eg: "d1 * (20) + d2"
+		num_dimensions = len(self.dimensions)
+		calculated_dim_list = []
+		for dim_num in range(num_dimensions - 1):
+			for i in range(num_dimensions - 1, dim_num, -1):
+				calculated_dim_list.append("(%s) * " % self.dimensions[i])
+			calculated_dim_list.append(dimension_arg_list[dim_num] + " + ")
+		calculated_dim_list.append(dimension_arg_list[num_dimensions - 1])
+		calculated_dimensions = "".join(calculated_dim_list)
+		for prop_line in property_template:
+			property_text = prop_line\
+				.replace("#propName#", self.name)\
+				.replace("#dimList#", dimension_arg_string)\
+				.replace("#rawArrayName#", self.raw_array_name)\
+				.replace("#calculatedDimList#", calculated_dimensions)
+			new_lines.append(line.copy(property_text))
+		return(new_lines)
+
+# TODO: Check whether making this only init callback is ok.
+def multi_dimensional_arrays(lines):
+	new_lines = collections.deque()
+	fam_count = 0
+	init_flag = False
+	for line_num in range(len(lines)):
+		line = lines[line_num].command.strip()
+		if not init_flag:
+			if re.search(init_callback_re, line):
+				init_flag = True
+			new_lines.append(lines[line_num])
+		else: # Multidimensional arrays are only allowed in the init callback.
+			if re.search(end_on_re, line):
+				new_lines.extend(lines[line_num:])
+				break
+			else: 
+				m = re.search(multidimensional_array_re, line)
+				if re.search(family_start_re, line):
+					fam_count += 1
+				elif re.search(family_end_re, line):
+					fam_count -= 1
+				elif m:
+					fam_prefix = ""
+					if fam_count != 0:
+						fam_prefix = inspect_family_state(lines, line_num) + "."
+					name = m.group("name")
+					if m.group("uiArray"):
+						name = name[1:] # If it is a UI array, the single dimension array will already have the underscore, so it is removed.
+					multi_dim = MultiDimensionalArray(name, m.group("prefix"), m.group("dimensions"), m.group("persistence"), fam_prefix, lines[line_num])
+					new_lines.append(lines[line_num].copy(multi_dim.get_raw_array_declaration()))
+					new_lines.extend(multi_dim.build_property_and_constants(lines[line_num]))
+				if not m:
+					new_lines.append(lines[line_num])
+
+	for i in range(len(lines)):
+		lines.pop()
+	lines.extend(new_lines) 
+	
+
+
 # Create multidimensional arrays. 
 # This functions replaces the multidimensional array declaration with a property with appropriate
 # get and set functions to be sorted by the compiler further down the line.
-def multi_dimensional_arrays(lines):
-	dimensions = []
-	num_dimensions = []
-	name = []
-	property_names = []
-	data_array_names = []
-	line_numbers = []
+# def multi_dimensional_arrays(lines):
+# 	dimensions = []
+# 	num_dimensions = []
+# 	name = []
+# 	property_names = []
+# 	data_array_names = []
+# 	line_numbers = []
 
-	for i in range(len(lines)):
-		line = lines[i].command.strip()
-		m = re.search(r"^\s*declare\s+" + any_pers_re + "?" + varname_re_string + "\s*\[" + variable_or_int + "\s*(,\s*" + variable_or_int + "\s*)+\]", line)
-		if m:
-			variable_name = m.group(2)
-			prefix = m.group(3)
-			if prefix:
-				variable_name = variable_name[1:]
-			else:
-				prefix = ""
+# 	for i in range(len(lines)):
+# 		line = lines[i].command.strip()	
 
-			dimensions_split = line[line.find("[") + 1 : line.find("]")].split(",") 
-			# for i in range(len(dimensions_split)):
-			#   dimensions_split[i] = "(" + dimensions_split[i] + ")"
-			# print(dimensions_split)
-			num_dimensions.append(len(dimensions_split))
-			dimensions.append(dimensions_split)
+# 		m = re.search(r"^\s*declare\s+%s?%s\s*\[%s\s*(,\s*%s\s*)+\]" % (any_pers_re, varname_re_string, variable_or_int, variable_or_int), line)
+# 		if m:
+# 			variable_name = m.group(2)
+# 			prefix = m.group(3)
+# 			if prefix:
+# 				variable_name = variable_name[1:]
+# 			else:
+# 				prefix = ""
 
-			line_numbers.append(i)
+# 			dimensions_split = line[line.find("[") + 1 : line.find("]")].split(",") 
+# 			# for i in range(len(dimensions_split)):
+# 			#   dimensions_split[i] = "(" + dimensions_split[i] + ")"
+# 			# print(dimensions_split)
+# 			num_dimensions.append(len(dimensions_split))
+# 			dimensions.append(dimensions_split)
 
-			underscore = ""
-			property_name = variable_name.strip()
-			if multi_dim_ui_flag in line:
-				line = line.replace(multi_dim_ui_flag, "")
-				property_name = property_name[1:]
-			else:
-				underscore = "_"
-			current_family_prefix = inspect_family_state(lines, i)
-			fam_prefix = ""
-			if current_family_prefix:
-				fam_prefix = current_family_prefix + "."
+# 			line_numbers.append(i)
 
-			data_array_name = fam_prefix + underscore + variable_name.strip()
-			data_array_names.append(data_array_name)
+# 			underscore = ""
+# 			property_name = variable_name.strip()
+# 			if multi_dim_ui_flag in line:
+# 				line = line.replace(multi_dim_ui_flag, "")
+# 				property_name = property_name[1:]
+# 			else:
+# 				underscore = "_"
+# 			current_family_prefix = inspect_family_state(lines, i)
+# 			fam_prefix = ""
+# 			if current_family_prefix:
+# 				fam_prefix = current_family_prefix + "."
+
+# 			data_array_name = fam_prefix + underscore + variable_name.strip()
+# 			data_array_names.append(data_array_name)
 
 									
-			property_names.append(property_name)
+# 			property_names.append(property_name)
 
 
-			new_text = line.replace(variable_name, prefix + underscore + variable_name.strip())
-			new_text = new_text.replace("[", "[(").replace("]", ")]").replace(",", ")*(")
-			lines[i].command = new_text
+# 			new_text = line.replace(variable_name, prefix + underscore + variable_name.strip())
+# 			new_text = new_text.replace("[", "[(").replace("]", ")]").replace(",", ")*(")
+# 			lines[i].command = new_text
 			
-	if line_numbers:
-		line_inserts = collections.deque()
-		for i in range(len(line_numbers)):
-			added_lines = []
+# 	if line_numbers:
+# 		line_inserts = collections.deque()
+# 		for i in range(len(line_numbers)):
+# 			added_lines = []
 	
-			for ii in range(num_dimensions[i]):
-				current_text = "declare const " + property_names[i] + ".SIZE_D" + str(ii + 1) + " := " + dimensions[i][ii]
-				added_lines.append(lines[line_numbers[i]].copy(current_text))
+# 			for ii in range(num_dimensions[i]):
+# 				current_text = "declare const " + property_names[i] + ".SIZE_D" + str(ii + 1) + " := " + dimensions[i][ii]
+# 				added_lines.append(lines[line_numbers[i]].copy(current_text))
 
-			# start property
-			current_text = "property " + property_names[i]
-			added_lines.append(lines[i].copy(current_text))
+# 			# start property
+# 			current_text = "property " + property_names[i]
+# 			added_lines.append(lines[i].copy(current_text))
 
-			# start get function
-			# it might look something like this: function get(v1, v2, v3) -> result
-			current_text = "function get(v1"
-			for ii in range(1, num_dimensions[i]):
-				current_text = current_text + ", v" + str(ii + 1) 
-			current_text = current_text + ") -> result"
-			added_lines.append(lines[i].copy(current_text))
+# 			# start get function
+# 			# it might look something like this: function get(v1, v2, v3) -> result
+# 			current_text = "function get(v1"
+# 			for ii in range(1, num_dimensions[i]):
+# 				current_text = current_text + ", v" + str(ii + 1) 
+# 			current_text = current_text + ") -> result"
+# 			added_lines.append(lines[i].copy(current_text))
 
-			# get function body
-			current_text = "result := " + data_array_names[i] + "["
-			for ii in range(num_dimensions[i]):
-				if ii != num_dimensions[i] - 1: 
-					for iii in range(num_dimensions[i] - 1, ii, -1):
-						current_text = current_text + "(" + dimensions[i][iii] + ")" + " * "
-						# current_text = current_text + dimensions[i][iii] + " * "
-				current_text = current_text + "v" + str(ii + 1)
-				if ii != num_dimensions[i] - 1:
-					current_text = current_text + " + "
-			current_text = current_text + "]"
-			added_lines.append(lines[i].copy(current_text))
+# 			# get function body
+# 			current_text = "result := " + data_array_names[i] + "["
+# 			for ii in range(num_dimensions[i]):
+# 				if ii != num_dimensions[i] - 1: 
+# 					for iii in range(num_dimensions[i] - 1, ii, -1):
+# 						current_text = current_text + "(" + dimensions[i][iii] + ")" + " * "
+# 						# current_text = current_text + dimensions[i][iii] + " * "
+# 				current_text = current_text + "v" + str(ii + 1)
+# 				if ii != num_dimensions[i] - 1:
+# 					current_text = current_text + " + "
+# 			current_text = current_text + "]"
+# 			added_lines.append(lines[i].copy(current_text))
 
-			# end get function
-			added_lines.append(lines[i].copy("end function"))
+# 			# end get function
+# 			added_lines.append(lines[i].copy("end function"))
 
-			# start set function
-			# it might look something like this: function set(v1, v2, v3, val)
-			current_text = "function set(v1"
-			for ii in range(1, num_dimensions[i]):
-				current_text = current_text + ", v" + str(ii + 1) 
-			current_text = current_text + ", val)"
-			added_lines.append(lines[i].copy(current_text))
+# 			# start set function
+# 			# it might look something like this: function set(v1, v2, v3, val)
+# 			current_text = "function set(v1"
+# 			for ii in range(1, num_dimensions[i]):
+# 				current_text = current_text + ", v" + str(ii + 1) 
+# 			current_text = current_text + ", val)"
+# 			added_lines.append(lines[i].copy(current_text))
 
-			# set function body
-			current_text = data_array_names[i] + "["
-			for ii in range(num_dimensions[i]):
-				if ii != num_dimensions[i] - 1: 
-					for iii in range(num_dimensions[i] - 1, ii, -1):
-						current_text = current_text + "(" + dimensions[i][iii] + ")" + " * "
-						# current_text = current_text + dimensions[i][iii] + " * "
-				current_text = current_text + "v" + str(ii + 1)
-				if ii != num_dimensions[i] - 1:
-					current_text = current_text + " + "
-			current_text = current_text + "] := val"
-			added_lines.append(lines[i].copy(current_text))
+# 			# set function body
+# 			current_text = data_array_names[i] + "["
+# 			for ii in range(num_dimensions[i]):
+# 				if ii != num_dimensions[i] - 1: 
+# 					for iii in range(num_dimensions[i] - 1, ii, -1):
+# 						current_text = current_text + "(" + dimensions[i][iii] + ")" + " * "
+# 						# current_text = current_text + dimensions[i][iii] + " * "
+# 				current_text = current_text + "v" + str(ii + 1)
+# 				if ii != num_dimensions[i] - 1:
+# 					current_text = current_text + " + "
+# 			current_text = current_text + "] := val"
+# 			added_lines.append(lines[i].copy(current_text))
 
-			# end set function
-			added_lines.append(lines[i].copy("end function"))
-			# end property
-			added_lines.append(lines[i].copy("end property"))
+# 			# end set function
+# 			added_lines.append(lines[i].copy("end function"))
+# 			# end property
+# 			added_lines.append(lines[i].copy("end property"))
 
-			line_inserts.append(added_lines)
-		replace_lines(lines, line_numbers, line_inserts)
+# 			line_inserts.append(added_lines)
+# 		replace_lines(lines, line_numbers, line_inserts)
 
-# Handle the new property functions.
+#===========================================================================================
+class UIPropertyTemplate:
+	def __init__(self, name, arg_string):
+		self.name = name
+		self.args = arg_string.replace(" ", "").split(",")
+
+class UIPropertyFunction:
+	def __init__(self, function_type, args, line):
+		self.function_type = function_type
+		self.args  = args[1:]
+		if len(self.args) > len(function_type.args):
+			raise ksp_compiler.ParseException(line, "Too many arguments, maximum is %d, got %d.\n" % (len(function_type.args), len(self.args)))
+		elif len(self.args) == 0:
+			raise ksp_compiler.ParseException(line, "Function requires at least 2 arguments.\n")
+		self.ui_id = args[0]
+
+	def build_ui_property_lines(self, line):
+		new_lines = collections.deque()
+		for arg_num in range(len(self.args)):
+			new_lines.append(line.copy("%s -> %s := %s" % (self.ui_id, self.function_type.args[arg_num], self.args[arg_num])))
+		return(new_lines)
+
 def ui_property_functions(lines):
-	# These can be easily changed.
-	ui_control_properties = [
+	# Templates for the functions. Note the ui-id as the first arg and the functions start 
+	# with'set_' is assumed to be true later on.
+	ui_control_property_function_templates = [
+	"set_bounds(ui-id, x, y, width, height)",
 	"set_slider_properties(ui-id, default, picture, mouse_behaviour)",
 	"set_switch_properties(ui-id, text, picture, text_alignment, font_type, textpos_y)",
 	"set_label_properties(ui-id, text, picture, text_alignment, font_type, textpos_y)",
@@ -610,209 +745,352 @@ def ui_property_functions(lines):
 	"set_button_properties(ui-id, text, picture, text_alignment, font_type, textpos_y)",
 	"set_level_meter_properties(ui-id, bg_color, off_color, on_color, overload_color)",
 	"set_waveform_properties(ui-id, bar_color, zero_line_color)",
-	"set_knob_properties(ui-id, text, default)",
-	"set_bounds(ui-id, x, y, width, height)"
-	]
+	"set_knob_properties(ui-id, text, default)" ]
 
-	ui_func_names = []
-	ui_func_args = []
-	ui_func_size = []
+	# Use the template string above to build a list of UIProperyTemplate objects.
+	ui_funcs = []
+	for func_template in ui_control_property_function_templates:
+		m = re.search(r"^(?P<name>[^\(]+)\(ui-id,(?P<args>[^\)]+)", func_template)
+		ui_funcs.append(UIPropertyTemplate(m.group("name"), m.group("args")))
 
-	for ui_func in ui_control_properties:
-		m = re.search(r"^\s*\w*", ui_func)
-		ui_func_names.append(m.group(0))
-		m = re.search(r"(?<=ui\-id,).*(?=\))", ui_func)
-		arg_list = m.group(0).replace(" ", "").split(",")
-		ui_func_args.append(arg_list)
-		ui_func_size.append(len(arg_list))
-
-	line_numbers = []
-	prop_numbers = []
-	var_names = []
-	num_params = []
-	params = []
+	new_lines = collections.deque()
+	for line_num in range(len(lines)):
+		line = lines[line_num].command.strip()
+		found_prop = False
+		if re.search(r"^set_", line): # Quick little check will speed things up.
+			for func in ui_funcs:
+				if re.search(r"^%s\b" % func.name, line):
+					found_prop = True
+					param_string = line[line.find("(") + 1 : len(line) - 1].strip()
+					param_list = re.split(commas_not_in_parenth, param_string)
+					ui_property_obj = UIPropertyFunction(func, param_list, lines[line_num])
+					new_lines.extend(ui_property_obj.build_ui_property_lines(lines[line_num]))
+					break
+		if not found_prop:
+			new_lines.append(lines[line_num])
 
 	for i in range(len(lines)):
-		line = lines[i].command.strip()
-		for ii in range(len(ui_func_names)):
-			if re.search(r"^\s*" + ui_func_names[ii] + r"\s*\(", line):
-				comma_sep = line[line.find("(") + 1 : len(line) - 1].strip()
-				line_numbers.append(i)
-				prop_numbers.append(ii)
+		lines.pop()
+	lines.extend(new_lines) 
 
-				string_list = re.split(commas_not_in_parenth, comma_sep)
-				variable_name = string_list[0]
-				var_names.append(variable_name)
-				param_list = string_list[1:]
 
-				params.append(param_list)
-				num_params.append(len(param_list))
-				if len(param_list) > ui_func_size[ii]:
-					raise ksp_compiler.ParseException(lines[i], "Too many arguments, expected %d, got %d.\n" % (ui_func_size[ii], len(param_list)))
-				elif len(param_list) == 0:
-					raise ksp_compiler.ParseException(lines[i], "Function requires at least 2 arguments.\n")
-				lines[i].command = ""
+# # Handle the new property functions.
+# def ui_property_functions(lines):
 
-	if line_numbers:
-		line_inserts = collections.deque()
-		for i in range(len(line_numbers)):
-			added_lines = []
+# 	ui_control_properties = [
+# 	"set_slider_properties(ui-id, default, picture, mouse_behaviour)",
+# 	"set_switch_properties(ui-id, text, picture, text_alignment, font_type, textpos_y)",
+# 	"set_label_properties(ui-id, text, picture, text_alignment, font_type, textpos_y)",
+# 	"set_menu_properties(ui-id, picture, font_type, text_alignment, textpos_y)",
+# 	"set_table_properties(ui-id, bar_color, zero_line_color)",
+# 	"set_button_properties(ui-id, text, picture, text_alignment, font_type, textpos_y)",
+# 	"set_level_meter_properties(ui-id, bg_color, off_color, on_color, overload_color)",
+# 	"set_waveform_properties(ui-id, bar_color, zero_line_color)",
+# 	"set_knob_properties(ui-id, text, default)",
+# 	"set_bounds(ui-id, x, y, width, height)"
+# 	]
 
-			sum_max = 0         
-			for ii in range(0, prop_numbers[i]):
-				sum_max += ui_func_size[ii]
-			for ii in range(num_params[i]):
-				current_text = var_names[i] + " -> " + ui_func_args[prop_numbers[i]][ii] + " := " + params[i][ii]
-				added_lines.append(lines[line_numbers[i]].copy(current_text))
+# 	ui_func_names = []
+# 	ui_func_args = []
+# 	ui_func_size = []
 
-			line_inserts.append(added_lines)
-		replace_lines(lines, line_numbers, line_inserts)
+# 	for ui_func in ui_control_properties:
+# 		m = re.search(r"^\s*\w*", ui_func)
+# 		ui_func_names.append(m.group(0))
+# 		m = re.search(r"(?<=ui\-id,).*(?=\))", ui_func)
+# 		arg_list = m.group(0).replace(" ", "").split(",")
+# 		ui_func_args.append(arg_list)
+# 		ui_func_size.append(len(arg_list))
+
+# 	line_numbers = []
+# 	prop_numbers = []
+# 	var_names = []
+# 	num_params = []
+# 	params = []
+
+# 	for i in range(len(lines)):
+# 		line = lines[i].command.strip()
+# 		for ii in range(len(ui_func_names)):
+# 			if re.search(r"^\s*" + ui_func_names[ii] + r"\s*\(", line):
+# 				comma_sep = line[line.find("(") + 1 : len(line) - 1].strip()
+# 				line_numbers.append(i)
+# 				prop_numbers.append(ii)
+
+# 				string_list = re.split(commas_not_in_parenth, comma_sep)
+# 				variable_name = string_list[0]
+# 				var_names.append(variable_name)
+# 				param_list = string_list[1:]
+
+# 				params.append(param_list)
+# 				num_params.append(len(param_list))
+# 				if len(param_list) > ui_func_size[ii]:
+# 					raise ksp_compiler.ParseException(lines[i], "Too many arguments, expected %d, got %d.\n" % (ui_func_size[ii], len(param_list)))
+# 				elif len(param_list) == 0:
+# 					raise ksp_compiler.ParseException(lines[i], "Function requires at least 2 arguments.\n")
+# 				lines[i].command = ""
+
+# 	if line_numbers:
+# 		line_inserts = collections.deque()
+# 		for i in range(len(line_numbers)):
+# 			added_lines = []
+
+# 			sum_max = 0         
+# 			for ii in range(0, prop_numbers[i]):
+# 				sum_max += ui_func_size[ii]
+# 			for ii in range(num_params[i]):
+# 				current_text = var_names[i] + " -> " + ui_func_args[prop_numbers[i]][ii] + " := " + params[i][ii]
+# 				added_lines.append(lines[line_numbers[i]].copy(current_text))
+
+# 			line_inserts.append(added_lines)
+# 		replace_lines(lines, line_numbers, line_inserts)
 
 # When a variable is declared and initialised on the same line, check to see if the value needs to be
 # moved over to the next line.
 def inline_declare_assignment(lines):
-	line_numbers = []
-	var_text = []
-
+	new_lines = collections.deque()
 	for i in range(len(lines)):
 		line = lines[i].command.strip()
-		m = re.search(r"^\s*declare\s+(polyphonic|%s|%s|global|local)?\s*%s\s*:=" % (pers_keyword, read_keyword, varname_re_string), line)
+		m = re.search(r"^declare\s+(?:(polyphonic|global|local)\s+)*%s%s\s*:=" % (persistence_re, variable_name_re), line)
 		if m and not re.search(r"\b%s\s*\(" % concat_syntax, line):
 			int_flag = False
 			value = line[line.find(":=") + 2 :]
 			if not re.search(string_or_placeholder_re, line):
 				try:
-					eval(value)
-					int_flag = True
+					eval(value) # Just used as a test to see if the the value is a constant.
+					int_flag = True 
 				except:
 					pass
 
 			if not int_flag:
 				pre_assignment_text = line[: line.find(":=")]
-				variable_name = m.group(2)
-				line_numbers.append(i)
-				var_text.append(variable_name + " " + line[line.find(":=") :])
-				lines[i].command = pre_assignment_text
-
-	if line_numbers:
-		line_inserts = collections.deque()
-		for i in range(len(line_numbers)):
-			added_lines = []
-
-			added_lines.append(lines[line_numbers[i]].copy(var_text[i]))    
-
-			line_inserts.append(added_lines)
-		replace_lines(lines, line_numbers, line_inserts)
-
-# Handle const blocks. Constants are replaced by declare const. If they are not assigned a value, 
-# they will be equal to the previous const in the list + 1.
-def handle_const_block(lines):
-	start_line_num = None
-	num_elements = None
-	const_block = False
-	current_val = None
-	const_block_name = None
-	current_assignment_list = []
-	line_numbers = []
-	array_size_text = []
+				variable_name = m.group("name")
+				new_lines.append(lines[i].copy(pre_assignment_text))
+				new_lines.append(lines[i].copy(variable_name + " " + line[line.find(":=") :]))
+			else:
+				new_lines.append(lines[i])
+		else:
+			new_lines.append(lines[i])
 
 	for i in range(len(lines)):
-		line = lines[i].command
-		m = re.search(r"^\s*const\s+" + varname_re_string, line) 
+		lines.pop()
+	lines.extend(new_lines) 
+
+
+class ConstBlock(object):
+	def __init__(self, name):
+		self.name = name
+		self.member_values = []
+		self.member_names = []
+		self.previous_val = "-1"
+
+	def add_member(self, name, value):
+		self.member_names.append(name)
+		new_val = ""
+		if value:
+			new_val = value
+		else:
+			new_val = self.previous_val + "+1"
+		new_val = simplify_maths_addition(new_val)
+		self.member_values.append(new_val)
+		self.previous_val = new_val
+
+	def build_lines(self, line):
+		new_lines = collections.deque()
+		new_lines.append(line.copy("declare %s[%s] := (%s)" % (self.name, len(self.member_names), ", ".join(self.member_values))))
+		new_lines.append(line.copy("declare const %s.SIZE := %s" % (self.name, len(self.member_names))))
+		for mem_num in range(len(self.member_names)):
+			new_lines.append(line.copy("declare const %s.%s := %s" % (self.name, self.member_names[mem_num], self.member_values[mem_num])))
+		return(new_lines)
+
+def handle_const_block(lines):
+	new_lines = collections.deque()
+	const_block_obj = None
+	in_const_block = False
+	for line_num in range(len(lines)):
+		line = lines[line_num].command.strip()
+		m = re.search(const_block_start_re, line)
 		if m:
-			const_block = True
-			lines[i].command = "declare " + m.group(1) + "[]"
-			const_block_name = m.group(1)
-			start_line_num = i
-			current_val = "0"
-			num_elements = 0
-			current_assignment_list = []
-			line_numbers.append(i)
-		elif re.search(r"^\s*end\s+const", line):
-			const_block = False
+			const_block_obj = ConstBlock(m.group("name"))
+			in_const_block = True
+		elif re.search(const_block_end_re, line):
+			new_lines.extend(const_block_obj.build_lines(lines[line_num]))
+			in_const_block = False
+		elif in_const_block:
+			m = re.search(const_block_member_re, line)
+			if m:
+				const_block_obj.add_member(m.group("whole"), m.group("value"))
+			elif not line.strip() == "":
+				raise ksp_compiler.ParseException(lines[line_num], "Incorrect syntax. In a const block, list constant names and optionally assign them a constant value.")
+		else:
+			new_lines.append(lines[line_num])
 
-			assignment_text = "("
-			for ii in range(len(current_assignment_list)):
-				assignment_text = assignment_text + current_assignment_list[ii]
-				if not ii == len(current_assignment_list) - 1:
-					assignment_text = assignment_text + ", "
-			assignment_text = assignment_text + ")"
+	for i in range(len(lines)):
+		lines.pop()
+	lines.extend(new_lines) 
 
-			size_declaration = "declare const " + const_block_name + ".SIZE := " + str(num_elements)
-			array_size_text.append(size_declaration)
-			lines[start_line_num].command = lines[start_line_num].command.replace("]", str(num_elements) + "]")
-			lines[start_line_num].command = lines[start_line_num].command + " := " + assignment_text
 
-			lines[i].command = ""
-		elif const_block and not line.strip() == "":
-			assignment_text = current_val
-			text = line.strip()
-			if ":=" in line:
-				assignment_text = line[line.find(":=") + 2 :]
-				text = line[: line.find(":=")].strip()
+# # Handle const blocks. Constants are replaced by declare const. If they are not assigned a value, 
+# # they will be equal to the previous const in the list + 1.
+# def handle_const_block(lines):
+# 	start_line_num = None
+# 	num_elements = None
+# 	const_block = False
+# 	current_val = None
+# 	const_block_name = None
+# 	current_assignment_list = []
+# 	line_numbers = []
+# 	array_size_text = []
 
-			lines[i].command = "declare const " + const_block_name + "." + text + " := " + assignment_text
-			current_assignment_list.append(assignment_text)
-			current_val = simplify_maths_addition(assignment_text + "+1")
+# 	for i in range(len(lines)):
+# 		line = lines[i].command
+# 		m = re.search(r"^\s*const\s+" + varname_re_string, line) 
+# 		if m:
+# 			const_block = True
+# 			lines[i].command = "declare " + m.group(1) + "[]"
+# 			const_block_name = m.group(1)
+# 			start_line_num = i
+# 			current_val = "0"
+# 			num_elements = 0
+# 			current_assignment_list = []
+# 			line_numbers.append(i)
+# 		elif re.search(r"^\s*end\s+const", line):
+# 			const_block = False
 
-			num_elements += 1
+# 			assignment_text = "("
+# 			for ii in range(len(current_assignment_list)):
+# 				assignment_text = assignment_text + current_assignment_list[ii]
+# 				if not ii == len(current_assignment_list) - 1:
+# 					assignment_text = assignment_text + ", "
+# 			assignment_text = assignment_text + ")"
 
-	if line_numbers:
-		line_inserts = collections.deque()
-		for i in range(len(line_numbers)):
-			added_lines = []
+# 			size_declaration = "declare const " + const_block_name + ".SIZE := " + str(num_elements)
+# 			array_size_text.append(size_declaration)
+# 			lines[start_line_num].command = lines[start_line_num].command.replace("]", str(num_elements) + "]")
+# 			lines[start_line_num].command = lines[start_line_num].command + " := " + assignment_text
 
-			added_lines.append(lines[line_numbers[i]].copy(array_size_text[i]))
+# 			lines[i].command = ""
+# 		elif const_block and not line.strip() == "":
+# 			assignment_text = current_val
+# 			text = line.strip()
+# 			if ":=" in line:
+# 				assignment_text = line[line.find(":=") + 2 :]
+# 				text = line[: line.find(":=")].strip()
 
-			line_inserts.append(added_lines)
-		replace_lines(lines, line_numbers, line_inserts)
+# 			lines[i].command = "declare const " + const_block_name + "." + text + " := " + assignment_text
+# 			current_assignment_list.append(assignment_text)
+# 			current_val = simplify_maths_addition(assignment_text + "+1")
+
+# 			num_elements += 1
+
+# 	if line_numbers:
+# 		line_inserts = collections.deque()
+# 		for i in range(len(line_numbers)):
+# 			added_lines = []
+
+# 			added_lines.append(lines[line_numbers[i]].copy(array_size_text[i]))
+
+# 			line_inserts.append(added_lines)
+# 		replace_lines(lines, line_numbers, line_inserts)
+
+class ListBlock(object):
+	def __init__(self, name, size):
+		self.name = name
+		self.size = ""
+		self.is_multi_dim = False
+		if size:
+			self.size = size
+			self.is_multi_dim = "," in size
+		self.members = []
+
+	def add_member(self, command):
+		self.members.append(command)
+
+	# The list block just builds lines ready for the list function later on to interpret them.
+	def build_lines(self, line):
+		new_lines = collections.deque()
+		new_lines.append(line.copy("declare list %s[%s]" % (self.name, self.size)))
+		for mem_num in range(len(self.members)):
+			member_name = self.members[mem_num]
+			if self.is_multi_dim:
+				# If the member is a comma seperated list, then we first need to assign the list to an array in kontakt
+				string_list = re.search(commas_not_in_parenth, member_name)
+				if string_list:
+					member_name = self.name + str(mem_num)
+					new_lines.append(line.copy("declare %s[] := (%s)" % (member_name, self.members[men_num])))
+			new_lines.append(line.copy("list_add(%s, %s)" % (self.name, member_name)))
+		return(new_lines)
+
+def find_list_block(lines):
+	new_lines = collections.deque()
+	list_block_obj = None
+	is_list_block = False
+	for line_num in range(len(lines)):
+		line = lines[line_num].command.strip()
+		m = re.search(list_block_start_re, line)
+		if m:
+			is_list_block = True
+			list_block_obj = ListBlock(m.group("name"), m.group("size"))
+		elif is_list_block and not line == "":
+			if re.search(list_block_end_re, line):
+				is_list_block = False
+				new_lines.extend(list_block_obj.build_lines(lines[line_num]))
+			else:
+				list_block_obj.add_member(line)
+		else:
+			new_lines.append(lines[line_num])
+
+	for i in range(len(lines)):
+		lines.pop()
+	lines.extend(new_lines) 
+
+
 
 # Handle list blocks. The list block is converted to list_add() commands for the regular list function
 # to deal with them further down the line.
-def find_list_block(lines):
+# def find_list_block(lines):
 
-	list_block = False
-	list_name = None
-	line_numbers = []
-	new_list_add_text = []
-	index = 0
-	is_matrix = False
+# 	list_block = False
+# 	list_name = None
+# 	line_numbers = []
+# 	new_list_add_text = []
+# 	index = 0
+# 	is_matrix = False
 
-	for i in range(len(lines)):
-		line = lines[i].command
-		m = re.search(r"^\s*list\s*%s\s*(?:\[(%s)?\])?" % (varname_re_string, variable_or_int), line)
-		if m:
-			index = 0
-			list_block = True
-			list_name = m.group(1)
-			if m.group(4):
-				is_matrix = "," in m.group(4)
-			# lines[i].command = "declare list " + list_name + "[]"
-			lines[i].command = "declare " + lines[i].command
-		elif list_block and not line.strip() == "":
-			if re.search(r"^\s*end\s+list", line):
-				list_block = False
-				lines[i].command = ""
-			else:
-				string_list = re.search(commas_not_in_parenth, lines[i].command)
-				if not string_list or not is_matrix:
-					lines[i].command = "list_add(" + list_name + ", " + lines[i].command + ")"
-				else:
-					new_name = list_name + str(index)
-					lines[i].command = "declare %s[] := (%s)" % (new_name, lines[i].command)
-					line_numbers.append(i)
-					new_list_add_text.append("list_add(" + list_name + ", " + new_name + ")")
-				index += 1
+# 	for i in range(len(lines)):
+# 		line = lines[i].command
+# 		m = re.search(r"^\s*list\s*%s\s*(?:\[(%s)?\])?" % (varname_re_string, variable_or_int), line)
+# 		if m:
+# 			index = 0
+# 			list_block = True
+# 			list_name = m.group(1)
+# 			if m.group(4):
+# 				is_matrix = "," in m.group(4)
+# 			# lines[i].command = "declare list " + list_name + "[]"
+# 			lines[i].command = "declare " + lines[i].command
+# 		elif list_block and not line.strip() == "":
+# 			if re.search(r"^\s*end\s+list", line):
+# 				list_block = False
+# 				lines[i].command = ""
+# 			else:
+# 				string_list = re.search(commas_not_in_parenth, lines[i].command)
+# 				if not string_list or not is_matrix:
+# 					lines[i].command = "list_add(" + list_name + ", " + lines[i].command + ")"
+# 				else:
+# 					new_name = list_name + str(index)
+# 					lines[i].command = "declare %s[] := (%s)" % (new_name, lines[i].command)
+# 					line_numbers.append(i)
+# 					new_list_add_text.append("list_add(" + list_name + ", " + new_name + ")")
+# 				index += 1
 
-	if line_numbers:
-		line_inserts = collections.deque()
-		for i in range(len(line_numbers)):
-			added_lines = []
+# 	if line_numbers:
+# 		line_inserts = collections.deque()
+# 		for i in range(len(line_numbers)):
+# 			added_lines = []
 
-			added_lines.append(lines[line_numbers[i]].copy(new_list_add_text[i]))
+# 			added_lines.append(lines[line_numbers[i]].copy(new_list_add_text[i]))
 
-			line_inserts.append(added_lines)
-		replace_lines(lines, line_numbers, line_inserts)        
+# 			line_inserts.append(added_lines)
+# 		replace_lines(lines, line_numbers, line_inserts)        
 
 def find_all_arrays(lines):
 	array_names = []
@@ -1410,6 +1688,7 @@ def handle_define_lines(lines):
 							if char == "(":
 								first_bracket = True
 								parenthesis_count += 1
+						# TODO: fix this, if a macro takes an argument with brackets it doesnt work.
 
 						if arg_string:
 							found_args = ksp_compiler.split_args(arg_string, line_obj)
@@ -1425,6 +1704,47 @@ def handle_define_lines(lines):
 
 				if re.search(r"\b%s\b" % item, line):
 					line_obj.command = line_obj.command.replace(item, str(define_values[index]))
+
+
+# Started better code for the UI arrays...
+# class UIArray(object):
+# 	def __init__(self, name, ui_type, size, persistence, family_prefix, post_size_text, line):
+# 		self.name = name
+# 		self.family_prefix = family_prefix
+# 		if not family_prefix:
+# 			self.family_prefix = ""
+# 		self.ui_type = ui_type
+# 		self.ui_prefix = ""
+# 		if self.ui_type = "ui_text_edit":
+# 			self.ui_prefix = "@"
+# 		self.post_size_text = post_size_text
+# 		self.calculated_size = size
+# 		self.dimensions_string = size
+# 		self.underscore = ""
+# 		if "," in size:
+# 			self.underscore = "_"
+# 			self.calculated_size = "*".join(["(%s)" % dim for dim in size.split(",")])
+# 		self.calculated_size = try_evaluation(self.calculated_size, line, "UI array size")
+# 		self.persistence = persistence
+# 		if not persistence:
+# 			self.persistence = ""
+
+# 	def get_raw_array_declaration(self):
+# 		return("declare %s %s %s[%s]" % (self.persistence, self.ui_type, self.name, self.dimensions_string))
+
+# 	def build_lines(self, line):
+# 		new_lines = collections.deque
+# 		for i in range(self.calculated_size):
+# 			ui_name = self.underscore + self.name
+# 			text = "declare %s %s %s %s" % (self.persistence, self.ui_type, self.ui_prefix + ui_name + str(i), self.post_size_text)
+# 			new_lines.append(line.copy(text))
+# 			text = "%s[%s] := get_ui_id(%s)" % (self.family_prefix + ui_name, str(i), self.family_prefix + ui_name + str(i))
+# 			new_lines.append(line.copy(text))
+
+
+# def handle_ui_arrays(lines):
+# 	for line_num in range(len(lines)):
+# 		line = lines[line_num].command.strip()
 
 
 
