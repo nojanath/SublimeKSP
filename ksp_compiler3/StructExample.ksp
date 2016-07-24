@@ -30,6 +30,7 @@ on init
 	soundMenu.name := "name" // Only use type symbols (%$@!) when declaring.
 	soundMenu.nameArray[0] := "name"
 
+
 	// Array of MenuWithButtons.
 	declare &MenuWithButtons otherMenus[4]
 	for i := 0 to 3
@@ -63,3 +64,5 @@ on ui_control(otherMenus.menu0)
 end on
 on ui_control(_lotsOfMenus.menu0)
 end on
+
+

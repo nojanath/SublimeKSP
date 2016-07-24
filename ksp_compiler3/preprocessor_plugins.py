@@ -163,6 +163,9 @@ def try_evaluation(expression, line, name):
 
 	return (final)
 
+def replaceLines(original, new):
+	original.clear()
+	original.extend(new) 
 
 #=================================================================================================
 # This isnt going to work....
@@ -257,6 +260,7 @@ class Struct(object):
 def handle_structs(lines):
 	struct_syntax = "\&"
 	structs = [] 
+	# t = time.time()
 
 	# Find all the struct blocks and build struct objects of them
 	inStructFlag = False
@@ -352,11 +356,9 @@ def handle_structs(lines):
 			else:
 				newLines.append(lines[i])
 
-		# t = time.time()
-		for i in range(len(lines)):
-			lines.pop()
-		lines.extend(newLines) 
-		# print("%.3f" % (time.time() - t))
+		replaceLines(lines, newLines)
+		
+	# print("%.3f" % (time.time() - t))
 
 
 # Remove print functions when the activate_logger() is not present.
@@ -409,7 +411,7 @@ def incrementor(lines):
 					it_vals[j] += step[j]
 
 
-# Function for concatenating multi arrays into one. 
+# Function for concatenating multiple arrays into one. 
 def handle_array_concatenate(lines):
 	line_numbers = []
 	parent_array = []
@@ -505,9 +507,7 @@ def handle_array_concatenate(lines):
 		for i in range(init_line_num + 1, len(lines)):
 			new_lines.append(lines[i])
 
-		for i in range(len(lines)):
-			lines.pop()
-		lines.extend(new_lines) 
+		replaceLines(lines, new_lines)
 
 # If the given line is in at least 1 family, return the family prefixes.
 def inspect_family_state(lines, text_lineno):
@@ -619,9 +619,7 @@ def multi_dimensional_arrays(lines):
 				if not m:
 					new_lines.append(lines[line_num])
 
-	for i in range(len(lines)): # TODO: lines.clear() might work???
-		lines.pop()
-	lines.extend(new_lines) 
+	replaceLines(lines, new_lines)
 	
 
 
@@ -805,9 +803,7 @@ def ui_property_functions(lines):
 		if not found_prop:
 			new_lines.append(lines[line_num])
 
-	for i in range(len(lines)):
-		lines.pop()
-	lines.extend(new_lines) 
+	replaceLines(lines, new_lines)
 
 
 # # Handle the new property functions.
@@ -906,10 +902,7 @@ def inline_declare_assignment(lines):
 				new_lines.append(lines[i])
 		else:
 			new_lines.append(lines[i])
-
-	for i in range(len(lines)):
-		lines.pop()
-	lines.extend(new_lines) 
+	replaceLines(lines, new_lines)
 
 
 class ConstBlock(object):
@@ -960,9 +953,7 @@ def handle_const_block(lines):
 		else:
 			new_lines.append(lines[line_num])
 
-	for i in range(len(lines)):
-		lines.pop()
-	lines.extend(new_lines) 
+	replaceLines(lines, new_lines)
 
 
 # # Handle const blocks. Constants are replaced by declare const. If they are not assigned a value, 
@@ -1075,9 +1066,7 @@ def find_list_block(lines):
 		else:
 			new_lines.append(lines[line_num])
 
-	for i in range(len(lines)):
-		lines.pop()
-	lines.extend(new_lines) 
+	replaceLines(lines, new_lines)
 
 
 
@@ -1307,10 +1296,8 @@ def handle_lists(lines):
 		for i in range(init_line_num + 1, len(lines)):
 			new_lines.append(lines[i])
 
-		for i in range(len(lines)):
-			lines.pop()
-		lines.extend(new_lines)
-
+		replaceLines(lines, new_lines)
+	
 	if matrix_list_add_line_nums:
 		line_inserts = collections.deque()
 		line_nums = []
@@ -1422,50 +1409,84 @@ def isolate_variable_name(declare_string):
 
 	return(variable_name.strip())
 
-# Handle the variable persistence shorthands.
-def variable_persistence_shorthand(lines):
-	line_numbers = []
-	variable_names = []
-	is_read = []
-	fam_count = 0
 
+def variable_persistence_shorthand(lines):
+	newLines = collections.deque()
+	famCount = 0
+	isInFamily = False
 	for i in range(len(lines)):
 		line = lines[i].command.strip()
-		m = re.search(r"^\s*declare\s+" + any_pers_re, line)
-		if re.search(r"^family\s+.+", line):
-			fam_count += 1
-		elif re.search(r"^end\s+family$", line):
-			fam_count -= 1
-		elif m:
-			is_read.append(read_keyword in m.group(1))
 
-			variable_name = isolate_variable_name(line)
+		if not isInFamily:
+			if line.startswith("family ") or line.startswith("family	"): # startswith is faster than regex
+				famCount += 1
+				isInFamily = True
+		elif line.startswith("end ") or line.startswith("end	"):
+			famCount -= 1
+			isInFamily = False
 
-			if fam_count != 0: # Counting the family state is much faster than inspecting on every line.
-				fam_pre = inspect_family_state(lines, i)
-				symbol_prefix = re.search("(%s)" % var_prefix_re, variable_name)
-				if symbol_prefix:
-					variable_name = variable_name.replace(symbol_prefix.group(1), "")
-				if fam_pre:
-					variable_name = fam_pre + variable_name.strip()
+		if line.startswith("declare"):
+			# NOTE: experimental - assuming the name is either the first word before a [ or ( or before the end
+			# This was done because it is much faster.
+			m = re.search(r"\b(?P<persistence>pers|read)\b" , line)
+			if m:
+				persWord = m.group("persistence")
+				m = re.search(r"%s\s*(?=[\[\(]|$)" % variable_name_re, line)
+				if m:
+					variableName = m.group("name")
+					if famCount != 0: # Counting the family state is much faster than inspecting on every line.
+						famPre = inspect_family_state(lines, i)
+						if famPre:
+							variableName = famPre + variableName.strip()
+					newLines.append(lines[i].copy(re.sub(r"\b%s\b" % persWord, "", line)))
+					newLines.append(lines[i].copy("make_persistent(%s)" % variableName))
+					if persWord == "read":
+						newLines.append(lines[i].copy("read_persistent_var(%s)" % variableName))
+				else:
+					newLines.append(lines[i])
+			else:
+				newLines.append(lines[i])
+		else:
+			newLines.append(lines[i])
 
-			variable_names.append(variable_name.strip())
-			line_numbers.append(i)
-			lines[i].command = lines[i].command.replace(m.group(1), "")
+	replaceLines(lines, newLines)
 
-	if line_numbers:
-		line_inserts = collections.deque()
-		for i in range(len(line_numbers)):
-			added_lines = []
 
-			current_text = "make_persistent(" + variable_names[i] + ")"
-			added_lines.append(lines[line_numbers[i]].copy(current_text))
-			if is_read[i]:
-				current_text = "read_persistent_var(" + variable_names[i] + ")"
-				added_lines.append(lines[line_numbers[i]].copy(current_text))
+	# 	m = re.search(r"^\s*declare\s+" + any_pers_re, line)
+	# 	if re.search(r"^family\s+.+", line):
+	# 		fam_count += 1
+	# 	elif re.search(r"^end\s+family$", line):
+	# 		fam_count -= 1
+	# 	elif m:
+	# 		is_read.append(read_keyword in m.group(1))
 
-			line_inserts.append(added_lines)
-		replace_lines(lines, line_numbers, line_inserts)
+	# 		variable_name = isolate_variable_name(line)
+
+	# 		if fam_count != 0: # Counting the family state is much faster than inspecting on every line.
+	# 			fam_pre = inspect_family_state(lines, i)
+	# 			symbol_prefix = re.search("(%s)" % var_prefix_re, variable_name)
+	# 			if symbol_prefix:
+	# 				variable_name = variable_name.replace(symbol_prefix.group(1), "")
+	# 			if fam_pre:
+	# 				variable_name = fam_pre + variable_name.strip()
+
+	# 		variable_names.append(variable_name.strip())
+	# 		line_numbers.append(i)
+	# 		lines[i].command = lines[i].command.replace(m.group(1), "")
+
+	# if line_numbers:
+	# 	line_inserts = collections.deque()
+	# 	for i in range(len(line_numbers)):
+	# 		added_lines = []
+
+	# 		current_text = "make_persistent(" + variable_names[i] + ")"
+	# 		added_lines.append(lines[line_numbers[i]].copy(current_text))
+	# 		if is_read[i]:
+	# 			current_text = "read_persistent_var(" + variable_names[i] + ")"
+	# 			added_lines.append(lines[line_numbers[i]].copy(current_text))
+
+	# 		line_inserts.append(added_lines)
+	# 	replace_lines(lines, line_numbers, line_inserts)
 
 # Create a list of macro calls based on the iterate macro start and end values.
 def handle_iterate_macro(lines):
@@ -1649,8 +1670,6 @@ class DefineConstant(object):
 		self.line = line
 		if re.search(r"\b%s\b" % self.name, self.value):
 			raise ksp_compiler.ParseException(self.line, "Define constant cannot call itself.")
-		print(self.args)
-		print(self.value)
 
 	def getName(self):
 		return(self.name)
@@ -1708,7 +1727,6 @@ class DefineConstant(object):
 							newVal = re.sub(arg, foundArgs[arg_idx], newVal)
 						else:
 							newVal = re.sub(r"\b%s\b" % arg, foundArgs[arg_idx], newVal)
-					print(newVal)
 					newCommand = newCommand.replace(foundString, newVal)
 		return(newCommand)
 
@@ -1739,10 +1757,7 @@ def handleDefineConstants(lines):
 			line = newLines[lineIdx].command
 			for defineConst in defineConstants:
 				newLines[lineIdx].command = defineConst.substituteValue(newLines[lineIdx].command)
-
-	for i in range(len(lines)):
-		lines.pop()
-	lines.extend(newLines) 
+	replaceLines(lines, newLines)
 
 # Find all define declarations and then scan the document and replace all occurrences with their value.
 # define command's have no scope, they are completely global at the moment. There is some hidden define
@@ -1908,10 +1923,7 @@ def handle_ui_arrays(lines):
 				newLines.append(lines[lineNum])
 		else:
 			newLines.append(lines[lineNum])
-
-	for i in range(len(lines)):
-		lines.pop()
-	lines.extend(newLines) 
+	replaceLines(lines, newLines)
 
 
 #^declare\s+(?:\b(?P<persistence>pers|read)\s+)?\b(?P<uitype>ui_button|ui_switch|ui_knob|ui_label|ui_level_meter|ui_menu|ui_slider|ui_table|ui_text_edit|ui_waveform|ui_value_edit)\b\s+(?P<whole>(?P<prefix>\b|[$%!@])(?P<name>[a-zA-Z_][a-zA-Z0-9_\.]*))\b\s*\[(?P<arraysize>[^\]]+)\]\s*(?:\[(?P<tablesize>[^\]]+)\]\s*)?(?P<uiparams>\(.*)?
