@@ -97,8 +97,8 @@ def pre_macro_functions(lines):
 # This function is called after the macros have been expanded.
 def post_macro_functions(lines):
 	handle_structs(lines)
-	for line_obj in lines:
-		print(line_obj.command)
+	# for line_obj in lines:
+	# 	print(line_obj.command)
 	# callbacks_are_functions(lines)
 	incrementor(lines)
 	handle_const_block(lines)
@@ -341,7 +341,6 @@ def handle_structs(lines):
 					raise ksp_compiler.ParseException(lines[i], "Undeclared struct %s\n" % structName)
 
 				newMembers = copy.deepcopy(structs[structIdx].members)
-				print([newMembers[i].command for i in range(len(newMembers))])
 				# If necessary make the struct members into arrays.
 				if m.group(7):
 					for j in range(len(newMembers)):
@@ -353,11 +352,11 @@ def handle_structs(lines):
 			else:
 				newLines.append(lines[i])
 
-		t = time.time()
+		# t = time.time()
 		for i in range(len(lines)):
 			lines.pop()
 		lines.extend(newLines) 
-		print("%.3f" % (time.time() - t))
+		# print("%.3f" % (time.time() - t))
 
 
 # Remove print functions when the activate_logger() is not present.
@@ -1650,6 +1649,8 @@ class DefineConstant(object):
 		self.line = line
 		if re.search(r"\b%s\b" % self.name, self.value):
 			raise ksp_compiler.ParseException(self.line, "Define constant cannot call itself.")
+		print(self.args)
+		print(self.value)
 
 	def getName(self):
 		return(self.name)
@@ -1702,7 +1703,12 @@ class DefineConstant(object):
 					# Build the new value using the given args
 					newVal = self.value
 					for arg_idx, arg in enumerate(self.args):
-						newVal = re.sub(r"\b%s\b" % arg, foundArgs[arg_idx], newVal)
+						print("subbing %s for %s in %s" % (arg, foundArgs[arg_idx], newVal))
+						if arg.startswith("#") and arg.endswith("#"):
+							newVal = re.sub(arg, foundArgs[arg_idx], newVal)
+						else:
+							newVal = re.sub(r"\b%s\b" % arg, foundArgs[arg_idx], newVal)
+					print(newVal)
 					newCommand = newCommand.replace(foundString, newVal)
 		return(newCommand)
 
