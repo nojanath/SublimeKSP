@@ -53,7 +53,7 @@ concat_syntax = "concat" # The name of the function to concat arrays.
 
 multi_dim_ui_flag = " { UI ARRAY }"
 
-ui_type_re = r"(?<=)(ui_button|ui_switch|ui_knob|ui_label|ui_level_meter|ui_menu|ui_slider|ui_table|ui_text_edit|ui_waveform|ui_value_edit)(?=\s)"
+ui_type_re = r"\b(?P<uitype>ui_button|ui_switch|ui_knob|ui_label|ui_level_meter|ui_menu|ui_slider|ui_table|ui_text_edit|ui_waveform|ui_value_edit)\b"
 keywords_re = r"(?<=)(declare|const|%s|%s|polyphonic|list)(?=\s)" % (pers_keyword, read_keyword)
 
 any_pers_re = r"(%s\s+|%s\s+)" % (pers_keyword, read_keyword)
@@ -61,7 +61,7 @@ persistence_re = r"(?:\b(?P<persistence>%s|%s)\s+)?" % (pers_keyword, read_keywo
 pers_re = r"\b%s\b" % pers_keyword
 read_re = r"\b%s\b" % read_keyword
 
-
+define_re = r"^define\s+%s\s*(?:\((?P<args>.+)\))?\s*:=(?P<val>.+)$" % variable_name_re
 multiple_dimensions_re = r"\[(?P<dimensions>[^\]]+(?:\,[^\]]+)+)\]" # Match square brackets with 2 or more comma separated dimensions.
 multidimensional_array_re = r"^declare\s+%s%s\s*%s(?P<uiArray>%s)?$" % (persistence_re, variable_name_re, multiple_dimensions_re, multi_dim_ui_flag)
 const_block_start_re = r"^const\s+%s$" % variable_name_re
@@ -69,6 +69,9 @@ const_block_end_re = r"^end\s+const$"
 const_block_member_re = r"^%s(?:$|\s*\:=\s*(?P<value>.+))" % variable_name_re
 list_block_start_re = r"^list\s*%s\s*(?:\[(?P<size>%s)?\])?$" % (variable_name_re, variable_or_int)
 list_block_end_re = r"^end\s+list$"
+array_concat_re = r"(?P<declare>^\s*declare\s+)?%s\s*(?P<brackets>\[(?P<arraysize>.*)\])?\s*:=\s*%s\s*\((?P<arraylist>[^\)]*)" % (variable_name_re, concat_syntax)
+ui_array_re = r"^declare\s+%s%s\s+%s\s*\[(?P<arraysize>[^\]]+)\]\s*(?P<uiparams>(?P<tablesize>\[[^\]]+\]\s*)?\(.*)?" % (persistence_re, ui_type_re, variable_name_re)
+
 
 family_start_re = r"^family\s+.+"
 family_end_re = r"^end\s+family$"
@@ -83,16 +86,17 @@ maths_string_evaluator = SimpleEval()
 # This function is called before the macros have been expanded.
 def pre_macro_functions(lines):
 	remove_print(lines)
+	handleDefineConstants(lines)
 	handle_define_literals(lines)
-	handle_define_lines(lines)
+	#handle_define_lines(lines)
 	handle_iterate_macro(lines)
 	handle_literate_macro(lines)
 
 # This function is called after the macros have been expanded.
 def post_macro_functions(lines):
 	handle_structs(lines)
-	for line_obj in lines:
-		print(line_obj.command)
+	# for line_obj in lines:
+	# 	print(line_obj.command)
 	# callbacks_are_functions(lines)
 	incrementor(lines)
 	handle_const_block(lines)
@@ -107,7 +111,7 @@ def post_macro_functions(lines):
 	variable_persistence_shorthand(lines)
 	ui_property_functions(lines)
 	expand_string_array_declaration(lines)  
-	# handle_array_concatenate(lines)
+	handle_array_concatenate(lines)
 
 # Take the original deque of line objects, and for every new line number, add in the line_inserts.
 def replace_lines(lines, line_nums, line_inserts):
@@ -414,22 +418,22 @@ def handle_array_concatenate(lines):
 		line = lines[i].command
 		if re.search(init_re, line):
 			init_line_num = i
-		m = re.search(r"(^\s*declare\s+)?%s\s*(\[(.*)\])?\s*:=\s*%s\s*\(([^\)]*)" % (varname_re_string, concat_syntax), line)
+		m = re.search(array_concat_re, line)
+		#r"(?P<declare>^\s*declare\s+)?%s\s*(?P<brackets>\[(?P<arraysize>.*)\])?\s*:=\s*%s\s*\((?P<arraylist>[^\)]*)" % (variable_name_re, concat_syntax)
 		if m:
-			search_list = m.group(7).split(",")
+			search_list = m.group("arraylist").split(",")
 			# Why doesn't this work? It seems to make makes all previous lists in child_arrays empty. Extend seems to work, but
 			# append doesn't. This has been bodged for now.
 			# child_arrays.append(search_list)
-			# print(child_arrays)
 			child_arrays.extend(search_list)
-			parent_array.append(m.group(2))
+			parent_array.append(m.group("whole"))
 			num_args.append(len(search_list))
 			line_numbers.append(i)
 			size = None
 			if re.search(r"\bdeclare\b", line):
-				if not m.group(5):
+				if not m.group("brackets"):
 					raise ksp_compiler.ParseException(lines[i], "No array size given. Leave brackets [] empty to have the size auto generated.\n")  
-				if not m.group(6):
+				if not m.group("arraysize"):
 					sizes = []
 					for j in range(0, i):
 						line2 = lines[j].command
@@ -446,8 +450,8 @@ def handle_array_concatenate(lines):
 						raise ksp_compiler.ParseException(lines[i], "Undeclared array(s) in %s function: %s\n" % (concat_syntax, ', '.join(search_list).strip()))
 					size = simplify_maths_addition(re.sub(r"[\[\]]", "", '+'.join(sizes)))
 				else:
-					size = m.group(6)
-				lines[i].command = "declare %s[%s]" % (m.group(2), size) 
+					size = m.group("arraysize")
+				lines[i].command = "declare %s[%s]" % (m.group("whole"), size) 
 			else:
 				lines[i].command = ""
 
@@ -507,7 +511,10 @@ def inspect_family_state(lines, text_lineno):
 	current_family_names = []
 	for i in range(len(lines)):
 		if i == text_lineno:
-			return (".".join(current_family_names))
+			if current_family_names:
+				return (".".join(current_family_names) + ".")
+			else:
+				return (None)
 			break
 		line = lines[i].command.strip()
 		m = re.search(r"^family\s+(.+)$", line)
@@ -549,7 +556,10 @@ class MultiDimensionalArray(object):
 		new_lines = collections.deque()
 		# Build the declare const lines and add them to the new_line deque.
 		for dim_num, dim_size in enumerate(self.dimensions):
-			declare_const_text = const_template.replace("#name#", self.name).replace("#dimNum#", str(dim_num + 1)).replace("#val#", dim_size)
+			declare_const_text = const_template\
+				.replace("#name#", self.name)\
+				.replace("#dimNum#", str(dim_num + 1))\
+				.replace("#val#", dim_size)
 			new_lines.append(line.copy(declare_const_text))
 		# Build the list of arguments, eg: "d1, d2, d3"
 		dimension_arg_list = ["d" + str(dim_num + 1) for dim_num in range(len(self.dimensions))]
@@ -596,7 +606,7 @@ def multi_dimensional_arrays(lines):
 				elif m:
 					fam_prefix = ""
 					if fam_count != 0:
-						fam_prefix = inspect_family_state(lines, line_num) + "."
+						fam_prefix = inspect_family_state(lines, line_num)
 					name = m.group("name")
 					if m.group("uiArray"):
 						name = name[1:] # If it is a UI array, the single dimension array will already have the underscore, so it is removed.
@@ -1052,7 +1062,7 @@ def find_list_block(lines):
 		m = re.search(list_block_start_re, line)
 		if m:
 			is_list_block = True
-			list_block_obj = ListBlock(m.group("name"), m.group("size"))
+			list_block_obj = ListBlock(m.group("whole"), m.group("size"))
 		elif is_list_block and not line == "":
 			if re.search(list_block_end_re, line):
 				is_list_block = False
@@ -1434,7 +1444,7 @@ def variable_persistence_shorthand(lines):
 				if symbol_prefix:
 					variable_name = variable_name.replace(symbol_prefix.group(1), "")
 				if fam_pre:
-					variable_name = fam_pre + "." + variable_name.strip()
+					variable_name = fam_pre + variable_name.strip()
 
 			variable_names.append(variable_name.strip())
 			line_numbers.append(i)
@@ -1622,261 +1632,386 @@ def handle_define_literals(lines):
 					line_obj.command = line_obj.command.replace(item, str(define_values[index]))
 
 
+#=================================================================================================
+class DefineConstant(object):
+	def __init__(self, name, value, argString, line):
+		self.name = name
+		self.value = value
+		if self.value.startswith("#") and self.value.endswith("#"):
+			self.value = self.value[1 : len(self.value) - 1]
+		self.args = []
+		if argString:
+			self.args = ksp_compiler.split_args(argString, line)
+		self.line = line
+		if re.search(r"\b%s\b" % self.name, self.value):
+			raise ksp_compiler.ParseException(self.line, "Define constant cannot call itself.")
+
+	def getName(self):
+		return(self.name)
+	def getValue(self):
+		return(self.value)
+	def setValue(self, val):
+		self.value = val
+
+	def evaluateValue(self):
+		newVal = self.value
+		try:
+			val = re.sub(r"\smod\s", " % ", self.value)
+			newVal = str(maths_string_evaluator.eval(val))
+		except:
+			pass
+		self.setValue(newVal)
+
+	def substituteValue(self, command):
+		newCommand = command
+		if self.name in command:
+			if not self.args:
+				newCommand = re.sub(r"\b%s\b" % self.name, self.value, command)
+			else:
+				matchIt = re.finditer(r"\b%s\b" % self.name, command)
+				for match in matchIt:
+					# Parse the match
+					matchPos = match.start()
+					parenthCount = 0
+					preBracketFlag = True # Flag to show when the first bracket is found.
+					foundString = []
+					for char in command[matchPos:]:
+						if char == "(":
+							parenthCount += 1
+							preBracketFlag = False
+						elif char == ")":
+							parenthCount -= 1
+						foundString.append(char)
+						if parenthCount == 0 and preBracketFlag == False:
+							break
+					foundString = "".join(foundString)
+
+					# Check whether the args are valid
+					openBracketPos = foundString.find("(")
+					if openBracketPos == -1:
+						raise ksp_compiler.ParseException(self.line, "No arguments found for define macro: %s" % foundString)
+					foundArgs = ksp_compiler.split_args(foundString[openBracketPos + 1 : len(foundString) - 1], self.line)
+					if len(foundArgs) != len(self.args):
+						raise ksp_compiler.ParseException(self.line, "Incorrect number of arguments in define macro: %s. Expected %d, got %d.\n" % (foundString, len(self.args), len(foundArgs)))
+
+					# Build the new value using the given args
+					newVal = self.value
+					for arg_idx, arg in enumerate(self.args):
+						newVal = re.sub(r"\b%s\b" % arg, foundArgs[arg_idx], newVal)
+					newCommand = newCommand.replace(foundString, newVal)
+		return(newCommand)
+
+def handleDefineConstants(lines):
+	defineConstants = collections.deque()
+	newLines = collections.deque()
+	for lineIdx in range(len(lines)):
+		line = lines[lineIdx].command.strip()
+		if line.startswith("define"):
+			m = re.search(define_re, line)
+			if m:
+				defineObj = DefineConstant(m.group("whole"), m.group("val").strip(), m.group("args"), lines[lineIdx])
+				defineConstants.append(defineObj)
+			else:
+				newLines.append(lines[lineIdx])
+		else:
+			newLines.append(lines[lineIdx])
+
+	if defineConstants:
+		# Replace all occurances where other defines are used in define values
+		for i in range(len(defineConstants)):
+			for j in range(len(defineConstants)):
+				defineConstants[i].setValue(defineConstants[j].substituteValue(defineConstants[i].getValue()))
+			defineConstants[i].evaluateValue()
+
+		# For each line, replace any places the defines are used
+		for lineIdx in range(len(newLines)):
+			line = newLines[lineIdx].command
+			for defineConst in defineConstants:
+				newLines[lineIdx].command = defineConst.substituteValue(newLines[lineIdx].command)
+
+	for i in range(len(lines)):
+		lines.pop()
+	lines.extend(newLines) 
 
 # Find all define declarations and then scan the document and replace all occurrences with their value.
 # define command's have no scope, they are completely global at the moment. There is some hidden define
 # functionality... you can use define as a text substitution macro by wrapping the value in #.
-def handle_define_lines(lines):
-	define_titles = []
-	define_values = []
-	define_line_pos = []
-	define_args = []
-	for index in range(len(lines)):
-		line = lines[index].command.strip()
-		if re.search(r"^define\s+", line):
-			m = re.search(r"^define\s+%s(?:\((.+)\))?\s*:=(.+)$" % varname_re_string, line)
-			if m:
-				define_titles.append(m.group(1))
-				define_values.append(m.group(5).strip())
-				define_line_pos.append(index)
+# def handle_define_lines(lines):
+# 	define_titles = []
+# 	define_values = []
+# 	define_line_pos = []
+# 	define_args = []
+# 	for index in range(len(lines)):
+# 		line = lines[index].command.strip()
+# 		if re.search(r"^define\s+", line):
+# 			m = re.search(r"^define\s+%s(?:\((.+)\))?\s*:=(.+)$" % varname_re_string, line)
+# 			if m:
+# 				define_titles.append(m.group(1))
+# 				define_values.append(m.group(5).strip())
+# 				define_line_pos.append(index)
 
-				args = m.group(4)
-				if args:
-					# args = args.split(",")
-					args = ksp_compiler.split_args(args, lines[index])
-				define_args.append(args)
+# 				args = m.group(4)
+# 				if args:
+# 					# args = args.split(",")
+# 					args = ksp_compiler.split_args(args, lines[index])
+# 				define_args.append(args)
 
-				# text_without_define = re.sub(r"^\s*define\s*", "", line)
-				# colon_bracket_pos = text_without_define.find(":=")
+# 				# text_without_define = re.sub(r"^\s*define\s*", "", line)
+# 				# colon_bracket_pos = text_without_define.find(":=")
 
-				# # before the assign operator is the title
-				# title = text_without_define[ : colon_bracket_pos].strip()
-				# define_titles.append(title)
+# 				# # before the assign operator is the title
+# 				# title = text_without_define[ : colon_bracket_pos].strip()
+# 				# define_titles.append(title)
 
-				# # after the assign operator is the value
-				# value = text_without_define[colon_bracket_pos + 2 : ].strip()
-				# define_values.append(value)
+# 				# # after the assign operator is the value
+# 				# value = text_without_define[colon_bracket_pos + 2 : ].strip()
+# 				# define_values.append(value)
 
-				# remove the line
-				lines[index].command = "" #re.sub(r'[^\r\n]', '', line)
+# 				# remove the line
+# 				lines[index].command = "" #re.sub(r'[^\r\n]', '', line)
 
-			else:
-				raise ksp_compiler.ParseException(lines[index], "Syntax error in define.\n")
+# 			else:
+# 				raise ksp_compiler.ParseException(lines[index], "Syntax error in define.\n")
 
-	# If at least one define const exists.
-	if define_titles:
-		# Check each of the values to see if they contain any other define consts.
-		for i in range(len(define_values)):
-			if not define_args[i]:
-				for ii in range(len(define_titles)):
-					define_values[i] = re.sub(r"\b%s\b" % define_titles[ii], define_values[ii], define_values[i])
-					# if define_titles[ii] in define_values[i]:
-					#   define_values[i] = define_values[i].replace(define_titles[ii], define_values[ii])
+# 	# If at least one define const exists.
+# 	if define_titles:
+# 		# Check each of the values to see if they contain any other define consts.
+# 		for i in range(len(define_values)):
+# 			if not define_args[i]:
+# 				for ii in range(len(define_titles)):
+# 					define_values[i] = re.sub(r"\b%s\b" % define_titles[ii], define_values[ii], define_values[i])
+# 					# if define_titles[ii] in define_values[i]:
+# 					#   define_values[i] = define_values[i].replace(define_titles[ii], define_values[ii])
 
-		# Do any maths if needed.
-		for i in range(len(define_values)):
-				if not re.search(r"^#.*#$", define_values[i]):
-					if not re.search(string_or_placeholder_re, define_values[i]):
-						define_values[i] = re.sub(r"\s+mod\s+", " % ", define_values[i])			
-						define_values[i] = try_evaluation(define_values[i], lines[define_line_pos[i]], "define")
-					# try:
-					# 	define_values[i] = eval(define_values[i]) #.replace("/", "//")
-					# 	if not isinstance(define_values[i], int):
-					# 		raise ksp_compiler.ParseException(lines[define_line_pos[i]], 
-					# 			"Invalid define value (%f). Define statements are evaluated as expressions in the Python language, use the int() function when dividing values to avoid floating point numbers, eg: define NUM := int(5/3).\n" % define_values[i])
-					# except SyntaxError:
-					# 	raise ksp_compiler.ParseException(lines[define_line_pos[i]], "Undeclared variable in define statement.\n")
-				else:
-					define_values[i] = define_values[i][1 : len(define_values[i]) - 1]
+# 		# Do any maths if needed.
+# 		for i in range(len(define_values)):
+# 				if not re.search(r"^#.*#$", define_values[i]):
+# 					if not re.search(string_or_placeholder_re, define_values[i]):
+# 						define_values[i] = re.sub(r"\s+mod\s+", " % ", define_values[i])			
+# 						define_values[i] = try_evaluation(define_values[i], lines[define_line_pos[i]], "define")
+# 					# try:
+# 					# 	define_values[i] = eval(define_values[i]) #.replace("/", "//")
+# 					# 	if not isinstance(define_values[i], int):
+# 					# 		raise ksp_compiler.ParseException(lines[define_line_pos[i]], 
+# 					# 			"Invalid define value (%f). Define statements are evaluated as expressions in the Python language, use the int() function when dividing values to avoid floating point numbers, eg: define NUM := int(5/3).\n" % define_values[i])
+# 					# except SyntaxError:
+# 					# 	raise ksp_compiler.ParseException(lines[define_line_pos[i]], "Undeclared variable in define statement.\n")
+# 				else:
+# 					define_values[i] = define_values[i][1 : len(define_values[i]) - 1]
 
-		# Scan the code and replace any occurrences of the name with it's value.
-		for line_obj in lines:
-			line = line_obj.command 
-			for index, item in enumerate(define_titles):
-				if define_args[index]:
-					macro_match_iter = re.finditer(r"\b(%s)\s*\(" % item, line)
-					for match in macro_match_iter:
+# 		# Scan the code and replace any occurrences of the name with it's value.
+# 		for line_obj in lines:
+# 			line = line_obj.command 
+# 			for index, item in enumerate(define_titles):
+# 				if define_args[index]:
+# 					macro_match_iter = re.finditer(r"\b(%s)\s*\(" % item, line)
+# 					for match in macro_match_iter:
 						
-						match_pos = (match.start())
-						parenthesis_count = 0
-						arg_string = ""
-						first_bracket = False
-						for char in line[match_pos: ]:
-							if char == ")":
-								parenthesis_count -= 1
-							if parenthesis_count >= 1:
-								arg_string = arg_string + char
-							elif first_bracket:
-								break
-							if char == "(":
-								first_bracket = True
-								parenthesis_count += 1
-						# TODO: fix this, if a macro takes an argument with brackets it doesnt work.
+# 						match_pos = (match.start())
+# 						parenthesis_count = 0
+# 						arg_string = ""
+# 						first_bracket = False
+# 						for char in line[match_pos: ]:
+# 							if char == ")":
+# 								parenthesis_count -= 1
+# 							if parenthesis_count >= 1:
+# 								arg_string = arg_string + char
+# 							elif first_bracket:
+# 								break
+# 							if char == "(":
+# 								first_bracket = True
+# 								parenthesis_count += 1
+# 						# TODO: fix this, if a macro takes an argument with brackets it doesnt work.
 
-						if arg_string:
-							found_args = ksp_compiler.split_args(arg_string, line_obj)
-							if len(found_args) != len(define_args[index]):
-								raise ksp_compiler.ParseException(line_obj, "Incorrect number of arguments for %s define macro. Expected %d, got %d.\n" % (item, len(define_args[index]), len(found_args)))
-							else:
-								new_define_value = str(define_values[index])
-								for arg_idx, arg in enumerate(define_args[index]):
-									new_define_value = re.sub(r"\b%s\b" % arg, found_args[arg_idx], new_define_value)
-								line_obj.command = re.sub(r"\b%s\s*\(\s*%s\s*\)" % (item, arg_string), new_define_value, line_obj.command)
-						else:
-							raise ksp_compiler.ParseException(line_obj, "No arguments found for define macro: %s.\n" % item)
+# 						if arg_string:
+# 							found_args = ksp_compiler.split_args(arg_string, line_obj)
+# 							if len(found_args) != len(define_args[index]):
+# 								raise ksp_compiler.ParseException(line_obj, "Incorrect number of arguments for %s define macro. Expected %d, got %d.\n" % (item, len(define_args[index]), len(found_args)))
+# 							else:
+# 								new_define_value = str(define_values[index])
+# 								for arg_idx, arg in enumerate(define_args[index]):
+# 									new_define_value = re.sub(r"\b%s\b" % arg, found_args[arg_idx], new_define_value)
+# 								line_obj.command = re.sub(r"\b%s\s*\(\s*%s\s*\)" % (item, arg_string), new_define_value, line_obj.command)
+# 						else:
+# 							raise ksp_compiler.ParseException(line_obj, "No arguments found for define macro: %s.\n" % item)
 
-				if re.search(r"\b%s\b" % item, line):
-					line_obj.command = line_obj.command.replace(item, str(define_values[index]))
-
-
-# Started better code for the UI arrays...
-# class UIArray(object):
-# 	def __init__(self, name, ui_type, size, persistence, family_prefix, post_size_text, line):
-# 		self.name = name
-# 		self.family_prefix = family_prefix
-# 		if not family_prefix:
-# 			self.family_prefix = ""
-# 		self.ui_type = ui_type
-# 		self.ui_prefix = ""
-# 		if self.ui_type = "ui_text_edit":
-# 			self.ui_prefix = "@"
-# 		self.post_size_text = post_size_text
-# 		self.calculated_size = size
-# 		self.dimensions_string = size
-# 		self.underscore = ""
-# 		if "," in size:
-# 			self.underscore = "_"
-# 			self.calculated_size = "*".join(["(%s)" % dim for dim in size.split(",")])
-# 		self.calculated_size = try_evaluation(self.calculated_size, line, "UI array size")
-# 		self.persistence = persistence
-# 		if not persistence:
-# 			self.persistence = ""
-
-# 	def get_raw_array_declaration(self):
-# 		return("declare %s %s %s[%s]" % (self.persistence, self.ui_type, self.name, self.dimensions_string))
-
-# 	def build_lines(self, line):
-# 		new_lines = collections.deque
-# 		for i in range(self.calculated_size):
-# 			ui_name = self.underscore + self.name
-# 			text = "declare %s %s %s %s" % (self.persistence, self.ui_type, self.ui_prefix + ui_name + str(i), self.post_size_text)
-# 			new_lines.append(line.copy(text))
-# 			text = "%s[%s] := get_ui_id(%s)" % (self.family_prefix + ui_name, str(i), self.family_prefix + ui_name + str(i))
-# 			new_lines.append(line.copy(text))
+# 				if re.search(r"\b%s\b" % item, line):
+# 					line_obj.command = line_obj.command.replace(item, str(define_values[index]))
 
 
-# def handle_ui_arrays(lines):
-# 	for line_num in range(len(lines)):
-# 		line = lines[line_num].command.strip()
+#=================================================================================================
+class UIArray(object):
+	def __init__(self, name, uiType, size, persistence, familyPrefix, uiParams, line):
+		self.name = name
+		self.familyPrefix = familyPrefix
+		if not familyPrefix:
+			self.familyPrefix = ""
+		self.uiType = uiType
+		self.prefixSymbol = ""
+		if self.uiType == "ui_text_edit":
+			self.prefixSymbol = "@"
+		self.uiParams = uiParams
+		if not uiParams:
+			self.uiParams = ""
+		self.numElements = size
+		self.dimensionsString = size
+		self.underscore = ""
+		if "," in size:
+			self.underscore = "_"
+			self.numElements = "*".join(["(%s)" % dim for dim in size.split(",")])
+		self.numElements = try_evaluation(self.numElements, line, "UI array size")
+		self.persistence = persistence
+		if not persistence:
+			self.persistence = ""
+
+	# Get the command string for declaring the raw ID array
+	def getRawArrayDeclaration(self):
+		return("declare %s[%s]" % (self.name, self.dimensionsString))
+
+	def buildLines(self, line):
+		newLines = collections.deque()
+		for i in range(self.numElements):
+			uiName = self.underscore + self.name
+			text = "declare %s %s %s %s" % (self.persistence, self.uiType, self.prefixSymbol + uiName + str(i), self.uiParams)
+			newLines.append(line.copy(text))
+			text = "%s[%s] := get_ui_id(%s)" % (self.familyPrefix + uiName, str(i), self.familyPrefix + uiName + str(i))
+			newLines.append(line.copy(text))
+		return(newLines)
+
+def handle_ui_arrays(lines):
+	newLines = collections.deque()
+	for lineNum in range(len(lines)):
+		line = lines[lineNum].command.strip()
+		if line.startswith("declare"): # This might just improve efficiency.
+			m = re.search(ui_array_re, line)
+			if m:
+				famPre = inspect_family_state(lines, lineNum) # TODO: This should be replaced with a fam_count for efficiency
+				uiType = m.group("uitype")
+				if (uiType == "ui_table" and m.group("tablesize")) or uiType != "ui_table":
+					arrayObj = UIArray(m.group("whole"), uiType, m.group("arraysize"), m.group("persistence"), famPre, m.group("uiparams"), lines[lineNum])
+					newLines.append(lines[lineNum].copy(arrayObj.getRawArrayDeclaration()))
+					newLines.extend(arrayObj.buildLines(lines[lineNum]))
+				else:
+					newLines.append(lines[lineNum])
+			else: 
+				newLines.append(lines[lineNum])
+		else:
+			newLines.append(lines[lineNum])
+
+	for i in range(len(lines)):
+		lines.pop()
+	lines.extend(newLines) 
 
 
+
+#^declare\s+(?:\b(?P<persistence>pers|read)\s+)?\b(?P<uitype>ui_button|ui_switch|ui_knob|ui_label|ui_level_meter|ui_menu|ui_slider|ui_table|ui_text_edit|ui_waveform|ui_value_edit)\b\s+(?P<whole>(?P<prefix>\b|[$%!@])(?P<name>[a-zA-Z_][a-zA-Z0-9_\.]*))\b\s*\[(?P<arraysize>[^\]]+)\]\s*(?:\[(?P<tablesize>[^\]]+)\]\s*)?(?P<uiparams>\(.*)?
 
 # For each UI array declaration, create a list of 'declare ui_control' lines and the UI ID of each to an array.
-def handle_ui_arrays(lines):
-	ui_declaration = []
-	variable_names = []
-	line_numbers = []
-	num_elements = []
-	pers_text = []
-	multidimensional = []
-	family_prefixes = []
+# def handle_ui_arrays(lines):
+# 	ui_declaration = []
+# 	variable_names = []
+# 	line_numbers = []
+# 	num_elements = []
+# 	pers_text = []
+# 	multidimensional = []
+# 	family_prefixes = []
 
-	# Find all of the array declarations.
-	for index in range(len(lines)):
-		line = lines[index].command 
-		ls_line = line.lstrip()
-		m = re.search(r"^\s*declare\s+" + any_pers_re + "?" + ui_type_re + "\s*" + varname_re_string + "\s*\[[^\]]+\]", ls_line)
-		if m:
-			is_pers = m.group(1)
-			ui_type = m.group(2).strip()
-			var_name = m.group(3).strip()
-			variable_name = re.sub(var_prefix_re, "", var_name)
+# 	# Find all of the array declarations.
+# 	for index in range(len(lines)):
+# 		line = lines[index].command 
+# 		ls_line = line.lstrip()
+# 		m = re.search(r"^\s*declare\s+" + any_pers_re + "?" + ui_type_re + "\s*" + varname_re_string + "\s*\[[^\]]+\]", ls_line)
+# 		if m:
+# 			is_pers = m.group(1)
+# 			ui_type = m.group(2).strip()
+# 			var_name = m.group(3).strip()
+# 			variable_name = re.sub(var_prefix_re, "", var_name)
 
-			# Check that if it is a table, it is actually an array.
-			proceed = True
-			if ui_type == "ui_table":
-				if not re.search(r"\[[^\]]+\]\s*\[", ls_line):
-					proceed = False
+# 			# Check that if it is a table, it is actually an array.
+# 			proceed = True
+# 			if ui_type == "ui_table":
+# 				if not re.search(r"\[[^\]]+\]\s*\[", ls_line):
+# 					proceed = False
 
-			if proceed:
-				current_family_name = inspect_family_state(lines, index)
-				if current_family_name:
-					family_prefixes.append(current_family_name + ".")
-				else:
-					family_prefixes.append("")
-				array_size = ls_line[ls_line.find("[") + 1 : ls_line.find("]")]
-				is_multi_dimensional = "," in array_size
-				underscore = ""
-				if is_multi_dimensional:
-					underscore = "_"
-				# string_between_brackets = "(" + array_size.replace(",", ")*(") + ")"
-				string_between_brackets = 1
-				dimension_list = array_size.split(",")
-				for d_num, dimension in enumerate(dimension_list):
-					# dimension_int = try_evaluation(dimension, lines[index], "dimension") 
-					# string_between_brackets = string_between_brackets * dimension_int
-					# dimension_list[d_num] = str(dimension_int)
-					string_between_brackets = string_between_brackets * try_evaluation(dimension, lines[index], "UI array size")
-					# try:
-					# except:
-					# 	raise ksp_compiler.ParseException(lines[index], "Invalid number of elements. Native 'declare const' variables cannot be used here, instead a 'define' const or a literal must be used.\n")          
+# 			if proceed:
+# 				current_family_name = inspect_family_state(lines, index)
+# 				if current_family_name:
+# 					family_prefixes.append(current_family_name + ".")
+# 				else:
+# 					family_prefixes.append("")
+# 				array_size = ls_line[ls_line.find("[") + 1 : ls_line.find("]")]
+# 				is_multi_dimensional = "," in array_size
+# 				underscore = ""
+# 				if is_multi_dimensional:
+# 					underscore = "_"
+# 				# string_between_brackets = "(" + array_size.replace(",", ")*(") + ")"
+# 				string_between_brackets = 1
+# 				dimension_list = array_size.split(",")
+# 				for d_num, dimension in enumerate(dimension_list):
+# 					# dimension_int = try_evaluation(dimension, lines[index], "dimension") 
+# 					# string_between_brackets = string_between_brackets * dimension_int
+# 					# dimension_list[d_num] = str(dimension_int)
+# 					string_between_brackets = string_between_brackets * try_evaluation(dimension, lines[index], "UI array size")
+# 					# try:
+# 					# except:
+# 					# 	raise ksp_compiler.ParseException(lines[index], "Invalid number of elements. Native 'declare const' variables cannot be used here, instead a 'define' const or a literal must be used.\n")          
 
-				# array_size = ", ".join(dimension_list)
-				# print("arrays size " + array_size)
-				num_element = string_between_brackets
-				# try:
-				#   num_element = eval(string_between_brackets)
-				#   print("BETWEEN:@ " + str(num_element))
-				#   print("BETWEEN TEXT:  " + string_between_brackets)
-				# except:
-				#   raise ksp_compiler.ParseException(lines[index], "Invalid number of elements. Native 'declare const' variables cannot be used here, instead a 'define' const or a literal must be used.\n")          
+# 				# array_size = ", ".join(dimension_list)
+# 				# print("arrays size " + array_size)
+# 				num_element = string_between_brackets
+# 				# try:
+# 				#   num_element = eval(string_between_brackets)
+# 				#   print("BETWEEN:@ " + str(num_element))
+# 				#   print("BETWEEN TEXT:  " + string_between_brackets)
+# 				# except:
+# 				#   raise ksp_compiler.ParseException(lines[index], "Invalid number of elements. Native 'declare const' variables cannot be used here, instead a 'define' const or a literal must be used.\n")          
 
-				pers_text.append(is_pers)
-				# if there are parameters
-				if "(" in ls_line:
-					if ui_type == "ui_table":
-						first_close_bracket = ls_line.find("]") + 1
-						table_elements = ls_line[ls_line.find("[", first_close_bracket) + 1 : ls_line.find("]", first_close_bracket)]
-						ui_declaration.append("declare " + ui_type + " " + underscore + var_name + "[" + table_elements + "]" + ls_line[ls_line.find("(") : ls_line.find(")") + 1]) 
-					else:
-						ui_declaration.append("declare " + ui_type + " " + underscore + var_name + ls_line[ls_line.find("(") : ls_line.find(")") + 1]) 
-				else:
-					ui_declaration.append("declare " + ui_type + " " + underscore + var_name) 
-				line_numbers.append(index)
-				num_elements.append(num_element)
-				if is_multi_dimensional:
-					variable_name = "_" + variable_name
-				variable_names.append(variable_name)
-				lines[index].command  = "declare " + variable_name + "[" + str(array_size) + "]"
-				if is_multi_dimensional:
-					lines[index].command = lines[index].command + multi_dim_ui_flag
+# 				pers_text.append(is_pers)
+# 				# if there are parameters
+# 				if "(" in ls_line:
+# 					if ui_type == "ui_table":
+# 						first_close_bracket = ls_line.find("]") + 1
+# 						table_elements = ls_line[ls_line.find("[", first_close_bracket) + 1 : ls_line.find("]", first_close_bracket)]
+# 						ui_declaration.append("declare " + ui_type + " " + underscore + var_name + "[" + table_elements + "]" + ls_line[ls_line.find("(") : ls_line.find(")") + 1]) 
+# 					else:
+# 						ui_declaration.append("declare " + ui_type + " " + underscore + var_name + ls_line[ls_line.find("(") : ls_line.find(")") + 1]) 
+# 				else:
+# 					ui_declaration.append("declare " + ui_type + " " + underscore + var_name) 
+# 				line_numbers.append(index)
+# 				num_elements.append(num_element)
+# 				if is_multi_dimensional:
+# 					variable_name = "_" + variable_name
+# 				variable_names.append(variable_name)
+# 				lines[index].command  = "declare " + variable_name + "[" + str(array_size) + "]"
+# 				if is_multi_dimensional:
+# 					lines[index].command = lines[index].command + multi_dim_ui_flag
 
-	if line_numbers:
-		line_inserts = collections.deque()
-		for i in range(len(line_numbers)):
-			added_lines = []
+# 	if line_numbers:
+# 		line_inserts = collections.deque()
+# 		for i in range(len(line_numbers)):
+# 			added_lines = []
 
-			num_eles = int(num_elements[i])
+# 			num_eles = int(num_elements[i])
 
-			for ii in range(0, num_eles):
-				if "(" in ui_declaration[i]:
-					if "[" in ui_declaration[i]:
-						parameter_start = ui_declaration[i].find("[")
-					else:
-						parameter_start = ui_declaration[i].find("(")
-					current_text = ui_declaration[i][:parameter_start] + str(ii) + ui_declaration[i][parameter_start:]
-				else:
-					current_text = ui_declaration[i] + str(ii)
-				if pers_text[i]:
-					current_text = current_text.strip()
-					current_text = current_text[: 7] + " " + pers_text[i] + " " + current_text[8 :]
+# 			for ii in range(0, num_eles):
+# 				if "(" in ui_declaration[i]:
+# 					if "[" in ui_declaration[i]:
+# 						parameter_start = ui_declaration[i].find("[")
+# 					else:
+# 						parameter_start = ui_declaration[i].find("(")
+# 					current_text = ui_declaration[i][:parameter_start] + str(ii) + ui_declaration[i][parameter_start:]
+# 				else:
+# 					current_text = ui_declaration[i] + str(ii)
+# 				if pers_text[i]:
+# 					current_text = current_text.strip()
+# 					current_text = current_text[: 7] + " " + pers_text[i] + " " + current_text[8 :]
 
-				# Add individual UI declaration.
-				added_lines.append(lines[line_numbers[i]].copy(current_text))
+# 				# Add individual UI declaration.
+# 				added_lines.append(lines[line_numbers[i]].copy(current_text))
 
-				# Add ID to array.
-				add_to_array_text = family_prefixes[i] + variable_names[i] + "[" + str(ii) + "]" + " := get_ui_id(" + family_prefixes[i]+ variable_names[i] + str(ii) + ")"
-				added_lines.append(lines[i].copy(add_to_array_text))
+# 				# Add ID to array.
+# 				add_to_array_text = family_prefixes[i] + variable_names[i] + "[" + str(ii) + "]" + " := get_ui_id(" + family_prefixes[i]+ variable_names[i] + str(ii) + ")"
+# 				added_lines.append(lines[i].copy(add_to_array_text))
 
-			line_inserts.append(added_lines)
-		replace_lines(lines, line_numbers, line_inserts)
+# 			line_inserts.append(added_lines)
+# 		replace_lines(lines, line_numbers, line_inserts)
