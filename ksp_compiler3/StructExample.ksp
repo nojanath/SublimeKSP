@@ -12,6 +12,8 @@ struct MenuWithButtons
 	declare variable := (2)
 end struct
 
+
+
 struct ArrayTest
 	declare array[2]
 	declare array2D[2, 3]

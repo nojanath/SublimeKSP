@@ -69,7 +69,6 @@ const_block_end_re = r"^end\s+const$"
 const_block_member_re = r"^%s(?:$|\s*\:=\s*(?P<value>.+))" % variable_name_re
 list_block_start_re = r"^list\s*%s\s*(?:\[(?P<size>%s)?\])?$" % (variable_name_re, variable_or_int)
 list_block_end_re = r"^end\s+list$"
-array_concat_re = r"(?P<declare>^\s*declare\s+)?%s\s*(?P<brackets>\[(?P<arraysize>.*)\])?\s*:=\s*%s\s*\((?P<arraylist>[^\)]*)" % (variable_name_re, concat_syntax)
 ui_array_re = r"^declare\s+%s%s\s+%s\s*\[(?P<arraysize>[^\]]+)\]\s*(?P<uiparams>(?P<tablesize>\[[^\]]+\]\s*)?\(.*)?" % (persistence_re, ui_type_re, variable_name_re)
 
 
@@ -90,9 +89,7 @@ def pre_macro_functions(lines):
 	handle_define_literals(lines)
 	#handle_define_lines(lines)
 	# handle_iterate_macro(lines)
-	t = time.time()
 	handleIterateMacro(lines)
-	print("iterate time: %.3f" % (time.time() - t))
 	handle_literate_macro(lines)
 
 # This function is called after the macros have been expanded.
@@ -110,12 +107,16 @@ def post_macro_functions(lines):
 	# for line_obj in lines:
 	# 	print(line_obj.command)
 	calculate_open_size_array(lines)
+	t = time.time()
 	handle_lists(lines)
+	print("iterate time: %.3f" % (time.time() - t))
 	variable_persistence_shorthand(lines)
 	ui_property_functions(lines)
 	expand_string_array_declaration(lines)  
-	handle_array_concatenate(lines)
+	# handle_array_concatenate(lines)
+	handleArrayConcat(lines)
 
+#=================================================================================================
 # Take the original deque of line objects, and for every new line number, add in the line_inserts.
 def replace_lines(lines, line_nums, line_inserts):
 	new_lines = collections.deque() # Start with an empty deque and build it up.
@@ -140,6 +141,7 @@ def replace_lines(lines, line_nums, line_inserts):
 		lines.pop()
 	lines.extend(new_lines) 
 
+#=================================================================================================
 # Evaluates a string of add operations, any add pairs that cannot be evalutated are left.
 # e.g. "2 + 2 + 3 + 4 + x + y + 2" => "11 + x + y + 2"
 def simplify_maths_addition(string):
@@ -155,6 +157,7 @@ def simplify_maths_addition(string):
 			pass
 	return("+".join(parts))
 
+#=================================================================================================
 def try_evaluation(expression, line, name):
 	try:
 		final = maths_string_evaluator.eval(str(expression).strip())
@@ -164,6 +167,7 @@ def try_evaluation(expression, line, name):
 
 	return (final)
 
+#=================================================================================================
 def replaceLines(original, new):
 	original.clear()
 	original.extend(new) 
@@ -195,6 +199,7 @@ def replaceLines(original, new):
 #   lines.extend(new_lines) 
 
 
+#=================================================================================================
 class StructMember(object):
 	def __init__(self, name, command, prefix):
 		self.name = name
@@ -223,10 +228,8 @@ class Struct(object):
 
 	def addMember(self, memberObj):
 		self.members.append(memberObj)
-
 	def deleteMember(self, index):
 		del self.members[index]
-
 	def insertMember(self, location, memberObj):
 		self.members.insert(location, memberObj)
 
@@ -336,7 +339,6 @@ def handle_structs(lines):
 					else:
 						newLines.append(lines[i].copy("declare const %s.SIZE := %s" % (declaredName, arrayNumElements)))
 
-
 				# Add the declared names as a prefix and add the memebers to the newLines deque
 				for j in range(len(newMembers)):
 					newMembers[j].addNamePrefix(declaredName)
@@ -346,9 +348,8 @@ def handle_structs(lines):
 				newLines.append(lines[i])
 
 		replaceLines(lines, newLines)
-		
 
-
+#=================================================================================================
 # Remove print functions when the activate_logger() is not present.
 def remove_print(lines):
 	print_line_numbers = []
@@ -364,6 +365,7 @@ def remove_print(lines):
 		for i in range(len(print_line_numbers)):
 			lines[print_line_numbers[i]].command = ""
 
+#=================================================================================================
 def incrementor(lines):
 	start_keyword = "START_INC"
 	end_keyword = "END_INC"
@@ -399,103 +401,194 @@ def incrementor(lines):
 					it_vals[j] += step[j]
 
 
-# Function for concatenating multiple arrays into one. 
-def handle_array_concatenate(lines):
-	line_numbers = []
-	parent_array = []
-	child_arrays = []
-	num_args     = []
-	init_line_num = None
+#=================================================================================================
+class ArrayConcat(object):
+	def __init__(self, arrayToFill, declare, brackets, size, arraysToConcat, line):
+		self.line = line
+		self.arrayToFill = arrayToFill
+		self.declare = declare
+		self.size = size
+		self.brackets = brackets
+		self.arraysToConcat = arraysToConcat.split(",")
 
-	for i in range(len(lines)):
-		line = lines[i].command
-		if re.search(init_re, line):
-			init_line_num = i
-		m = re.search(array_concat_re, line)
-		#r"(?P<declare>^\s*declare\s+)?%s\s*(?P<brackets>\[(?P<arraysize>.*)\])?\s*:=\s*%s\s*\((?P<arraylist>[^\)]*)" % (variable_name_re, concat_syntax)
-		if m:
-			search_list = m.group("arraylist").split(",")
-			# Why doesn't this work? It seems to make makes all previous lists in child_arrays empty. Extend seems to work, but
-			# append doesn't. This has been bodged for now.
-			# child_arrays.append(search_list)
-			child_arrays.extend(search_list)
-			parent_array.append(m.group("whole"))
-			num_args.append(len(search_list))
-			line_numbers.append(i)
-			size = None
-			if re.search(r"\bdeclare\b", line):
-				if not m.group("brackets"):
-					raise ksp_compiler.ParseException(lines[i], "No array size given. Leave brackets [] empty to have the size auto generated.\n")  
-				if not m.group("arraysize"):
+	def checkArraySize(self, origLineIdx, lines):
+		if self.declare:
+			if not self.brackets:
+				raise ksp_compiler.ParseException(self.line, "No array size given. Leave brackets [] empty to have the size auto generated.\n") 
+			elif not self.size:
+				# Scan through the lines so far to find all the the arrays that have been chosen to be concatenated, and from these
+				# add their number of elements to determine the size needed.
+				def findArrays():
 					sizes = []
-					for j in range(0, i):
-						line2 = lines[j].command
-						for arg in search_list:
-							try: # The regex doesn't like it when there are [] or () in the arg list.
-								mm = re.search(r"^\s*declare\s+%s?%s\s*(\[.*\])" % (var_prefix_re, arg.strip()), line2)
-								if mm:
-									sizes.append(mm.group(1))
-									search_list.remove(arg)
-									break
-							except:
-								raise ksp_compiler.ParseException(lines[i], "Syntax error.\n") 
-					if search_list:  # If everything was found, then the list will be empty.
-						raise ksp_compiler.ParseException(lines[i], "Undeclared array(s) in %s function: %s\n" % (concat_syntax, ', '.join(search_list).strip()))
-					size = simplify_maths_addition(re.sub(r"[\[\]]", "", '+'.join(sizes)))
-				else:
-					size = m.group("arraysize")
-				lines[i].command = "declare %s[%s]" % (m.group("whole"), size) 
+					arrayNameList = list(self.arraysToConcat)
+					for lineObj in lines:
+						lineText = lineObj.command.strip()
+						if lineText.startswith("declare"):
+							for arr in arrayNameList:
+								try: # The regex doesn't like it when there are [] or () in the arr list.
+									mm = re.search(r"^declare\s+%s?%s\s*(\[.*\])" % (var_prefix_re, arr.strip()), lineText)
+									if mm:
+										sizes.append(mm.group(1))
+										arrayNameList.remove(arr)
+										break
+								except:
+									raise ksp_compiler.ParseException(lines[i], "Syntax error.\n")
+					if arrayNameList:  # If everything was found, then the list will be empty.
+						raise ksp_compiler.ParseException(self.line, "Undeclared array(s) in %s function: %s\n" % (concat_syntax, ', '.join(arrayNameList).strip()))
+					return(simplify_maths_addition(re.sub(r"[\[\]]", "", '+'.join(sizes))))
+				self.size = findArrays()
+
+	def getRawArrayDeclaration(self):
+		if self.declare:
+			return("declare %s[%s]" % (self.arrayToFill, str(self.size)))
+		else:
+			return("")
+
+	def buildLines(self):
+		newLines = collections.deque()
+		numArgs = len(self.arraysToConcat)
+		
+		offsets = ["0"]
+		offsets.extend(["num_elements(%s)" % arrName for arrName in self.arraysToConcat])
+
+		add_offset = ""
+		if numArgs != 1:
+			add_offset = " + concat_offset"
+			newLines.append(self.line.copy("concat_offset := 0"))
+
+		offset_command = "concat_offset := concat_offset + #offset#"
+		template_text = [
+		"for concat_it := 0 to num_elements(#arg#) - 1",
+		"   #parent#[concat_it%s] := #arg#[concat_it]" % add_offset,
+		"end for"]
+
+		for j in range(numArgs):
+			if j != 0 and numArgs != 1:
+				newLines.append(self.line.copy(offset_command.replace("#offset#", offsets[j])))
+			for text in template_text:
+				newLines.append(self.line.copy(text.replace("#arg#", self.arraysToConcat[j]).replace("#parent#", self.arrayToFill)))
+		return(newLines)
+
+def handleArrayConcat(lines):
+	array_concat_re = r"(?P<declare>^\s*declare\s+)?%s\s*(?P<brackets>\[(?P<arraysize>.*)\])?\s*:=\s*%s\s*\((?P<arraylist>[^\)]*)" % (variable_name_re, concat_syntax)
+	newLines = collections.deque()
+	for i in range(len(lines)):
+		line = lines[i].command.strip()
+		if "concat" in line:
+			m = re.search(array_concat_re, line)
+			if m:
+				concatObj = ArrayConcat(m.group("whole"), m.group("declare"), m.group("brackets"), m.group("arraysize"), m.group("arraylist"), lines[i])
+				concatObj.checkArraySize(i, lines)
+				newLines.append(lines[i].copy(concatObj.getRawArrayDeclaration()))
+				newLines.extend(concatObj.buildLines())
 			else:
-				lines[i].command = ""
+				newLines.append(lines[i])
+		elif re.search(r"^on\s+init$", line):
+			newLines.append(lines[i])
+			newLines.append(lines[i].copy("    declare concat_it"))
+			newLines.append(lines[i].copy("    declare concat_offset"))			
+		else:
+			newLines.append(lines[i])
+	replaceLines(lines, newLines)
 
-	if line_numbers:
-		line_inserts = collections.deque()
-		for i in range(len(line_numbers)):
-			added_lines = []
+
+# Function for concatenating multiple arrays into one. 
+# def handle_array_concatenate(lines):
+# 	array_concat_re = r"(?P<declare>^\s*declare\s+)?%s\s*(?P<brackets>\[(?P<arraysize>.*)\])?\s*:=\s*%s\s*\((?P<arraylist>[^\)]*)" % (variable_name_re, concat_syntax)
+# 	line_numbers = []
+# 	parent_array = []
+# 	child_arrays = []
+# 	num_args     = []
+# 	init_line_num = None
+
+# 	for i in range(len(lines)):
+# 		line = lines[i].command
+# 		if re.search(init_re, line):
+# 			init_line_num = i
+# 		m = re.search(array_concat_re, line)
+# 		if m:
+# 			search_list = m.group("arraylist").split(",")
+# 			# Why doesn't this work? It seems to make makes all previous lists in child_arrays empty. Extend seems to work, but
+# 			# append doesn't. This has been bodged for now.
+# 			# child_arrays.append(search_list)
+# 			child_arrays.extend(search_list)
+# 			parent_array.append(m.group("whole"))
+# 			num_args.append(len(search_list))
+# 			line_numbers.append(i)
+# 			size = None
+# 			if re.search(r"\bdeclare\b", line):
+# 				if not m.group("brackets"):
+# 					raise ksp_compiler.ParseException(lines[i], "No array size given. Leave brackets [] empty to have the size auto generated.\n")  
+# 				if not m.group("arraysize"):
+# 					sizes = []
+# 					for j in range(0, i):
+# 						line2 = lines[j].command
+# 						for arg in search_list:
+# 							try: # The regex doesn't like it when there are [] or () in the arg list.
+# 								mm = re.search(r"^\s*declare\s+%s?%s\s*(\[.*\])" % (var_prefix_re, arg.strip()), line2)
+# 								if mm:
+# 									sizes.append(mm.group(1))
+# 									search_list.remove(arg)
+# 									break
+# 							except:
+# 								raise ksp_compiler.ParseException(lines[i], "Syntax error.\n") 
+# 					if search_list:  # If everything was found, then the list will be empty.
+# 						raise ksp_compiler.ParseException(lines[i], "Undeclared array(s) in %s function: %s\n" % (concat_syntax, ', '.join(search_list).strip()))
+# 					size = simplify_maths_addition(re.sub(r"[\[\]]", "", '+'.join(sizes)))
+# 				else:
+# 					size = m.group("arraysize")
+# 				lines[i].command = "declare %s[%s]" % (m.group("whole"), size) 
+# 			else:
+# 				lines[i].command = ""
+
+# 	if line_numbers:
+# 		line_inserts = collections.deque()
+# 		for i in range(len(line_numbers)):
+# 			added_lines = []
 			
-			# We have to calculate the start and end points in the arg list, because the append isn't working.
-			s = 0
-			if i != 0:
-				for j in range(i):
-					s += num_args[j]
+# 			# We have to calculate the start and end points in the arg list, because the append isn't working.
+# 			s = 0
+# 			if i != 0:
+# 				for j in range(i):
+# 					s += num_args[j]
 
-			offsets = ["0"]
-			for j in range(s, s + num_args[i]):
-				offsets.append("num_elements(%s)" % child_arrays[j])
+# 			offsets = ["0"]
+# 			for j in range(s, s + num_args[i]):
+# 				offsets.append("num_elements(%s)" % child_arrays[j])
 
-			add_offset = ""
-			if num_args[i] != 1:
-				add_offset = " + concat_offset"
-				added_lines.append(lines[line_numbers[i]].copy("concat_offset := 0"))
+# 			add_offset = ""
+# 			if num_args[i] != 1:
+# 				add_offset = " + concat_offset"
+# 				added_lines.append(lines[line_numbers[i]].copy("concat_offset := 0"))
 
-			offset_command = "concat_offset := concat_offset + #offset#"
-			template_text = [
-			"for concat_it := 0 to num_elements(#arg#)-1",
-			"   #parent#[concat_it%s] := #arg#[concat_it]" % add_offset,
-			"end for"]
+# 			offset_command = "concat_offset := concat_offset + #offset#"
+# 			template_text = [
+# 			"for concat_it := 0 to num_elements(#arg#)-1",
+# 			"   #parent#[concat_it%s] := #arg#[concat_it]" % add_offset,
+# 			"end for"]
 
-			for j in range(num_args[i]):
-				if j != 0 and num_args[i] != 1:
-					current_text = offset_command.replace("#offset#", offsets[j])
-					added_lines.append(lines[line_numbers[i]].copy(current_text))
-				for text in template_text:
-					current_text = text.replace("#arg#", child_arrays[s + j]).replace("#parent#", parent_array[i])
-					added_lines.append(lines[line_numbers[i]].copy(current_text))
+# 			for j in range(num_args[i]):
+# 				if j != 0 and num_args[i] != 1:
+# 					current_text = offset_command.replace("#offset#", offsets[j])
+# 					added_lines.append(lines[line_numbers[i]].copy(current_text))
+# 				for text in template_text:
+# 					current_text = text.replace("#arg#", child_arrays[s + j]).replace("#parent#", parent_array[i])
+# 					added_lines.append(lines[line_numbers[i]].copy(current_text))
 
-			line_inserts.append(added_lines)
-		replace_lines(lines, line_numbers, line_inserts)
+# 			line_inserts.append(added_lines)
+# 		replace_lines(lines, line_numbers, line_inserts)
 
-		# Add declare variables at the start on the init callback.
-		new_lines = collections.deque()
-		for i in range(0, init_line_num + 1):
-			new_lines.append(lines[i])
+# 		# Add declare variables at the start on the init callback.
+# 		new_lines = collections.deque()
+# 		for i in range(0, init_line_num + 1):
+# 			new_lines.append(lines[i])
 
-		new_lines.append(lines[init_line_num].copy("    declare concat_it"))
-		new_lines.append(lines[init_line_num].copy("    declare concat_offset"))
-		for i in range(init_line_num + 1, len(lines)):
-			new_lines.append(lines[i])
+# 		new_lines.append(lines[init_line_num].copy("    declare concat_it"))
+# 		new_lines.append(lines[init_line_num].copy("    declare concat_offset"))
+# 		for i in range(init_line_num + 1, len(lines)):
+# 			new_lines.append(lines[i])
 
-		replaceLines(lines, new_lines)
+# 		replaceLines(lines, new_lines)
 
 # If the given line is in at least 1 family, return the family prefixes.
 def inspect_family_state(lines, text_lineno):
@@ -807,17 +900,42 @@ def find_list_block(lines):
 	replaceLines(lines, new_lines)
      
 
-def find_all_arrays(lines):
-	array_names = []
-	array_sizes = []
-	for i in range(len(lines)):
-		line = lines[i].command
-		m = re.search(r"^\s*declare\s+%s?%s\s*(?:\[(%s)\])" % (any_pers_re, varname_re_string, variable_or_int), line)
-		if m:
-			array_names.append(re.sub(var_prefix_re, "", m.group(2)))
-			array_sizes.append(m.group(5))
 
-	return (array_names, array_sizes)
+
+
+# class List(object):
+# 	def __init__(self, name, prefix, persistence, isMatrix, lineIdx):
+# 		self.lineIdx = lineIdx
+# 		self.name = name
+# 		self.prefix = prefix or ""
+# 		self.persistence = persistence or ""
+# 		self.isMatrix = isMatrix
+# 		self.inc = "0"
+
+# 	def increaseInc(self, value):
+# 		self.inc = simplify_maths_addition("%s+%s" % (self.inc, str(value)))
+
+# 	def getListAddLine(self, value, line, isArray, arrayName=None, arraySize=None):
+# 		if not isArray:
+# 			string = "%s[%s] := %s" % (self.name, str(self.inc), value)
+# 			self.increaseInc(1)
+# 			return(line.copy(string))
+# 		else:
+# 			newLines = collections.deque()
+# 			addArrayToListTemplate = [
+# 			"for list_it := 0 to #size# - 1",
+# 			"   #list#[list_it + #offset#] := #arr#[list_it]",
+# 			"end for"]
+# 			for line in addArrayToListTemplate:
+# 				text = line.replace("#size#", arraySize)\
+# 					.replace("#list#", self.name)\
+# 					.replace("#offset#", self.inc)\
+# 					.replace("#arr#", arrayName)
+# 				newLines.append(line.copy(text))
+# 			self.increaseInc(arraySize)
+# 			return(newLines)
+
+
 
 # Convert lists and list_add() into commands that Kontakt can understand.
 def handle_lists(lines):
@@ -861,8 +979,20 @@ def handle_lists(lines):
 	"end property"]
 	list_matrix_tokens = ["#list#", "#size#", "#sizeList#", "#posList#"]
 
+
+	def find_all_arrays(lines):
+		array_names = []
+		array_sizes = []
+		for i in range(len(lines)):
+			line = lines[i].command
+			m = re.search(r"^\s*declare\s+%s?%s\s*(?:\[(%s)\])" % (any_pers_re, varname_re_string, variable_or_int), line)
+			if m:
+				array_names.append(re.sub(var_prefix_re, "", m.group(2)))
+				array_sizes.append(m.group(5))
+
+		return (array_names, array_sizes)
 	array_names, array_sizes = find_all_arrays(lines)
-	# print(array_names)
+
 
 	for i in range(len(lines)):
 		line = lines[i].command
@@ -1007,84 +1137,50 @@ def handle_lists(lines):
 		replace_lines(lines, line_nums, line_inserts)
 
 		
+#=================================================================================================
 # When an array size is left with an open number of elements, use the list of initialisers to provide the array size.
 # Const variables are also generated for the array size. 
 def calculate_open_size_array(lines):
-	array_name = []
-	line_numbers = []
-	num_ele = []
-
-	for i in range(len(lines)):
-		line = lines[i].command
-		ls_line = re.sub(r"\s", "", line)
-		m = re.search(r"^\s*declare\s+%s?%s\s*\[\s*\]\s*:=\s*\(" % (any_pers_re, varname_re_string), line)      
-		if m:
-			comma_sep = ls_line[ls_line.find("(") + 1 : len(ls_line) - 1]
-			string_list = re.split(commas_not_in_parenth, comma_sep)
-			num_elements = len(string_list)
-			# name = line[: line.find("[")].replace("declare", "").strip()
-			name = m.group(2)
-			name = re.sub(var_prefix_re, "", name)
-
-			lines[i].command = line[: line.find("[") + 1] + str(num_elements) + line[line.find("[") + 1 :]
-
-			array_name.append(name)
-			line_numbers.append(i)
-			num_ele.append(num_elements)
-
-	if line_numbers:
-		line_inserts = collections.deque()
-		for i in range(len(line_numbers)):
-			added_lines = []
-
-			current_text = "declare const " + array_name[i] + ".SIZE := " + str(num_ele[i])
-			added_lines.append(lines[line_numbers[i]].copy(current_text))
-
-			line_inserts.append(added_lines)
-		replace_lines(lines, line_numbers, line_inserts)
-
-# Convert the single-line list of strings to one string per line for Kontakt to understand.
-def expand_string_array_declaration(lines):
-	string_var_names = []
-	strings = []
-	line_numbers = []
-	num_ele = []
-
+	open_array_re = r"^\s*declare\s+%s?%s\s*\[\s*\]\s*:=\s*\(" % (any_pers_re, variable_name_re)
+	newLines = collections.deque()
 	for i in range(len(lines)):
 		line = lines[i].command.strip()
-		# Convert text array declaration to multiline
-		m = re.search(r"^\s*declare\s+" + varname_re_string + r"\s*\[\s*" + variable_or_int + r"\s*\]\s*:=\s*\(\s*" + string_or_placeholder_re + r"(\s*,\s*" + string_or_placeholder_re + r")*\s*\)", line)
+		m = re.search(open_array_re, line)      
 		if m:
-			if m.group(2) == "!":
-				comma_sep = line[line.find("(") + 1 : len(line) - 1]
-				string_list = re.split(commas_not_in_parenth, comma_sep)
-				num_elements = len(string_list)
-				
-				search_obj = re.search(r'\s+!' + varname_re_string, line)
-				string_var_names.append(search_obj.group(0))
+			string_list = re.split(commas_not_in_parenth, line[line.find("(") + 1 : len(line) - 1])
+			num_elements = len(string_list)
+			name = m.group("name")
 
-				num_ele.append(num_elements)
-				strings.append(string_list)
-				line_numbers.append(i)
+			newLines.append(lines[i].copy(line[: line.find("[") + 1] + str(num_elements) + line[line.find("[") + 1 :]))
+			newLines.append(lines[i].copy("declare const %s.SIZE := %s" % (name, str(num_elements))))
+		else:
+			newLines.append(lines[i])
+	replaceLines(lines, newLines)
+
+#=================================================================================================
+# Convert the single-line list of strings to one string per line for Kontakt to understand.
+def expand_string_array_declaration(lines):
+	string_array_re = r"^\s*declare\s+%s\s*\[\s*%s\s*\]\s*:=\s*\(\s*%s(\s*,\s*%s)*\s*\)" % (variable_name_re, variable_or_int, string_or_placeholder_re, string_or_placeholder_re)
+
+	newLines = collections.deque()
+	for i in range(len(lines)):
+		line = lines[i].command.strip()
+		if line.startswith("declare"):
+			m = re.search(string_array_re, line)		
+			if m:
+				if m.group("prefix") == "!":
+					string_list = re.split(commas_not_in_parenth, line[line.find("(") + 1 : len(line) - 1])
+					name = m.group("name")
+					newLines.append(lines[i].copy(line[: line.find(":")]))
+					for ii in range(len(string_list)):
+						newLines.append(lines[i].copy("%s[%s] := %s" % (name, str(ii), string_list[ii])))				
+				else:
+					raise ksp_compiler.ParseException(lines[i], "Expected integers, got strings.\n")
 			else:
-				raise ksp_compiler.ParseException(lines[i], "Expected integers, got strings.\n")
-
-	# For some reason this doesn't work in the loop above...?
-	for lineno in line_numbers: 
-		lines[lineno].command = lines[lineno].command[: lines[lineno].command.find(":")]
-
-	if line_numbers:
-		line_inserts = collections.deque()
-		for i in range(len(line_numbers)):
-			added_lines = []
-
-			for ii in range(num_ele[i]):
-				current_text = string_var_names[i] + "[" + str(ii) + "] := " + strings[i][ii] 
-				added_lines.append(lines[line_numbers[i]].copy(current_text))
-
-			line_inserts.append(added_lines)
-		replace_lines(lines, line_numbers, line_inserts)
-
+				newLines.append(lines[i])
+		else:
+			newLines.append(lines[i])
+	replaceLines(lines, newLines)
 
 #=================================================================================================
 def variable_persistence_shorthand(lines):
