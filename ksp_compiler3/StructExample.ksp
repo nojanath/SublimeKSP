@@ -9,6 +9,7 @@ struct MenuWithButtons
 	declare &ArrayTest arrays
 	declare @name 
 	declare !nameArray[2]
+	declare variable := (2)
 end struct
 
 struct ArrayTest
@@ -56,6 +57,7 @@ on init
 			lotsOfMenus[i, j].nameArray[0] := "name"
 		end for
 	end for
+
 end on
 
 on ui_control(soundMenu.menu)
