@@ -50,6 +50,7 @@ on init
 		otherMenus[i].nameArray[0] := "name"
 		otherMenus[i].variable := 10
 	end for
+	message(_otherMenus.arrays.array[0])
 
 	// Multi dimensional array of MenuWithButtons.
 	declare &MenuWithButtons lotsOfMenus[2, 2]
@@ -73,6 +74,79 @@ end on
 on ui_control(_lotsOfMenus.menu0)
 end on
 
+{
+====== STRUCTS ======
+Structs are a data structure for variables in Kontakt. They are used to group together a set of similar variables.
+While not as fully featured as the structs you might find in other programming languages, they are useful nonetheless. They 
+can be considered to be instances of families (families are a already part of the language), rather than fully fledged structures.
+First, a struct is declared by using a struct block that starts with struct <name> and ends with end on. Inside this block
+are variable declarations (and nothing else). Once this struct is created, instances of it can be declared in your script 
+using the following syntax: declare &<StructName> <nameOfInstance>, where StructName is the name of the struct, and name of 
+instance is the name of the instance. Structs can also be declared as arrays or multidimensional arrays: 
+declare &<StructName> <nameOfInstance>[20]. Structs can also have other structs as members, simply declare another struct 
+inside the declaration block. The members of the struct are accessed with the dot operator, similarly to a family. If the struct
+has other structs as members then these will be accessed with another dot operator, and so on.
 
+Notes:
+- Arrays or multidimensional arrays of structs will have .SIZE constants generated. 
+- As explained in the multidimensional(M.D.) and M.D. UI array sections, the raw single dimension version of an array can 
+be accessed by prefixing the name with an underscore. For arrays of structs, the underscore of any members that are M.D. will 
+have the underscore at the beginning of the whole name, not just that dot seperated section.
+- It is possible to declare an instance of a struct in a function.
+`
+struct MyStruct
+	declare var
+	declare array[2]
+	declare ui_switch switch
+end struct
+on init
+	declare &MyStruct singleArray[20]
+	declare &MyStruct multiArray[20, 30]
+	message(singleArray.SIZE)
+	message(multiArray.SIZE_D1)
+	message(multiArray.SIZE_D2)
+	singleArray[0].var := 20
+	multiArray[0, 1].array[0] := 2
+	singleArray[0].switch -> value := 0
+end on
+
+// Because ui_control callback does not accept UI IDs, we must access the raw version of the switch by using the underscore.
+// Note the position of the underscore - at the front of the whole name, not just the switch section.
+on ui_control(_singleArray.switch0)
+	message("switch")
+end on
+`
+
+Limitations:
+- You cannot initialise a struct member with a function, for example the following is not allowed: 
+`declare var := find_zone("zone")`. However these are fine: `declare num := ENGINE_PAR_VOLUME` or `declare text := "blah"`
+- You cannot use the struct instance name in any operations, everything must be done by accessing the members. For example you 
+could not just try and assign one struct instance to another, each member will have to be assigned individually. (You could 
+create functions that add all struct members if you wanted to.)
+- You cannot make a struct persistent, but this can be done individually on the members.
+
+
+====== DEFINE MACROS ======
+Define constants now fully embrace the preprocessor. While before they were mostly for constant numbers, they can now be
+used for any kind of text substitution.
+Some important things to note about defines:
+- Defines solely live in the preprocessor, they are evaluated and resolved before even regular macros are called.
+- They are just text substitutions, they have no concept of the script's structure. If you create a define in a macro, it will 
+still exist regardless of whether the macro is called or not.
+- Because of the point above, it may make sense to keep your defines zero indented regardless of where they are (optional).
+- Define will substitute anything - variable names, Kontakt functions, etc. Because of this it is very important to use unique names
+for them.
+
+Defines now no longer require # symbols for when you want to do a literal text substitution, this is now handled automatically. They
+can also now accept arguments to work as a single line macro. If you put # symbols around the argument, it will substitute in the 
+middle of words. If you have a maths expression, you may need to wrap it in parenthesis in order for it to evaluate correctly in a line.
+`
+define foo(a, b) := (a * b)
+define test(#name#) := #name#.menu
+declare ui_menu test(sound) // declare ui_menu sound.menu
+message(foo(1, 2) + foo(3, 4)) // message((1 * 2) + (3 * 4))
+`
+
+}
 
 
