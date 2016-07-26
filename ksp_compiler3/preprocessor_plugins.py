@@ -1,12 +1,13 @@
 
 # Preprocessor Plugins
 #
-# This file is part of the KSP Compiler which is released under GNU General Public License version 3.
+# This file is part of the SublimeKSP Compiler which is released under GNU General Public License version 3.
 # For more information visit https://github.com/nojanath/SublimeKSP.
 #
 # This file adds a selection of extra syntax, functions and macros that aim to make programming in the
 # Kontakt scripting language nicer. These functions are executed very near the beginning of the 
-# compiling process.
+# compiling process. They work by scanning through the deque of Line objects, and using regex, the
+# line commands are manipulated or added to.
 
 #=================================================================================================
 # IDEAS:
@@ -51,7 +52,8 @@ stringEvaluator = SimpleEval() # Object used to evaluate strings as maths expres
 
 #=================================================================================================
 def pre_macro_functions(lines):
-	""" This function is called before the macros have been expanded. """
+	""" This function is called before the macros have been expanded. lines is a collections.deque
+	of Line objects - see ksp_compiler.py."""
 	removeActivateLoggerPrint(lines)
 	handleDefineConstants(lines)
 	handleDefineLiterals(lines)
@@ -59,7 +61,8 @@ def pre_macro_functions(lines):
 	handleLiterateMacro(lines)
 
 def post_macro_functions(lines):
-	""" This function is called after the regular macros have been expanded. """
+	""" This function is called after the regular macros have been expanded. lines is a 
+	collections.deque of Line objects - see ksp_compiler.py."""
 	handleStructs(lines)
 	handleIncrementer(lines)
 	handleConstBlock(lines)
@@ -71,8 +74,6 @@ def post_macro_functions(lines):
 	handleLists(lines)
 	handlePersistence(lines)
 	handleUIFunctions(lines)
-	for lineOb in lines:
-		print(lineOb.command)
 	handleStringArrayInitialisation(lines)  
 	handleArrayConcat(lines)
 
@@ -957,7 +958,6 @@ def handleOpenSizeArrays(lines):
 #=================================================================================================
 def handleStringArrayInitialisation(lines):
 	""" Convert the single-line list of strings to one string per line for Kontakt to understand. """
-	#string_array_re = r"^\s*declare\s+%s\s*\[\s*%s\s*\]\s*:=\s*\(\s*%s(\s*,\s*%s)*\s*\)" % (variableNameRe, variableOrInt, stringOrPlaceholderRe, stringOrPlaceholderRe)
 	stringArrayRe = r"^declare\s+%s\s*\[(?P<arraysize>[^\]]+)\]\s*:=\s*\((?P<initlist>.+)\)$" % variableNameRe
 	stringListRe = r"\s*%s(\s*,\s*%s)*\s*" % (stringOrPlaceholderRe, stringOrPlaceholderRe)
 	newLines = collections.deque()

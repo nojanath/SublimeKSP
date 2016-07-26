@@ -7,17 +7,19 @@ struct MenuWithButtons
 	// The ampersand goes before the type, not the name.
 	// You cannot make the whole struct pers or read, that must be done on the individual members instead.
 	declare &ArrayTest arrays
-	declare @name 
+	declare @name := "34dfg"
 	declare !nameArray[2]
-	declare variable := (2)
+	declare variable := 2
 end struct
-
-
 
 struct ArrayTest
 	declare array[2]
 	declare array2D[2, 3]
 end struct
+
+define foo(a, b) := a * b
+define test(#name#) := #name#.menu
+define NUM := 20/3
 
 on init
 	declare i
@@ -32,11 +34,13 @@ on init
 	soundMenu.arrays.array2D[0, 0] := 1
 	soundMenu.name := "name" // Only use type symbols (%$@!) when declaring.
 	soundMenu.nameArray[0] := "name"
-
+	test(soundMenu) -> value := 0
+	message(foo(1, 2))
+	message(NUM)
 
 	// Array of MenuWithButtons.
 	declare &MenuWithButtons otherMenus[4]
-	for i := 0 to 3
+	for i := 0 to otherMenus.SIZE - 1
 		otherMenus[i].menu -> width := 20
 		otherMenus[i].switchL -> text := "<"
 		otherMenus[i].switchR -> text := ">"
@@ -44,12 +48,13 @@ on init
 		otherMenus[i].arrays.array2D[0, 0] := 1
 		otherMenus[i].name := "name"
 		otherMenus[i].nameArray[0] := "name"
+		otherMenus[i].variable := 10
 	end for
 
 	// Multi dimensional array of MenuWithButtons.
 	declare &MenuWithButtons lotsOfMenus[2, 2]
-	for i := 0 to 1
-		for j := 0 to 1
+	for i := 0 to lotsOfMenus.SIZE_D1 - 1
+		for j := 0 to lotsOfMenus.SIZE_D2 - 1
 			lotsOfMenus[i, j].menu -> width := 20
 			lotsOfMenus[i, j].switchL -> text := "<"
 			lotsOfMenus[i, j].switchR -> text := ">"
@@ -59,7 +64,6 @@ on init
 			lotsOfMenus[i, j].nameArray[0] := "name"
 		end for
 	end for
-
 end on
 
 on ui_control(soundMenu.menu)
@@ -68,5 +72,7 @@ on ui_control(otherMenus.menu0)
 end on
 on ui_control(_lotsOfMenus.menu0)
 end on
+
+
 
 
