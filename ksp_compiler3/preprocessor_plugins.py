@@ -15,6 +15,7 @@
 #	get_ui_id() shorthand such as variable -> id
 #	Multidimensional PGS keys
 #	Single line if statements
+#	A psuedo callback for UI arrays that automatically creates all the callbacks
 
 import copy
 import re
@@ -58,7 +59,7 @@ def pre_macro_functions(lines):
 	handleLiterateMacro(lines)
 
 def post_macro_functions(lines):
-	""" This function is called after the macros have been expanded. """
+	""" This function is called after the regular macros have been expanded. """
 	handleStructs(lines)
 	handleIncrementer(lines)
 	handleConstBlock(lines)
@@ -70,6 +71,8 @@ def post_macro_functions(lines):
 	handleLists(lines)
 	handlePersistence(lines)
 	handleUIFunctions(lines)
+	for lineOb in lines:
+		print(lineOb.command)
 	handleStringArrayInitialisation(lines)  
 	handleArrayConcat(lines)
 
@@ -139,13 +142,17 @@ class StructMember(object):
 		self.numElements = None
 
 	def makeMemberAnArray(self, numElements):
-		""" Make the command of this member into an array. numElements is a string of any amount of numbers seperated by commas. """
+		""" Make the command of this member into an array. numElements is a string of any amount of numbers seperated by commas. 
+		Structs exploit the fact the you can put the square brackets of an array after any 'subname' of a dot seperated name. """
 		cmd = self.command
 		if "[" in self.command:
 			bracketLocation = cmd.find("[")
 			self.command = cmd[: bracketLocation + 1] + numElements + ", " + cmd[bracketLocation + 1 :]
 		else:
 			self.command = re.sub(r"\b%s\b" % self.name, "%s[%s]" % (self.name, numElements), cmd)
+			if ":=" in self.command:
+				assignOperatorLocation = self.command.find(":=") + 2
+				self.command = "%s(%s)" % (self.command[ : assignOperatorLocation], self.command[assignOperatorLocation : ])
 		if self.prefix == "@":
 			self.prefix = "!"
 
@@ -172,7 +179,6 @@ def handleStructs(lines):
 	inStructFlag = False
 	for lineIdx in range(len(lines)):
 		line = lines[lineIdx].command.strip()
-		print(str(inStructFlag) + " :: " + line)
 		if line.startswith("struct"):
 			m = re.search(r"^struct\s+%s$" % variableNameRe, line)
 			if m:
@@ -951,25 +957,35 @@ def handleOpenSizeArrays(lines):
 #=================================================================================================
 def handleStringArrayInitialisation(lines):
 	""" Convert the single-line list of strings to one string per line for Kontakt to understand. """
-	string_array_re = r"^\s*declare\s+%s\s*\[\s*%s\s*\]\s*:=\s*\(\s*%s(\s*,\s*%s)*\s*\)" % (variableNameRe, variableOrInt, stringOrPlaceholderRe, stringOrPlaceholderRe)
+	#string_array_re = r"^\s*declare\s+%s\s*\[\s*%s\s*\]\s*:=\s*\(\s*%s(\s*,\s*%s)*\s*\)" % (variableNameRe, variableOrInt, stringOrPlaceholderRe, stringOrPlaceholderRe)
+	stringArrayRe = r"^declare\s+%s\s*\[(?P<arraysize>[^\]]+)\]\s*:=\s*\((?P<initlist>.+)\)$" % variableNameRe
+	stringListRe = r"\s*%s(\s*,\s*%s)*\s*" % (stringOrPlaceholderRe, stringOrPlaceholderRe)
 	newLines = collections.deque()
 	for i in range(len(lines)):
 		line = lines[i].command.strip()
+		if line.startswith("on"):
+			if re.search(initRe, line):
+				newLines.append(lines[i])
+				newLines.append(lines[i].copy("declare string_it"))
+				continue
 		if line.startswith("declare"):
-			m = re.search(string_array_re, line)		
+			m = re.search(stringArrayRe, line)		
 			if m:
 				if m.group("prefix") == "!":
-					stringList = re.split(commasNotInBrackets, line[line.find("(") + 1 : len(line) - 1])
+					if not re.search(stringListRe, m.group("initlist")):
+						raise ksp_compiler.ParseException(lines[i], "Expected integers, got strings.\n")
+					stringList = ksp_compiler.split_args(m.group("initlist"), lines[i])
 					name = m.group("name")
 					newLines.append(lines[i].copy(line[: line.find(":")]))
-					for ii in range(len(stringList)):
-						newLines.append(lines[i].copy("%s[%s] := %s" % (name, str(ii), stringList[ii])))				
-				else:
-					raise ksp_compiler.ParseException(lines[i], "Expected integers, got strings.\n")
-			else:
-				newLines.append(lines[i])
-		else:
-			newLines.append(lines[i])
+					if len(stringList) != 1:
+						for ii in range(len(stringList)):
+							newLines.append(lines[i].copy("%s[%s] := %s" % (name, str(ii), stringList[ii])))				
+					else:
+						newLines.append(lines[i].copy("for string_it := 0 to %s - 1" % m.group("arraysize")))
+						newLines.append(lines[i].copy("%s[string_it] := %s" % (name, "".join(stringList))))
+						newLines.append(lines[i].copy("end for"))
+					continue
+		newLines.append(lines[i])
 	replaceLines(lines, newLines)
 
 #=================================================================================================
