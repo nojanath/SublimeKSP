@@ -71,7 +71,11 @@ def post_macro_functions(lines):
 	handleMultidimensionalArrays(lines)
 	handleListBlocks(lines)
 	handleOpenSizeArrays(lines)
+	for lineob in lines:
+		print(lineob.command)
 	handleLists(lines)
+	for lineob in lines:
+		print(lineob.command)
 	handlePersistence(lines)
 	handleUIFunctions(lines)
 	handleStringArrayInitialisation(lines)  
@@ -697,15 +701,16 @@ class ListBlock(object):
 		""" The list block just builds lines ready for the list function later on to interpret them. """
 		newLines = collections.deque()
 		newLines.append(line.copy("declare list %s[%s]" % (self.name, self.size)))
-		for mem_num in range(len(self.members)):
-			member_name = self.members[mem_num]
+		for memNum in range(len(self.members)):
+			memberName = self.members[memNum]
 			# If the member is a comma separated list, then we first need to assign the list to an array in kontakt.
 			if self.is_multi_dim:
-				string_list = re.search(commasNotInBrackets, member_name)
-				if string_list:
-					member_name = self.name + str(mem_num)
-					newLines.append(line.copy("declare %s[] := (%s)" % (member_name, self.members[men_num])))
-			newLines.append(line.copy("list_add(%s, %s)" % (self.name, member_name)))
+				# stringList = re.search(commasNotInBrackets, memberName)
+				stringList = ksp_compiler.split_args(memberName, line)
+				if len(stringList) != 1:
+					memberName = self.name + str(memNum)
+					newLines.append(line.copy("declare %s[] := (%s)" % (memberName, self.members[memNum])))
+			newLines.append(line.copy("list_add(%s, %s)" % (self.name, memberName)))
 		return(newLines)
 
 def handleListBlocks(lines):
@@ -783,6 +788,7 @@ class List(object):
 
 	def increaseInc(self, value):
 		self.inc = simplfyAdditionString("%s+%s" % (self.inc, str(value)))
+		self.sizeList.append(str(value))
 
 	def getListAddLine(self, value, line):
 		""" Return the line for single list add command. """
@@ -804,7 +810,6 @@ class List(object):
 				.replace("#arr#", arrayName)
 			newLines.append(line.copy(text))
 		self.increaseInc(arraySize)
-		self.sizeList.append(arraySize)
 		return(newLines)
 
 
@@ -918,7 +923,7 @@ def handleLists(lines):
 					listObj = lists[name]
 					if listObj.isMatrix:
 						try:
-							arrayIdx = arrayNames.index(value)
+							arrayIdx = arrayNames.index(re.sub(varPrefixRe, "", value))
 							newLines.extend(listObj.getArrayListAddLines(value, lines[lineIdx], arrayNames[arrayIdx], arraySizes[arrayIdx]))
 						except ValueError:
 							newLines.append(listObj.getListAddLine(value, lines[lineIdx]))
@@ -932,7 +937,9 @@ def handleLists(lines):
 	newerLines = collections.deque()
 	for line in newLines:
 		if line.command.startswith(listDeclareTag):
-			newerLines.extend(lists[line.command[len(listDeclareTag) :]].getListDeclaration(line))
+			listObj = lists[line.command[len(listDeclareTag) :]]
+			if listObj.inc != "0":
+				newerLines.extend(lists[line.command[len(listDeclareTag) :]].getListDeclaration(line))
 		else:
 			newerLines.append(line)
 
