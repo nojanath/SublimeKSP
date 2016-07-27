@@ -666,7 +666,8 @@ def handleConstBlock(lines):
 				continue
 		elif line.startswith("end"):
 			if re.search(const_block_end_re, line):
-				newLines.extend(constBlockObj.buildLines(lines[line_num]))
+				if constBlockObj.memberValues:
+					newLines.extend(constBlockObj.buildLines(lines[line_num]))
 				inConstBlock = False
 				continue
 		elif inConstBlock:
@@ -722,7 +723,8 @@ def handleListBlocks(lines):
 		elif is_list_block and not line == "":
 			if re.search(list_block_end_re, line):
 				is_list_block = False
-				newLines.extend(list_block_obj.build_lines(lines[line_num]))
+				if list_block_obj.members:
+					newLines.extend(list_block_obj.build_lines(lines[line_num]))
 			else:
 				list_block_obj.addMember(line)
 		else:
