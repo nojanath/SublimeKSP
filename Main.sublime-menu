@@ -23,14 +23,14 @@
 					"operator": "equal",
 					"operand": "source.ksp"
 				}],
-				"caption": "KSP: Recompile last script",
+				"caption": "KSP: Recompile Last Script",
 				"mnemonic": "R",
 				"id": "recompile"
 			},
 			{
 				"command": "ksp_uncompress_code",
 				"args": {},
-				"caption": "KSP: Uncompress selected compiled code",
+				"caption": "KSP: Uncompress Selected Compiled Code",
 				"mnemonic": "U",
 				"id": "uncompress"
 			},
@@ -38,7 +38,7 @@
 			{
 				"command": "ksp_global_setting_toggle",
 				"args": {"setting": "ksp_compact_output", "default": false},
-				"caption": "KSP: Remove indents and empty lines",
+				"caption": "KSP: Remove Indents and Empty Lines",
 				"mnemonic": "p",
 				"id": "compact_output",
 				"checkbox": true
@@ -46,41 +46,41 @@
 			{
 				"command": "ksp_global_setting_toggle",
 				"args": {"setting": "ksp_compact_variables", "default": false},
-				"caption": "KSP: Compact variables",
+				"caption": "KSP: Compact Variables",
 				"mnemonic": "v",
 				"id": "compact_variables"
 			},
 			{
 				"command": "ksp_global_setting_toggle",
 				"args": {"setting": "ksp_extra_checks", "default": true},
-				"caption": "KSP: Extra syntax checks",
+				"caption": "KSP: Extra Syntax Checks",
 				"mnemonic": "x",
 				"id": "extra_syntax_checks"
 			},
 			{
 				"command": "ksp_global_setting_toggle",
 				"args": {"setting": "ksp_signal_empty_ifcase", "default": true},
-				"caption": "KSP: Signal error on empty if/case statements",
+				"caption": "KSP: Signal Error on Empty if/case Statements",
 				"mnemonic": "e",
 				"id": "signal_empty_ifcase"
 			},
 			{
 				"command": "ksp_global_setting_toggle",
 				"args": {"setting": "ksp_optimize_code", "default": false},
-				"caption": "KSP: Optimize compiled code",
+				"caption": "KSP: Optimize Compiled Code",
 				"mnemonic": "t",
 				"id": "optimize_compiled"
 			},
 			{
 				"command": "ksp_global_setting_toggle",
 				"args": {"setting": "ksp_comment_inline_functions", "default": false},
-				"caption": "KSP: Insert comments when expanding functions",
+				"caption": "KSP: Insert Comments When Expanding Functions",
 				"mnemonic": "I",
 				"id": "comment_inline_functions"
 			},
 			{
 				"command": "copy_as_bb_code",
-				"caption": "KSP: Copy as BB code",
+				"caption": "KSP: Copy as BB Code",
 				"mnemonic": "B",
 				"id": "copy_as_bb_code"
 			},
