@@ -7,6 +7,7 @@ macro activate_logger(filepath)
 	print("--- Logger Started ---")
 	declare logger_previous_count
 	declare @logger_filepath
+	declare $LOGGER_ASYNC_ID
 	logger_filepath := filepath
 end macro
 
@@ -15,7 +16,7 @@ function checkPrintFlag()
 	while 1=1
 		// Only save array if there have been changes, for efficency.
 		if logger_previous_count # logger_count 
-			save_array_str(!#name#, logger_filepath)
+			LOGGER_ASYNC_ID := save_array_str(!#name#, logger_filepath)
 		end if
 		logger_previous_count := logger_count
 		wait(200000) // The time interval that the logger refreshes.

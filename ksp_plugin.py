@@ -397,7 +397,7 @@ class KspOnEnter(sublime_plugin.TextCommand):
             prev_line = self.get_line(row-1)
             this_line = self.get_line(row)
             next_line = self.get_line(row+1)
-            m = re.match(r'\s*(on|if|select|while|function|taskfunc|macro|for|family|property)\b', prev_line)
+            m = re.match(r'\s*(list|const|struct|on|if|select|while|function|taskfunc|macro|for|family|property)\b', prev_line)
             # if the next line is not an 'end ...' line, the next line is not already more indented and the regexp matched
             if (not (next_line and next_line.lstrip().startswith('end ') and
                      len(self.get_indent(next_line)) == len(self.get_indent(prev_line))) and
