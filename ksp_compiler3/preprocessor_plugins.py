@@ -71,11 +71,7 @@ def post_macro_functions(lines):
 	handleMultidimensionalArrays(lines)
 	handleListBlocks(lines)
 	handleOpenSizeArrays(lines)
-	for lineob in lines:
-		print(lineob.command)
 	handleLists(lines)
-	for lineob in lines:
-		print(lineob.command)
 	handlePersistence(lines)
 	handleUIFunctions(lines)
 	handleStringArrayInitialisation(lines)  
@@ -162,6 +158,7 @@ class StructMember(object):
 			self.prefix = "!"
 
 	def addNamePrefix(self, namePrefix):
+		""" Add the prefix to the member with a dot operator. """
 		self.command = re.sub(r"\b%s\b" % self.name, "%s%s.%s" % (self.prefix, namePrefix, self.name), self.command)
 
 class Struct(object):
@@ -180,119 +177,131 @@ def handleStructs(lines):
 	struct_syntax = "\&"
 	structs = [] 
 
-	# Find all the struct blocks and build struct objects of them
-	inStructFlag = False
-	for lineIdx in range(len(lines)):
-		line = lines[lineIdx].command.strip()
-		if line.startswith("struct"):
-			m = re.search(r"^struct\s+%s$" % variableNameRe, line)
-			if m:
-				structObj = Struct(m.group("name"))
-				if inStructFlag:
-					raise ksp_compiler.ParseException(lines[lineIdx], "Struct definitions cannot be nested.\n")    
-				inStructFlag = True
-				lines[lineIdx].command = ""
+	def findStructs():
+		""" Find all the struct blocks and build struct objects of them. """
+		isCurrentlyInAStructBlock = False
+		for lineIdx in range(len(lines)):
+			line = lines[lineIdx].command.strip()
 
-		elif line.startswith("end"):
-			if re.search(r"^end\s+struct$", line):
-				inStructFlag = False
-				structs.append(structObj)
-				lines[lineIdx].command = ""
-			
-		elif inStructFlag:
-			if line:
-				if not line.startswith("declare ") and not line.startswith("declare	"):
-					raise ksp_compiler.ParseException(lines[lineIdx], "Structs may only consist of variable declarations.\n")
-				#variableName = isolate_variable_name(line).strip()
-				# NOTE: experimental - see persistence function
-				m = re.search(r"%s\s*(?=[\[\(\:]|$)" % variableNameRe, line)
+			# Find the start of a struct block
+			if line.startswith("struct"):
+				m = re.search(r"^struct\s+%s$" % variableNameRe, line)
 				if m:
-					variableName = m.group("whole")
-					structDeclMatch = re.search(r"\&\s*%s" % variableNameRe, line)
-					if structDeclMatch:
-						variableName = "%s%s %s" % ("&", structDeclMatch.group("whole"), variableName)
-				prefixSymbol = ""
-				if re.match(varPrefixRe, variableName):
-					prefixSymbol = variableName[:1]
-					variableName = variableName[1:]
-				structObj.addMember(StructMember(variableName, line.replace("%s%s" % (prefixSymbol, variableName), variableName), prefixSymbol))
-			lines[lineIdx].command = ""
+					structObj = Struct(m.group("name"))
+					if isCurrentlyInAStructBlock:
+						raise ksp_compiler.ParseException(lines[lineIdx], "Struct definitions cannot be nested.\n")    
+					isCurrentlyInAStructBlock = True
+					lines[lineIdx].command = ""
+
+			# Find the end of a struct block
+			elif line.startswith("end"):
+				if re.search(r"^end\s+struct$", line):
+					isCurrentlyInAStructBlock = False
+					structs.append(structObj)
+					lines[lineIdx].command = ""
+			
+			# If in a struct, add each member as an object to the struct
+			elif isCurrentlyInAStructBlock:
+				if line:
+					if not line.startswith("declare ") and not line.startswith("declare	"):
+						raise ksp_compiler.ParseException(lines[lineIdx], "Structs may only consist of variable declarations.\n")
+					# NOTE: experimental way of finding the name - see persistence function
+					m = re.search(r"%s\s*(?=[\[\(\:]|$)" % variableNameRe, line)
+					if m:
+						variableName = m.group("whole")
+						structDeclMatch = re.search(r"\&\s*%s" % variableNameRe, line)
+						if structDeclMatch:
+							variableName = "%s%s %s" % ("&", structDeclMatch.group("whole"), variableName)
+					prefixSymbol = ""
+					if re.match(varPrefixRe, variableName):
+						prefixSymbol = variableName[:1]
+						variableName = variableName[1:]
+					structObj.addMember(StructMember(variableName, line.replace("%s%s" % (prefixSymbol, variableName), variableName), prefixSymbol))
+				lines[lineIdx].command = ""
+	findStructs()
 
 	if structs:
 		# Make the struct names a list so they are easily searchable
 		structNames = [structs[i].name for i in range(len(structs))]
 
-		for i in range(len(structs)):
-			j = 0
-			counter = 0
-			stillRemainginStructs = False
-			# Cycle through the members of each struct and resolve all members that are struct declarations
-			while j < len(structs[i].members) or stillRemainginStructs == True:
-				m = re.search(r"^([^%s]+\.)?%s\s*%s\s+%s" % (struct_syntax, struct_syntax, variableNameUnRe, variableNameUnRe), structs[i].members[j].name)
+		def resolveStructsWithinStructs():
+			""" Where structs have been declared as members of another struct, flatten them. """
+			for i in range(len(structs)):
+				j = 0
+				counter = 0
+				stillRemainginStructs = False
+				# Struct member may themselves have struct members, so this is looped until it is fully resolved.
+				while j < len(structs[i].members) or stillRemainginStructs == True:
+					m = re.search(r"^([^%s]+\.)?%s\s*%s\s+%s" % (struct_syntax, struct_syntax, variableNameUnRe, variableNameUnRe), structs[i].members[j].name)
+					if m:
+						structs[i].deleteMember(j)
+						structNum = structNames.index(m.group(2))
+						structVariable = m.group(5).strip()
+						if m.group(1):
+							structVariable = m.group(1) + structVariable
+						if structNum == i:
+							raise ksp_compiler.ParseException(lines[0], "Declared struct cannot be the same as struct parent.\n")
+
+						insertLocation = j
+						for memberIdx in range(len(structs[structNum].members)):
+							structMember = structs[structNum].members[memberIdx]
+							var_name = structVariable + "." + structMember.name
+							new_command = re.sub(r"\b%s\b" % structMember.name, var_name, structMember.command)
+							structs[i].insertMember(insertLocation, StructMember(var_name, new_command, structMember.prefix))
+							insertLocation += 1
+							
+						# If there are still any struct member declarations, keep looping to resolve them.
+						for name in structs[i].members[j].name:
+							mm = re.search(r"^(?:[^%s]+\.)?%s\s*%s\s+%s" % (struct_syntax, struct_syntax, variableNameUnRe, variableNameUnRe), name)
+							if mm:
+								stillRemainginStructs = True
+					j += 1
+
+					if j >= len(structs[i].members) and stillRemainginStructs:
+						stillRemainginStructs = False
+						j = 0
+						counter += 1
+						if counter > 100000:
+							raise ksp_compiler.ParseException(lines[0], "ERROR! Too many iterations while building structs.")
+							break
+		resolveStructsWithinStructs()
+
+		def findAndHandleStructInstanceDeclarations():
+			""" Find all places where an instance of a struct has been declared and build the lines necesary. """
+			newLines = collections.deque()
+			for i in range(len(lines)):
+				line = lines[i].command.strip()
+				m = re.search(r"^declare\s+%s\s*%s\s+%s(?:\[(.*)\])?$" % (struct_syntax, variableNameUnRe, variableNameUnRe), line)
 				if m:
-					structs[i].deleteMember(j)
-					structNum = structNames.index(m.group(2))
-					structVariable = m.group(5).strip()
-					if m.group(1):
-						structVariable = m.group(1) + structVariable
-					if structNum == i:
-						raise ksp_compiler.ParseException(lines[0], "Declared struct cannot be the same as struct parent.\n")
+					structName = m.group(1)
+					declaredName = m.group(4)
+					try:
+						structIdx = structNames.index(structName)
+					except ValueError:
+						raise ksp_compiler.ParseException(lines[i], "Undeclared struct %s\n" % structName)
 
-					insertLocation = j
-					for memberIdx in range(len(structs[structNum].members)):
-						structMember = structs[structNum].members[memberIdx]
-						var_name = structVariable + "." + structMember.name
-						new_command = re.sub(r"\b%s\b" % structMember.name, var_name, structMember.command)
-						structs[i].insertMember(insertLocation, StructMember(var_name, new_command, structMember.prefix))
-						insertLocation += 1
-					for name in structs[i].members[j].name:
-						mm = re.search(r"^(?:[^%s]+\.)?%s\s*%s\s+%s" % (struct_syntax, struct_syntax, variableNameUnRe, variableNameUnRe), name)
-						if mm:
-							stillRemainginStructs = True
-				j += 1
+					newMembers = copy.deepcopy(structs[structIdx].members)
+					# If necessary make the struct members into arrays.
+					arrayNumElements = m.group(7)
+					if arrayNumElements:
+						for j in range(len(newMembers)):
+							newMembers[j].makeMemberAnArray(arrayNumElements)
+						if "," in arrayNumElements:
+							arrayNumElements = ksp_compiler.split_args(arrayNumElements, lines[i])
+							for dimIdx in range(len(arrayNumElements)):
+								newLines.append(lines[i].copy("declare const %s.SIZE_D%d := %s" % (declaredName, dimIdx + 1, arrayNumElements[dimIdx])))
+						else:
+							newLines.append(lines[i].copy("declare const %s.SIZE := %s" % (declaredName, arrayNumElements)))
 
-				if j >= len(structs[i].members) and stillRemainginStructs:
-					stillRemainginStructs = False
-					j = 0
-					counter += 1
-					if counter > 100000:
-						raise ksp_compiler.ParseException(lines[0], "ERROR! Too many iterations while building structs.")
-						break
-
-		newLines = collections.deque()
-		for i in range(len(lines)):
-			line = lines[i].command.strip()
-			m = re.search(r"^declare\s+%s\s*%s\s+%s(?:\[(.*)\])?$" % (struct_syntax, variableNameUnRe, variableNameUnRe), line)
-			if m:
-				structName = m.group(1)
-				declaredName = m.group(4)
-				try:
-					structIdx = structNames.index(structName)
-				except ValueError:
-					raise ksp_compiler.ParseException(lines[i], "Undeclared struct %s\n" % structName)
-
-				newMembers = copy.deepcopy(structs[structIdx].members)
-				# If necessary make the struct members into arrays.
-				arrayNumElements = m.group(7)
-				if arrayNumElements:
+					# Add the declared names as a prefix and add the memebers to the newLines deque
 					for j in range(len(newMembers)):
-						newMembers[j].makeMemberAnArray(arrayNumElements)
-					if "," in arrayNumElements:
-						arrayNumElements = ksp_compiler.split_args(arrayNumElements, lines[i])
-						for dimIdx in range(len(arrayNumElements)):
-							newLines.append(lines[i].copy("declare const %s.SIZE_D%d := %s" % (declaredName, dimIdx + 1, arrayNumElements[dimIdx])))
-					else:
-						newLines.append(lines[i].copy("declare const %s.SIZE := %s" % (declaredName, arrayNumElements)))
+						newMembers[j].addNamePrefix(declaredName)
+						newLines.append(lines[i].copy(newMembers[j].command))
+				else:
+					newLines.append(lines[i])
 
-				# Add the declared names as a prefix and add the memebers to the newLines deque
-				for j in range(len(newMembers)):
-					newMembers[j].addNamePrefix(declaredName)
-
-					newLines.append(lines[i].copy(newMembers[j].command))
-			else:
-				newLines.append(lines[i])
-
-		replaceLines(lines, newLines)
+			replaceLines(lines, newLines)
+		findAndHandleStructInstanceDeclarations()
 
 #=================================================================================================
 # Remove print functions when the activate_logger() is not present.
@@ -311,7 +320,7 @@ def removeActivateLoggerPrint(lines):
 			lines[print_line_numbers[i]].command = ""
 
 #=================================================================================================
-class Iterator(object):
+class Incrementer(object):
 	def __init__(self, name, start, step):
 		self.name = name
 		self.iterationVal = start
@@ -328,7 +337,7 @@ def handleIncrementer(lines):
 			mm = re.search(r"^%s\s*\(\s*%s\s*\,\s*(.+)s*\,\s*(.+)\s*\)" % ("START_INC", variableNameUnRe), line)
 			if mm:
 				lines[i].command = ""
-				iterObjs.append(Iterator(mm.group(1), tryStringEval(mm.group(4), lines[i], "start"), tryStringEval(mm.group(5), lines[i], "step")))
+				iterObjs.append(Incrementer(mm.group(1), tryStringEval(mm.group(4), lines[i], "start"), tryStringEval(mm.group(5), lines[i], "step")))
 			else:
 				raise ksp_compiler.ParseException(lines[i], "Incorrect parameters. Expected: START_INC(<name>, <start-num>, <step-num>)\n")  
 		# If any incremeter has ended, pop the last object off the array.
@@ -600,27 +609,31 @@ def handleSameLineDeclaration(lines):
 	""" When a variable is declared and initialised on the same line, check to see if the value needs to be
 	moved over to the next line. """
 	newLines = collections.deque()
+	famCount = 0
 	for lineIdx in range(len(lines)):
 		line = lines[lineIdx].command.strip()
+		famCount = countFamily(line, famCount)
 		if line.startswith("declare"):
 			m = re.search(r"^declare\s+(?:(polyphonic|global|local)\s+)*%s%s\s*:=" % (persistenceRe, variableNameRe), line)
 			if m and not re.search(r"\b%s\s*\(" % concatSyntax, line):
-				int_flag = False
+				valueIsConstantInteger = False
 				value = line[line.find(":=") + 2 :]
 				if not re.search(stringOrPlaceholderRe, line):
 					try:
 						# Ideally this would check to see if the value is a Kontakt constant as those are valid
 						# inline as well...
 						eval(value) # Just used as a test to see if the the value is a constant.
-						int_flag = True 
+						valueIsConstantInteger = True 
 					except:
 						pass
 
-				if not int_flag:
-					pre_assignment_text = line[: line.find(":=")]
-					variable_name = m.group("name")
-					newLines.append(lines[lineIdx].copy(pre_assignment_text))
-					newLines.append(lines[lineIdx].copy(variable_name + " " + line[line.find(":=") :]))
+				if not valueIsConstantInteger:
+					preAssignmentText = line[: line.find(":=")]
+					variableName = m.group("name")
+					if famCount != 0:
+						variableName = inspectFamilyState(lines, lineIdx) + variableName
+					newLines.append(lines[lineIdx].copy(preAssignmentText))
+					newLines.append(lines[lineIdx].copy(variableName + " " + line[line.find(":=") :]))
 					continue
 		newLines.append(lines[lineIdx])
 	replaceLines(lines, newLines)
@@ -739,7 +752,7 @@ def handleListBlocks(lines):
      
 #=================================================================================================
 class List(object):
-	def __init__(self, name, prefix, persistence, isMatrix):
+	def __init__(self, name, prefix, persistence, isMatrix, familyPrefix):
 		self.name = name
 		if isMatrix:
 			self.name = "_%s" % self.name
@@ -747,6 +760,7 @@ class List(object):
 		self.prefix = prefix or ""
 		self.persistence = persistence or ""
 		self.isMatrix = isMatrix
+		self.familyPrefix = familyPrefix or ""
 		self.inc = "0"
 		self.sizeList = [] # If this is a matrix, the sizes of each element are stored.
 
@@ -792,7 +806,7 @@ class List(object):
 
 	def getListAddLine(self, value, line):
 		""" Return the line for single list add command. """
-		string = "%s[%s] := %s" % (self.name, self.inc, value)
+		string = "%s[%s] := %s" % (self.familyPrefix + self.name, self.inc, value)
 		self.increaseInc(1)
 		return(line.copy(string))
 
@@ -805,7 +819,7 @@ class List(object):
 		"end for"]
 		for templateLine in addArrayToListTemplate:
 			text = templateLine.replace("#size#", arraySize)\
-				.replace("#list#", self.name)\
+				.replace("#list#", self.familyPrefix + self.name)\
 				.replace("#offset#", self.inc)\
 				.replace("#arr#", arrayName)
 			newLines.append(line.copy(text))
@@ -847,6 +861,7 @@ def handleLists(lines):
 	preInit = True
 	addInitVar = False
 	loopBlockCounter = 0
+	famCount = 0
 	for lineIdx in range(len(lines)):
 		line = lines[lineIdx].command.strip()
 		if isInInit == False:
@@ -899,15 +914,20 @@ def handleLists(lines):
 				newLines.append(lines[lineIdx])			
 				continue
 
+			famCount = countFamily(line, famCount)
 			# Check for a list declaration
 			if line.startswith("declare"):
 				m = re.search(list_declare_re, line)
 				if m:
 					name = m.group("name")
+					famPre = ""
+					if famCount != 0:
+						famPre = inspectFamilyState(lines, lineIdx)
 					isMatrix = False
 					if m.group("size"):
 						isMatrix = "," in m.group("size")
-					listObj = List(name, m.group("prefix"), m.group("persistence"), isMatrix)
+					listObj = List(name, m.group("prefix"), m.group("persistence"), isMatrix, famPre)
+					name = "%s%s" % (famPre, name)
 					lists[name] = listObj
 					newLines.append(lines[lineIdx].copy("%s%s" % (listDeclareTag, name))) # Mark this line as we will need to go back and fill in the declaration later.
 					continue
@@ -920,7 +940,10 @@ def handleLists(lines):
 						raise ksp_compiler.ParseException(lines[lineIdx], "list_add() cannot be used in loops or if statements.\n")
 					name = m.group("name")
 					value = m.group("value").strip()
-					listObj = lists[name]
+					try:
+						listObj = lists[name]
+					except KeyError:
+						raise ksp_compiler.ParseException(lines[lineIdx], "Undeclared list: %s\n" % name)
 					if listObj.isMatrix:
 						try:
 							arrayIdx = arrayNames.index(re.sub(varPrefixRe, "", value))
@@ -970,8 +993,10 @@ def handleStringArrayInitialisation(lines):
 	stringArrayRe = r"^declare\s+%s\s*\[(?P<arraysize>[^\]]+)\]\s*:=\s*\((?P<initlist>.+)\)$" % variableNameRe
 	stringListRe = r"\s*%s(\s*,\s*%s)*\s*" % (stringOrPlaceholderRe, stringOrPlaceholderRe)
 	newLines = collections.deque()
+	famCount = 0
 	for i in range(len(lines)):
 		line = lines[i].command.strip()
+		famCount = countFamily(line, famCount)
 		if line.startswith("on"):
 			if re.search(initRe, line):
 				newLines.append(lines[i])
@@ -985,6 +1010,8 @@ def handleStringArrayInitialisation(lines):
 						raise ksp_compiler.ParseException(lines[i], "Expected integers, got strings.\n")
 					stringList = ksp_compiler.split_args(m.group("initlist"), lines[i])
 					name = m.group("name")
+					if famCount != 0:
+						name = inspectFamilyState(lines, i) + name
 					newLines.append(lines[i].copy(line[: line.find(":")]))
 					if len(stringList) != 1:
 						for ii in range(len(stringList)):
