@@ -115,13 +115,13 @@ def countFamily(lineText, famCount):
 			famCount -= 1
 	return(famCount)
 
-def inspectFamilyState(lines, text_lineno):
+def inspectFamilyState(lines, textLineno):
 	""" If the given line is in at least 1 family, return the family prefixes. """
-	current_family_names = []
+	currentFamilyNames = []
 	for i in range(len(lines)):
-		if i == text_lineno:
-			if current_family_names:
-				return (".".join(current_family_names) + ".")
+		if i == textLineno:
+			if currentFamilyNames:
+				return (".".join(currentFamilyNames) + ".")
 			else:
 				return (None)
 			break
@@ -129,9 +129,9 @@ def inspectFamilyState(lines, text_lineno):
 		if "family" in line:
 			m = re.search(familyStartRe, line)
 			if m:
-				current_family_names.append(m.group("famname"))
+				currentFamilyNames.append(m.group("famname"))
 			elif re.search(familyEndRe, line):
-				current_family_names.pop()
+				currentFamilyNames.pop()
 
 #=================================================================================================
 #=================================================================================================
@@ -174,7 +174,7 @@ class Struct(object):
 		self.members.insert(location, memberObj)
 
 def handleStructs(lines):
-	struct_syntax = "\&"
+	structSyntax = "\&"
 	structs = [] 
 
 	def findStructs():
@@ -232,7 +232,7 @@ def handleStructs(lines):
 				stillRemainginStructs = False
 				# Struct member may themselves have struct members, so this is looped until it is fully resolved.
 				while j < len(structs[i].members) or stillRemainginStructs == True:
-					m = re.search(r"^([^%s]+\.)?%s\s*%s\s+%s" % (struct_syntax, struct_syntax, variableNameUnRe, variableNameUnRe), structs[i].members[j].name)
+					m = re.search(r"^([^%s]+\.)?%s\s*%s\s+%s" % (structSyntax, structSyntax, variableNameUnRe, variableNameUnRe), structs[i].members[j].name)
 					if m:
 						structs[i].deleteMember(j)
 						structNum = structNames.index(m.group(2))
@@ -245,14 +245,14 @@ def handleStructs(lines):
 						insertLocation = j
 						for memberIdx in range(len(structs[structNum].members)):
 							structMember = structs[structNum].members[memberIdx]
-							var_name = structVariable + "." + structMember.name
-							new_command = re.sub(r"\b%s\b" % structMember.name, var_name, structMember.command)
-							structs[i].insertMember(insertLocation, StructMember(var_name, new_command, structMember.prefix))
+							varName = structVariable + "." + structMember.name
+							newCommand = re.sub(r"\b%s\b" % structMember.name, varName, structMember.command)
+							structs[i].insertMember(insertLocation, StructMember(varName, newCommand, structMember.prefix))
 							insertLocation += 1
 							
 						# If there are still any struct member declarations, keep looping to resolve them.
 						for name in structs[i].members[j].name:
-							mm = re.search(r"^(?:[^%s]+\.)?%s\s*%s\s+%s" % (struct_syntax, struct_syntax, variableNameUnRe, variableNameUnRe), name)
+							mm = re.search(r"^(?:[^%s]+\.)?%s\s*%s\s+%s" % (structSyntax, structSyntax, variableNameUnRe, variableNameUnRe), name)
 							if mm:
 								stillRemainginStructs = True
 					j += 1
@@ -271,7 +271,7 @@ def handleStructs(lines):
 			newLines = collections.deque()
 			for i in range(len(lines)):
 				line = lines[i].command.strip()
-				m = re.search(r"^declare\s+%s\s*%s\s+%s(?:\[(.*)\])?$" % (struct_syntax, variableNameUnRe, variableNameUnRe), line)
+				m = re.search(r"^declare\s+%s\s*%s\s+%s(?:\[(.*)\])?$" % (structSyntax, variableNameUnRe, variableNameUnRe), line)
 				if m:
 					structName = m.group(1)
 					declaredName = m.group(4)
@@ -306,18 +306,18 @@ def handleStructs(lines):
 #=================================================================================================
 # Remove print functions when the activate_logger() is not present.
 def removeActivateLoggerPrint(lines):
-	print_line_numbers = []
-	logger_active_flag = False
+	printLineNumbers = []
+	loggerActiveFlag = False
 	for i in range(len(lines)):
 		line = lines[i].command.strip()
 		if re.search(r"^activate_logger\s*\(", line):
-			logger_active_flag = True
+			loggerActiveFlag = True
 		if re.search(r"^print\s*\(", line):
-			print_line_numbers.append(i)
+			printLineNumbers.append(i)
 
-	if not logger_active_flag:
-		for i in range(len(print_line_numbers)):
-			lines[print_line_numbers[i]].command = ""
+	if not loggerActiveFlag:
+		for i in range(len(printLineNumbers)):
+			lines[printLineNumbers[i]].command = ""
 
 #=================================================================================================
 class Incrementer(object):
@@ -405,31 +405,31 @@ class ArrayConcat(object):
 		offsets = ["0"]
 		offsets.extend(["num_elements(%s)" % arrName for arrName in self.arraysToConcat])
 
-		add_offset = ""
+		addOffset = ""
 		if numArgs != 1:
-			add_offset = " + concat_offset"
+			addOffset = " + concat_offset"
 			newLines.append(self.line.copy("concat_offset := 0"))
 
-		offset_command = "concat_offset := concat_offset + #offset#"
-		template_text = [
+		offsetCommand = "concat_offset := concat_offset + #offset#"
+		templateText = [
 		"for concat_it := 0 to num_elements(#arg#) - 1",
-		"   #parent#[concat_it%s] := #arg#[concat_it]" % add_offset,
+		"   #parent#[concat_it%s] := #arg#[concat_it]" % addOffset,
 		"end for"]
 
 		for j in range(numArgs):
 			if j != 0 and numArgs != 1:
-				newLines.append(self.line.copy(offset_command.replace("#offset#", offsets[j])))
-			for text in template_text:
+				newLines.append(self.line.copy(offsetCommand.replace("#offset#", offsets[j])))
+			for text in templateText:
 				newLines.append(self.line.copy(text.replace("#arg#", self.arraysToConcat[j]).replace("#parent#", self.arrayToFill)))
 		return(newLines)
 
 def handleArrayConcat(lines):
-	array_concat_re = r"(?P<declare>^\s*declare\s+)?%s\s*(?P<brackets>\[(?P<arraysize>.*)\])?\s*:=\s*%s\s*\((?P<arraylist>[^\)]*)" % (variableNameRe, concatSyntax)
+	arrayConcatRe = r"(?P<declare>^\s*declare\s+)?%s\s*(?P<brackets>\[(?P<arraysize>.*)\])?\s*:=\s*%s\s*\((?P<arraylist>[^\)]*)" % (variableNameRe, concatSyntax)
 	newLines = collections.deque()
 	for lineIdx in range(len(lines)):
 		line = lines[lineIdx].command.strip()
 		if "concat" in line:
-			m = re.search(array_concat_re, line)
+			m = re.search(arrayConcatRe, line)
 			if m:
 				concatObj = ArrayConcat(m.group("whole"), m.group("declare"), m.group("brackets"), m.group("arraysize"), m.group("arraylist"), lines[lineIdx])
 				concatObj.checkArraySize(lineIdx, lines)
@@ -492,20 +492,20 @@ class MultiDimensionalArray(object):
 				calculatedDimList.append("(%s) * " % self.dimensions[i])
 			calculatedDimList.append(dimensionArgList[dimNum] + " + ")
 		calculatedDimList.append(dimensionArgList[numDimensions - 1])
-		calculated_dimensions = "".join(calculatedDimList)
+		calculatedDimensions = "".join(calculatedDimList)
 		for propLine in propertyTemplate:
 			propertyText = propLine\
 				.replace("#propName#", self.name)\
 				.replace("#dimList#", dimensionArgString)\
 				.replace("#rawArrayName#", self.rawArrayName)\
-				.replace("#calculatedDimList#", calculated_dimensions)
+				.replace("#calculatedDimList#", calculatedDimensions)
 			newLines.append(line.copy(propertyText))
 		return(newLines)
 
 # TODO: Check whether making this only init callback is ok.
 def handleMultidimensionalArrays(lines):
-	multiple_dimensions_re = r"\[(?P<dimensions>[^\]]+(?:\,[^\]]+)+)\]" # Match square brackets with 2 or more comma separated dimensions.
-	multidimensional_array_re = r"^declare\s+%s%s\s*%s(?P<assignment>\s*:=.+)?$" % (persistenceRe, variableNameRe, multiple_dimensions_re)
+	multipleDimensionsRe = r"\[(?P<dimensions>[^\]]+(?:\,[^\]]+)+)\]" # Match square brackets with 2 or more comma separated dimensions.
+	multidimensionalArrayRe = r"^declare\s+%s%s\s*%s(?P<assignment>\s*:=.+)?$" % (persistenceRe, variableNameRe, multipleDimensionsRe)
 
 	newLines = collections.deque()
 	famCount = 0
@@ -524,7 +524,7 @@ def handleMultidimensionalArrays(lines):
 				# If a multidim array is found, if necessary the family prefix is added and the lines needed for the property are added.
 				famCount = countFamily(line, famCount)
 				if line.startswith("declare"):
-					m = re.search(multidimensional_array_re, line)
+					m = re.search(multidimensionalArrayRe, line)
 					if m:
 						famPrefix = ""
 						if famCount != 0:
@@ -532,9 +532,9 @@ def handleMultidimensionalArrays(lines):
 						name = m.group("name")
 						# if m.group("uiArray"):
 						# 	name = name[1:] # If it is a UI array, the single dimension array will already have the underscore, so it is removed.
-						multi_dim = MultiDimensionalArray(name, m.group("prefix"), m.group("dimensions"), m.group("persistence"), m.group("assignment"), famPrefix, lines[lineIdx])
-						newLines.append(lines[lineIdx].copy(multi_dim.getRawArrayDeclaration()))
-						newLines.extend(multi_dim.buildPropertyAndConstants(lines[lineIdx]))
+						multiDim = MultiDimensionalArray(name, m.group("prefix"), m.group("dimensions"), m.group("persistence"), m.group("assignment"), famPrefix, lines[lineIdx])
+						newLines.append(lines[lineIdx].copy(multiDim.getRawArrayDeclaration()))
+						newLines.extend(multiDim.buildPropertyAndConstants(lines[lineIdx]))
 					else:
 						newLines.append(lines[lineIdx])
 				else:
@@ -544,9 +544,9 @@ def handleMultidimensionalArrays(lines):
 
 #===========================================================================================
 class UIPropertyTemplate:
-	def __init__(self, name, arg_string):
+	def __init__(self, name, argString):
 		self.name = name
-		self.args = arg_string.replace(" ", "").split(",")
+		self.args = argString.replace(" ", "").split(",")
 
 class UIPropertyFunction:
 	def __init__(self, functionType, args, line):
@@ -556,13 +556,13 @@ class UIPropertyFunction:
 			raise ksp_compiler.ParseException(line, "Too many arguments, maximum is %d, got %d.\n" % (len(functionType.args), len(self.args)))
 		elif len(self.args) == 0:
 			raise ksp_compiler.ParseException(line, "Function requires at least 2 arguments.\n")
-		self.ui_id = args[0]
+		self.uiId = args[0]
 
 	def buildUiPropertyLines(self, line):
 		""" Return the set ui property commands, e.g. name -> par := val """
 		newLines = collections.deque()
-		for arg_num in range(len(self.args)):
-			newLines.append(line.copy("%s -> %s := %s" % (self.ui_id, self.functionType.args[arg_num], self.args[arg_num])))
+		for argNum in range(len(self.args)):
+			newLines.append(line.copy("%s -> %s := %s" % (self.uiId, self.functionType.args[argNum], self.args[argNum])))
 		return(newLines)
 
 def handleUIFunctions(lines):
@@ -661,40 +661,40 @@ class ConstBlock(object):
 		newLines = collections.deque()
 		newLines.append(line.copy("declare %s[%s] := (%s)" % (self.name, len(self.memberNames), ", ".join(self.memberValues))))
 		newLines.append(line.copy("declare const %s.SIZE := %s" % (self.name, len(self.memberNames))))
-		for mem_num in range(len(self.memberNames)):
-			newLines.append(line.copy("declare const %s.%s := %s" % (self.name, self.memberNames[mem_num], self.memberValues[mem_num])))
+		for memNum in range(len(self.memberNames)):
+			newLines.append(line.copy("declare const %s.%s := %s" % (self.name, self.memberNames[memNum], self.memberValues[memNum])))
 		return(newLines)
 
 def handleConstBlock(lines):
-	const_block_start_re = r"^const\s+%s$" % variableNameRe
-	const_block_end_re = r"^end\s+const$"
-	const_block_member_re = r"^%s(?:$|\s*\:=\s*(?P<value>.+))" % variableNameRe
+	constBlockStartRe = r"^const\s+%s$" % variableNameRe
+	constBlockEndRe = r"^end\s+const$"
+	constBlockMemberRe = r"^%s(?:$|\s*\:=\s*(?P<value>.+))" % variableNameRe
 
 	newLines = collections.deque()
 	constBlockObj = None
 	inConstBlock = False
-	for line_num in range(len(lines)):
-		line = lines[line_num].command.strip()
+	for lineIdx in range(len(lines)):
+		line = lines[lineIdx].command.strip()
 		if line.startswith("const"):
-			m = re.search(const_block_start_re, line)
+			m = re.search(constBlockStartRe, line)
 			if m:
 				constBlockObj = ConstBlock(m.group("name"))
 				inConstBlock = True
 				continue
 		elif line.startswith("end"):
-			if re.search(const_block_end_re, line):
+			if re.search(constBlockEndRe, line):
 				if constBlockObj.memberValues:
-					newLines.extend(constBlockObj.buildLines(lines[line_num]))
+					newLines.extend(constBlockObj.buildLines(lines[lineIdx]))
 				inConstBlock = False
 				continue
 		elif inConstBlock:
-			m = re.search(const_block_member_re, line)
+			m = re.search(constBlockMemberRe, line)
 			if m:
 				constBlockObj.addMember(m.group("whole"), m.group("value"))
 				continue
 			elif not line.strip() == "":
-				raise ksp_compiler.ParseException(lines[line_num], "Incorrect syntax. In a const block, list constant names and optionally assign them a constant value.")
-		newLines.append(lines[line_num])
+				raise ksp_compiler.ParseException(lines[lineIdx], "Incorrect syntax. In a const block, list constant names and optionally assign them a constant value.")
+		newLines.append(lines[lineIdx])
 	replaceLines(lines, newLines)
 
 #=================================================================================================
@@ -702,22 +702,22 @@ class ListBlock(object):
 	def __init__(self, name, size):
 		self.name = name
 		self.size = size or ""
-		self.is_multi_dim = False
+		self.isMultiDim = False
 		if size: 
-			self.is_multi_dim = "," in size
+			self.isMultiDim = "," in size
 		self.members = []
 
 	def addMember(self, command):
 		self.members.append(command)
 
-	def build_lines(self, line):
+	def buildLines(self, line):
 		""" The list block just builds lines ready for the list function later on to interpret them. """
 		newLines = collections.deque()
 		newLines.append(line.copy("declare list %s[%s]" % (self.name, self.size)))
 		for memNum in range(len(self.members)):
 			memberName = self.members[memNum]
 			# If the member is a comma separated list, then we first need to assign the list to an array in kontakt.
-			if self.is_multi_dim:
+			if self.isMultiDim:
 				# stringList = re.search(commasNotInBrackets, memberName)
 				stringList = ksp_compiler.split_args(memberName, line)
 				if len(stringList) != 1:
@@ -727,26 +727,26 @@ class ListBlock(object):
 		return(newLines)
 
 def handleListBlocks(lines):
-	list_block_start_re = r"^list\s*%s\s*(?:\[(?P<size>%s)?\])?$" % (variableNameRe, variableOrInt)
-	list_block_end_re = r"^end\s+list$"
+	listBlockStartRe = r"^list\s*%s\s*(?:\[(?P<size>%s)?\])?$" % (variableNameRe, variableOrInt)
+	listBlockEndRe = r"^end\s+list$"
 	newLines = collections.deque()
-	list_block_obj = None
-	is_list_block = False
-	for line_num in range(len(lines)):
-		line = lines[line_num].command.strip()
-		m = re.search(list_block_start_re, line)
+	listBlockObj = None
+	isListBlock = False
+	for lineIdx in range(len(lines)):
+		line = lines[lineIdx].command.strip()
+		m = re.search(listBlockStartRe, line)
 		if m:
-			is_list_block = True
-			list_block_obj = ListBlock(m.group("whole"), m.group("size"))
-		elif is_list_block and not line == "":
-			if re.search(list_block_end_re, line):
-				is_list_block = False
-				if list_block_obj.members:
-					newLines.extend(list_block_obj.build_lines(lines[line_num]))
+			isListBlock = True
+			listBlockObj = ListBlock(m.group("whole"), m.group("size"))
+		elif isListBlock and not line == "":
+			if re.search(listBlockEndRe, line):
+				isListBlock = False
+				if listBlockObj.members:
+					newLines.extend(listBlockObj.buildLines(lines[lineIdx]))
 			else:
-				list_block_obj.addMember(line)
+				listBlockObj.addMember(line)
 		else:
-			newLines.append(lines[line_num])
+			newLines.append(lines[lineIdx])
 
 	replaceLines(lines, newLines)
      
@@ -854,8 +854,8 @@ def handleLists(lines):
 
 	newLines = collections.deque()
 	lists = {} # The list names and list objects are stored in a dict for quick searching.
-	list_add_re = r"^list_add\s*\(\s*%s\s*,(?P<value>.+)\)$" % variableNameRe
-	list_declare_re = r"^\s*declare\s+%slist\s*%s\s*(?:\[(?P<size>[^\]]+)?\])?" % (persistenceRe, variableNameRe)
+	listAddRe = r"^list_add\s*\(\s*%s\s*,(?P<value>.+)\)$" % variableNameRe
+	listDeclareRe = r"^\s*declare\s+%slist\s*%s\s*(?:\[(?P<size>[^\]]+)?\])?" % (persistenceRe, variableNameRe)
 	listDeclareTag = "LIST=>" # A tag is left on the list declaration lines as these need to be resolved at the end.
 	isInInit = False
 	preInit = True
@@ -872,7 +872,7 @@ def handleLists(lines):
 						isInInit = True
 						addInitVar = True
 			if line.startswith("list_add"):
-				if re.search(list_add_re, line):
+				if re.search(listAddRe, line):
 					raise ksp_compiler.ParseException(lines[lineIdx], "list_add() can only be used in the init callback.\n")
 			newLines.append(lines[lineIdx])
 			if addInitVar:
@@ -917,7 +917,7 @@ def handleLists(lines):
 			famCount = countFamily(line, famCount)
 			# Check for a list declaration
 			if line.startswith("declare"):
-				m = re.search(list_declare_re, line)
+				m = re.search(listDeclareRe, line)
 				if m:
 					name = m.group("name")
 					famPre = ""
@@ -934,7 +934,7 @@ def handleLists(lines):
 
 			# Check for a list_add
 			elif line.startswith("list_add"):
-				m = re.search(list_add_re, line)
+				m = re.search(listAddRe, line)
 				if m:
 					if loopBlockCounter != 0:
 						raise ksp_compiler.ParseException(lines[lineIdx], "list_add() cannot be used in loops or if statements.\n")
@@ -972,11 +972,11 @@ def handleLists(lines):
 def handleOpenSizeArrays(lines):
 	""" When an array size is left with an open number of elements, use the list of initialisers to provide the array size.
 	Const variables are also generated for the array size. """
-	open_array_re = r"^\s*declare\s+%s%s\s*\[\s*\]\s*:=\s*\(" % (persistenceRe, variableNameRe)
+	openArrayRe = r"^\s*declare\s+%s%s\s*\[\s*\]\s*:=\s*\(" % (persistenceRe, variableNameRe)
 	newLines = collections.deque()
 	for lineIdx in range(len(lines)):
 		line = lines[lineIdx].command.strip()
-		m = re.search(open_array_re, line)      
+		m = re.search(openArrayRe, line)      
 		if m:
 			stringList = re.split(commasNotInBrackets, line[line.find("(") + 1 : len(line) - 1])
 			numElements = len(stringList)
@@ -1165,16 +1165,16 @@ class DefineConstant(object):
 
 					# Build the new value using the given args
 					newVal = self.value
-					for arg_idx, arg in enumerate(self.args):
+					for argIdx, arg in enumerate(self.args):
 						if arg.startswith("#") and arg.endswith("#"):
-							newVal = re.sub(arg, foundArgs[arg_idx], newVal)
+							newVal = re.sub(arg, foundArgs[argIdx], newVal)
 						else:
-							newVal = re.sub(r"\b%s\b" % arg, foundArgs[arg_idx], newVal)
+							newVal = re.sub(r"\b%s\b" % arg, foundArgs[argIdx], newVal)
 					newCommand = newCommand.replace(foundString, newVal)
 		return(newCommand)
 
 def handleDefineConstants(lines):
-	define_re = r"^define\s+%s\s*(?:\((?P<args>.+)\))?\s*:=(?P<val>.+)$" % variableNameRe
+	defineRe = r"^define\s+%s\s*(?:\((?P<args>.+)\))?\s*:=(?P<val>.+)$" % variableNameRe
 	defineConstants = collections.deque()
 	newLines = collections.deque()
 
@@ -1182,7 +1182,7 @@ def handleDefineConstants(lines):
 	for lineIdx in range(len(lines)):
 		line = lines[lineIdx].command.strip()
 		if line.startswith("define"):
-			m = re.search(define_re, line)
+			m = re.search(defineRe, line)
 			if m:
 				defineObj = DefineConstant(m.group("whole"), m.group("val").strip(), m.group("args"), lines[lineIdx])
 				defineConstants.append(defineObj)
@@ -1238,15 +1238,15 @@ class UIArray(object):
 		return(newLines)
 
 def handleUIArrays(lines):
-	ui_type_re = r"\b(?P<uitype>ui_button|ui_switch|ui_knob|ui_label|ui_level_meter|ui_menu|ui_slider|ui_table|ui_text_edit|ui_waveform|ui_value_edit)\b"
-	ui_array_re = r"^declare\s+%s%s\s+%s\s*\[(?P<arraysize>[^\]]+)\]\s*(?P<uiparams>(?P<tablesize>\[[^\]]+\]\s*)?\(.*)?" % (persistenceRe, ui_type_re, variableNameRe)
+	uiTypeRe = r"\b(?P<uitype>ui_button|ui_switch|ui_knob|ui_label|ui_level_meter|ui_menu|ui_slider|ui_table|ui_text_edit|ui_waveform|ui_value_edit)\b"
+	uiArrayRe = r"^declare\s+%s%s\s+%s\s*\[(?P<arraysize>[^\]]+)\]\s*(?P<uiparams>(?P<tablesize>\[[^\]]+\]\s*)?\(.*)?" % (persistenceRe, uiTypeRe, variableNameRe)
 	newLines = collections.deque()
 	famCount = 0
 	for lineNum in range(len(lines)):
 		line = lines[lineNum].command.strip()
 		famCount = countFamily(line, famCount)
 		if line.startswith("decl"):
-			m = re.search(ui_array_re, line)
+			m = re.search(uiArrayRe, line)
 			if m:
 				famPre = None
 				if famCount != 0:
