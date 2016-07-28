@@ -1103,7 +1103,7 @@ class DefineConstant(object):
 		self.name = name
 		self.value = value
 		# In previous versions of the compiler the value had to wrapped in # symbols.
-		if self.value.startswith("#") and self.value.endswith("#"):
+		if self.value.startswith("#") and self.value.endswith("#") and not "#" in self.value[1 : len(self.value) - 1]:
 			self.value = self.value[1 : len(self.value) - 1]
 		self.args = []
 		if argString:
