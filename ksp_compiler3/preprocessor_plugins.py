@@ -56,7 +56,8 @@ def pre_macro_functions(lines):
 	of Line objects - see ksp_compiler.py."""
 	removeActivateLoggerPrint(lines)
 	handleDefineConstants(lines)
-	handleDefineLiterals(lines)
+	# Define literals are only avilable for backwards compatibility as regular defines now serve this purpose.
+	handleDefineLiterals(lines) 
 	handleIterateMacro(lines)
 	handleLiterateMacro(lines)
 
@@ -1312,7 +1313,7 @@ def handleLiterateMacro(lines):
 			m = re.search(r"^literate_macro\s*\((?P<macro>.+)\)\s+on\s+(?P<target>.+)$", line)
 			if m:
 				name = m.group("macro")
-				targets = m.group("target").split(",")
+				targets = ksp_compiler.split_args(m.group("target"), lines[lineIdx])
 				if not "#l#" in name:
 					for text in targets:
 						newLines.append(lines[lineIdx].copy("%s(%s)" % (name, text)))	
