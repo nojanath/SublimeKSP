@@ -64,7 +64,7 @@ contexts:
           pop: true
         - match: "out |in "
           scope: keyword.other.source.ksp
-        - match: "[a-zA-Z0-9_#]+"
+        - match: "[a-zA-Z0-9_#.]+"
           scope: variable.parameter.function.source.ksp
         - include: main
     - match: '^\s*(family +)([a-zA-Z_.0-9]+)'
