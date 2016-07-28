@@ -64,9 +64,9 @@ def pre_macro_functions(lines):
 def post_macro_functions(lines):
 	""" This function is called after the regular macros have been expanded. lines is a 
 	collections.deque of Line objects - see ksp_compiler.py."""
-	handleStructs(lines)
 	handleIncrementer(lines)
 	handleConstBlock(lines)
+	handleStructs(lines)
 	handleUIArrays(lines)
 	handleSameLineDeclaration(lines)
 	handleMultidimensionalArrays(lines)
