@@ -99,7 +99,7 @@ def tryStringEval(expression, line, name):
 		final = stringEvaluator.eval(str(expression).strip())
 	except:
 		raise ksp_compiler.ParseException(line, 
-			"Invalid syntax in %s value. This number must able to be evaluated to a single literal number at compile time; use only define constants, numbers or maths operations here." % name)
+			"Invalid syntax in %s value. This number must able to be evaluated to a single number at compile time; use only define constants, numbers or maths operations here.\n" % name)
 	return (final)
 
 def replaceLines(original, new):
@@ -392,10 +392,7 @@ class ArrayConcat(object):
 
 	def getRawArrayDeclaration(self):
 		""" Return the command that should replace line that triggered the concat. """
-		if self.declare:
-			return("declare %s[%s]" % (self.arrayToFill, str(self.size)))
-		else:
-			return("")
+		return("declare %s[%s]" % (self.arrayToFill, str(self.size)))
 
 	def buildLines(self):
 		""" Return all the lines needed to perfrom the concat. """
@@ -433,7 +430,8 @@ def handleArrayConcat(lines):
 			if m:
 				concatObj = ArrayConcat(m.group("whole"), m.group("declare"), m.group("brackets"), m.group("arraysize"), m.group("arraylist"), lines[lineIdx])
 				concatObj.checkArraySize(lineIdx, lines)
-				newLines.append(lines[lineIdx].copy(concatObj.getRawArrayDeclaration()))
+				if m.group("declare"):
+					newLines.append(lines[lineIdx].copy(concatObj.getRawArrayDeclaration()))
 				newLines.extend(concatObj.buildLines())
 				continue
 		# The variables needed are declared at the start of the init callback.
@@ -1066,7 +1064,7 @@ class IterateMacro(object):
 			self.step = int(tryStringEval(step, line, "step"))
 		self.direction = direction
 		if (self.minVal > self.maxVal and self.direction == "to") or (self.minVal < self.maxVal and self.direction == "downto"):
-			raise ksp_compiler.ParseException(line, "Min and max values are incorrectly weighted (For example, min > max when it should be min < max)./n")
+			raise ksp_compiler.ParseException(line, "Min and max values are incorrectly weighted (For example, min > max when it should be min < max).\n")
 
 	def buildLines(self):
 		newLines = collections.deque()
