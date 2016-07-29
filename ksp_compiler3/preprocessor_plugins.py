@@ -1129,13 +1129,14 @@ class DefineConstant(object):
 			pass
 		self.setValue(newVal)
 
-	def substituteValue(self, command):
+	def substituteValue(self, command, listOfOtherDefines, line=None):
 		""" Replace all occurances of the define constant in the given command with its value. """
 		newCommand = command
 		if self.name in command:
 			if not self.args:
 				newCommand = re.sub(r"\b%s\b" % self.name, self.value, command)
 			else:
+				lineObj = line or self.line
 				matchIt = re.finditer(r"\b%s\b" % self.name, command)
 				for match in matchIt:
 					# Parse the match
@@ -1157,10 +1158,17 @@ class DefineConstant(object):
 					# Check whether the args are valid
 					openBracketPos = foundString.find("(")
 					if openBracketPos == -1:
-						raise ksp_compiler.ParseException(self.line, "No arguments found for define macro: %s" % foundString)
-					foundArgs = ksp_compiler.split_args(foundString[openBracketPos + 1 : len(foundString) - 1], self.line)
+						raise ksp_compiler.ParseException(lineObj, "No arguments found for define macro: %s" % foundString)
+					argsString = foundString[openBracketPos + 1 : len(foundString) - 1]
+					foundArgs = ksp_compiler.split_args(argsString, lineObj)
 					if len(foundArgs) != len(self.args):
-						raise ksp_compiler.ParseException(self.line, "Incorrect number of arguments in define macro: %s. Expected %d, got %d.\n" % (foundString, len(self.args), len(foundArgs)))
+						# The number of args could be incorrect because there are other defines in the arg list, therefore first evaluate
+						# all other defines in the args. If still incorrect, raise an exception.
+						for defineObj in listOfOtherDefines:
+							argsString = defineObj.substituteValue(argsString, listOfOtherDefines)
+						foundArgs = ksp_compiler.split_args(argsString, lineObj)
+						if len(foundArgs) != len(self.args):
+							raise ksp_compiler.ParseException(lineObj, "Incorrect number of arguments in define macro: %s. Expected %d, got %d.\n" % (foundString, len(self.args), len(foundArgs)))
 
 					# Build the new value using the given args
 					newVal = self.value
@@ -1192,14 +1200,14 @@ def handleDefineConstants(lines):
 		# Replace all occurances where other defines are used in define values.
 		for i in range(len(defineConstants)):
 			for j in range(len(defineConstants)):
-				defineConstants[i].setValue(defineConstants[j].substituteValue(defineConstants[i].getValue()))
+				defineConstants[i].setValue(defineConstants[j].substituteValue(defineConstants[i].getValue(), defineConstants))
 			defineConstants[i].evaluateValue()
 
 		# For each line, replace any places the defines are used.
 		for lineIdx in range(len(newLines)):
 			line = newLines[lineIdx].command
 			for defineConst in defineConstants:
-				newLines[lineIdx].command = defineConst.substituteValue(newLines[lineIdx].command)
+				newLines[lineIdx].command = defineConst.substituteValue(newLines[lineIdx].command, defineConstants, newLines[lineIdx])
 	replaceLines(lines, newLines)
 
 #=================================================================================================
