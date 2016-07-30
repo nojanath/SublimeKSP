@@ -31,6 +31,7 @@ varPrefixRe = r"[%!@$]"
 variableNameRe = r'(?P<whole>(?P<prefix>\b|[$%!@])(?P<name>[a-zA-Z_][a-zA-Z0-9_\.]*))\b' # A variable name
 variableNameUnRe = r'((\b|[$%!@])[0-9]*[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_0-9]+)*)\b' # Same as above but without names
 persistenceRe = r"(?:\b(?P<persistence>pers|read)\s+)?"
+nameInDeclareStmtRe = r"%s\s*(?=[\[\(\:]|$)" % variableNameRe # Match the variable name in a whole declare statement.
 
 stringOrPlaceholderRe = r'({\d+}|\"[^"]*\")'
 variableOrInt = r"[^\]]+" # Something that is not a square bracket closing
@@ -206,8 +207,7 @@ def handleStructs(lines):
 				if line:
 					if not line.startswith("declare ") and not line.startswith("declare	"):
 						raise ksp_compiler.ParseException(lines[lineIdx], "Structs may only consist of variable declarations.\n")
-					# NOTE: experimental way of finding the name - see persistence function
-					m = re.search(r"%s\s*(?=[\[\(\:]|$)" % variableNameRe, line)
+					m = re.search(nameInDeclareStmtRe, line)
 					if m:
 						variableName = m.group("whole")
 						structDeclMatch = re.search(r"\&\s*%s" % variableNameRe, line)
@@ -1036,7 +1036,7 @@ def handlePersistence(lines):
 			m = re.search(r"\b(?P<persistence>pers|read)\b" , line)
 			if m:
 				persWord = m.group("persistence")
-				m = re.search(r"%s\s*(?=[\[\(]|$)" % variableNameRe, line)
+				m = re.search(nameInDeclareStmtRe, line)
 				if m:
 					variableName = m.group("name")
 					if famCount != 0: # Counting the family state is much faster than inspecting on every line.
