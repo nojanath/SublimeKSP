@@ -224,7 +224,7 @@ class Macro:
 
 	def get_macro_name_and_parameters(self):
 		""" returns the function name, parameter list, and result variable (or None) as a tuple """
-		param = white_space + r'([$%@!]?\w+|#\w+#)' + white_space
+		param = white_space + r'([$%@!]?[\w\.]+|#[\w\.]+#)' + white_space
 		params = r'%s(,%s)*' % (param, param)
 		m = re.match(r'^\s*macro\s+(?P<name>[a-zA-Z0-9_]+(\.[a-zA-Z_0-9.]+)*)\s*(?P<params>\(%s\))?' % params, self.lines[0].command)
 		if not m:
