@@ -1260,7 +1260,7 @@ def handleUIArrays(lines):
 					famPre = inspectFamilyState(lines, lineNum)
 				uiType = m.group("uitype")
 				if (uiType == "ui_table" and m.group("tablesize")) or uiType != "ui_table":
-					arrayObj = UIArray(m.group("whole"), uiType, m.group("arraysize"), m.group("persistence"), famPre, m.group("uiparams"), lines[lineNum])
+					arrayObj = UIArray(m.group("name"), uiType, m.group("arraysize"), m.group("persistence"), famPre, m.group("uiparams"), lines[lineNum])
 					newLines.append(lines[lineNum].copy(arrayObj.getRawArrayDeclaration()))
 					newLines.extend(arrayObj.buildLines(lines[lineNum]))
 					continue
