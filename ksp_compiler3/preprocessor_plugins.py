@@ -1123,7 +1123,7 @@ class DefineConstant(object):
 		""" Try to evaluate the value of the define constant as a maths expression. """
 		newVal = self.value
 		try:
-			val = re.sub(r"\smod\s", " % ", self.value)
+			val = re.sub(r"\bmod\b", "%", self.value)
 			newVal = str(stringEvaluator.eval(val))
 		except:
 			pass
