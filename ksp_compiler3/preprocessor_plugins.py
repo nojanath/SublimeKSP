@@ -1245,7 +1245,7 @@ class UIArray(object):
 		return(newLines)
 
 def handleUIArrays(lines):
-	uiTypeRe = r"\b(?P<uitype>ui_button|ui_switch|ui_knob|ui_label|ui_level_meter|ui_menu|ui_slider|ui_table|ui_text_edit|ui_waveform|ui_value_edit)\b"
+	uiTypeRe = r"\b(?P<uitype>ui_\w*)\b"	
 	uiArrayRe = r"^declare\s+%s%s\s+%s\s*\[(?P<arraysize>[^\]]+)\]\s*(?P<uiparams>(?P<tablesize>\[[^\]]+\]\s*)?\(.*)?" % (persistenceRe, uiTypeRe, variableNameRe)
 	newLines = collections.deque()
 	famCount = 0
