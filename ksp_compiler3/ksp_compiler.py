@@ -30,23 +30,21 @@ import time
 from preprocessor_plugins import pre_macro_functions, post_macro_functions
 ##from cStringIO import StringIO
 
-variable_prefixes = '$%@!'
+variable_prefixes = '$%@!?~'
 
 # regular expressions:
 white_space = r'(?ms)(\s*(\{[^\n]*?\})?\s*)' # regexp for normal white space/comments
 comment_re = re.compile(r'(?<!["\'])\{.*?\}|\(\*.*?\*\)', re.DOTALL)   # if { is preceeded by ' or " don't treat it as a comment
 string_re = re.compile(r'".*?(?<!\\)"|' + r"'.*?(?<!\\)'")
+line_continuation_re = re.compile(r'\.\.\.\s*\n', re.MULTILINE)
 placeholder_re = re.compile(r'\[\[\[\d+\]\]\]')
-varname_re_string = r'((\b|[$%!@])[0-9]*[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_0-9]+)*)\b'
-varname_re = re.compile(varname_re_string)
-varname_dot_re = re.compile(r'(?<![$%!@])\b[0-9]*[a-zA-Z_][a-zA-Z0-9_]*?\.')
+varname_re = re.compile(r'((\b|[$%!@~?])[0-9]*[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_0-9]+)*)\b')
+varname_dot_re = re.compile(r'(?<![$%!@~?])\b[0-9]*[a-zA-Z_][a-zA-Z0-9_]*?\.')
 import_basic_re = re.compile(r'^\s*import ')
 import_re = re.compile(r'^\s*import\s+"(?P<filename>.+?)"(\s+as\s(?P<asname>[a-zA-Z_][a-zA-Z0-9_.]*))?%s$' % white_space)
 macro_start_re = re.compile(r'^\s*macro(?=\W)')
 macro_end_re = re.compile(r'^\s*end\s+macro')
 line_continuation_re = re.compile(r'\.\.\.\s*\n', re.MULTILINE)
-
-
 
 placeholders = {}           # mapping from placeholder number to contents (placeholders used for comments, strings and ...)
 functions = OrderedDict()   # maps from function name to AST node corresponding to the function definition
@@ -150,7 +148,6 @@ class ParseException(ExceptionWithMessage):
     def __init__(self, line, message):
         assert(isinstance(line, Line))
         msg = "%s\n%s\n\n%s" % (message, str(line).strip(), line.get_locations_string())
-        # msg = "%s\n%s\n\n%s" % (message, str(line).strip(), line.get_locations_string())
         Exception.__init__(self, msg)
         self.line = line
         self.message = msg
@@ -172,7 +169,7 @@ class Line:
 
     def get_locations_string(self):
         return '\n'.join(
-            ('%s%s line %d \r\n' % (' ' * (i * 4), filename or '<main script>', lineno)) for (i, (filename, lineno)) in enumerate(reversed(self.locations)))
+            ('%s%s:%d \r\n' % (' ' * (i * 4), filename or '<main script>', lineno)) for (i, (filename, lineno)) in enumerate(reversed(self.locations)))
 
     def copy(self, new_command=None, add_location=None):
         """ returns a copy of the line.
@@ -341,8 +338,6 @@ def parse_lines_and_handle_imports(code, filename=None, namespaces=None, read_fi
 
     return new_lines
 
-
-
 def handle_conditional_lines(lines):
     ''' handle SET_CONDITION, RESET_CONDITION, USE_CODE_IF and USE_CODE_IF_NOT '''
     skip_line_mode = False
@@ -408,7 +403,7 @@ def extract_callback_lines(lines):
     callback_lines = []
     inside_callback = False
     for line in lines:
-        if re.match(r'\s*on\s+ui_control *\(', line.command):
+        if re.match(r'\s*on\s+(ui_control) *\(', line.command):
             inside_callback = True
             callback_lines.append(line)
         elif re.match(r'\s*end on\b', line.command):
@@ -548,7 +543,7 @@ class ASTModifierFixReferencesAndFamilies(ASTModifierBase):
             incdec = 'inc'
 
         # optimize "for x := 0 to N-1" into "while x < N" instead of the normal "while x <= N-1"
-        if not node.downto and isinstance(node.end, ksp_ast.BinOp) and node.end.op == '-' and isinstance(node.end.right, ksp_ast.Number) and node.end.right.value == 1:
+        if not node.downto and isinstance(node.end, ksp_ast.BinOp) and node.end.op == '-' and isinstance(node.end.right, ksp_ast.Integer) and node.end.right.value == 1:
             op = '<'
             node.end = node.end.left  # skip the -1 part (keep only the left operand)
 
@@ -680,7 +675,9 @@ class ASTModifierFixReferencesAndFamilies(ASTModifierBase):
                                                parent_families=parent_families + [str(node.name)]) for n in node.statements])
         return [node.statements]
 
-    def add_global_var(self, global_varname, is_ui_declaration):
+    def add_global_var(self, global_varname, modifiers):
+        is_ui_declaration = any([m for m in modifiers if m.startswith('ui_')])
+
         # add variable to list of variables
         variables.add(global_varname.lower())
 
@@ -703,7 +700,7 @@ class ASTModifierFixReferencesAndFamilies(ASTModifierBase):
         is_global = ('on_init' in func.name.identifier.lower() and not 'local' in node.modifiers) or ('global' in node.modifiers)
         if is_global:
             global_varname = node.variable.prefix + node.variable.identifier
-            self.add_global_var(global_varname, node.isUIDeclaration())
+            self.add_global_var(global_varname, node.modifiers)
             if 'global' in node.modifiers:
                 node.modifiers.remove('global')
 
@@ -729,7 +726,7 @@ class ASTModifierFixReferencesAndFamilies(ASTModifierBase):
                 var_index = len(func.taskfunc_declaration_statements) + 1
                 li = node.variable.lexinfo
                 func.locals_name_subst_dict[local_varname] = ksp_ast.VarRef(node.lexinfo, ksp_ast.ID(node.lexinfo, '%p'),
-                                                                            [ksp_ast.BinOp(li, ksp_ast.VarRef(li, ksp_ast.ID(li, '$fp')), '+', ksp_ast.Number(li, var_index))])
+                                                                            [ksp_ast.BinOp(li, ksp_ast.VarRef(li, ksp_ast.ID(li, '$fp')), '+', ksp_ast.Integer(li, var_index))])
             else:
                 # eg. map x to $_x
 
@@ -745,7 +742,7 @@ class ASTModifierFixReferencesAndFamilies(ASTModifierBase):
                 node.variable.prefix, node.variable.identifier = global_varname[0], global_varname[1:]
                 if 'local' in node.modifiers:
                     node.modifiers.remove('local')
-                self.add_global_var(global_varname, node.isUIDeclaration())
+                self.add_global_var(global_varname, node.modifiers)
 
         if is_global:
             func.global_declaration_statements.append(node)
@@ -791,7 +788,7 @@ class ASTModifierFixReferencesAndFamilies(ASTModifierBase):
             return lines
         else:
             vname = node.variable.prefix + node.variable.identifier.lower()
-            self.add_global_var(vname, node.isUIDeclaration())
+            self.add_global_var(vname, node.modifiers)
             return [node]
 
     def modifyVarRef(self, node, parent_function=None, function_params=None, parent_families=None, is_name_in_declaration=False):
@@ -846,8 +843,7 @@ class ASTModifierFixPrefixes(ASTModifierBase):
         return ASTModifierBase.modifyVarRef(self, node, parent_function=parent_function, parent_varref=node) # pass along a reference to what varref we're currently inside
 
     def modifyID(self, node, parent_function=None, parent_varref=None):
-        ''' Add a variable prefix (one of $, %, @ and !) to each variable based on the list of variables previously built '''
-
+        ''' Add a variable prefix (one of $, %, @, !, ? and ~) to each variable based on the list of variables previously built '''
         name = node.prefix + node.identifier
         first_part = name.split('.')[0]
         # if prefix is missing and this is not a function or family and does not start with a function parameter (eg. if a parameter is passed as param and then referenced as param__member)
@@ -857,12 +853,12 @@ class ASTModifierFixPrefixes(ASTModifierBase):
                                       name in properties or
                                       (parent_function and (first_part in parent_function.parameters or
                                                             parent_function.return_value and first_part == parent_function.return_value.identifier))):
-            possible_prefixes = [prefix for prefix in '$%@!'
+            possible_prefixes = [prefix for prefix in '$%@!?~'
                                  if prefix + name.lower() in variables or prefix + name in ksp_builtins.variables]
 
             # if there is a subscript then only array types are possible
             if parent_varref and parent_varref.subscripts:
-                possible_prefixes = [p for p in possible_prefixes if p not in '$@']
+                possible_prefixes = [p for p in possible_prefixes if p not in '$@~']
 
             if len(possible_prefixes) == 0:
                 raise ksp_ast.ParseException(node, "%s has not been declared!" % name)
@@ -1008,9 +1004,15 @@ class ASTModifierNameFixer(ASTModifierBase):
         ASTModifierBase.__init__(self, modify_expressions=True)
         self.traverse(ast)
 
+    def replace_dots_in_name(self, name):
+        ''' Replaces . by __ in name'''
+        return name.replace('.', '__')
+
     def modifyID(self, node, *args, **kwargs):
-        ''' Replaces . by __ in names '''
-        node.identifier = node.identifier.replace('.', '__')
+        orig = node.identifier
+        x = self.replace_dots_in_name(node.identifier)
+        if '.' in node.identifier:
+            node.identifier = node.identifier.replace('.', '__')
         return node
 
 
@@ -1182,12 +1184,12 @@ class ASTModifierFunctionExpander(ASTModifierBase):
             if func.parameter_types[i] not in ('out', 'ref'):
                 li = param.lexinfo
                 p_ref = ksp_ast.VarRef(li, ksp_ast.ID(li, '%p'),
-                                       [ksp_ast.BinOp(li, ksp_ast.VarRef(li, ksp_ast.ID(li, '$sp')), '-', ksp_ast.Number(li, idx))])
+                                       [ksp_ast.BinOp(li, ksp_ast.VarRef(li, ksp_ast.ID(li, '$sp')), '-', ksp_ast.Integer(li, idx))])
                 prologue.append(ksp_ast.AssignStmt(li, p_ref, param))
             if isinstance(param, ksp_ast.VarRef) and func.parameter_types[i] in ('out', 'var'):
                 li = param.lexinfo
                 p_ref = ksp_ast.VarRef(li, ksp_ast.ID(li, '%p'),
-                                       [ksp_ast.BinOp(li, ksp_ast.VarRef(li, ksp_ast.ID(li, '$sp')), '-', ksp_ast.Number(li, idx))])
+                                       [ksp_ast.BinOp(li, ksp_ast.VarRef(li, ksp_ast.ID(li, '$sp')), '-', ksp_ast.Integer(li, idx))])
                 epilogue.append(ksp_ast.AssignStmt(li, param, p_ref))
         return (prologue, epilogue)
 
@@ -1272,7 +1274,7 @@ class ASTModifierTaskfuncFunctionHandler(ASTModifierBase):
 
     def modifyFunctionDef(self, node, parent_taskfunc_function=None, assign_stmt_lhs=None):
         ''' Add to context info about which taskfunc function we are currently inside '''
-        ID, BinOp, Number, VarRef, AssignStmt, FunctionCall = ksp_ast.ID, ksp_ast.BinOp, ksp_ast.Number, ksp_ast.VarRef, ksp_ast.AssignStmt, ksp_ast.FunctionCall
+        ID, BinOp, Integer, VarRef, AssignStmt, FunctionCall = ksp_ast.ID, ksp_ast.BinOp, ksp_ast.Integer, ksp_ast.VarRef, ksp_ast.AssignStmt, ksp_ast.FunctionCall
         if not node.is_taskfunc:
             return node
 
@@ -1287,7 +1289,7 @@ class ASTModifierTaskfuncFunctionHandler(ASTModifierBase):
         for i, param in enumerate(params):
             frame_offset = i + len(node.taskfunc_declaration_statements) + 1
             # replace locally declared 'x' with '%p[$fp + <var_index>'
-            p_ref = VarRef(li, ID(li, '%p'), [BinOp(li, VarRef(li, ID(li, '$fp')), '+', Number(li, frame_offset))])
+            p_ref = VarRef(li, ID(li, '%p'), [BinOp(li, VarRef(li, ID(li, '$fp')), '+', Integer(li, frame_offset))])
             name_subst_dict[str(param)] = p_ref
 
         # apply name substitutions to a copy of the function
@@ -1297,10 +1299,10 @@ class ASTModifierTaskfuncFunctionHandler(ASTModifierBase):
         Pxmax = len(params)
         Txmax = len(node.taskfunc_declaration_statements)
         Ta = Pxmax + Txmax + 1
-        line0 = AssignStmt(li, VarRef(li, ID(li, '%p'), [BinOp(li, VarRef(li, ID(li, '$sp')), '-', Number(li, Ta))]), VarRef(li, ID(li, '$fp')))
-        line1 = AssignStmt(li, VarRef(li, ID(li, '$fp')), BinOp(li, VarRef(li, ID(li, '$sp')), '-', Number(li, Ta)))
+        line0 = AssignStmt(li, VarRef(li, ID(li, '%p'), [BinOp(li, VarRef(li, ID(li, '$sp')), '-', Integer(li, Ta))]), VarRef(li, ID(li, '$fp')))
+        line1 = AssignStmt(li, VarRef(li, ID(li, '$fp')), BinOp(li, VarRef(li, ID(li, '$sp')), '-', Integer(li, Ta)))
         line2 = AssignStmt(li, VarRef(li, ID(li, '$sp')), VarRef(li, ID(li, '$fp')))
-        #line2 = AssignStmt(li, VarRef(li, ID(li, '$sp')), BinOp(li, VarRef(li, ID(li, '$fp')), '-', Number(li, Txmax)))
+        #line2 = AssignStmt(li, VarRef(li, ID(li, '$sp')), BinOp(li, VarRef(li, ID(li, '$fp')), '-', Integer(li, Txmax)))
         node.lines.insert(0, line0)
         node.lines.insert(1, line1)
         node.lines.insert(2, line2)
@@ -1313,7 +1315,7 @@ class ASTModifierTaskfuncFunctionHandler(ASTModifierBase):
         # epilogue
         line0 = AssignStmt(li, VarRef(li, ID(li, '$sp')), VarRef(li, ID(li, '$fp')))
         line1 = AssignStmt(li, VarRef(li, ID(li, '$fp')), VarRef(li, ID(li, '%p'), [VarRef(li, ID(li, '$fp'))]))
-        line2 = AssignStmt(li, VarRef(li, ID(li, '$sp')), BinOp(li, VarRef(li, ID(li, '$sp')), '+', Number(li, Ta)))
+        line2 = AssignStmt(li, VarRef(li, ID(li, '$sp')), BinOp(li, VarRef(li, ID(li, '$sp')), '+', Integer(li, Ta)))
         #line3 = AssignStmt(li, VarRef(li, ID(li, '%tstate.ues'), [VarRef(li, ID(li, '$tx'))]), VarRef(li, ID(li, '$sp')))
         node.lines.append(line0)
         node.lines.append(line1)
@@ -1466,7 +1468,7 @@ class KSPCompiler(object):
         self.short2original = {}
 
         self.output_file = None
-        self.variable_names_to_preserve = []
+        self.variable_names_to_preserve = set()
 
     def do_imports_and_convert_to_line_objects(self):
         # if the code contains tcm.init, then add taskfunc code at the end
@@ -1546,14 +1548,14 @@ class KSPCompiler(object):
         # find info about which variable names not to compact
         pragma_re = re.compile(r'\{ ?\#pragma\s+preserve_names\s+(.*?)\s*\}')
         for m in pragma_re.finditer(code):
-            names = re.sub(r'[$!%@]', '', m.group(1))  # remove any prefixes
+            names = re.sub(r'[$!%@?~]', '', m.group(1))  # remove any prefixes
             for variable_name_pattern in re.split(r'\s+,?\s*|\s*,\s+|,', names):
                 if len(variable_name_pattern) == 0:
                     continue
                 if namespaces:
                     variable_name_pattern = '__'.join(namespaces + [variable_name_pattern])
                 variable_name_pattern = variable_name_pattern.replace('.', '__').replace('*', '.*')
-                self.variable_names_to_preserve.append(variable_name_pattern)
+                self.variable_names_to_preserve.add(variable_name_pattern)
         return code
 
     def parse_code(self):
@@ -1590,14 +1592,17 @@ class KSPCompiler(object):
         # convert all dots into '__' (and update the list of variables accordingly)
         # Note: for historical reasons the ksp_compiler_extras functions assume
         # pure KSP as input and therefor cannot handle '.' in names.
-        ASTModifierNameFixer(self.module)
-        variables = set([v.replace('.', '__') for v in variables])
+
+        # updated the AST
+        name_fixer = ASTModifierNameFixer(self.module)
+        # updated the global list of variables similarly
+        variables = set(name_fixer.replace_dots_in_name(v) for v in variables)
 
     def compact_names(self):
         global variables
 
         # build regular expression that can later tell which names to preserve (these should not undergo compaction)
-        preserve_pattern = re.compile(r'[$%@!]?(' + '|'.join(self.variable_names_to_preserve) + ')$', re.I)
+        preserve_pattern = re.compile(r'[$%@!?~]?(' + '|'.join(self.variable_names_to_preserve) + ')$', re.I)
 
         for v in variables:
             if self.variable_names_to_preserve and preserve_pattern.match(v):
@@ -1609,7 +1614,7 @@ class KSPCompiler(object):
                 if self.original2short[v] in ksp_builtins.variables:
                     raise Exception('This is your unlucky day. Even though the chance is only 3.2%%%% the variable %s was mapped to the same hash as that of a builtin KSP variable.' % (v))
                 if self.original2short[v] in self.short2original:
-                    raise Exception('This is your unlucky day. Even though the chance is only 3.2%%%% two variable names were compacted to the same short name: %s and %s' % (v, self.short2original[short_varnames[v]]))  # TODO: fix the message
+                    raise Exception('This is your unlucky day. Even though the chance is only 3.2%%%% two variable names were compacted to the same short name: %s and %s' % (v, self.short2original[self.original2short[v]]))
                 self.short2original[self.original2short[v]] = v
         ASTModifierIDSubstituter(self.original2short, force_lower_case=True).modify(self.module)
 
@@ -1679,21 +1684,18 @@ class KSPCompiler(object):
                  ('generate code',               self.generate_compiled_code,                                                 True,      1),
             ]
 
-
             # keep only tasks where the execution-condition is true
-            tasks = [(desc, func, task_time) for (desc, func, condition, task_time) in tasks if condition]
+            tasks = [(desc, func, time) for (desc, func, condition, time) in tasks if condition]
 
             total_time = float(sum(t[-1] for t in tasks))
             time_so_far = 0
-            for (desc, func, task_time) in tasks:
-                # start_time = time.time()
+            for (desc, func, time) in tasks:
                 if callback:
                     callback(desc, 100 * time_so_far/total_time) # parameters are: description, percent done
                 func()
-                time_so_far += task_time
+                time_so_far += time
                 if self.abort_requested:
                     return False
-                # print(desc + "  ==  " + str(time.time() - start_time))
             return True
         except ksp_ast.ParseException as e:
             #raise  # TEMPORARY
@@ -1712,23 +1714,94 @@ class KSPCompiler(object):
         self.abort_requested = True
 
 if __name__ == "__main__":
-    #os.chdir(r'D:\PythonProj\KScript EditorNewTest\test scripts')
-    #code = open('test23.txt').read()
-    def callback(*args):
-        print(args)
-    code = '''
-on init
-  declare x
-  message(test(x))
-end on
+    import sys
+    import os
+    import os.path
+    import codecs
+    import argparse
 
-function test(n) -> result
-  result := n*n
-end function
-'''
-    compiler = KSPCompiler(code, optimize=False, extra_syntax_checks=True, compactVars=True)
-    compiler.compile(callback)
-    print()
-    print(compiler.compiled_code)
-    #for k in compile(code):
-    #    print k
+    # definition of argsparse.FileType in Python 3.4 (with support for encoding) - in case we're running Python 3.3
+    class FileType(object):
+
+        def __init__(self, mode='r', bufsize=-1, encoding=None, errors=None):
+            self._mode = mode
+            self._bufsize = bufsize
+            self._encoding = encoding
+            self._errors = errors
+
+        def __call__(self, string):
+            # the special argument "-" means sys.std{in,out}
+            if string == '-':
+                if 'r' in self._mode:
+                    return sys.stdin
+                elif 'w' in self._mode:
+                    return sys.stdout
+                else:
+                    msg = _('argument "-" with mode %r') % self._mode
+                    raise ValueError(msg)
+
+            # all other arguments are used as file names
+            try:
+                return open(string, self._mode, self._bufsize, self._encoding, self._errors)
+            except OSError as e:
+                message = _("can't open '%s': %s")
+                raise ArgumentTypeError(message % (string, e))
+
+        def __repr__(self):
+            args = self._mode, self._bufsize
+            kwargs = [('encoding', self._encoding), ('errors', self._errors)]
+            args_str = ', '.join([repr(arg) for arg in args if arg != -1] +
+                                 ['%s=%r' % (kw, arg) for kw, arg in kwargs
+                                  if arg is not None])
+            return '%s(%s)' % (type(self).__name__, args_str)
+
+    # parse command line arguments
+    arg_parser = argparse.ArgumentParser()
+    arg_parser.add_argument('--compact', dest='compact', action='store_true', help='minimize whitespace in compiled code')
+    arg_parser.add_argument('--compact_variables', dest='compact_variables', action='store_true', help='shorten and obfuscate variable names')
+    arg_parser.add_argument('--extra_syntax_checks', dest='extra_syntax_checks', action='store_true')
+    arg_parser.add_argument('--optimize', dest='optimize', action='store_true', help='optimize the generated code')
+    arg_parser.add_argument('source_file', type=FileType('r', encoding='latin-1'))
+    arg_parser.add_argument('output_file', type=FileType('w', encoding='latin-1'), nargs='?')
+    args = arg_parser.parse_args()
+
+    # determine the base directory of the source file
+    if args.source_file.name != '<stdin>':
+        basedir = os.path.dirname(args.source_file.name)
+    else:
+        basedir = None
+
+    # function for reading imported modules
+    def read_file_func(filepath):
+        if not os.path.isabs(filepath):
+            if basedir is None:
+                raise Exception('Relative import paths not supported when the base path of the source file is unknown')
+            else:
+                filepath = os.path.join(basedir, filepath)
+        return codecs.open(filepath, 'r', 'latin-1').read()
+
+    # read the source and compile it
+    code = args.source_file.read()
+    compiler = KSPCompiler(
+        code,
+        compact=args.compact,
+        compactVars=args.compact_variables,
+        comments_on_expansion=False,
+        read_file_func=read_file_func,
+        extra_syntax_checks=args.extra_syntax_checks,
+        optimize=args.optimize,
+        check_empty_compound_statements=False)
+    compiler.compile()
+
+    # write the compiled code to output
+    code = compiler.compiled_code.replace('\r', '')
+    output = args.output_file
+    if output is None:
+        output_path = compiler.output_file
+        if not os.path.isabs(output_path):
+            output_path = os.path.join(basedir, output_path)
+        output = codecs.open(output_path, 'w', encoding='latin-1')
+    if output:
+        output.write(code)
+
+
