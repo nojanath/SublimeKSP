@@ -24,6 +24,7 @@ from taskfunc import taskfunc_code
 from collections import OrderedDict
 import hashlib
 import ply.lex as lex
+# NOTE(Sam): include preprocessor and logger
 from logger import logger_code
 import time
 from preprocessor_plugins import pre_macro_functions, post_macro_functions
@@ -117,6 +118,7 @@ def split_args(arg_string, line):
     cur_arg = ''
     unmatched_left_paren = 0
     for ch in arg_string + ',':    # extra ',' to include the last argument
+        # square brackets are also checked as there may be commas in them (for properties/2D arrays)
         if ch == '(' or ch == '[':
             unmatched_left_paren += 1
         elif ch == ')' or ch == ']':
@@ -222,7 +224,7 @@ class Macro:
 
     def get_macro_name_and_parameters(self):
         """ returns the function name, parameter list, and result variable (or None) as a tuple """
-        param = white_space + r'([$%@!]?[\w\.]+|#[\w\.]+#)' + white_space
+        param = white_space + r'([$%@!?~]?[\w\.]+|#[\w\.]+#)' + white_space
         params = r'%s(,%s)*' % (param, param)
         m = re.match(r'^\s*macro\s+(?P<name>[a-zA-Z0-9_]+(\.[a-zA-Z_0-9.]+)*)\s*(?P<params>\(%s\))?' % params, self.lines[0].command)
         if not m:
@@ -1621,6 +1623,7 @@ class KSPCompiler(object):
         self.module.emit(emitter)
         self.compiled_code = buffer.getvalue()
 
+        # NOTE(Sam): Add a ksp comment at the beginning of the compiled script to display the time and date it was compiled on
         localtime = time.asctime( time.localtime(time.time()) )
         self.compiled_code = "{ Compiled on " + localtime + " }\n" + self.compiled_code
 
