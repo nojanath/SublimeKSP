@@ -32,8 +32,6 @@ from preprocessor_plugins import pre_macro_functions, post_macro_functions
 variable_prefixes = '$%@!'
 
 # regular expressions:
-new_comment_re = r'(?<!["\'])\/\/.*' # this is a single line new comment type // 
-var_prefix_re = r"[%!@$]"
 white_space = r'(?ms)(\s*(\{[^\n]*?\})?\s*)' # regexp for normal white space/comments
 comment_re = re.compile(r'(?<!["\'])\{.*?\}|\(\*.*?\*\)', re.DOTALL)   # if { is preceeded by ' or " don't treat it as a comment
 string_re = re.compile(r'".*?(?<!\\)"|' + r"'.*?(?<!\\)'")
@@ -276,6 +274,7 @@ def parse_lines(s, filename=None, namespaces=None):
     lines = s.replace('\r\n', '\n').replace('\r', '\n').split('\n')
     # encode lines numbers as '[[[lineno]]]' at the beginning of each line
     lines = ['[[[%.5d]]]%s' % (lineno+1, x) for (lineno, x) in enumerate(lines)]
+    # NOTE(Sam): Remove any occurances of the new comment type //
     for i in range(len(lines)):
         m = re.search(r"^(?:(?!\/\/|[\"\']).|[\"\'][^\"\']*[\"\'])*(\/\/.*$)", lines[i])
         if m:
@@ -283,7 +282,6 @@ def parse_lines(s, filename=None, namespaces=None):
     s = '\n'.join(lines)
 
     # remove comments and multi-line indicators ('...\n')
-    # s = re.sub(new_comment_re, '', s)
     s = comment_re.sub('', s)
     s = line_continuation_re.sub('', s)
 
@@ -1474,14 +1472,14 @@ class KSPCompiler(object):
         if re.search(r'(?m)^\s*tcm.init', self.source):
             source = source + taskfunc_code
 
-            # (?m)^\w:(\/[a-zA-Z_\-\s0-9\.]+)*\/$
-            # (?m)^\w:(\/[a-zA-Z_\-\s0-9\.]+)*\.nka$
-
-        # if the code contain activate_logger, then add the extra code
+        # NOTE(Sam): Handle the activate_logger case, similarly to tcm.init, if the keyword is found in the init callback,
+        # the logger ksp code is imported into this script
+        # if the code contains activate_logger, then add the extra code
         m = re.search(r"(?m)^\s*activate_logger.*\)", source)
         if m:
             amended_logger_code = logger_code
 
+            new_comment_re = r'(?<!["\'])\/\/.*' # this is a single line new comment type // 
             activate_line = m.group(0).strip()
             activate_line = re.sub(new_comment_re, '', activate_line)
             filepath_m = re.search(r"\".*\"", str(activate_line))
@@ -1490,25 +1488,25 @@ class KSPCompiler(object):
             filepath = filepath_m.group(0).replace("\"", "")
             valid_file_path_flag = False
             if re.search(r"(?m)^(?:\w:)?(\/[a-zA-Z_\-\s0-9\.]+)*\.nka$", filepath):
-            # if re.search(r"(?m)^(\/[a-zA-Z_\-\s0-9\.]+)*\.nka$", filepath):
                 valid_file_path_flag = True
                 m = re.search(r"/[^/]*.nka", filepath)
                 filename = "_" + m.group(0).replace("/", "").replace(".nka", "").replace("-", "")
                 filename = re.sub(r"\s", "", filename)
                 amended_logger_code = amended_logger_code.replace("#name#", filename)
             if re.search(r"(?m)^(?:\w:)?(\/[a-zA-Z_\-\s0-9\.]+)*\/$", filepath):
-            # if re.search(r"(?m)^(\/[a-zA-Z_\-\s0-9\.]+)*\/$", filepath):
                 valid_file_path_flag = True
                 amended_logger_code = amended_logger_code.replace("#name#", "logger").replace("logger_filepath := filepath", "logger_filepath := filepath & \"logger.nka\"")
             if valid_file_path_flag == False:
                 raise ParseException(Line("", [(None, 1)], None), 'Filepath of activate_logger is invalid.\nFilepaths must be in this format: "C:/Users/Name/LogFile.nka" or "/Users/Name/LogFile.nka"')
             source = source + amended_logger_code
 
+            # add the stuff to the persistence changed callback
             m = re.search(r"(?m)^\s*on\s+persistence_changed", source)
             if m:
                 persistence_end = source.find("end on", m.end())
                 source = source[: persistence_end] + "\ncheckPrintFlag()\n" + source[persistence_end :]
             else:
+                # if there is no persistence_changed callback then generate one
                 source = source + "\non persistence_changed\ncheckPrintFlag()\nend on\n"            
 
 
@@ -1518,6 +1516,8 @@ class KSPCompiler(object):
         handle_conditional_lines(self.lines)
 
 
+    # NOTE(Sam): Previously done in the expand_macros function, the lines are converted into a block in separately
+    # because the preprocessor needs to be called after the macros and before this.
     def convert_lines_to_code(self):
         # replace placeholder strings
         for line in self.lines:
@@ -1645,32 +1645,35 @@ class KSPCompiler(object):
             do_optim = self.extra_syntax_checks and self.optimize
             #     (description,                  function,                                                                    condition, time-weight)
             tasks = [
-                 ('scanning and importing code',        lambda: self.do_imports_and_convert_to_line_objects(),                       True,      1),
+                 ('scanning and importing code', lambda: self.do_imports_and_convert_to_line_objects(),                       True,      1),
+                 # NOTE(Sam): Call the pre-macro section of the preprocessor
                  ('pre-macro preprocessor plugins',     lambda: pre_macro_functions(self.lines),                  True,      1),
-                 ('expand macros',                      lambda: self.expand_macros(),                                                True,      1),
+                 ('expand macros',               lambda: self.expand_macros(),                                                True,      1),
+                 # NOTE(Sam): Call the post-macro section of the preprocessor
                  ('post-macro preprocessor plugins',    lambda: post_macro_functions(self.lines),                 True,      1),
+                 # NOTE(Sam): Convert the lines to a block in a separate function
                  ('convert lines to code block',        lambda: self.convert_lines_to_code(),                                         True,      1),
-                 ('parse code',                         lambda: self.parse_code(),                                                   True,      1),
-                 ('various tasks',                      lambda: ASTModifierFixReferencesAndFamilies(self.module, self.lines),        True,      1),
-                 ('add variable name prefixes',         lambda: ASTModifierFixPrefixesIncludingLocalVars(self.module),               True,      1),
-                 ('inline functions',                   lambda: ASTModifierFunctionExpander(self.module),                            True,      1),
-                 ('handle taskfunc',                    lambda: ASTModifierTaskfuncFunctionHandler(self.module),                     True,      1),
-                 ('handle local variables',             lambda: self.sort_functions_and_insert_local_variables_into_on_init(),       True,      1),
-                 ('add variable name prefixes',         lambda: ASTModifierFixPrefixesAndFixControlPars(self.module),                True,      1),
-                 ('convert dots to underscore',         lambda: self.convert_dots_to_double_underscore(),                            True,      1),
-                 ('init extra syntax checks',           lambda: self.init_extra_syntax_checks(),                                     do_extra,  1),
-                 ('check types',                        lambda: comp_extras.ASTVisitorDetermineExpressionTypes(self.module),         do_extra,  1),
-                 ('check types',                        lambda: comp_extras.ASTVisitorCheckStatementExprTypes(self.module),          do_extra,  1),
-                 ('check declarations',                 lambda: comp_extras.ASTVisitorCheckDeclarations(self.module),                do_extra,  1),
-                 ('simplying expressions',              lambda: comp_extras.ASTModifierSimplifyExpressions(self.module, True),       do_optim,  1),
-                 ('removing unused branches',           lambda: comp_extras.ASTModifierRemoveUnusedBranches(self.module),            do_optim,  1),
-                 ('removing unused functions',          lambda: comp_extras.ASTVisitorFindUsedFunctions(self.module, used_functions),      do_optim, 1),
-                 ('removing unused functions',          lambda: comp_extras.ASTModifierRemoveUnusedFunctions(self.module, used_functions), do_optim, 1),
-                 ('removing unused variables',          lambda: comp_extras.ASTVisitorFindUsedVariables(self.module, used_variables),      do_optim, 1),
-                 ('removing unused variables',          lambda: comp_extras.ASTModifierRemoveUnusedVariables(self.module, used_variables), do_optim, 1),
-                 ('checking empty if-stmts',            lambda: comp_extras.ASTVisitorCheckNoEmptyIfCaseStatements(self.module),     self.check_empty_compound_statements, 1),
-                 ('compact variable names',             self.compact_names,                                                          self.compactVars, 1),
-                 ('generate code',                      self.generate_compiled_code,                                                 True,      1),
+                 ('parse code',                  lambda: self.parse_code(),                                                   True,      1),
+                 ('various tasks',               lambda: ASTModifierFixReferencesAndFamilies(self.module, self.lines),        True,      1),
+                 ('add variable name prefixes',  lambda: ASTModifierFixPrefixesIncludingLocalVars(self.module),               True,      1),
+                 ('inline functions',            lambda: ASTModifierFunctionExpander(self.module),                            True,      1),
+                 ('handle taskfunc',             lambda: ASTModifierTaskfuncFunctionHandler(self.module),                     True,      1),
+                 ('handle local variables',      lambda: self.sort_functions_and_insert_local_variables_into_on_init(),       True,      1),
+                 ('add variable name prefixes',  lambda: ASTModifierFixPrefixesAndFixControlPars(self.module),                True,      1),
+                 ('convert dots to underscore',  lambda: self.convert_dots_to_double_underscore(),                            True,      1),
+                 ('init extra syntax checks',    lambda: self.init_extra_syntax_checks(),                                     do_extra,  1),
+                 ('check types',                 lambda: comp_extras.ASTVisitorDetermineExpressionTypes(self.module),         do_extra,  1),
+                 ('check types',                 lambda: comp_extras.ASTVisitorCheckStatementExprTypes(self.module),          do_extra,  1),
+                 ('check declarations',          lambda: comp_extras.ASTVisitorCheckDeclarations(self.module),                do_extra,  1),
+                 ('simplying expressions',       lambda: comp_extras.ASTModifierSimplifyExpressions(self.module, True),       do_optim,  1),
+                 ('removing unused branches',    lambda: comp_extras.ASTModifierRemoveUnusedBranches(self.module),            do_optim,  1),
+                 ('removing unused functions',   lambda: comp_extras.ASTVisitorFindUsedFunctions(self.module, used_functions),      do_optim, 1),
+                 ('removing unused functions',   lambda: comp_extras.ASTModifierRemoveUnusedFunctions(self.module, used_functions), do_optim, 1),
+                 ('removing unused variables',   lambda: comp_extras.ASTVisitorFindUsedVariables(self.module, used_variables),      do_optim, 1),
+                 ('removing unused variables',   lambda: comp_extras.ASTModifierRemoveUnusedVariables(self.module, used_variables), do_optim, 1),
+                 ('checking empty if-stmts',     lambda: comp_extras.ASTVisitorCheckNoEmptyIfCaseStatements(self.module),     self.check_empty_compound_statements, 1),
+                 ('compact variable names',      self.compact_names,                                                          self.compactVars, 1),
+                 ('generate code',               self.generate_compiled_code,                                                 True,      1),
             ]
 
 
