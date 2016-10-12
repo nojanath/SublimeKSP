@@ -73,6 +73,43 @@ end on'''
             output = do_compile(code)
             self.assertTrue(expected_output in output)
 
+class Precedence(unittest.TestCase):
+    def testBinaryPrecedence1(self):
+        code = '''
+            on init
+                declare x
+                declare y
+                declare z
+                message((x .or. y) .and. z)
+            end on'''
+        expected_output = '''on init
+declare $x
+declare $y
+declare $z
+message(($x .or. $y) .and. $z)
+end on
+'''
+        output = do_compile(code)
+        self.assertEqual(expected_output, output)
+
+#     def testBinaryPrecedence2(self):
+#         code = '''
+#             on init
+#                 declare x
+#                 declare y
+#                 declare z
+#                 message(x .or. (y .and. z))
+#             end on'''
+#         expected_output = '''on init
+# declare $x
+# declare $y
+# declare $z
+# message($x .or. ($y .and. $z))
+# end on
+# '''
+        output = do_compile(code)
+        self.assertEqual(expected_output, output)
+
 class VariableNotDeclared(unittest.TestCase):
     def testUndeclaredVariableInOnInit(self):
         code = '''
@@ -1132,6 +1169,75 @@ class OptimizationModeChecks(unittest.TestCase):
         self.assertTrue('declare $xyz' not in output)
         self.assertTrue('fn2' not in output)
 
+    def testBinaryExpressions1(self):
+        code = '''
+            on init
+                declare x
+                if 1 # 0 or x = 9
+                    message('test')
+                end if
+            end on
+        '''
+        output = do_compile(code, optimize=True)
+        self.assertTrue('2 # 0' not in output)
+
+    def testBinaryExpressions2(self):
+        code = '''
+            on init
+                declare x
+                if 1 = 0 and x = 9
+                    message('test')
+                end if
+            end on
+        '''
+        output = do_compile(code, optimize=True)
+        self.assertTrue('message' not in output)
+
+    def testBinaryExpressions3(self):
+        code = '''
+            on init
+                declare x
+                message(0*x)
+            end on
+        '''
+        output = do_compile(code, optimize=True)
+        self.assertTrue('message(0)' in output)
+
+    def testBinaryExpressions4(self):
+        code = '''
+            on init
+                declare x
+                message(x*1)
+            end on
+        '''
+        output = do_compile(code, optimize=True)
+        self.assertTrue('message($x)' in output)
+
+    def testBinaryExpressions5(self):
+        code = '''
+            on init
+                declare x
+                message(0+x)
+            end on
+        '''
+        output = do_compile(code, optimize=True)
+        self.assertTrue('message($x)' in output)
+
+    def testIfOneEqualsOne(self):
+        code = '''
+            on init
+                if 1=1
+                    message("test1")
+                end if
+                if 2=2
+                    message("test2")
+                end if
+            end on
+        '''
+        output = do_compile(code, optimize=True)
+        self.assertTrue('if (1=1)' in output)
+        self.assertTrue('2=2' not in output)
+
 class PropertyTests(unittest.TestCase):
     def testAlias1(self):
         code = '''
@@ -1666,8 +1772,120 @@ class TestTaskfunc(unittest.TestCase):
         '''
         self.assertRaises(ParseException, do_compile, code, optimize=True)
 
-if __name__ == "__main__":
-    unittest.main()
+class K6Features(unittest.TestCase):
 
-#dms function cannot directly/indirectly invoke wait (other than inside t.wait)
-    #cannot invoke dms function without call (or never with call?)
+    def testDeclaration(self):
+            code = '''on init
+                declare ~x := 1.0e6
+                declare ?y[10]
+                y[5] := 3.3
+            end on'''
+            expected_output = '''on init
+declare ~x := 1.0e6
+declare ?y[10]
+?y[5] := 3.3
+end on
+'''
+            output = do_compile(code)
+            self.assertEqual(expected_output, output)
+
+    def testRealArithmetics(self):
+            code = '''on init
+                declare ~x := 1.1 * 2.2 * NI_MATH_PI
+            end on'''
+            expected_output = '''on init
+declare ~x := 1.1*2.2*~NI_MATH_PI
+end on
+'''
+            output = do_compile(code)
+            self.assertEqual(expected_output, output)
+
+    def testNegativeReal(self):
+        code = '''on init
+            declare ~x := -0.001
+            message(x)
+        end on'''
+        expected_output = '''on init
+declare ~x := -0.001
+message(~x)
+end on
+'''
+        output = do_compile(code, optimize=True)
+        self.assertEqual(expected_output, output)
+
+    def testAssignRealToString(self):
+            code = '''on init
+                declare ~x := 9.9
+                declare @y
+                y := x
+            end on'''
+            expected_output = '''on init
+declare ~x := 9.9
+declare @y
+@y := ~x
+end on
+'''
+            output = do_compile(code)
+            self.assertEqual(expected_output, output)
+
+    def testIncorrectlyMixedRealAndInteger(self):
+            code = '''on init
+                declare ~x := 5 * 2.333
+                message(~x)
+            end on'''
+            #output = do_compile(code, optimize=True, extra_syntax_checks=True)
+            #print (output)
+            self.assertRaises(ParseException, do_compile, code, optimize=True, extra_syntax_checks=True)
+
+    def testFunctionWithMultipleArgTypes(self):
+            code = '''on init
+                message(abs(-4.1))
+                message(abs(-4))
+            end on'''
+            expected_output = '''on init
+message(abs(-4.1))
+message(abs(-4))
+end on
+'''
+            output = do_compile(code)
+            self.assertEqual(expected_output, output)
+
+    def testRealArithmeticsOptimization1(self):
+            code = '''on init
+                message(1.1 * 2.2)
+            end on'''
+            expected_output = '''on init
+message(2.42)
+end on
+'''
+            output = do_compile(code, extra_syntax_checks=True, optimize=True)
+            self.assertEqual(expected_output, output)
+
+    def testRealArithmeticsOptimization2(self):
+            code = '''on init
+                declare const ~x := 2.5
+                message(3.0*~x)
+            end on'''
+            expected_output = '''on init
+message(7.5)
+end on
+'''
+            output = do_compile(code, extra_syntax_checks=True, optimize=True)
+            self.assertEqual(expected_output, output)
+
+    def testRealConversionOptimized(self):
+            code = '''on init
+                declare const x := real_to_int(3.7)
+                declare const ~y := int_to_real(3)
+                message(x)
+                message(y)
+            end on'''
+            expected_output = '''on init
+message(3)
+message(3.0)
+end on
+'''
+            output = do_compile(code, extra_syntax_checks=True, optimize=True)
+            self.assertEqual(expected_output, output)
+
+

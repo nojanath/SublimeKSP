@@ -30,13 +30,13 @@ data = {'variables': variables,
         'functions_with_forced_parenthesis': functions_with_forced_parenthesis}
 
 section = None
-try:
-    builtins_data = pkgutil.get_data('ksp_compiler', 'builtins.txt')
-    if builtins_data is None:
-        builtins_data = open('ksp_builtins.txt', 'r').read()
-except:
-    from ksp_builtins_data import builtins_data
-    #builtins_data = open('ksp_builtins.txt', 'r').read()
+#try:
+#    builtins_data = pkgutil.get_data('ksp_compiler', 'builtins.txt')
+#    if builtins_data is None:
+#        builtins_data = open('ksp_builtins.txt', 'r').read()
+#except:
+from ksp_builtins_data import builtins_data
+
 lines = builtins_data.replace('\r\n', '\n').split('\n')
 ##lines = open('builtins.txt', 'r').read().replace('\r\n', '\n').split('\n')
 for line in lines:

@@ -828,6 +828,29 @@ zone_slice_idx_loop_start(<zone-ID>,<loop-index>):integer
 zone_slice_length(<zone-ID>,<slice-index>):integer
 zone_slice_loop_count(<zone-ID>,<loop-index>):integer
 zone_slice_start(<zone-ID>,<slice-index>):integer
+set_voice_limit(<hq_mode>,<limit>)
+real_to_int(<real-value>):integer
+int_to_real(<integer>):real
+abs(<real-value>):real
+exp(<real-value>):real
+log(<real-value>):real
+pow(<real-value>,<real-value>):real
+sqrt(<real-value>):real
+ceil(<real-value>):real
+floor(<real-value>):real
+round(<real-value>):real
+cos(<real-value>):real
+sin(<real-value>):real
+tan(<real-value>):real
+acos(<real-value>):real
+asin(<real-value>):real
+atan(<real-value>):real
+connect_view(<path variable>)
+set_interface_color(<color>)
+set_ui_width_px(<width>)
+by_track(<track>):integer
+get_voice_limit(<voice-type>):integer
+set_ui_color(<hex-value>)
 
 [functions_with_forced_parenthesis]
 mf_reset

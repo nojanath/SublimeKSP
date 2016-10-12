@@ -15,6 +15,7 @@
 import sys, types
 import ply.lex as lex
 import copy
+from decimal import Decimal
 from ksp_builtins import functions_with_forced_parenthesis
 
 precedence = {  '&' :  0,
@@ -22,8 +23,8 @@ precedence = {  '&' :  0,
                 'and': 2,
                 'not': 3,
                 '=': 4, '<': 4, '>': 4, '<=': 4, '>=': 4, '#': 4,
-                '.and.': 5,
-                '.or.': 6,
+                '.or.': 5,   # Note: earlier .or. and .and. precedence was incorrectly reversed
+                '.and.': 6,  # Note: earlier .or. and .and. precedence was incorrectly reversed
                 '.not.': 7,
                 '+': 8, '-': 8,
                 '*': 9, '/': 9, 'mod': 9,
@@ -55,7 +56,7 @@ class Emitter:
         if self.compact:
             indent = ''
         else:
-            indent = '  ' * self.indent_num
+            indent = ' ' * self.indent_num
         for (i, line) in enumerate(lines):
             if line:
                 if self.beginning_of_line:
@@ -101,6 +102,7 @@ class ParseException(SyntaxError):
                     break
         self.lineno = lineno
         self.node = node
+        self.msg = msg
         SyntaxError.__init__(self, msg)
 
 class ASTNode:
@@ -229,22 +231,22 @@ class FunctionDef(TopLevelBlock):
         out.writeln('end function')
 
 class Callback(TopLevelBlock):
-    def __init__(self, lexinfo, name, lines=None, ui_control=None):
+    def __init__(self, lexinfo, name, lines=None, variable=None):
         TopLevelBlock.__init__(self, lexinfo, name, lines)
-        self.ui_control = None
-        if ui_control:
-            self.ui_control = ID(lexinfo, ui_control)
+        self.variable = None
+        if variable:
+            self.variable = ID(lexinfo, variable)
 
     def get_childnodes(self):
         children = []
-        if self.ui_control:
-            children.append(self.ui_control)
+        if self.variable:
+            children.append(self.variable)
         children.extend(self.lines)
         return children
 
     def emit(self, out):
-        if self.ui_control:
-            out.writeln('on %s(%s)' % (self.name, str(self.ui_control)))
+        if self.variable:
+            out.writeln('on %s(%s)' % (self.name, str(self.variable)))
         else:
             out.writeln('on %s' % self.name)
         out.write(self.lines, indented=True)
@@ -595,7 +597,7 @@ class UnaryOp(Expr):
     def __str__(self):
 
         # special case since this number can only be represented in hex due to a Kontakt bug
-        if self.op == '-' and isinstance(self.right, Number) and self.right.value == -2147483648:
+        if self.op == '-' and isinstance(self.right, Integer) and self.right.value == -2147483648:
             return '080000000h'
 
         r = str(self.right)
@@ -610,7 +612,7 @@ class UnaryOp(Expr):
     def get_childnodes(self):
         return (self.right,)
 
-class Number(Expr):
+class Integer(Expr):
     def __init__(self, lexinfo, value):
         Expr.__init__(self, lexinfo)
         self.value = toint(value)
@@ -620,6 +622,26 @@ class Number(Expr):
             return '080000000h'
         else:
             return str(self.value)
+
+    def get_childnodes(self):
+        return ()
+
+class Real(Expr):
+    def __init__(self, lexinfo, value):
+        Expr.__init__(self, lexinfo)
+        self.value = Decimal(value)
+
+    def __str__(self):
+        s = str(self.value).replace('E+', 'e')
+        if '.' not in s and 'e' not in s:
+            s = s + '.0'
+        if s.endswith('0'):   # change 3.40 into 3.4
+            parts = s.split('e')
+            parts[0] = parts[0].rstrip('0')
+            if parts[0][-1] == '.':
+                parts[0] = parts[0] + '0'
+            s = 'e'.join(parts)
+        return s
 
     def get_childnodes(self):
         return ()
@@ -635,10 +657,27 @@ class String(Expr):
     def __str__(self):
         return str(self.value)
 
+# NOTE:
+# KSP doesn't support booleans, but this node type is used as an intermediary
+# in the optimization phase
+class Boolean(Expr):
+    def __init__(self, lexinfo, value):
+        Expr.__init__(self, lexinfo)
+        self.value = bool(value)
+
+    def __str__(self):
+        if self.value:
+            return '9=9'
+        else:
+            return '9=0'
+
+    def get_childnodes(self):
+        return ()
+
 class ID(Expr):
     def __init__(self, lexinfo, identifier):
         Expr.__init__(self, lexinfo)
-        if identifier[0] in '$%@!':
+        if identifier[0] in '$%@!?~':
             self.set_identifier(identifier[1:])
             self.prefix = identifier[0]
         else:

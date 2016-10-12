@@ -38,10 +38,10 @@ tokens = reserved + (
     'SET_CONDITION', 'RESET_CONDITION',
     'RIGHTARROW', 'PLUS', 'MINUS', 'TIMES', 'DIVIDE', 'MOD', 'BITWISE_AND', 'BITWISE_OR', 'BITWISE_NOT', 'COMPARE', 'CONCAT', 'ASSIGN',
     'LPAREN', 'RPAREN', 'LBRACK', 'RBRACK',
+    'REAL', 'INTEGER', 'STRING',
     'ID',
-    'NUMBER', 'STRING',
     'INIT_ARRAY',
-    'COMMA', 'DOT', 'LINECONT', 'NEWLINE', 'COMMENT'
+    'COMMA', 'DOT', 'LINECONT', 'NEWLINE', 'COMMENT',
 )
 
 #t_RIGHTARROW = '->'
@@ -76,14 +76,13 @@ def t_BITWISE_NOT(t):
 def t_BEGIN_CALLBACK(t):
     r'on\s+(init|note|release|midi_in|controller|rpn|nrpn|ui_update|_pgs_changed|pgs_changed|poly_at|listener|async_complete|persistence_changed|persistence_changed|(ui_control\s*?\(.+?\)))'
     t.type = 'BEGIN_CALLBACK'
-    ui_control = None
-    s = re.sub(r'ui_control\s*', 'ui_control', t.value)
-    parts = s.split()
+    variable = None
+    parts = t.value.split()
     name = parts[1]
     if name.startswith('ui_control'):
-        ui_control = re.match(r'on\s+ui_control\s*?\((.+)\)', t.value).group(1).strip()
-        name = 'ui_control'
-    t.value = {'name': name, 'ui_control': ui_control}
+        name, variable = re.match(r'on\s+(ui_control)\s*?\((.+)\)', t.value).groups()
+        name, variable = name.strip(), variable.strip()
+    t.value = {'name': name, 'variable': variable}
     return t
 
 def t_END_CALLBACK(t):
@@ -96,26 +95,38 @@ def t_RIGHTARROW(t):
     t.type = 'RIGHTARROW'
     return t
 
+def t_REAL(t):
+    r'(\d+\.\d*)([eE]\d+)?'
+    #try:
+    #t.value = float(t.value)
+    #except ValueError:
+    #    print("Line %d: real %s is too large!" % (t.lineno, t.value))
+    #    t.value = 0
+    return t
+
 def t_ID(t):
-    r'[$%!@][A-Za-z0-9_.]+|[A-Za-z_][A-Za-z0-9_.]*|\d+[A-Za-z_][A-Za-z0-9_]*'
+    r'[$%!@~?][A-Za-z0-9_.]+|[A-Za-z_][A-Za-z0-9_.]*|\d+[A-Za-z_][A-Za-z0-9_]*'
     if t.value == 'mod': # mod operator
         t.type = 'MOD'
     elif t.value.startswith('0x') and hex_number_re1.match(t.value): # hex number, eg. 0x10
-        t.type = 'NUMBER'
+        t.type = 'INTEGER'
         t.value = int(t.value, 16)
     elif (t.value.endswith('h') or t.value.endswith('H')) and hex_number_re2.match(t.value): # hex number, eg. 010h
-        t.type = 'NUMBER'
+        t.type = 'INTEGER'
         t.value = int(t.value[:-1], 16)
     else:
         t.type = reserved_map.get(t.value, "ID")
     return t
 
-def t_NUMBER(t):
-    r'\d+'
+def t_INTEGER(t):
+    r'\d+\.\d*(e\d+)|\d+'
     try:
-        t.value = int(t.value)
+        if '.' in t.value:
+            t.value = float(t.value)
+        else:
+            t.value = int(t.value)
     except ValueError:
-        print("Line %d: Number %s is too large!" % (t.lineno, t.value))
+        print("Line %d: integer or real %s is too large!" % (t.lineno, t.value))
         t.value = 0
     return t
 
@@ -125,14 +136,14 @@ def t_INIT_ARRAY(t):
     return t
 
 def InitArrayToList(lexinfo, init_array_token):
-    return [Number(lexinfo, int(num)) for num in number_re.findall(init_array_token)]
+    return [Integer(lexinfo, int(num)) for num in number_re.findall(init_array_token)]
 
 def t_MOD(t):
     'mod'
     return t
 
 def t_error(t):
-    ##print "Illegal character '%s'" % t.value[0], t.lineno
+    #print ("Illegal character '%s'" % t.value[0], t.lineno)
     t.lexer.skip(1)
 
 t_ignore  = ' \t'
@@ -165,7 +176,8 @@ precedence = (
     ('left', 'AND'),
     ('right', 'NOT'),
     ('nonassoc', 'COMPARE'),
-    ('left', 'BITWISE_AND', 'BITWISE_OR'),
+    ('left', 'BITWISE_OR'),
+    ('left', 'BITWISE_AND'),
     ('right', 'BITWISE_NOT'),
     ('left', 'PLUS', 'MINUS'),
     ('left', 'TIMES', 'DIVIDE', 'MOD'),
@@ -205,7 +217,7 @@ def p_newlines_opt(p):
 
 def p_callback(p):
     'callback              : BEGIN_CALLBACK NEWLINE stmts-opt END_CALLBACK'
-    p[0] = Callback(p, p[1]['name'], p[3], p[1]['ui_control'])
+    p[0] = Callback(p, p[1]['name'], p[3], p[1]['variable'])
 
 def p_import(p):
     'import                : IMPORT STRING'
@@ -363,7 +375,7 @@ def p_select_case_with_range(p):
 
 def p_select_case_else(p):
     'select-case           : newlines-opt ELSE NEWLINE stmts-opt'
-    p[0] = ((Number(p, 0x80000000), Number(p, 0x7FFFFFFF)), p[4]) # ((range_start, range_end), stmts), min_int to max_in)
+    p[0] = ((Integer(p, 0x80000000), Integer(p, 0x7FFFFFFF)), p[4]) # ((range_start, range_end), stmts), min_int to max_in)
 
 def p_params_opt(p):
     'params-opt            : params'
@@ -622,8 +634,12 @@ def p_assignment(p):
     p[0] = AssignStmt(p, p[1], p[3])
 
 def p_literal_number(p):
-    'literal               : NUMBER'
-    p[0] = Number(p, p[1])
+    'literal               : INTEGER'
+    p[0] = Integer(p, p[1])
+
+def p_literal_real(p):
+    'literal               : REAL'
+    p[0] = Real(p, p[1])
 
 def p_literal_string(p):
     'literal               : STRING'
@@ -745,7 +761,7 @@ def p_error(p):
 # g('                      | empty                   ', EmptyList)
 # g('select-case           : newlines-opt CASE expression NEWLINE stmts-opt              ', lambda p: ((p[3], None), p[5])) # ((range_start, range_end), stmts)
 # g('                      | newlines-opt CASE expression TO expression NEWLINE stmts-opt', lambda p: ((p[3], p[5]), p[7])) # ((range_start, range_end), stmts)
-# g('select-case           : newlines-opt ELSE NEWLINE stmts-opt                         ', lambda p: ((Number(p, 0x80000000), Number(p, 0x7FFFFFFF)), p[4])) # ((range_start, range_end), stmts), min_int to max_int
+# g('select-case           : newlines-opt ELSE NEWLINE stmts-opt                         ', lambda p: ((Integer(p, 0x80000000), Integer(p, 0x7FFFFFFF)), p[4])) # ((range_start, range_end), stmts), min_int to max_int
 
 # g('params-opt            : params', ReturnParam())
 # g('                      | empty ', EmptyList)
@@ -821,7 +837,7 @@ def p_error(p):
 
 # g('assignment            : varref ASSIGN expression', lambda p: AssignStmt(p, p[1], p[3]))
 
-# g('literal               : NUMBER', lambda p: Number(p, p[1]))
+# g('literal               : INTEGER', lambda p: Integer(p, p[1]))
 # g('                      | STRING', lambda p: String(p, p[1]))
 
 # g('''expression          : expression PLUS expression
@@ -856,7 +872,15 @@ def init(outputdir=None):
     #print (outputdir, current_module)
     debug = 0
     optimize = 0
-    lex.lex(optimize=0, debug=debug)
+    lexer = lex.lex(optimize=0, debug=debug)
+
+    # lexer.input('on init\n   declare shared parameter cutoff')
+    # while True:
+    #     tok = lexer.token()
+    #     if tok is None:
+    #         break
+    #     print (tok)
+
     return yacc.yacc(method="LALR", optimize=optimize, debug=debug,
                      write_tables=0, module=current_module, start='script',
                      outputdir=outputdir, tabmodule='ksp_parser_tab')
