@@ -597,6 +597,8 @@ $VCC_PITCH_BEND
 %KEY_DOWN_OCT
 %NOTE_DURATION
 %POLY_AT
+~NI_MATH_PI
+~NI_MATH_E
 
 [functions]
 END_USE_CODE()
@@ -608,7 +610,7 @@ _delay_event_for_loading_slots(<unknown>)
 _get_engine_par(<parameter>,<group>,<slot>,<generic>):integer
 _get_engine_par_disp(<parameter>,<group>,<slot>,<generic>):string
 _get_folder(<path variable>):string
-_load_ir_sample(<filename>,<slot>,<generic>):integer
+_load_ir_sample(<file name>,<slot>,<generic>):integer
 _num_slices(<group-index>):integer
 _pgs_create_key(<key-id>,<size>)
 _pgs_get_key_val(<key-id>,<index>):integer
@@ -616,7 +618,7 @@ _pgs_key_exists(<key-id>):boolean
 _pgs_set_key_val(<key-id>,<index>,<value>)
 _read_persistent_var(<variable>)
 _reset_rls_trig_counter(<note>)
-_set_engine_par(<parameter>,<value>,<group>,<slot>,<generic>)
+_set_engine_par(<parameter>,<value>,<group>,<slot>,<generic>):integer
 _set_skin_offset(<offset>)
 _slice_idx_loop_end(<group-index>,<loop-index>):integer
 _slice_idx_loop_start(<group-index>,<loop-index>):integer
@@ -624,16 +626,20 @@ _slice_length(<group-index>,<slice-index>):integer
 _slice_loop_count(<group-index>,<loop-index>):integer
 _slice_start(<group-index>,<slice-index>):integer
 _will_never_terminate(<event-id>)
-abs(<expression>):integer
+abs(<real-value>):real
+acos(<real-value>):real
 add_menu_item(<variable>,<text>,<number>)
 add_text_line(<variable>,<text>)
 allow_group(<group-index>)
 array_equal(<array-variable>,<array-variable>):boolean
+asin(<real-value>):real
+atan(<real-value>):real
 attach_level_meter(<uiID>,<groupIdx>,<slotIdx>,<channelIdx>,<busIdx>)
 attach_zone(<waveform>,<zone-id>,<parameter>)
 by_marks(<bit-mark>):integer
 by_track(<track-index>):integer
 cc_delivery_request(<controller-number>)
+ceil(<real-value>):real
 change_listener_par(<signal_type>,<parameter>)
 change_note(<ID-number>,<new-note-number>)
 change_pan(<ID-number>,<panorama>,<relative-bit>)
@@ -641,18 +647,21 @@ change_time_with_pitch(<ID-number>,<time>):integer
 change_tune(<ID-number>,<tune-amount>,<relative-bit>)
 change_velo(<ID-number>,<new-velocity-number>)
 change_vol(<ID-number>,<volume>,<relative-bit>)
+cos(<real-value>):real
 dec(<expression>):integer
 delete_event_mark(<ID-number>,<bit-mark>)
 disallow_group(<group-index>)
 dont_use_machine_mode(<ID-number>):integer
 event_status(<ID-number>):integer
 exit()
+exp(<real-value>):real
 fade_in(<ID-number>,<fade-time>)
 fade_out(<ID-number>,<fade-time>,<stop-voice>)
 find_group(<group-name>):integer
 find_mod(<group-idx>,<mod-name>):integer
 find_target(<group-idx>,<mod-idx>,<target-name>):integer
 find_zone(<sample-name>):integer
+floor(<real-value>):real
 fs_get_filename(<ui-id>,<return-parameter>):string
 fs_navigate(<ui-id>,<direction>)
 get_control_par(<ui-id>,<control-parameter>):integer
@@ -670,8 +679,8 @@ get_key_color(<note-number>):integer
 get_key_name(<note-number>):integer
 get_key_triggerstate(<note-number>):integer
 get_key_type(<note-number>):integer
-get_keyrange_min_note(<note-number>):integer
 get_keyrange_max_note(<note-number>):integer
+get_keyrange_min_note(<note-number>):integer
 get_keyrange_name(<note-number>):integer
 get_menu_item_str(<menu_id>,<index>):string
 get_menu_item_value(<menu_id>,<index>):integer
@@ -688,12 +697,14 @@ ignore_event(<ID-number>)
 ignore_midi()
 in_range(<expression>,<lower>,<upper>):boolean
 inc(<expression>)
+int_to_real(<integer>):real
 load_array(<array-or-string-array-variable>,<mode>):integer
 load_array_str(<array-or-string-array-variable>,<path-text>):integer
 load_ir_sample(<file name>,<slot>,<generic>):integer
 load_ir_sample_m(<unknown>)
 load_midi_file(<path variable>):integer
 load_patch(<path>,<channel>)
+log(<real-value>):real
 lsb(<variable>):integer
 make_instr_persistent(<variable>)
 make_perfview()
@@ -712,14 +723,14 @@ mf_get_length():integer
 mf_get_mark(<event-id>,<mark>):integer
 mf_get_next(<track-index>)
 mf_get_next_at(<track-index>,<pos>)
-mf_get_note_length()
+mf_get_note_length():integer
 mf_get_num_tracks():integer
 mf_get_pos():integer
 mf_get_prev(<track-index>)
 mf_get_prev_at(<track-index>,<pos>)
 mf_get_track_idx():integer
 mf_insert_event(<track>,<pos>,<command>,<byte1>,<byte2>):integer
-mf_insert_file(<path-name>,<track-offset>,<position-offset>,<mode>):integer
+mf_insert_file(<path>,<track-offset>,<position-offset>,<mode>):integer
 mf_remove_event(<event-id>)
 mf_reset()
 mf_set_buffer_size(<size>)
@@ -750,35 +761,31 @@ pgs_set_key_val(<key-id>,<index>,<value>)
 pgs_set_str_key_val(<key-id>,<text>)
 pgs_str_key_exists(<key-id>):boolean
 play_note(<note-number>,<velocity>,<sample-offset>,<duration>):integer
+pow(<real-value>,<real-value>):real
 purge_group(<group-index>,<mode>)
 random(<min>,<max>):integer
 read_persistent_var(<variable>)
+real_to_int(<real-value>):integer
 redirect_midi(<unknown>)
 redirect_output(<unknown>)
 remove_keyrange(<key-number>)
 reset_engine()
 reset_ksp_timer()
 reset_rls_trig_counter(<note>)
+round(<real-value>):real
 save_array(<array-or-string-array-variable>,<mode>):integer
 save_array_str(<array-or-string-array-variable>,<path-text>):integer
 save_midi_file(<path variable>):integer
 search(<array-variable>,<value>):integer
+set_bounds(<control>, <x>, <y>, <width>, <height>)
+set_button_properties(<button>, <text>, <picture>, <text_alignment>, <font_type>, <textpos_y>)
 set_control_help(<variable>,<text>)
 set_control_par(<ui-id>,<control-parameter>,<value>)
-set_slider_properties(<slider>, <default>, <picture>, <mouse_behaviour>)
-set_switch_properties(<switch>, <text>, <picture>, <text_alignment>, <font_type>, <textpos_y>)
-set_label_properties(<label>, <text>, <picture>, <text_alignment>, <font_type>, <textpos_y>)
-set_menu_properties(<menu>, <picture>, <font_type>, <text_alignment>, <textpos_y>)
-set_table_properties(<table>, <bar_color>, <zero_line_color>)
-set_button_properties(<button>, <text>, <picture>, <text_alignment>, <font_type>, <textpos_y>)
-set_level_meter_properties(<lev>, <bg_color>, <off_color>, <on_color>, <overload_color>)
-set_waveform_properties(<waveform>, <bar_color>, <zero_line_color>)
-set_knob_properties(<knob>, <text>, <default>)
-set_bounds(<control>, <x>, <y>, <width>, <height>)
 set_control_par_arr(<ui-id>,<control-parameter>,<value>,<index>)
 set_control_par_str(<ui-id>,<control-parameter>,<text>)
 set_controller(<controller-number>,<controller-value>)
 set_engine_par(<parameter>,<value>,<group>,<slot>,<generic>):integer
+set_engine_par_disp_m(<unknown>)
 set_engine_par_m(<parameter>,<value>,<instrument-slot-id>,<unknown>,<unknown>)
 set_event_mark(<ID-number>,<bit-mark>)
 set_event_par(<ID-number>,<index>,<value>)
@@ -791,33 +798,46 @@ set_key_type(<note-number>,key_type_constant>)
 set_keyrange(<key-number1>,<key-number2>,<range-name>)
 set_knob_defval(<knob-variable>,<value>)
 set_knob_label(<knob-variable>,<text>)
+set_knob_properties(<knob>, <text>, <default>)
 set_knob_unit(<knob-variable>,<unit>)
+set_label_properties(<label>, <text>, <picture>, <text_alignment>, <font_type>, <textpos_y>)
+set_level_meter_properties(<lev>, <bg_color>, <off_color>, <on_color>, <overload_color>)
 set_listener(<signal_type>,<parameter>)
 set_menu_item_str(<menu-id>,<index>,<text>)
 set_menu_item_value(<menu-id>,<index>,<value>)
 set_menu_item_visibility(<menu-id>,<index>,<visibility>)
+set_menu_properties(<menu>, <picture>, <font_type>, <text_alignment>, <textpos_y>)
 set_midi(<channel>,<command>,<byte1>,<byte2>)
 set_nrpn(<address>,<value>)
 set_rpn(<address>,<value>)
 set_script_title(<text>)
 set_skin_offset(<offset>)
+set_slider_properties(<slider>, <default>, <picture>, <mouse_behaviour>)
 set_snapshot_type(<type>)
+set_switch_properties(<switch>, <text>, <picture>, <text_alignment>, <font_type>, <textpos_y>)
+set_table_properties(<table>, <bar_color>, <zero_line_color>)
 set_table_steps_shown(<array-variable>,<num-steps>)
 set_text(<variable>,<text>)
+set_ui_color(<hex-value>)
 set_ui_height(<height>)
 set_ui_height_px(<height>)
 set_ui_wf_property(<waveform>,<property>,<index>,<value>)
+set_ui_width_px(<width>)
 set_voice_limit(<voice­type>,<value>)
+set_waveform_properties(<waveform>, <bar_color>, <zero_line_color>)
 sh_left(<expression>,<amount>):integer
 sh_right(<expression>,<amount>):integer
 show_library_tab()
+sin(<real-value>):real
 slice_idx_loop_end(<group-index>,<loop-index>):integer
 slice_idx_loop_start(<group-index>,<loop-index>):integer
 slice_length(<group-index>,<slice-index>):integer
 slice_loop_count(<group-index>,<loop-index>):integer
 slice_start(<group-index>,<slice-index>):integer
 sort(<array-variable>,<direction>)
+sqrt(<real-value>):real
 stop_wait(<callbackID>,<par>)
+tan(<real-value>):real
 ticks_to_ms(<ticks>):integer
 unload_slot(<instrument-slot-id>)
 wait(<wait-time>)
@@ -828,29 +848,6 @@ zone_slice_idx_loop_start(<zone-ID>,<loop-index>):integer
 zone_slice_length(<zone-ID>,<slice-index>):integer
 zone_slice_loop_count(<zone-ID>,<loop-index>):integer
 zone_slice_start(<zone-ID>,<slice-index>):integer
-set_voice_limit(<hq_mode>,<limit>)
-real_to_int(<real-value>):integer
-int_to_real(<integer>):real
-abs(<real-value>):real
-exp(<real-value>):real
-log(<real-value>):real
-pow(<real-value>,<real-value>):real
-sqrt(<real-value>):real
-ceil(<real-value>):real
-floor(<real-value>):real
-round(<real-value>):real
-cos(<real-value>):real
-sin(<real-value>):real
-tan(<real-value>):real
-acos(<real-value>):real
-asin(<real-value>):real
-atan(<real-value>):real
-connect_view(<path variable>)
-set_interface_color(<color>)
-set_ui_width_px(<width>)
-by_track(<track>):integer
-get_voice_limit(<voice-type>):integer
-set_ui_color(<hex-value>)
 
 [functions_with_forced_parenthesis]
 mf_reset
