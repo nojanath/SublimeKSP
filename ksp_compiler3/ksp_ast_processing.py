@@ -145,7 +145,7 @@ class ASTModifier(object):
         self.dispatch(node, *args, **kwargs)
 
     def modifyCallback(self, node, *args, **kwargs):
-        node.ui_control = self.modify(node.ui_control, *args, **kwargs)
+        node.variable = self.modify(node.variable, *args, **kwargs)
         node.lines = flatten([self.modify(l, *args, **kwargs) for l in node.lines])
         return node
 

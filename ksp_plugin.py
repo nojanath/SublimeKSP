@@ -122,6 +122,7 @@ class CompileKspThread(threading.Thread):
 
     def run(self, *args):
         global last_compiler
+
         #view = sublime.active_window().active_view()
         view = self.view
         code = view.substr(sublime.Region(0, view.size()))
@@ -157,11 +158,11 @@ class CompileKspThread(threading.Thread):
                 code = self.compiler.compiled_code
                 code = code.replace('\r', '')
                 if self.compiler.output_file:
-                    sublime.status_message("Successfully compiled (compiled code saved to %s)." % self.compiler.output_file)
                     if not os.path.isabs(self.compiler.output_file):
                         self.compiler.output_file = os.path.join(self.base_path, self.compiler.output_file)
-                    #codecs.open(self.compiler.output_file, 'w', 'latin-1').write(code)
-                    codecs.open(self.compiler.output_file, 'w', 'mac-roman').write(code)
+                    codecs.open(self.compiler.output_file, 'w', 'latin-1').write(code)
+                    #codecs.open(self.compiler.output_file, 'w', 'mac-roman').write(code)
+                    sublime.status_message("Successfully compiled (compiled code saved to %s)." % self.compiler.output_file)
                     #codecs.open(self.compiler.output_file, 'w', 'utf-8').write(code)
                 else:
                     sublime.status_message("Successfully compiled (the code is now on the clipboard ready to be pasted into Kontakt).")
@@ -209,17 +210,17 @@ builtin_compl.sort()
 builtin_compl_funcs1 = [] # functions with return values
 builtin_compl_funcs2 = [] # functions without return values
 for f in functions:
-    args = [a.replace('number variable or text', '').replace('-', '_') for a in function_signatures[f][0]]
+    args = [a.replace('number variable or text','').replace('-', '_') for a in function_signatures[f][0]]
     args = ['${%d:%s}' % (i+1, a) for i, a in enumerate(args)]
-    args_str = '(%s)' % ', '.join(args) if args else ''
+    args_str = '(%s)' % ','.join(args) if args else ''
     if function_signatures[f][1]:
-        builtin_compl_funcs1.append(("%s\tfunction" % (f), "%s%s" % (f, args_str)))
+        builtin_compl_funcs1.append(("%s\tfunction" % (f), "%s%s" % (f,args_str)))
     else:
-        builtin_compl_funcs2.append(("%s\tfunction" % (f), "%s%s" % (f, args_str)))
+        builtin_compl_funcs2.append(("%s\tfunction" % (f), "%s%s" % (f,args_str)))
 
 # for a certain set of functions with return values one often discards the return value
 # add them to the second set too
-for func in ['play_note', 'load_array_str', "set_engine_par"]:
+for func in ['_get_engine_par','_get_engine_par_disp','_get_folder','_num_slices','_pgs_get_key_val', '_set_engine_par', '_slice_idx_loop_end','_slice_idx_loop_start','_slice_length','_slice_loop_count','_slice_start','abs','by_marks','find_group','find_mod','find_target','get_control_par','get_control_par_arr','get_control_par_str','get_engine_par','get_engine_par_disp','get_engine_par_disp_m','get_event_par','get_event_par_arr','get_folder','get_sample_length','group_name','load_ir_sample','mf_get_buffer_size()','mf_get_byte_one()','mf_get_byte_two()','mf_get_channel()','mf_get_command()','mf_get_length()','mf_get_note_length()','mf_get_num_tracks()','mf_get_pos()','mf_get_track_idx()', 'ms_to_ticks()','num_slices','num_slices_zone','output_channel_name','pgs_get_key_val','pgs_get_str_key_val','play_note','random','search', 'set_engine_par', 'sh_left','sh_right','slice_idx_loop_end','slice_idx_loop_start','slice_length','slice_loop_count','slice_start','ticks_to_ms()','zone_slice_idx_loop_end','zone_slice_idx_loop_start','zone_slice_length','zone_slice_loop_count','zone_slice_start','array_equal']:
     for a, b in builtin_compl_funcs1:
         if b == func or b.startswith(func + '('):
             builtin_compl_funcs2.append((a, b))
@@ -305,9 +306,8 @@ class NumericSequenceCommand(sublime_plugin.TextCommand):
             self.view.replace(edit, selection, str(start + i))
 
 class ReplaceTextWithCommand(sublime_plugin.TextCommand):
-
     def run(self, edit, new_text=''):
-        self.view.replace(edit, sublime.Region(0, self.view.size()), new_text)
+        self.view.replace(edit, sublime.Region(0,self.view.size()),new_text)
 
 
 class KspGlobalSettingToggleCommand(sublime_plugin.ApplicationCommand):

@@ -69,21 +69,41 @@ def sign(x):
     else:
         return 0
 
+def assert_numeric(x):
+    if type(x) not in (int, Decimal):
+        raise ValueUndefinedException(x, 'Numeric value expected.')
+
+def normalize_numeric(x):
+    # constrain integers to the range of a 32-bit signed int
+    if type(x) is int:
+        return toint(x)
+    # ... and leave real numbers as they are
+    else:
+        return x
+
 def evaluate_expression(expr):
     if isinstance(expr, BinOp):
+        # TODO: handle float numbers here:
         a, b = evaluate_expression(expr.left), evaluate_expression(expr.right)
         op = expr.op
-        if op in ['+', '-', '*', '/', '<', '<=', '>', '>=', '=', '#', '.and.', '.or.', 'mod']:
-            a, b = int(a), int(b)
+        if op in ['+', '-', '*', '/', '<', '<=', '>', '>=', '=', '#']:
+            #a, b = int(a), int(b)
+            assert_numeric(a)
+            assert_numeric(b)
             if op == '+':
-                return toint(a + b)
+                return normalize_numeric(a + b)
             elif op == '-':
-                return toint(a - b)
+                return normalize_numeric(a - b)
             elif op == '*':
-                return toint(a * b)
+                return normalize_numeric(a * b)
             elif op == '/':
-                return int(math.copysign(abs(a) // abs(b), a / b)) # a // b yields the wrong result in case of negative numbers, eg. -10/9
+                if type(a) is int and type(b) is int:
+                    # division with truncation:
+                    return int(math.copysign(abs(a) // abs(b), a / b)) # a // b yields the wrong result in case of negative numbers, eg. -10/9
+                else:
+                    return a / b
             elif op == '=':
+                # TODO: check if Kontakt treats 4.0 as equal to 4
                 return a == b
             elif op == '<':
                 return a < b
@@ -94,8 +114,11 @@ def evaluate_expression(expr):
             elif op == '>=':
                 return a >= b
             elif op == '#':
+                # TODO: check if Kontakt treats 4.0 as different than 4
                 return a != b
-            elif op == '.and.':
+        elif op in ['.and.', '.or.', 'mod']:
+            a, b = toint(a), toint(b)
+            if op == '.and.':
                 return a & b
             elif op == '.or.':
                 return a | b
@@ -118,19 +141,17 @@ def evaluate_expression(expr):
             else:
                 return a or b
     elif isinstance(expr, UnaryOp):
-        a = int(evaluate_expression(expr.right))
+        #a = int(evaluate_expression(expr.right))
+        a = evaluate_expression(expr.right)
         if expr.op == '-':
-            return toint(-a)
+            return normalize_numeric(-a)
         elif expr.op == '.not.':
             return toint(0xFFFFFFFF ^ a)
-    elif isinstance(expr, Number) or isinstance(expr, String):
+    elif isinstance(expr, Integer) or isinstance(expr, String) or isinstance(expr, Boolean) or isinstance(expr, Real):
         return expr.value
     elif isinstance(expr, VarRef):
         name = str(expr.identifier)
         if name.lower() not in symbol_table:
-            ##import traceback
-            ##traceback.print_stack()
-            ##print name.lower(), [v for v in symbol_table if 'num_types' in v]
             raise ParseException(expr, 'Variable not declared: %s' % name)
         value = symbol_table[name.lower()].value
         if value is None:
@@ -141,7 +162,7 @@ def evaluate_expression(expr):
             subscript = int(evaluate_expression(expr.subscripts[0]))
         else:
             subscript = None
-        if (expr.identifier.prefix in '%!') != (subscript is not None):
+        if (expr.identifier.prefix in '%!?') != (subscript is not None):
             raise ParseException(expr, 'Use of subscript wrong.')
         if subscript:
             if 0 <= subscript < len(value):
@@ -154,7 +175,7 @@ def evaluate_expression(expr):
     elif isinstance(expr, FunctionCall):
         name = str(expr.function_name)
         parameters = [evaluate_expression(param) for param in expr.parameters]
-        funcs2numparameters = {'abs': 1, 'in_range': 3, 'sh_left': 2, 'sh_right': 2, 'by_marks': 1}
+        funcs2numparameters = {'abs': 1, 'in_range': 3, 'sh_left': 2, 'sh_right': 2, 'by_marks': 1, 'int_to_real': 1, 'real_to_int': 1}
         if name in list(funcs2numparameters.keys()):
             if len(parameters) != funcs2numparameters[name]:
                 raise ParseException(expr, 'Wrong number of parameters to %s' % name)
@@ -168,15 +189,26 @@ def evaluate_expression(expr):
                 return toint(parameters[0] >> (parameters[1] % 32))
             elif name == 'by_marks':   # TODO: check if this can be removed
                 return toint(parameters[0] | 0x80000000)
+            elif name == 'int_to_real':
+                return Decimal(toint(parameters[0]))
+            elif name == 'real_to_int':
+                return toint(int(parameters[0]))
         raise ValueUndefinedException(expr, 'Constant value expected.')
 
 def assert_type(node, type):
+    ''' verify that <node> has a type that matches (is compatible with) <type> '''
     if node is None:
         node_type = 'None'
         raise Exception()
     node_type = node.type
-    if node_type != type:
+    if node_type != type and not (node_type in ('integer', 'real') and type == 'numeric'):
         raise ParseException(node, 'Expected expression of %s type, got %s.' % (type, node_type))
+
+def highest_precision(type1, type2):
+    if type1 == 'real' or type2 == 'real':
+        return 'real'
+    else:
+        return 'integer'
 
 class ASTVisitorDetermineExpressionTypes(ASTVisitor):
 
@@ -200,18 +232,27 @@ class ASTVisitorDetermineExpressionTypes(ASTVisitor):
                 param_descriptor = param_descriptor.replace('<', '').replace('>', '')
                 is_text = 'text' in param_descriptor or param_descriptor.endswith('name') or param_descriptor.endswith('-path')
                 if not is_text:
-                    if 'array-or-string-array-variable' in param_descriptor:
+                    if function_name == 'abs' and passed_param.type in ('integer', 'real'):
+                        # special case: the abs function returns an integer or real
+                        # depending on what param type it's given
+                        node.type = passed_param.type
+                    elif 'array-or-string-array-variable' in param_descriptor:
                         pass
                     elif 'string-array' in param_descriptor:
                         assert_type(passed_param, 'array of string')
                     elif 'array-variable' in param_descriptor:
                         assert_type(passed_param, 'array of integer')
+                    elif 'real-variable' in param_descriptor:
+                        assert_type(passed_param, 'array of real')
                     elif 'key-id' in param_descriptor:
                         if not isinstance(passed_param, VarRef):
                             raise ParseException(node, 'Expected key-id.')
                         passed_param.type = 'key-id'
+                    elif 'real-value' in param_descriptor:
+                        assert_type(passed_param, 'real')
                     elif not 'variable' in param_descriptor:
                         assert_type(passed_param, 'integer')
+
         return False
 
     def visitBinOp(self, parent, expr, *args):
@@ -219,13 +260,17 @@ class ASTVisitorDetermineExpressionTypes(ASTVisitor):
         #print expr.left.type, expr.op, expr.right.type
         if expr.op == '&':
             expr.type = 'string'
-        elif expr.op in ('+', '-', '*', '/', 'mod', '.and.', '.or.'):
+        elif expr.op in ('+', '-', '*', '/'):
+            assert_type(expr.left, 'numeric')
+            assert_type(expr.right, 'numeric')
+            expr.type = highest_precision(expr.left.type, expr.right.type)
+        elif expr.op in ('mod', '.and.', '.or.'):
             assert_type(expr.left, 'integer')
             assert_type(expr.right, 'integer')
             expr.type = 'integer'
         elif expr.op in '< <= > >= = #':
-            assert_type(expr.left, 'integer')
-            assert_type(expr.right, 'integer')
+            assert_type(expr.left, 'numeric')
+            assert_type(expr.right, 'numeric')
             expr.type = 'boolean'
         elif expr.op in 'and or':
             assert_type(expr.left, 'boolean')
@@ -233,11 +278,18 @@ class ASTVisitorDetermineExpressionTypes(ASTVisitor):
             expr.type = 'boolean'
         else:
             raise Exception()
+
+        if expr.op in '+ - * / < <= > >= = #' and expr.left.type != expr.right.type:
+            raise ParseException(expr, 'Operands are of different types: %s and %s. Please use the real_to_int(...) and int_to_real(...) functions to explicitly cast the type.' % (expr.left.type, expr.right.type))
+
         return False
 
     def visitUnaryOp(self, parent, expr, *args):
         self.visit_children(parent, expr, *args)
-        if expr.op in ('-', '.not.'):
+        if expr.op == '-':
+            assert_type(expr.right, 'numeric')
+            expr.type = expr.right.type
+        elif expr.op == '.not.':
             assert_type(expr.right, 'integer')
             expr.type = 'integer'
         elif expr.op == 'not':
@@ -245,8 +297,11 @@ class ASTVisitorDetermineExpressionTypes(ASTVisitor):
             expr.type = 'boolean'
         return False
 
-    def visitNumber(self, parent, expr, *args):
+    def visitInteger(self, parent, expr, *args):
         expr.type = 'integer'
+
+    def visitReal(self, parent, expr, *args):
+        expr.type = 'real'
 
     def visitString(self, parent, expr, *args):
         expr.type = 'string'
@@ -259,7 +314,9 @@ class ASTVisitorDetermineExpressionTypes(ASTVisitor):
             expr.type = {'$': 'integer',
                          '%': 'array of integer',
                          '@': 'string',
-                         '!': 'array of string'}[expr.prefix]
+                         '!': 'array of string',
+                         '?': 'array of real',
+                         '~': 'real'}[expr.prefix]
         else:
             expr.type = 'integer' # function return value
 
@@ -269,6 +326,7 @@ class ASTVisitorDetermineExpressionTypes(ASTVisitor):
             assert_type(expr.subscripts[0], 'integer')
             if not expr.identifier.type.startswith('array'):
                 raise ParseException(expr.identifier, 'Expected array')
+            # an added subscript turns eg. an array of integer into just an integer
             expr.type = expr.identifier.type.replace('array of ', '')
         else:
             expr.type = expr.identifier.type
@@ -302,18 +360,21 @@ class ASTVisitorCheckStatementExprTypes(ASTVisitor):
 
     def visitAssignStmt(self, parent, node, *args):
         # assigning an integer to a string variable is ok, so don't treat that as an error
-        if not (node.expression and node.expression.type == 'integer' and node.varref.type == 'string'):
-            assert_type(node.expression, node.varref.type)
+        try:
+            if not (node.expression and node.expression.type in ('integer', 'real') and node.varref.type == 'string'):
+                assert_type(node.expression, node.varref.type)
+        except ParseException as e:
+            raise ParseException(node.varref, e.msg)
 
     def visitWhileStmt(self, parent, node, *args):
         assert_type(node.condition, 'boolean')
 
     def visitForStmt(self, parent, node, *args):
-        assert_type(node.loopvar, 'integer')
-        assert_type(node.start, 'integer')
-        assert_type(node.end, 'integer')
+        assert_type(node.loopvar, 'numeric')
+        assert_type(node.start, 'numeric')
+        assert_type(node.end, 'numeric')
         if node.step:
-            assert_type(node.step, 'integer')
+            assert_type(node.step, 'numeric')
 
     def visitIfStmt(self, parent, node, *args):
         for (condition, stmts) in node.condition_stmts_tuples:
@@ -322,6 +383,7 @@ class ASTVisitorCheckStatementExprTypes(ASTVisitor):
 
     def visitSelectStmt(self, parent, node, *args):
         for ((start, stop), stmts) in node.range_stmts_tuples:
+            # TODO: check if real numbers are allowed here
             assert_type(start, 'integer')
             if stop:
                 assert_type(stop, 'integer')
@@ -483,8 +545,12 @@ class ASTModifierSimplifyExpressions(ASTModifier):
             return None
         try:
             result = evaluate_expression(expr)
-            if type(result) is int and not isinstance(expr, Number):
-                return Number(expr.lexinfo, result)
+            if type(result) is int and not isinstance(expr, Integer):
+                return Integer(expr.lexinfo, result)
+            if type(result) is Decimal and not isinstance(expr, Real):
+                return Real(expr.lexinfo, result)
+            if type(result) is bool and not isinstance(expr, Boolean):
+                return Boolean(expr.lexinfo, result)
         except SyntaxError:
             pass
         return expr
@@ -500,6 +566,46 @@ class ASTModifierSimplifyExpressions(ASTModifier):
         node = ASTModifier.modifyBinOp(self, node)
         node.left = self.evaluate_expression_or_same(node.left)
         node.right = self.evaluate_expression_or_same(node.right)
+        if node.op == '*':
+            if isinstance(node.left, (Integer, Real)):
+                if node.left.value == 0:
+                    return node.left
+                elif node.left.value == 1:
+                    return node.right
+            if isinstance(node.right, (Integer, Real)):
+                if node.right.value == 0:
+                    return node.right
+                elif node.right.value == 1:
+                    return node.left
+        if node.op == '+':
+            if isinstance(node.left, (Integer, Real)):
+                if node.left.value == 0:
+                    return node.right
+            if isinstance(node.right, (Integer, Real)):
+                if node.right.value == 0:
+                    return node.left
+        if node.op == 'or':
+            if isinstance(node.left, Boolean):
+                if node.left.value:
+                    return node.left
+                else:
+                    return node.right
+            elif isinstance(node.right, Boolean):
+                if node.right.value:
+                    return node.right
+                else:
+                    return node.left
+        elif node.op == 'and':
+            if isinstance(node.left, Boolean):
+                if node.left.value:
+                    return node.right
+                else:
+                    return node.left
+            elif isinstance(node.right, Boolean):
+                if node.right.value:
+                    return node.left
+                else:
+                    return node.right
         return self.evaluate_expression_or_same(node)
 
     def modifyUnaryOp(self, node):
@@ -522,13 +628,34 @@ class ASTModifierSimplifyExpressions(ASTModifier):
             node.right = self.evaluate_expression_or_same(node.right)
         return self.evaluate_expression_or_same(node)
 
+    def modifyIfStmt(self, node, *args, **kwargs):
+        # don't simplify the condition of "if 1=1" statements
+        temp = []
+        for i, (condition, stmts) in enumerate(node.condition_stmts_tuples):
+            if (isinstance(condition, BinOp) and
+                isinstance(condition.left, Integer) and
+                isinstance(condition.right, Integer) and
+                i == 0 and
+                condition.left.value == 1 and condition.right.value == 1):
+
+                pass
+            else:
+                condition = self.modify(condition, *args, **kwargs)
+            stmts = flatten([self.modify(s, *args, **kwargs) for s in stmts])
+            temp.append((condition, stmts))
+        if not temp:
+            return []
+        else:
+            node.condition_stmts_tuples = temp
+            return [node]
+
 class ASTModifierRemoveUnusedBranches(ASTModifier):
     def __init__(self, module_ast):
         ASTModifier.__init__(self)
         self.traverse(module_ast)
 
     def is1equals1(self, node):
-        return isinstance(node, BinOp) and isinstance(node.left, Number) and isinstance(node.right, Number) and node.left.value == 1 and node.right.value == 1
+        return isinstance(node, BinOp) and isinstance(node.left, Integer) and isinstance(node.right, Integer) and node.left.value == 1 and node.right.value == 1
 
     def modifyIfStmt(self, node):
         statements = ASTModifier.modifyIfStmt(self, node)
