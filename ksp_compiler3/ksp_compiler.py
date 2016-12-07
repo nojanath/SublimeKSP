@@ -1486,10 +1486,12 @@ class KSPCompiler(object):
             new_comment_re = r'(?<!["\'])\/\/.*' # this is a single line new comment type // 
             activate_line = m.group(0).strip()
             activate_line = re.sub(new_comment_re, '', activate_line)
-            filepath_m = re.search(r"\".*\"", str(activate_line))
+            filepath_m = re.search(r"(\"|\').*(\"|\')", str(activate_line))
             if not filepath_m:
                 raise ParseException(Line("", [(None, 1)], None), 'No filepath in activate_logger.\n')
-            filepath = filepath_m.group(0).replace("\"", "")
+            filepath_m_string = filepath_m.group(0)
+            quote_type_str = filepath_m_string[0]
+            filepath = filepath_m.group(0)[1:-1]
             valid_file_path_flag = False
             if re.search(r"(?m)^(?:\w:)?(\/[a-zA-Z_\-\s0-9\.]+)*\.nka$", filepath):
                 valid_file_path_flag = True
@@ -1499,7 +1501,8 @@ class KSPCompiler(object):
                 amended_logger_code = amended_logger_code.replace("#name#", filename)
             if re.search(r"(?m)^(?:\w:)?(\/[a-zA-Z_\-\s0-9\.]+)*\/$", filepath):
                 valid_file_path_flag = True
-                amended_logger_code = amended_logger_code.replace("#name#", "logger").replace("logger_filepath := filepath", "logger_filepath := filepath & \"logger.nka\"")
+                new_logger_str = "logger_filepath := filepath & %slogger.nka%s" % (quote_type_str, quote_type_str)
+                amended_logger_code = amended_logger_code.replace("#name#", "logger").replace("logger_filepath := filepath", new_logger_str)
             if valid_file_path_flag == False:
                 raise ParseException(Line("", [(None, 1)], None), 'Filepath of activate_logger is invalid.\nFilepaths must be in this format: "C:/Users/Name/LogFile.nka" or "/Users/Name/LogFile.nka"')
             source = source + amended_logger_code
