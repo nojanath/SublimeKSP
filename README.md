@@ -4,12 +4,12 @@ A Sublime Text 3 plugin for working with and compiling Kontakt script code
 (KSP code).
 
 ### Changes
-These are the notable changes from [Nils' official 1.1 plugin](http://nilsliberg.se/ksp/):
+This fork is based on [Nils' official 1.11 plugin](http://nilsliberg.se/ksp/), and likewise supports Kontakt version 5.6. However there are some additions and minor changes:
 
-* A whole set of new extended syntax, such as UI arrays, multidimensional arrays, make_persistent() shorthand and much more.
-* Supports Kontakt 5.5 thanks to mk282 on vi-control.net
-* default_syntax.py has been removed since this can be set elsewhere
+* Additions to the preprocessor allowing for UI arrays, new macro types and more, see the added features section of the wiki
 * Now available in Package Control which supports auto updates
+* Some changes to the syntax highlighting
+* default_syntax.py has been removed since this can be set elsewhere
 
 ### Installation
 
