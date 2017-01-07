@@ -26,7 +26,7 @@ import os.path
 reserved = (
     'FUNCTION', 'TASKFUNC', 'AND', 'OR', 'NOT', 'IF', 'TO', 'DOWNTO', 'ELSE', 'FOR', 'WHILE', 'DECLARE',
     'SELECT', 'CASE', 'CONST', 'POLYPHONIC', 'END', 'LOCAL', 'GLOBAL', 'FAMILY', 'IMPORT', 'AS', 'PROPERTY',
-    'UI_LABEL', 'UI_BUTTON', 'UI_SWITCH', 'UI_SLIDER', 'UI_MENU', 'UI_VALUE_EDIT', 'UI_WAVEFORM', 'UI_KNOB', 'UI_TABLE', 'CALL', 'STEP',
+    'UI_LABEL', 'UI_BUTTON', 'UI_SWITCH', 'UI_SLIDER', 'UI_MENU', 'UI_VALUE_EDIT', 'UI_WAVEFORM', 'UI_KNOB', 'UI_TABLE', 'UI_XY', 'CALL', 'STEP',
     'UI_TEXT_EDIT', 'UI_LEVEL_METER', 'UI_FILE_SELECTOR', 'OVERRIDE',
 )
 reserved_map = dict(((r.lower(), r) for r in reserved))
@@ -538,6 +538,7 @@ def p_decl_modifier_opt(p):
                              | UI_MENU
                              | UI_KNOB
                              | UI_TABLE
+                             | UI_XY
                              | UI_VALUE_EDIT
                              | UI_WAVEFORM
                              | UI_TEXT_EDIT

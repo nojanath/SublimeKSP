@@ -27,7 +27,7 @@ from simple_eval import SimpleEval
 import time
 
 #=================================================================================================
-varPrefixRe = r"[%!@$]"
+varPrefixRe = r"[?~%!@$]"
 variableNameRe = r'(?P<whole>(?P<prefix>\b|[$%!@])(?P<name>[a-zA-Z_][a-zA-Z0-9_\.]*))\b' # A variable name
 variableNameUnRe = r'((\b|[$%!@])[0-9]*[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_0-9]+)*)\b' # Same as above but without names
 persistenceRe = r"(?:\b(?P<persistence>pers|read)\s+)?"
