@@ -3,6 +3,7 @@ builtins_data = '''
 $ALL_EVENTS
 $ALL_GROUPS
 $CC_NUM
+$CONTROL_PAR_ACTIVE_INDEX
 $CONTROL_PAR_ALLOW_AUTOMATION
 $CONTROL_PAR_AUTOMATION_ID
 $CONTROL_PAR_AUTOMATION_NAME
@@ -10,6 +11,7 @@ $CONTROL_PAR_BAR_COLOR
 $CONTROL_PAR_BASEPATH
 $CONTROL_PAR_BG_COLOR
 $CONTROL_PAR_COLUMN_WIDTH
+$CONTROL_PAR_CURSOR_PICTURE
 $CONTROL_PAR_DEFAULT_VALUE
 $CONTROL_PAR_DND_BEHAVIOUR
 $CONTROL_PAR_FILE_TYPE
@@ -29,6 +31,9 @@ $CONTROL_PAR_LABEL
 $CONTROL_PAR_MAX_VALUE
 $CONTROL_PAR_MIN_VALUE
 $CONTROL_PAR_MOUSE_BEHAVIOUR
+$CONTROL_PAR_MOUSE_BEHAVIOUR_X
+$CONTROL_PAR_MOUSE_BEHAVIOUR_Y
+$CONTROL_PAR_MOUSE_MODE
 $CONTROL_PAR_NONE
 $CONTROL_PAR_NUM_ITEMS
 $CONTROL_PAR_OFF_COLOR
@@ -702,8 +707,8 @@ load_array(<array-or-string-array-variable>,<mode>):integer
 load_array_str(<array-or-string-array-variable>,<path-text>):integer
 load_ir_sample(<file name>,<slot>,<generic>):integer
 load_ir_sample_m(<unknown>)
-load_midi_file(<path variable>):integer
-load_patch(<path>,<channel>)
+load_midi_file(<path-text>):integer
+load_patch(<path-text>,<channel>)
 log(<real-value>):real
 lsb(<variable>):integer
 make_instr_persistent(<variable>)
@@ -730,9 +735,9 @@ mf_get_prev(<track-index>)
 mf_get_prev_at(<track-index>,<pos>)
 mf_get_track_idx():integer
 mf_insert_event(<track>,<pos>,<command>,<byte1>,<byte2>):integer
-mf_insert_file(<path>,<track-offset>,<position-offset>,<mode>):integer
+mf_insert_file(<path-text>,<track-offset>,<position-offset>,<mode>):integer
 mf_remove_event(<event-id>)
-mf_reset()
+mf_reset():integer
 mf_set_buffer_size(<size>)
 mf_set_byte_one(<par>)
 mf_set_byte_two(<par>)
@@ -740,6 +745,7 @@ mf_set_channel(<midi-channel>)
 mf_set_command(<par>)
 mf_set_event_par(<event-id>,<parameter>,<value>)
 mf_set_export_area(<name>,<start-pos>,<end-pos>,<start-track>,<end-track>)
+mf_set_note_length(<value>)
 mf_set_length(<par>)
 mf_set_mark(<event-id>,<mark>,<status>)
 mf_set_pos(<par>)
@@ -767,7 +773,7 @@ random(<min>,<max>):integer
 read_persistent_var(<variable>)
 real_to_int(<real-value>):integer
 redirect_midi(<unknown>)
-redirect_output(<unknown>)
+redirect_output(<event-id>,<type>,<channel>)
 remove_keyrange(<key-number>)
 reset_engine()
 reset_ksp_timer()
@@ -775,7 +781,7 @@ reset_rls_trig_counter(<note>)
 round(<real-value>):real
 save_array(<array-or-string-array-variable>,<mode>):integer
 save_array_str(<array-or-string-array-variable>,<path-text>):integer
-save_midi_file(<path variable>):integer
+save_midi_file(<path-text>):integer
 search(<array-variable>,<value>):integer
 set_bounds(<control>, <x>, <y>, <width>, <height>)
 set_button_properties(<button>, <text>, <picture>, <text_alignment>, <font_type>, <textpos_y>)
@@ -783,12 +789,13 @@ set_control_help(<variable>,<text>)
 set_control_par(<ui-id>,<control-parameter>,<value>)
 set_control_par_arr(<ui-id>,<control-parameter>,<value>,<index>)
 set_control_par_str(<ui-id>,<control-parameter>,<text>)
+set_control_par_str_arr(<ui-id>,<control-parameter>,<text>,<index>)
 set_controller(<controller-number>,<controller-value>)
 set_engine_par(<parameter>,<value>,<group>,<slot>,<generic>):integer
 set_engine_par_disp_m(<unknown>)
 set_engine_par_m(<parameter>,<value>,<instrument-slot-id>,<unknown>,<unknown>)
 set_event_mark(<ID-number>,<bit-mark>)
-set_event_par(<ID-number>,<index>,<value>)
+set_event_par(<ID-number>,<parameter>,<value>)
 set_event_par_arr(<ID-number>,<parameter>,<value>,<group-idx>)
 set_key_color(<note-number>,<key-color-constant>)
 set_key_name(<key-number>,<key-name>)
