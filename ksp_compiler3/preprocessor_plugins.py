@@ -1260,9 +1260,6 @@ def handleUIArrays(lines):
 			m = re.search(uiArrayRe, line)
 			if m:
 				uiType = m.group("uitype")
-				# if uiType == "ui_xy":
-				# 	newLines.append(lines[lineNum])
-				# 	continue
 				famPre = None
 				if famCount != 0:
 					famPre = inspectFamilyState(lines, lineNum)
