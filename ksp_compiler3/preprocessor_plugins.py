@@ -1212,11 +1212,11 @@ def handleDefineConstants(lines):
 
 #=================================================================================================
 class UIArray(object):
-	def __init__(self, name, uiType, size, persistence, familyPrefix, uiParams, line):
+	def __init__(self, name, uiType, size, persistence, familyPrefix, uiParams, tableSize, prefixSymbol, line):
 		self.name = name
 		self.familyPrefix = familyPrefix or ""
 		self.uiType = uiType
-		self.prefixSymbol = ""
+		self.prefixSymbol = prefixSymbol
 		if self.uiType == "ui_text_edit":
 			self.prefixSymbol = "@"
 		self.uiParams = uiParams or ""
@@ -1228,6 +1228,7 @@ class UIArray(object):
 			self.numElements = "*".join(["(%s)" % dim for dim in size.split(",")])
 		self.numElements = tryStringEval(self.numElements, line, "UI array size")
 		self.persistence = persistence or ""
+		self.tableSize = tableSize
 
 	def getRawArrayDeclaration(self):
 		""" Get the command string for declaring the raw ID array. """
@@ -1238,7 +1239,10 @@ class UIArray(object):
 		newLines = collections.deque()
 		for i in range(self.numElements):
 			uiName = self.underscore + self.name
-			text = "declare %s %s %s %s" % (self.persistence, self.uiType, self.prefixSymbol + uiName + str(i), self.uiParams)
+			if self.uiType == "ui_table" or self.uiType == "ui_xy":
+				text = "declare %s %s %s %s" % (self.persistence, self.uiType, self.prefixSymbol + uiName + str(i), self.tableSize + self.uiParams)
+			else:
+				text = "declare %s %s %s %s" % (self.persistence, self.uiType, self.prefixSymbol + uiName + str(i), self.uiParams)
 			newLines.append(line.copy(text))
 			text = "%s[%s] := get_ui_id(%s)" % (self.familyPrefix + uiName, str(i), self.familyPrefix + uiName + str(i))
 			newLines.append(line.copy(text))
@@ -1246,7 +1250,7 @@ class UIArray(object):
 
 def handleUIArrays(lines):
 	uiTypeRe = r"\b(?P<uitype>ui_\w*)\b"	
-	uiArrayRe = r"^declare\s+%s%s\s+%s\s*\[(?P<arraysize>[^\]]+)\]\s*(?P<uiparams>(?P<tablesize>\[[^\]]+\]\s*)?\(.*)?" % (persistenceRe, uiTypeRe, variableNameRe)
+	uiArrayRe = r"^declare\s+%s%s\s+%s\s*\[(?P<arraysize>[^\]]+)\]\s*(?P<tablesize>\[[^\]]+\]\s*)?(?P<uiparams>\(.*)?" % (persistenceRe, uiTypeRe, variableNameRe)
 	newLines = collections.deque()
 	famCount = 0
 	for lineNum in range(len(lines)):
@@ -1255,12 +1259,12 @@ def handleUIArrays(lines):
 		if line.startswith("decl"):
 			m = re.search(uiArrayRe, line)
 			if m:
+				uiType = m.group("uitype")
 				famPre = None
 				if famCount != 0:
 					famPre = inspectFamilyState(lines, lineNum)
-				uiType = m.group("uitype")
-				if (uiType == "ui_table" and m.group("tablesize")) or uiType != "ui_table":
-					arrayObj = UIArray(m.group("name"), uiType, m.group("arraysize"), m.group("persistence"), famPre, m.group("uiparams"), lines[lineNum])
+				if ((uiType == "ui_table" or uiType == "ui_xy") and m.group("tablesize")) or (uiType != "ui_table" and uiType != "ui_xy"):
+					arrayObj = UIArray(m.group("name"), uiType, m.group("arraysize"), m.group("persistence"), famPre, m.group("uiparams"), m.group("tablesize"), m.group("prefix"), lines[lineNum])
 					newLines.append(lines[lineNum].copy(arrayObj.getRawArrayDeclaration()))
 					newLines.extend(arrayObj.buildLines(lines[lineNum]))
 					continue
