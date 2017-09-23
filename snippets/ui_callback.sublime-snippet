@@ -1,0 +1,10 @@
+<snippet>
+    <content><![CDATA[
+on ui_control(${1:control_name})
+	${0}
+end on
+]]></content>
+	<description>callback</description>
+    <tabTrigger>uicb</tabTrigger>
+    <scope>source.ksp</scope>
+</snippet>

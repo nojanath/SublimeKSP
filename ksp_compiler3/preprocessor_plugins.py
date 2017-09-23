@@ -5,7 +5,7 @@
 # For more information visit https://github.com/nojanath/SublimeKSP.
 #
 # This file adds a selection of extra syntax, functions and macros that aim to make programming in the
-# Kontakt scripting language nicer. These functions are executed very near the beginning of the 
+# Kontakt scripting language nicer. These functions are executed very near the beginning of the
 # compiling process. They work by scanning through the deque of Line objects, and using regex, the
 # line commands are manipulated or added to.
 
@@ -30,7 +30,7 @@ import time
 varPrefixRe = r"[?~%!@$]"
 variableNameRe = r'(?P<whole>(?P<prefix>\b|[?~$%!@])(?P<name>[a-zA-Z_][a-zA-Z0-9_\.]*))\b' # A variable name
 variableNameUnRe = r'((\b|[?~$%!@])[0-9]*[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_0-9]+)*)\b' # Same as above but without names
-persistenceRe = r"(?:\b(?P<persistence>pers|read)\s+)?"
+persistenceRe = r"(?:\b(?P<persistence>pers|instpers|read)\s+)?"
 nameInDeclareStmtRe = r"%s\s*(?=[\[\(\:]|$)" % variableNameRe # Match the variable name in a whole declare statement.
 
 stringOrPlaceholderRe = r'({\d+}|\"[^"]*\")'
@@ -58,12 +58,12 @@ def pre_macro_functions(lines):
 	removeActivateLoggerPrint(lines)
 	handleDefineConstants(lines)
 	# Define literals are only avilable for backwards compatibility as regular defines now serve this purpose.
-	handleDefineLiterals(lines) 
+	handleDefineLiterals(lines)
 	handleIterateMacro(lines)
 	handleLiterateMacro(lines)
 
 def post_macro_functions(lines):
-	""" This function is called after the regular macros have been expanded. lines is a 
+	""" This function is called after the regular macros have been expanded. lines is a
 	collections.deque of Line objects - see ksp_compiler.py."""
 	handleIncrementer(lines)
 	handleConstBlock(lines)
@@ -76,7 +76,7 @@ def post_macro_functions(lines):
 	handleLists(lines)
 	handlePersistence(lines)
 	handleUIFunctions(lines)
-	handleStringArrayInitialisation(lines)  
+	handleStringArrayInitialisation(lines)
 	handleArrayConcat(lines)
 
 #=================================================================================================
@@ -100,13 +100,13 @@ def tryStringEval(expression, line, name):
 	try:
 		final = stringEvaluator.eval(str(expression).strip())
 	except:
-		raise ksp_compiler.ParseException(line, 
+		raise ksp_compiler.ParseException(line,
 			"Invalid syntax in %s value. This number must able to be evaluated to a single number at compile time; use only define constants, numbers or maths operations here.\n" % name)
 	return (final)
 
 def replaceLines(original, new):
 	original.clear()
-	original.extend(new) 
+	original.extend(new)
 
 def countFamily(lineText, famCount):
 	""" Checks the line for family start or end and returns the current family depth """
@@ -145,7 +145,7 @@ class StructMember(object):
 		self.numElements = None
 
 	def makeMemberAnArray(self, numElements):
-		""" Make the command of this member into an array. numElements is a string of any amount of numbers seperated by commas. 
+		""" Make the command of this member into an array. numElements is a string of any amount of numbers seperated by commas.
 		Structs exploit the fact the you can put the square brackets of an array after any 'subname' of a dot seperated name. """
 		cmd = self.command
 		if "[" in self.command:
@@ -177,7 +177,7 @@ class Struct(object):
 
 def handleStructs(lines):
 	structSyntax = "\&"
-	structs = [] 
+	structs = []
 
 	def findStructs():
 		""" Find all the struct blocks and build struct objects of them. """
@@ -191,7 +191,7 @@ def handleStructs(lines):
 				if m:
 					structObj = Struct(m.group("name"))
 					if isCurrentlyInAStructBlock:
-						raise ksp_compiler.ParseException(lines[lineIdx], "Struct definitions cannot be nested.\n")    
+						raise ksp_compiler.ParseException(lines[lineIdx], "Struct definitions cannot be nested.\n")
 					isCurrentlyInAStructBlock = True
 					lines[lineIdx].command = ""
 
@@ -201,7 +201,7 @@ def handleStructs(lines):
 					isCurrentlyInAStructBlock = False
 					structs.append(structObj)
 					lines[lineIdx].command = ""
-			
+
 			# If in a struct, add each member as an object to the struct
 			elif isCurrentlyInAStructBlock:
 				if line:
@@ -250,7 +250,7 @@ def handleStructs(lines):
 							newCommand = re.sub(r"\b%s\b" % structMember.name, varName, structMember.command)
 							structs[i].insertMember(insertLocation, StructMember(varName, newCommand, structMember.prefix))
 							insertLocation += 1
-							
+
 						# If there are still any struct member declarations, keep looping to resolve them.
 						for name in structs[i].members[j].name:
 							mm = re.search(r"^(?:[^%s]+\.)?%s\s*%s\s+%s" % (structSyntax, structSyntax, variableNameUnRe, variableNameUnRe), name)
@@ -340,7 +340,7 @@ def handleIncrementer(lines):
 				lines[i].command = ""
 				iterObjs.append(Incrementer(mm.group(1), tryStringEval(mm.group(4), lines[i], "start"), tryStringEval(mm.group(5), lines[i], "step")))
 			else:
-				raise ksp_compiler.ParseException(lines[i], "Incorrect parameters. Expected: START_INC(<name>, <start-num>, <step-num>)\n")  
+				raise ksp_compiler.ParseException(lines[i], "Incorrect parameters. Expected: START_INC(<name>, <start-num>, <step-num>)\n")
 		# If any incremeter has ended, pop the last object off the array.
 		elif line == "END_INC":
 			lines[i].command = ""
@@ -367,10 +367,10 @@ class ArrayConcat(object):
 		""" If the concat function is used on a declared empty size array, the size of the array needs to be calculated. """
 		if self.declare:
 			if not self.brackets:
-				raise ksp_compiler.ParseException(self.line, "No array size given. Leave brackets [] empty to have the size auto generated.\n") 
+				raise ksp_compiler.ParseException(self.line, "No array size given. Leave brackets [] empty to have the size auto generated.\n")
 			elif not self.size:
 				def findArrays():
-					""" Scan through the lines up to this point to find all the the arrays that have been chosen to be concatenated, 
+					""" Scan through the lines up to this point to find all the the arrays that have been chosen to be concatenated,
 					and from these add their number of elements to determine the total size needed. """
 					sizes = []
 					arrayNameList = list(self.arraysToConcat)
@@ -399,7 +399,7 @@ class ArrayConcat(object):
 		""" Return all the lines needed to perfrom the concat. """
 		newLines = collections.deque()
 		numArgs = len(self.arraysToConcat)
-		
+
 		offsets = ["0"]
 		offsets.extend(["num_elements(%s)" % arrName for arrName in self.arraysToConcat])
 
@@ -436,12 +436,12 @@ def handleArrayConcat(lines):
 				newLines.extend(concatObj.buildLines())
 				continue
 		# The variables needed are declared at the start of the init callback.
-		elif line.startswith("on"): 
+		elif line.startswith("on"):
 			if re.search(initRe, line):
 				newLines.append(lines[lineIdx])
 				newLines.append(lines[lineIdx].copy("declare concat_it"))
 				newLines.append(lines[lineIdx].copy("declare concat_offset"))
-				continue		
+				continue
 		newLines.append(lines[lineIdx])
 	replaceLines(lines, newLines)
 
@@ -469,7 +469,7 @@ class MultiDimensionalArray(object):
 			"function set(#dimList#, val)",
 				"#rawArrayName#[#calculatedDimList#] := val",
 			"end function ",
-		"end property"]		
+		"end property"]
 		constTemplate = "declare const #name#.SIZE_D#dimNum# := #val#"
 
 		newLines = collections.deque()
@@ -519,7 +519,7 @@ def handleMultidimensionalArrays(lines):
 			if re.search(endOnRe, line):
 				newLines.extend(lines[lineIdx:])
 				break
-			else: 
+			else:
 				# If a multidim array is found, if necessary the family prefix is added and the lines needed for the property are added.
 				famCount = countFamily(line, famCount)
 				if line.startswith("declare"):
@@ -565,7 +565,7 @@ class UIPropertyFunction:
 		return(newLines)
 
 def handleUIFunctions(lines):
-	# Templates for the functions. Note the ui-id as the first arg and the functions start 
+	# Templates for the functions. Note the ui-id as the first arg and the functions start
 	# with'set_' is assumed to be true later on.
 	uiControlPropertyFunctionTemplates = [
 	"set_bounds(ui-id, x, y, width, height)",
@@ -622,7 +622,7 @@ def handleSameLineDeclaration(lines):
 						# Ideally this would check to see if the value is a Kontakt constant as those are valid
 						# inline as well...
 						eval(value) # Just used as a test to see if the the value is a constant.
-						valueIsConstantInteger = True 
+						valueIsConstantInteger = True
 					except:
 						pass
 
@@ -702,7 +702,7 @@ class ListBlock(object):
 		self.name = name
 		self.size = size or ""
 		self.isMultiDim = False
-		if size: 
+		if size:
 			self.isMultiDim = "," in size
 		self.members = []
 
@@ -748,7 +748,7 @@ def handleListBlocks(lines):
 			newLines.append(lines[lineIdx])
 
 	replaceLines(lines, newLines)
-     
+
 #=================================================================================================
 class List(object):
 	def __init__(self, name, prefix, persistence, isMatrix, familyPrefix):
@@ -910,7 +910,7 @@ def handleLists(lines):
 			shouldExit = False
 			loopBlockCounter, shouldExit = findLoop(line, loopBlockCounter)
 			if shouldExit:
-				newLines.append(lines[lineIdx])			
+				newLines.append(lines[lineIdx])
 				continue
 
 			famCount = countFamily(line, famCount)
@@ -966,7 +966,7 @@ def handleLists(lines):
 			newerLines.append(line)
 
 	replaceLines(lines, newerLines)
-		
+
 #=================================================================================================
 def handleOpenSizeArrays(lines):
 	""" When an array size is left with an open number of elements, use the list of initialisers to provide the array size.
@@ -975,7 +975,7 @@ def handleOpenSizeArrays(lines):
 	newLines = collections.deque()
 	for lineIdx in range(len(lines)):
 		line = lines[lineIdx].command.strip()
-		m = re.search(openArrayRe, line)      
+		m = re.search(openArrayRe, line)
 		if m:
 			stringList = re.split(commasNotInBrackets, line[line.find("(") + 1 : len(line) - 1])
 			numElements = len(stringList)
@@ -1002,7 +1002,7 @@ def handleStringArrayInitialisation(lines):
 				newLines.append(lines[i].copy("declare string_it"))
 				continue
 		if line.startswith("declare"):
-			m = re.search(stringArrayRe, line)		
+			m = re.search(stringArrayRe, line)
 			if m:
 				if m.group("prefix") == "!":
 					if not re.search(stringListRe, m.group("initlist")):
@@ -1014,7 +1014,7 @@ def handleStringArrayInitialisation(lines):
 					newLines.append(lines[i].copy(line[: line.find(":")]))
 					if len(stringList) != 1:
 						for ii in range(len(stringList)):
-							newLines.append(lines[i].copy("%s[%s] := %s" % (name, str(ii), stringList[ii])))				
+							newLines.append(lines[i].copy("%s[%s] := %s" % (name, str(ii), stringList[ii])))
 					else:
 						newLines.append(lines[i].copy("for string_it := 0 to %s - 1" % m.group("arraysize")))
 						newLines.append(lines[i].copy("%s[string_it] := %s" % (name, "".join(stringList))))
@@ -1033,7 +1033,7 @@ def handlePersistence(lines):
 		famCount = countFamily(line, famCount)
 		if line.startswith("declare"):
 			# The name of the variable is assumed to either be the first word before a [ or ( or before the end of the line
-			m = re.search(r"\b(?P<persistence>pers|read)\b" , line)
+			m = re.search(r"\b(?P<persistence>pers|instpers|read)\b" , line)
 			if m:
 				persWord = m.group("persistence")
 				m = re.search(nameInDeclareStmtRe, line)
@@ -1044,8 +1044,12 @@ def handlePersistence(lines):
 						if famPre:
 							variableName = famPre + variableName.strip()
 					newLines.append(lines[i].copy(re.sub(r"\b%s\b" % persWord, "", line)))
-					newLines.append(lines[i].copy("make_persistent(%s)" % variableName))
+					if persWord == "pers":
+						newLines.append(lines[i].copy("make_persistent(%s)" % variableName))
+					if persWord == "instpers":
+						newLines.append(lines[i].copy("make_instr_persistent(%s)" % variableName))
 					if persWord == "read":
+						newLines.append(lines[i].copy("make_persistent(%s)" % variableName))
 						newLines.append(lines[i].copy("read_persistent_var(%s)" % variableName))
 					continue
 		newLines.append(lines[i])
@@ -1249,7 +1253,7 @@ class UIArray(object):
 		return(newLines)
 
 def handleUIArrays(lines):
-	uiTypeRe = r"\b(?P<uitype>ui_\w*)\b"	
+	uiTypeRe = r"\b(?P<uitype>ui_\w*)\b"
 	uiArrayRe = r"^declare\s+%s%s\s+%s\s*\[(?P<arraysize>[^\]]+)\]\s*(?P<tablesize>\[[^\]]+\]\s*)?(?P<uiparams>\(.*)?" % (persistenceRe, uiTypeRe, variableNameRe)
 	newLines = collections.deque()
 	famCount = 0
@@ -1309,11 +1313,11 @@ def handleDefineLiterals(lines):
 	if defineTitles:
 		# scan the code can replace any occurances of the variable with it's value
 		for lineObj in lines:
-			line = lineObj.command 
+			line = lineObj.command
 			for index, item in enumerate(defineTitles):
 				if re.search(r"\b" + item + r"\b", line):
-					# character_before = line[line.find(item) - 1 : line.find(item)]  
-					# if character_before.isalpha() == False and character_before.isdiget() == False:  
+					# character_before = line[line.find(item) - 1 : line.find(item)]
+					# if character_before.isalpha() == False and character_before.isdiget() == False:
 					lineObj.command = lineObj.command.replace(item, str(defineValues[index]))
 
 #=================================================================================================
@@ -1328,10 +1332,10 @@ def handleLiterateMacro(lines):
 				targets = ksp_compiler.split_args(m.group("target"), lines[lineIdx])
 				if not "#l#" in name:
 					for text in targets:
-						newLines.append(lines[lineIdx].copy("%s(%s)" % (name, text)))	
+						newLines.append(lines[lineIdx].copy("%s(%s)" % (name, text)))
 				else:
 					for text in targets:
-						newLines.append(lines[lineIdx].copy(name.replace("#l#", text)))	
+						newLines.append(lines[lineIdx].copy(name.replace("#l#", text)))
 				continue
 		newLines.append(lines[lineIdx])
 	replaceLines(lines, newLines)
