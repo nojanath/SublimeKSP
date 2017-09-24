@@ -204,7 +204,6 @@ all_builtins = set(functions.keys()) | set([v[1:] for v in variables]) | variabl
 functions, variables = set(functions), set(variables)
 builtin_compl = []
 builtin_compl.extend(('%s\tvariable' % v[1:], v[1:]) for v in variables)
-#builtin_compl.extend(('%s\tkeyword' % k, k) for k in keywords)
 builtin_compl.sort()
 
 builtin_compl_funcs1 = [] # functions with return values
@@ -212,7 +211,7 @@ builtin_compl_funcs2 = [] # functions without return values
 for f in functions:
     args = [a.replace('number variable or text','').replace('-', '_') for a in function_signatures[f][0]]
     args = ['${%d:%s}' % (i+1, a) for i, a in enumerate(args)]
-    args_str = '(%s)' % ','.join(args) if args else ''
+    args_str = '(%s)' % ', '.join(args) if args else ''
     if function_signatures[f][1]:
         builtin_compl_funcs1.append(("%s\tfunction" % (f), "%s%s" % (f,args_str)))
     else:
@@ -220,7 +219,8 @@ for f in functions:
 
 # for a certain set of functions with return values one often discards the return value
 # add them to the second set too
-for func in ['_get_engine_par','_get_engine_par_disp','_get_folder','_num_slices','_pgs_get_key_val', '_set_engine_par', '_slice_idx_loop_end','_slice_idx_loop_start','_slice_length','_slice_loop_count','_slice_start','abs','by_marks','find_group','find_mod','find_target','get_control_par','get_control_par_arr','get_control_par_str','get_engine_par','get_engine_par_disp','get_engine_par_disp_m','get_event_par','get_event_par_arr','get_folder','get_sample_length','group_name','load_ir_sample','mf_get_buffer_size()','mf_get_byte_one()','mf_get_byte_two()','mf_get_channel()','mf_get_command()','mf_get_length()','mf_get_note_length()','mf_get_num_tracks()','mf_get_pos()','mf_get_track_idx()', 'ms_to_ticks()','num_slices','num_slices_zone','output_channel_name','pgs_get_key_val','pgs_get_str_key_val','play_note','random','search', 'set_engine_par', 'sh_left','sh_right','slice_idx_loop_end','slice_idx_loop_start','slice_length','slice_loop_count','slice_start','ticks_to_ms()','zone_slice_idx_loop_end','zone_slice_idx_loop_start','zone_slice_length','zone_slice_loop_count','zone_slice_start','array_equal']:
+opt_return_func_names = ['_get_engine_par','_get_engine_par_disp','_get_folder','_num_slices','_pgs_get_key_val', '_set_engine_par', '_slice_idx_loop_end','_slice_idx_loop_start','_slice_length','_slice_loop_count','_slice_start','abs','by_marks','find_group','find_mod','find_target','get_control_par','get_control_par_arr','get_control_par_str','get_engine_par','get_engine_par_disp','get_engine_par_disp_m','get_event_par','get_event_par_arr','get_folder','get_sample_length','group_name','load_ir_sample','mf_get_buffer_size','mf_get_byte_one','mf_get_byte_two','mf_get_channel','mf_get_command','mf_get_length','mf_get_note_length','mf_get_num_tracks','mf_get_pos','mf_get_track_idx', 'mf_insert_event','mf_insert_file', 'mf_set_buffer_size', 'ms_to_ticks','num_slices','num_slices_zone','output_channel_name','pgs_get_key_val','pgs_get_str_key_val','play_note','random','search', 'set_engine_par', 'sh_left','sh_right','slice_idx_loop_end','slice_idx_loop_start','slice_length','slice_loop_count','slice_start','ticks_to_ms','zone_slice_idx_loop_end','zone_slice_idx_loop_start','zone_slice_length','zone_slice_loop_count','zone_slice_start','array_equal']
+for func in opt_return_func_names:
     for a, b in builtin_compl_funcs1:
         if b == func or b.startswith(func + '('):
             builtin_compl_funcs2.append((a, b))
@@ -334,7 +334,6 @@ class KspIndentListener(sublime_plugin.EventListener):
             return None
 
 class KspReindent(sublime_plugin.TextCommand):
-
     def get_indent(self, line):
         return line[:len(line) - len(line.lstrip())]
 
@@ -454,7 +453,6 @@ class KspAboutCommand(sublime_plugin.ApplicationCommand):
             return 'KSP.sublime-syntax' in view.settings().get('syntax', '')
 
 class KspFixLineEndings(sublime_plugin.EventListener):
-
     def is_probably_ksp_file(self, view):
         ext = os.path.splitext(view.file_name())[1].lower()
         if ext == '.ksp':
