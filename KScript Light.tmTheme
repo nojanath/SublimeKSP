@@ -67,7 +67,7 @@
 			<key>settings</key>
 			<dict>
 				<key>foreground</key>
-				<string>#000</string>
+				<string>#882288</string>
 			</dict>
 		</dict>
 		<dict>
@@ -130,14 +130,14 @@
 				<key>fontStyle</key>
 				<string>bold</string>
 				<key>foreground</key>
-				<string>#6B4066</string>
+				<string>#DD6000</string>
 			</dict>
 		</dict>
 		<dict>
 			<key>name</key>
 			<string>User function call</string>
 			<key>scope</key>
-			<string>meta.function-name -function.ksp</string>
+			<string>meta.function-call -function.ksp</string>
 			<key>settings</key>
 			<dict>
 				<key>fontStyle</key>

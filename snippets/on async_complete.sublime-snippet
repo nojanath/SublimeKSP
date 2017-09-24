@@ -1,10 +1,10 @@
 <snippet>
 	<content><![CDATA[
-on controller
+on async_complete
 	${0}
 end on
 ]]></content>
-	<description>controller callback</description>
-	<tabTrigger>ccb</tabTrigger>
+	<description>async callback</description>
+	<tabTrigger>acc</tabTrigger>
 	<scope>source.ksp</scope>
 </snippet>
