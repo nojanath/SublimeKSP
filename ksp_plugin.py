@@ -202,31 +202,18 @@ class CompileKspThread(threading.Thread):
 from ksp_compiler3.ksp_builtins import keywords, variables, functions, function_signatures
 all_builtins = set(functions.keys()) | set([v[1:] for v in variables]) | variables | keywords
 functions, variables = set(functions), set(variables)
-builtin_compl = []
-builtin_compl.extend(('%s\tvariable' % v[1:], v[1:]) for v in variables)
-builtin_compl.sort()
 
-builtin_compl_funcs1 = [] # functions with return values
-builtin_compl_funcs2 = [] # functions without return values
+builtin_compl_vars = []
+builtin_compl_vars.extend(('%s\tvariable' % v[1:], v[1:]) for v in variables)
+builtin_compl_vars.sort()
+
+builtin_compl_funcs = []
 for f in functions:
     args = [a.replace('number variable or text','').replace('-', '_') for a in function_signatures[f][0]]
     args = ['${%d:%s}' % (i+1, a) for i, a in enumerate(args)]
     args_str = '(%s)' % ', '.join(args) if args else ''
-    if function_signatures[f][1]:
-        builtin_compl_funcs1.append(("%s\tfunction" % (f), "%s%s" % (f,args_str)))
-    else:
-        builtin_compl_funcs2.append(("%s\tfunction" % (f), "%s%s" % (f,args_str)))
-
-# for a certain set of functions with return values one often discards the return value
-# add them to the second set too
-opt_return_func_names = ['_get_engine_par','_get_engine_par_disp','_get_folder','_num_slices','_pgs_get_key_val', '_set_engine_par', '_slice_idx_loop_end','_slice_idx_loop_start','_slice_length','_slice_loop_count','_slice_start','abs','by_marks','find_group','find_mod','find_target','get_control_par','get_control_par_arr','get_control_par_str','get_engine_par','get_engine_par_disp','get_engine_par_disp_m','get_event_par','get_event_par_arr','get_folder','get_sample_length','group_name','load_ir_sample','mf_get_buffer_size','mf_get_byte_one','mf_get_byte_two','mf_get_channel','mf_get_command','mf_get_length','mf_get_note_length','mf_get_num_tracks','mf_get_pos','mf_get_track_idx', 'mf_insert_event','mf_insert_file', 'mf_set_buffer_size', 'ms_to_ticks','num_slices','num_slices_zone','output_channel_name','pgs_get_key_val','pgs_get_str_key_val','play_note','random','search', 'set_engine_par', 'sh_left','sh_right','slice_idx_loop_end','slice_idx_loop_start','slice_length','slice_loop_count','slice_start','ticks_to_ms','zone_slice_idx_loop_end','zone_slice_idx_loop_start','zone_slice_length','zone_slice_loop_count','zone_slice_start','array_equal']
-for func in opt_return_func_names:
-    for a, b in builtin_compl_funcs1:
-        if b == func or b.startswith(func + '('):
-            builtin_compl_funcs2.append((a, b))
-
-builtin_compl_funcs1.sort()
-builtin_compl_funcs2.sort()
+    builtin_compl_funcs.append(("%s\tfunction" % (f), "%s%s" % (f,args_str)))
+builtin_compl_funcs.sort()
 
 # control par references that can be used as control->x, or control->value
 magic_control_pars = []
@@ -261,7 +248,7 @@ class KSPCompletions(sublime_plugin.EventListener):
 
     def on_query_completions(self, view, prefix, locations):
         # parts of the code inspired by: https://github.com/agibsonsw/AndyPython/blob/master/PythonCompletions.py
-        global builtin_compl, builtin_compl_funcs1, builtin_compl_funcs2, magic_control_pars
+        global builtin_compl_vars, builtin_compl_funcs, magic_control_pars
         if not view.match_selector(locations[0], 'source.ksp -string -comment -constant'):
             return []
         pt = locations[0] # - len(prefix) - 1
@@ -279,12 +266,8 @@ class KSPCompletions(sublime_plugin.EventListener):
                      if len(item) > 3 and item not in all_builtins]
             if '.' not in prefix:
                 bc = []
-                bc.extend(builtin_compl)
-                if ':=' in line or '(' in line or re.match(r'\s*(if|for|while|select|property)\b', line):
-                    bc.extend(builtin_compl_funcs1) # functions with return values
-                else:
-                    bc.extend(builtin_compl_funcs2) # functions without return values
-                #bc.sort()
+                bc.extend(builtin_compl_vars)
+                bc.extend(builtin_compl_funcs)
                 compl.extend(bc)
         compl = self.unique(compl)
 
