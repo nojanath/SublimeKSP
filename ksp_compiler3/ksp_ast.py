@@ -632,16 +632,15 @@ class Real(Expr):
         self.value = Decimal(value)
 
     def __str__(self):
-        s = str(self.value).replace('E+', 'e')
-        if '.' not in s and 'e' not in s:
-            s = s + '.0'
-        if s.endswith('0'):   # change 3.40 into 3.4
-            parts = s.split('e')
-            parts[0] = parts[0].rstrip('0')
-            if parts[0][-1] == '.':
-                parts[0] = parts[0] + '0'
-            s = 'e'.join(parts)
-        return s
+        # if '.' not in s and 'e' not in s:
+        #     s = s + '.0'
+        # if s.endswith('0'):   # change 3.40 into 3.4
+        #      parts = s.split('e')
+        #      parts[0] = parts[0].rstrip('0')
+        #      if parts[0][-1] == '.':
+        #          parts[0] = parts[0] + '0'
+        #      s = 'e'.join(parts)
+        return str(float(self.value))
 
     def get_childnodes(self):
         return ()

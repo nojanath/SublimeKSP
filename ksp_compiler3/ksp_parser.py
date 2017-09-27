@@ -56,8 +56,10 @@ t_STRING = r"'.*?(?<!\\)'|" + r'".*?(?<!\\)"'
 t_SET_CONDITION = 'SET_CONDITION'
 t_RESET_CONDITION = 'RESET_CONDITION'
 
-hex_number_re1 = re.compile('0x[a-fA-f0-9]+$')
-hex_number_re2 = re.compile('[0-9][a-fA-f0-9]*[hH]$')
+hex_number_re1 = re.compile('0x[a-fA-f0-9]+')
+hex_number_re2 = re.compile('[0-9][a-fA-f0-9]+[hH]')
+lsb_right_bin_re1 = re.compile('[0-1]+[bB]$')
+lsb_left_bin_re1 = re.compile('[bB][0-1]+$')
 number_re = re.compile('-?\d+')
 
 # define bitwise and/or/not as functions to make sure they are tried before the ID token
@@ -106,14 +108,20 @@ def t_REAL(t):
 
 def t_ID(t):
     r'[$%!@~?][A-Za-z0-9_.]+|[A-Za-z_][A-Za-z0-9_.]*|\d+[A-Za-z_][A-Za-z0-9_]*'
-    if t.value == 'mod': # mod operator
+    if t.value.lower() == 'mod': # mod operator
         t.type = 'MOD'
-    elif t.value.startswith('0x') and hex_number_re1.match(t.value): # hex number, eg. 0x10
+    elif t.value.lower().startswith('0x') and hex_number_re1.match(t.value): # hex number, eg. 0x10
         t.type = 'INTEGER'
         t.value = int(t.value, 16)
-    elif (t.value.endswith('h') or t.value.endswith('H')) and hex_number_re2.match(t.value): # hex number, eg. 010h
+    elif t.value.lower().endswith('h') and hex_number_re2.match(t.value): # hex number, eg. 010h
         t.type = 'INTEGER'
-        t.value = int(t.value[:-1], 16)
+        t.value = int(t.value[1:-1], 16)
+    elif t.value.lower().startswith('b') and lsb_left_bin_re1.match(t.value): # hex number, eg. 010h
+        t.type = 'INTEGER'
+        t.value = int(t.value.lower().replace('b','')[::-1], 2)
+    elif t.value.lower().endswith('b') and lsb_right_bin_re1.match(t.value): # hex number, eg. 010h
+        t.type = 'INTEGER'
+        t.value = int(t.value.lower().replace('b',''), 2)
     else:
         t.type = reserved_map.get(t.value, "ID")
     return t

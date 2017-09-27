@@ -83,7 +83,7 @@ def normalize_numeric(x):
 
 def evaluate_expression(expr):
     if isinstance(expr, BinOp):
-        # TODO: handle float numbers here:
+        # TODO: handle Decimal numbers here:
         a, b = evaluate_expression(expr.left), evaluate_expression(expr.right)
         op = expr.op
         if op in ['+', '-', '*', '/', '<', '<=', '>', '>=', '=', '#']:
