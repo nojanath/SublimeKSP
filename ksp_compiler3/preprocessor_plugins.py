@@ -935,8 +935,8 @@ def handleLists(lines):
 			elif line.startswith("list_add"):
 				m = re.search(listAddRe, line)
 				if m:
-					if loopBlockCounter != 0:
-						raise ksp_compiler.ParseException(lines[lineIdx], "list_add() cannot be used in loops or if statements.\n")
+					# if loopBlockCounter != 0:
+					# 	raise ksp_compiler.ParseException(lines[lineIdx], "list_add() cannot be used in loops or if statements.\n")
 					name = m.group("name")
 					value = m.group("value").strip()
 					try:
