@@ -108,7 +108,7 @@ def t_REAL(t):
 
 def t_ID(t):
     r'[$%!@~?][A-Za-z0-9_.]+|[A-Za-z_][A-Za-z0-9_.]*|\d+[A-Za-z_][A-Za-z0-9_]*'
-    if t.value.lower() == 'mod': # mod operator
+    if t.value == 'mod': # mod operator
         t.type = 'MOD'
     elif t.value.lower().startswith('0x') and hex_number_re1.match(t.value): # hex number, eg. 0x10
         t.type = 'INTEGER'
