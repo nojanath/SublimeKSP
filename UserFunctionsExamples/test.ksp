@@ -1,0 +1,17 @@
+userlibs_path(C:\ksptest\Examples)
+import_predefine_lib(predefine)
+import_postdefine_lib(postdefine)
+import_postmacro_lib(postmacro)
+import_precompille_lib(precompille)
+
+import "testmodule.ksp" as module
+
+define TEST := 1
+
+on init
+	PredefineFunc(TEST)
+	PostDefineFunc(TEST)
+	iterate_macro(PostMacro (TEST+#n#)) := 5 to 12
+	message ("")
+	iterate_macro(module.testmacro("testmacro starts",#n#)) := 0 to 4
+end on

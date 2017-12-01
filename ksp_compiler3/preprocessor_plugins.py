@@ -22,6 +22,8 @@ import copy
 import re
 import math
 import collections
+import userdef
+
 import ksp_compiler
 from simple_eval import SimpleEval
 import time
@@ -55,10 +57,14 @@ stringEvaluator = SimpleEval() # Object used to evaluate strings as maths expres
 def pre_macro_functions(lines):
 	""" This function is called before the macros have been expanded. lines is a collections.deque
 	of Line objects - see ksp_compiler.py."""
+	global UserLibs
+	UserLibs = userdef.UserFuntions(lines)
+	UserLibs.UserPreDefine (lines)
 	removeActivateLoggerPrint(lines)
 	handleDefineConstants(lines)
 	# Define literals are only avilable for backwards compatibility as regular defines now serve this purpose.
 	handleDefineLiterals(lines)
+	UserLibs.UserPostDefine (lines)
 	handleIterateMacro(lines)
 	handleLiterateMacro(lines)
 
@@ -66,6 +72,7 @@ def post_macro_functions(lines):
 	""" This function is called after the regular macros have been expanded. lines is a
 	collections.deque of Line objects - see ksp_compiler.py."""
 	handleIncrementer(lines)
+	UserLibs.UserPostMacro (lines)
 	handleConstBlock(lines)
 	handleStructs(lines)
 	handleUIArrays(lines)
@@ -78,6 +85,7 @@ def post_macro_functions(lines):
 	handleUIFunctions(lines)
 	handleStringArrayInitialisation(lines)
 	handleArrayConcat(lines)
+	UserLibs.UserPreCompille (lines)
 
 #=================================================================================================
 def simplfyAdditionString(string):
