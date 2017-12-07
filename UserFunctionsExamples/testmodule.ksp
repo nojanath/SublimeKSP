@@ -1,0 +1,6 @@
+macro testmacro (#name#,#n#)
+	if #n# = 0
+		message (#name#)
+	end if
+	PostMacro (TEST+#n#)
+end macro
