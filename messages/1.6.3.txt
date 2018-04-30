@@ -1,0 +1,34 @@
+Version: 1.6.3
+
+Notes:
+-This update is being provided with emergency timing by request of a specific feature from a developer. I still plan to do a more comprehensive update addressing issues that have been reported in the GitHub tracker at a later date.
+
+Updates:
+
+-iterate_macro() statements can now use macro #argument#s in their min and max values. Example:
+	```macro create_controls(#num_controls#)
+		iterate_macro(declare ctrl_#n#) := 0 to #num_controls# - 1
+	end macro
+
+	on init
+		create_controls(7)
+	end on```
+
+-EvilDragon has added a number of define constants to the compiler that contain time information strings for when the script is compiled:
+	__SEC__
+	__MIN__
+	__HOUR__
+	__HOUR12__
+	__AMPM__
+	__DAY__
+	__MONTH__
+	__YEAR__
+	__YEAR2__
+	__LOCALE_MONTH__
+	__LOCALE_MONTH_ABBR__
+	__LOCALE_DATE__
+	__LOCALE_TIME__
+
+	For instance, `message("Today is " & __LOCAL_DATE__ & " at " & __LOCAL_TIME__)` will compile, if right now, to `message("Today is 04/30/18 at 19:10:00")`.
+
+-EvilDragon also updatad the syntax coloring to prevent the `to` keyword from being highlighted as a special keyword when it is used as a macro argument #to#.

@@ -27,7 +27,7 @@ import ply.lex as lex
 # NOTE(Sam): include preprocessor and logger
 from logger import logger_code
 import time
-from preprocessor_plugins import pre_macro_functions, post_macro_functions
+from preprocessor_plugins import pre_macro_functions, macro_iter_functions, post_macro_functions
 ##from cStringIO import StringIO
 
 variable_prefixes = '$%@!?~'
@@ -371,10 +371,11 @@ def handle_conditional_lines(lines):
             line_obj.command = re.sub(r'[^\r\n]', '', line)
 
 def extract_macros(lines_deque):
-    ''' returns (non_macro_def_lines, list_of_macros) '''
+    ''' returns (cleaned_lines, macros) '''
     macros = []
     lines = lines_deque
-    non_macro_def_lines = []
+    cleaned_lines = []
+
     while lines:
         line = lines.popleft()
         # if macro definition found, read lines up until the next "end macro"
@@ -394,8 +395,8 @@ def extract_macros(lines_deque):
             macros.append(Macro(macro_lines))
         # else if line outside of macro definition
         else:
-            non_macro_def_lines.append(line)
-    return (non_macro_def_lines, macros)
+            cleaned_lines.append(line)
+    return (cleaned_lines, macros)
 
 def extract_callback_lines(lines):
     ''' returns (normal_lines, callback_lines) '''
@@ -423,6 +424,7 @@ def expand_macros(lines, macros, level=0):
         returns tuple (normal_lines, callback_lines) where the latter are callbacks'''
     macro_call_re = re.compile(r'^\s*([\w_.]+)\s*(\(.*\))?%s$' % white_space)
     name2macro = {}
+
     for m in macros:
         name = m.get_name_prefixed_by_namespace()
         if not (name == 'tcm.init' and name in name2macro):
@@ -1462,6 +1464,7 @@ class KSPCompiler(object):
         self.abort_requested = False
 
         self.lines = []
+        self.macros = []
         self.module = None
 
         self.original2short = {}
@@ -1531,16 +1534,21 @@ class KSPCompiler(object):
             line.replace_placeholders()
         self.code = '\n'.join([line.command for line in self.lines])
 
+    # Isolate macros into objects, removing from code
+    def extract_macros(self):
+        self.lines, self.macros = extract_macros(self.lines)
 
+    # Run stored macros on the code
     def expand_macros(self):
-        # extract macro blocks (the lines returned are the ones that are not inside macro definitions)
-        (lines, macros) = extract_macros(self.lines)
-
-        # expand macros
-        normal_lines, callback_lines = expand_macros(lines, macros)
+        # Initial Expansion 
+        normal_lines, callback_lines = expand_macros(self.lines, self.macros)
         self.lines = normal_lines + callback_lines
-        
 
+        # Nested Expansion
+        while macro_iter_functions(self.lines):
+            normal_lines, callback_lines = expand_macros(self.lines, self.macros)
+            self.lines = normal_lines + callback_lines
+        
     def examine_pragmas(self, code, namespaces):
         # find info about output file
         pragma_re = re.compile(r'\{ ?\#pragma\s+save_compiled_source\s+(.*)\}')
@@ -1658,12 +1666,13 @@ class KSPCompiler(object):
             tasks = [
                  ('scanning and importing code', lambda: self.do_imports_and_convert_to_line_objects(),                       True,      1),
                  # NOTE(Sam): Call the pre-macro section of the preprocessor
-                 ('pre-macro preprocessor plugins',     lambda: pre_macro_functions(self.lines),                  True,      1),
-                 ('expand macros',               lambda: self.expand_macros(),                                                True,      1),
+                 ('pre-macro processes',         lambda: pre_macro_functions(self.lines),                  True,      1),
+                 ('parsing macros',              lambda: self.extract_macros(),                  True,      1),
+                 ('expanding macros',    lambda: self.expand_macros(),                                                True,      1),
                  # NOTE(Sam): Call the post-macro section of the preprocessor
-                 ('post-macro preprocessor plugins',    lambda: post_macro_functions(self.lines),                 True,      1),
+                 ('post-macro processes',        lambda: post_macro_functions(self.lines),                 True,      1),
                  # NOTE(Sam): Convert the lines to a block in a separate function
-                 ('convert lines to code block',        lambda: self.convert_lines_to_code(),                                         True,      1),
+                 ('convert lines to code block', lambda: self.convert_lines_to_code(),                                         True,      1),
                  ('parse code',                  lambda: self.parse_code(),                                                   True,      1),
                  ('various tasks',               lambda: ASTModifierFixReferencesAndFamilies(self.module, self.lines),        True,      1),
                  ('add variable name prefixes',  lambda: ASTModifierFixPrefixesIncludingLocalVars(self.module),               True,      1),

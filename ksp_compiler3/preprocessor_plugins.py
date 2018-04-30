@@ -25,6 +25,7 @@ import collections
 import ksp_compiler
 from simple_eval import SimpleEval
 import time
+from time import strftime, localtime
 
 #=================================================================================================
 varPrefixRe = r"[?~%!@$]"
@@ -55,12 +56,15 @@ stringEvaluator = SimpleEval() # Object used to evaluate strings as maths expres
 def pre_macro_functions(lines):
 	""" This function is called before the macros have been expanded. lines is a collections.deque
 	of Line objects - see ksp_compiler.py."""
+	createBuiltinDefines(lines)
 	removeActivateLoggerPrint(lines)
 	handleDefineConstants(lines)
 	# Define literals are only avilable for backwards compatibility as regular defines now serve this purpose.
 	handleDefineLiterals(lines)
-	handleIterateMacro(lines)
-	handleLiterateMacro(lines)
+
+def macro_iter_functions(lines):
+	""" Will process macro iteration and return true if any were found """
+	return (handleIterateMacro(lines) or handleLiterateMacro(lines))
 
 def post_macro_functions(lines):
 	""" This function is called after the regular macros have been expanded. lines is a
@@ -73,8 +77,8 @@ def post_macro_functions(lines):
 	handleMultidimensionalArrays(lines)
 	handleListBlocks(lines)
 	handleOpenSizeArrays(lines)
-	handleLists(lines)
 	handlePersistence(lines)
+	handleLists(lines)
 	handleUIFunctions(lines)
 	handleStringArrayInitialisation(lines)
 	handleArrayConcat(lines)
@@ -1087,10 +1091,12 @@ class IterateMacro(object):
 		return(newLines)
 
 def handleIterateMacro(lines):
+	scan = False
 	newLines = collections.deque()
 	for lineIdx in range(len(lines)):
 		line = lines[lineIdx].command.strip()
 		if line.startswith("iterate_macro"):
+			scan = True
 			m = re.search(r"^iterate_macro\s*\((?P<macro>.+)\)\s*:=\s*(?P<min>.+)\b(?P<direction>to|downto)(?P<max>(?:.(?!\bstep\b))+)(?:\s+step\s+(?P<step>.+))?$", line)
 			if m:
 				iterateObj = IterateMacro(m.group("macro"), m.group("min"), m.group("max"), m.group("step"), m.group("direction"), lines[lineIdx])
@@ -1100,6 +1106,8 @@ def handleIterateMacro(lines):
 		else:
 			newLines.append(lines[lineIdx])
 	replaceLines(lines, newLines)
+
+	return scan
 
 #=================================================================================================
 class DefineConstant(object):
@@ -1124,13 +1132,17 @@ class DefineConstant(object):
 		self.value = val
 
 	def evaluateValue(self):
-		""" Try to evaluate the value of the define constant as a maths expression. """
+		# Try to evaluate the value of the define constant as a maths expression.
+		# But don't do it if the define value is a string (starting with ")!
 		newVal = self.value
-		try:
-			val = re.sub(r"\bmod\b", "%", self.value)
-			newVal = str(stringEvaluator.eval(val))
-		except:
-			pass
+
+		nonMath = ["\"", "\'"]
+		if not any(s in newVal for s in nonMath):
+			try:
+				val = re.sub(r"\bmod\b", "%", self.value)
+				newVal = str(stringEvaluator.eval(val))
+			except:
+				pass
 		self.setValue(newVal)
 
 	def substituteValue(self, command, listOfOtherDefines, line=None):
@@ -1212,6 +1224,26 @@ def handleDefineConstants(lines):
 			line = newLines[lineIdx].command
 			for defineConst in defineConstants:
 				newLines[lineIdx].command = defineConst.substituteValue(newLines[lineIdx].command, defineConstants, newLines[lineIdx])
+	replaceLines(lines, newLines)
+
+def createBuiltinDefines(lines):
+	# Create date-time variables
+
+	timecodes = ['%S', '%M', '%H', '%I', '%p', '%d', '%m', '%Y', '%y', '%B', '%b', '%x', '%X']
+	timenames = ['__SEC__','__MIN__','__HOUR__','__HOUR12__','__AMPM__','__DAY__','__MONTH__','__YEAR__','__YEAR2__','__LOCALE_MONTH__','__LOCALE_MONTH_ABBR__','__LOCALE_DATE__','__LOCALE_TIME__']
+	defines = ['define {0} := \"{1}\"'.format(timenames[i], strftime(timecodes[i], localtime())) for i in range(len(timecodes))]
+	
+	newLines = collections.deque()
+
+	# append our defines on top of the script in a temporary deque
+	for string in defines:
+		newLines.append(lines[0].copy(string))
+
+	# merge with the original unmodified script
+	for line in lines:
+		newLines.append(line)
+
+	# replace original deque with modified one
 	replaceLines(lines, newLines)
 
 #=================================================================================================
@@ -1322,10 +1354,12 @@ def handleDefineLiterals(lines):
 
 #=================================================================================================
 def handleLiterateMacro(lines):
+	scan = False
 	newLines = collections.deque()
 	for lineIdx in range(len(lines)):
 		line = lines[lineIdx].command.strip()
 		if line.startswith("literate_macro"):
+			scan = True
 			m = re.search(r"^literate_macro\s*\((?P<macro>.+)\)\s+on\s+(?P<target>.+)$", line)
 			if m:
 				name = m.group("macro")
@@ -1339,3 +1373,4 @@ def handleLiterateMacro(lines):
 				continue
 		newLines.append(lines[lineIdx])
 	replaceLines(lines, newLines)
+	return scan

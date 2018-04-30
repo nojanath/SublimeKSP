@@ -41,7 +41,7 @@ contexts:
       comment: Literate On
       captures:
         1: keyword.other.source.ksp
-    - match: '(\s+-|(?<=[=,{}])-)?((0x)[0-9a-fA-F]*|[0-9][0-9a-fA-F]*[hH]|[0-9.]+)\b'
+    - match: '(\s+-|(?<=[=,{}])-)?((0x)[0-9a-fA-F]*|[0-9][0-9a-fA-F]*[hH]|b[0-9.]+|[0-9.]+b|[0-9.]+)\b'
       comment: Numerical constant
       scope: constant.numeric.source.ksp
     - match: (->)(allow_automation|automation_name|bar_color|basepath|bg_color|column_width|default|default_value|dnd_behaviour|filepath|file_type|font_type|grid_height|grid_width|grid_x|grid_y|height|help|hide|key_alt|key_control|key_shift|label|max|max_value|min|min_value|mouse_behaviour|none|num_items|off_color|on_color|overload_color|peak_color|picture|picture_state|x|pos_x|y|pos_y|selected_item_idx|show_arrows|text|textline|textpos_y|text_alignment|unit|value|vertical|width|zero_line_color|z_layer)\b
@@ -55,7 +55,7 @@ contexts:
     - match: "[-+*/]"
       comment: Arithmetic Operator
       scope: operator.source.ksp
-    - match: \b(if|to|downto|else|for|while|select|case)\b
+    - match: (?!#)\b(if|to|downto|else|for|while|select|case)\b(?!#)
       comment: Control keywords
       scope: keyword.control.source.ksp
     - match: '((function|macro|taskfunc) +([a-zA-Z0-9_.#]+)\s*)\(?'
@@ -96,7 +96,7 @@ contexts:
         - match: \)|$
           pop: true
         - include: main
-    - match: \b(struct|define|literals|on|pers|instpers|read|list|function|taskfunc|macro|declare|const|polyphonic|end|local|global|family|import|as|property|override|declare|ui_label|ui_button|ui_switch|ui_slider|ui_menu|ui_value_edit|ui_waveform|ui_knob|ui_table|ui_xy|call|step|ui_text_edit|ui_level_meter|ui_file_selector)\b
+    - match: (?!#)\b(struct|define|literals|on|pers|instpers|read|list +|function|taskfunc|macro|declare|const|polyphonic|end|local|global|family|import|as|property|override|declare|ui_label|ui_button|ui_switch|ui_slider|ui_menu|ui_value_edit|ui_waveform|ui_knob|ui_table|ui_xy|call|step|ui_text_edit|ui_level_meter|ui_file_selector)\b(?!#)
       comment: Other keywords
       scope: keyword.other.source.ksp
     - match: '".*?"'
