@@ -355,7 +355,8 @@ def handle_conditional_lines(lines):
                 false_index = -1
 
             clear_this_line = True
-        if 'SET_CONDITION(' in line or 'USE_CODE_IF' in line:
+
+        if not clear_this_line and 'SET_CONDITION(' in line:
             m = re.search('\((.+?)\)', line)
             if m:
                 cond = m.group(1).strip()
@@ -368,7 +369,12 @@ def handle_conditional_lines(lines):
                         true_conditions.remove(cond)
                     if not cond.startswith('NO_SYS'):  # if it starts with NO_SYS, then leave it in the code
                         clear_this_line = True
-                elif line.lstrip().startswith('USE_CODE_IF('):
+
+        if 'USE_CODE_IF' in line:
+            m = re.search('\((.+?)\)', line)
+            if m:
+                cond = m.group(1).strip()
+                if line.lstrip().startswith('USE_CODE_IF('):
                     if false_index == -1 and cond not in true_conditions:
                         false_index = len(use_code_conds)
 
@@ -382,6 +388,7 @@ def handle_conditional_lines(lines):
                     use_code_conds.append(cond not in true_conditions)
 
                     clear_this_line = True
+
         if clear_this_line:
             line_obj.command = re.sub(r'[^\r\n]', '', line)
 
@@ -1539,7 +1546,6 @@ class KSPCompiler(object):
         self.lines = parse_lines_and_handle_imports(source,
                                                     read_file_function=self.read_file_func,
                                                     preprocessor_func=self.examine_pragmas)
-        handle_conditional_lines(self.lines)
 
 
     # NOTE(Sam): Previously done in the expand_macros function, the lines are converted into a block in separately
@@ -1692,10 +1698,11 @@ class KSPCompiler(object):
                  # NOTE(Sam): Call the pre-macro section of the preprocessor
                  ('pre-macro processes',         lambda: pre_macro_functions(self.lines),                  True,      1),
                  ('parsing macros',              lambda: self.extract_macros(),                  True,      1),
-                 ('expanding macros',    lambda: self.expand_macros(),                                                True,      1),
+                 ('expanding macros',            lambda: self.expand_macros(),                                                True,      1),
                  # NOTE(Sam): Call the post-macro section of the preprocessor
                  ('post-macro processes',        lambda: post_macro_functions(self.lines),                 True,      1),
                  # NOTE(Sam): Convert the lines to a block in a separate function
+                 ('handling conditionals',       lambda: handle_conditional_lines(self.lines),                 True,      1),
                  ('convert lines to code block', lambda: self.convert_lines_to_code(),                                         True,      1),
                  ('parse code',                  lambda: self.parse_code(),                                                   True,      1),
                  ('various tasks',               lambda: ASTModifierFixReferencesAndFamilies(self.module, self.lines),        True,      1),
