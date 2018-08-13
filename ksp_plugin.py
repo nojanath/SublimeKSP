@@ -107,7 +107,7 @@ class CompileKspThread(threading.Thread):
     def read_file_function(self, filepath):
         if filepath.startswith('http://'):
             from urllib.request import urlopen
-            s = urlopen(filepath, timeout=5).read().decode('latin-1')
+            s = urlopen(filepath, timeout=5).read().decode('utf-8')
             return re.sub('\r+\n*', '\n', s)
 
         if self.base_path:
@@ -115,7 +115,7 @@ class CompileKspThread(threading.Thread):
         filepath = os.path.abspath(filepath)
         view = CompileKspThread.find_view_by_filename(filepath, self.base_path)
         if view is None:
-            s = codecs.open(filepath, 'r', 'latin-1').read()
+            s = codecs.open(filepath, 'r', 'utf-8').read()
             return re.sub('\r+\n*', '\n', s)
         else:
             return view.substr(sublime.Region(0, view.size()))
@@ -162,8 +162,8 @@ class CompileKspThread(threading.Thread):
                         self.compiler.output_file = os.path.join(self.base_path, self.compiler.output_file)
                     codecs.open(self.compiler.output_file, 'w', 'latin-1').write(code)
                     #codecs.open(self.compiler.output_file, 'w', 'mac-roman').write(code)
-                    sublime.status_message("Successfully compiled (compiled code saved to %s)." % self.compiler.output_file)
                     #codecs.open(self.compiler.output_file, 'w', 'utf-8').write(code)
+                    sublime.status_message("Successfully compiled (compiled code saved to %s)." % self.compiler.output_file)
                 else:
                     sublime.status_message("Successfully compiled (the code is now on the clipboard ready to be pasted into Kontakt).")
                     sublime.set_clipboard(code)
