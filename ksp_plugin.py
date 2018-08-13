@@ -148,7 +148,7 @@ class CompileKspThread(threading.Thread):
         try:
             sublime.status_message('Compiling...')
 
-            self.compiler = ksp_compiler.KSPCompiler(code, compact, compactVars, comments_on_expansion,
+            self.compiler = ksp_compiler.KSPCompiler(code, self.base_path, compact, compactVars, comments_on_expansion,
                                                      read_file_func=self.read_file_function,
                                                      optimize=optimize and check,
                                                      extra_syntax_checks=check,

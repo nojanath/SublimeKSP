@@ -13,6 +13,7 @@
 # GNU General Public License for more details.
 
 import re
+import os
 import collections
 import ksp_ast
 import ksp_ast_processing
@@ -340,13 +341,19 @@ def parse_lines_and_handle_imports(code, filename=None, namespaces=None, read_fi
 
 def handle_conditional_lines(lines):
     ''' handle SET_CONDITION, RESET_CONDITION, USE_CODE_IF and USE_CODE_IF_NOT '''
-    skip_line_mode = False
+    use_code_conds = []
+    false_index = -1
+
     for line_obj in lines:
         line = line_obj.command
-        clear_this_line = skip_line_mode
         ls_line = line.lstrip()
+        
+        clear_this_line = false_index + 1
+
         if 'END_USE_CODE' in line:
-            skip_line_mode = False
+            if use_code_conds.pop() == False and len(use_code_conds) == false_index:
+                false_index = -1
+
             clear_this_line = True
         if 'SET_CONDITION(' in line or 'USE_CODE_IF' in line:
             m = re.search('\((.+?)\)', line)
@@ -362,10 +369,18 @@ def handle_conditional_lines(lines):
                     if not cond.startswith('NO_SYS'):  # if it starts with NO_SYS, then leave it in the code
                         clear_this_line = True
                 elif line.lstrip().startswith('USE_CODE_IF('):
-                    skip_line_mode = cond not in true_conditions
+                    if false_index == -1 and cond not in true_conditions:
+                        false_index = len(use_code_conds)
+
+                    use_code_conds.append(cond in true_conditions)
+
                     clear_this_line = True
                 elif line.lstrip().startswith('USE_CODE_IF_NOT('):
-                    skip_line_mode = cond in true_conditions
+                    if false_index == -1 and cond in true_conditions:
+                        false_index = len(use_code_conds)
+
+                    use_code_conds.append(cond not in true_conditions)
+
                     clear_this_line = True
         if clear_this_line:
             line_obj.command = re.sub(r'[^\r\n]', '', line)
@@ -1452,8 +1467,9 @@ def default_read_file_func(filepath):
     return open(filepath, 'r').read()
 
 class KSPCompiler(object):
-    def __init__(self, source, compact=True, compactVars=False, comments_on_expansion=True, read_file_func=default_read_file_func, extra_syntax_checks=False, optimize=False, check_empty_compound_statements=False):
+    def __init__(self, source, basedir, compact=True, compactVars=False, comments_on_expansion=True, read_file_func=default_read_file_func, extra_syntax_checks=False, optimize=False, check_empty_compound_statements=False):
         self.source = source
+        self.basedir = basedir
         self.compact = compact
         self.compactVars = compactVars
         self.comments_on_expansion = comments_on_expansion
@@ -1554,7 +1570,15 @@ class KSPCompiler(object):
         pragma_re = re.compile(r'\{ ?\#pragma\s+save_compiled_source\s+(.*)\}')
         m = pragma_re.search(code)
         if m:
-            self.output_file = m.group(1)
+            dir_check = m.group(1)
+            if not os.path.isabs(dir_check):
+                dir_check = os.path.join(self.basedir, dir_check) 
+
+            if not os.path.exists(os.path.dirname(dir_check)):
+                raise Exception("Output directory for this file does not exist: " + os.path.dirname(dir_check))
+            else:
+                self.output_file = dir_check
+
 
         # find info about which variable names not to compact
         pragma_re = re.compile(r'\{ ?\#pragma\s+preserve_names\s+(.*?)\s*\}')
@@ -1796,6 +1820,7 @@ if __name__ == "__main__":
     code = args.source_file.read()
     compiler = KSPCompiler(
         code,
+        basedir,
         compact=args.compact,
         compactVars=args.compact_variables,
         comments_on_expansion=False,
