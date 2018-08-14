@@ -449,7 +449,7 @@ class KspFixLineEndings(sublime_plugin.EventListener):
             return False
 
     def set_ksp_syntax(self, view):
-        view.set_syntax_file("Packages/KSP (Kontakt Script Processor)/KSP.sublime-syntax")
+        view.set_syntax_file("KSP.sublime-syntax")
 
     def on_load(self, view):
         if self.is_probably_ksp_file(view):
