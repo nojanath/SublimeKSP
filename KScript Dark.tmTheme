@@ -14,13 +14,13 @@
 				<key>background</key>
 				<string>#191919</string>
 				<key>bracketContentsForeground</key>
-				<string>#F90</string>
+				<string>#F00</string>
 				<key>bracketContentsOptions</key>
-				<string>foreground</string>
+				<string>foreground bold</string>
 				<key>bracketsForeground</key>
-				<string>#F90</string>
+				<string>#F00</string>
 				<key>bracketsOptions</key>
-				<string>foreground underline</string>
+				<string>foreground underline bold</string>
 				<key>caret</key>
 				<string>#999</string>
 				<key>foreground</key>
@@ -28,7 +28,7 @@
 				<key>gutterForeground</key>
 				<string>#999</string>
 				<key>invisibles</key>
-				<string>#000</string>
+				<string>#333</string>
 				<key>lineHighlight</key>
 				<string>#222</string>
 				<key>selection</key>
