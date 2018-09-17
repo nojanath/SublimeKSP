@@ -13,7 +13,6 @@
 # GNU General Public License for more details.
 
 import re
-import os
 import collections
 import ksp_ast
 import ksp_ast_processing
@@ -30,6 +29,14 @@ from logger import logger_code
 import time
 from preprocessor_plugins import pre_macro_functions, macro_iter_functions, post_macro_functions
 ##from cStringIO import StringIO
+import sublime, sublime_plugin
+import urllib, tarfile, os, json, shutil
+import os.path
+from subprocess import call
+try:
+    import winsound
+except Exception:
+    pass
 
 variable_prefixes = '$%@!?~'
 
@@ -152,6 +159,8 @@ class ParseException(ExceptionWithMessage):
         Exception.__init__(self, msg)
         self.line = line
         self.message = msg
+
+        playSound.file("error.wav")
 
 class Line:
     def __init__(self, s, locations=None, namespaces=None):
@@ -355,8 +364,7 @@ def handle_conditional_lines(lines):
                 false_index = -1
 
             clear_this_line = True
-
-        if not clear_this_line and 'SET_CONDITION(' in line:
+        if 'SET_CONDITION(' in line or 'USE_CODE_IF' in line:
             m = re.search('\((.+?)\)', line)
             if m:
                 cond = m.group(1).strip()
@@ -369,12 +377,7 @@ def handle_conditional_lines(lines):
                         true_conditions.remove(cond)
                     if not cond.startswith('NO_SYS'):  # if it starts with NO_SYS, then leave it in the code
                         clear_this_line = True
-
-        if 'USE_CODE_IF' in line:
-            m = re.search('\((.+?)\)', line)
-            if m:
-                cond = m.group(1).strip()
-                if line.lstrip().startswith('USE_CODE_IF('):
+                elif line.lstrip().startswith('USE_CODE_IF('):
                     if false_index == -1 and cond not in true_conditions:
                         false_index = len(use_code_conds)
 
@@ -388,7 +391,6 @@ def handle_conditional_lines(lines):
                     use_code_conds.append(cond not in true_conditions)
 
                     clear_this_line = True
-
         if clear_this_line:
             line_obj.command = re.sub(r'[^\r\n]', '', line)
 
@@ -502,6 +504,25 @@ def expand_macros(lines, macros, level=0):
         return expand_macros(new_lines + new_callback_lines, macros, level+1)
     else:
         return (new_lines, new_callback_lines)
+
+class playSound:
+
+    def file(filename):
+        dir_path = os.path.join(sublime.packages_path(), "KSP", "sounds", filename)
+
+        if sublime.platform() == "osx":
+            if os.path.isfile(dir_path):
+                call(["afplay", "-v", str(1), dir_path])
+
+        if sublime.platform() == "windows":
+            dir_path = SOUNDS_DIR_PATH()
+            if os.path.isfile(dir_path):
+                winsound.PlaySound(dir_path, winsound.SND_FILENAME | winsound.SND_ASYNC | winsound.SND_NODEFAULT)
+
+        if sublime.platform() == "linux":
+            dir_path = SOUNDS_DIR_PATH()
+            if os.path.isfile(dir_path):
+                call(["aplay", dir_path])
 
 class ASTModifierBase(ksp_ast_processing.ASTModifier):
     def __init__(self, modify_expressions=False):
@@ -1424,7 +1445,7 @@ def find_cycles(graph, ready=None):
             top = stack[-1]
             for node in graph[top]:
                 if node in stack:
-                    raise Exception('Recursion detected: ' + '->'.join(map(str, stack + [node])))
+                    raise ParseException('Recursion detected: ' + '->'.join(map(str, stack + [node])))
                 if node in todo:
                     stack.append(node)
                     todo.remove(node)
@@ -1474,9 +1495,8 @@ def default_read_file_func(filepath):
     return open(filepath, 'r').read()
 
 class KSPCompiler(object):
-    def __init__(self, source, basedir, compact=True, compactVars=False, comments_on_expansion=True, read_file_func=default_read_file_func, extra_syntax_checks=False, optimize=False, check_empty_compound_statements=False):
+    def __init__(self, source, compact=True, compactVars=False, comments_on_expansion=True, read_file_func=default_read_file_func, extra_syntax_checks=False, optimize=False, check_empty_compound_statements=False):
         self.source = source
-        self.basedir = basedir
         self.compact = compact
         self.compactVars = compactVars
         self.comments_on_expansion = comments_on_expansion
@@ -1546,6 +1566,7 @@ class KSPCompiler(object):
         self.lines = parse_lines_and_handle_imports(source,
                                                     read_file_function=self.read_file_func,
                                                     preprocessor_func=self.examine_pragmas)
+        handle_conditional_lines(self.lines)
 
 
     # NOTE(Sam): Previously done in the expand_macros function, the lines are converted into a block in separately
@@ -1576,15 +1597,10 @@ class KSPCompiler(object):
         pragma_re = re.compile(r'\{ ?\#pragma\s+save_compiled_source\s+(.*)\}')
         m = pragma_re.search(code)
         if m:
-            dir_check = m.group(1)
-            if not os.path.isabs(dir_check):
-                dir_check = os.path.join(self.basedir, dir_check) 
-
-            if not os.path.exists(os.path.dirname(dir_check)):
-                raise Exception("Output directory for this file does not exist: " + os.path.dirname(dir_check))
-            else:
-                self.output_file = dir_check
-
+            self.output_file = m.group(1)
+            
+            if not os.path.isfile(self.output_file):    
+                raise ParseException(Line("", [(None, 1)], None), 'The filepath in save_compiled_source does not exist!')
 
         # find info about which variable names not to compact
         pragma_re = re.compile(r'\{ ?\#pragma\s+preserve_names\s+(.*?)\s*\}')
@@ -1653,9 +1669,9 @@ class KSPCompiler(object):
             elif v not in self.original2short and v not in ksp_builtins.variables:
                 self.original2short[v] = '%s%s' % (v[0], compress_variable_name(v))
                 if self.original2short[v] in ksp_builtins.variables:
-                    raise Exception('This is your unlucky day. Even though the chance is only 3.2%%%% the variable %s was mapped to the same hash as that of a builtin KSP variable.' % (v))
+                    raise ParseException('This is your unlucky day. Even though the chance is only 3.2%%%% the variable %s was mapped to the same hash as that of a builtin KSP variable.' % (v))
                 if self.original2short[v] in self.short2original:
-                    raise Exception('This is your unlucky day. Even though the chance is only 3.2%%%% two variable names were compacted to the same short name: %s and %s' % (v, self.short2original[self.original2short[v]]))
+                    raise ParseException('This is your unlucky day. Even though the chance is only 3.2%%%% two variable names were compacted to the same short name: %s and %s' % (v, self.short2original[self.original2short[v]]))
                 self.short2original[self.original2short[v]] = v
         ASTModifierIDSubstituter(self.original2short, force_lower_case=True).modify(self.module)
 
@@ -1673,6 +1689,7 @@ class KSPCompiler(object):
         localtime = time.asctime( time.localtime(time.time()) )
         self.compiled_code = "{ Compiled on " + localtime + " }\n" + self.compiled_code
 
+        playSound.file("compile.wav")
 
     def uncompress_variable_names(self, compiled_code):
         def sub_func(match_obj):
@@ -1698,11 +1715,10 @@ class KSPCompiler(object):
                  # NOTE(Sam): Call the pre-macro section of the preprocessor
                  ('pre-macro processes',         lambda: pre_macro_functions(self.lines),                  True,      1),
                  ('parsing macros',              lambda: self.extract_macros(),                  True,      1),
-                 ('expanding macros',            lambda: self.expand_macros(),                                                True,      1),
+                 ('expanding macros',    lambda: self.expand_macros(),                                                True,      1),
                  # NOTE(Sam): Call the post-macro section of the preprocessor
                  ('post-macro processes',        lambda: post_macro_functions(self.lines),                 True,      1),
                  # NOTE(Sam): Convert the lines to a block in a separate function
-                 ('handling conditionals',       lambda: handle_conditional_lines(self.lines),                 True,      1),
                  ('convert lines to code block', lambda: self.convert_lines_to_code(),                                         True,      1),
                  ('parse code',                  lambda: self.parse_code(),                                                   True,      1),
                  ('various tasks',               lambda: ASTModifierFixReferencesAndFamilies(self.module, self.lines),        True,      1),
@@ -1758,8 +1774,6 @@ class KSPCompiler(object):
 
 if __name__ == "__main__":
     import sys
-    import os
-    import os.path
     import codecs
     import argparse
 
@@ -1818,7 +1832,7 @@ if __name__ == "__main__":
     def read_file_func(filepath):
         if not os.path.isabs(filepath):
             if basedir is None:
-                raise Exception('Relative import paths not supported when the base path of the source file is unknown')
+                raise ParseException('Relative import paths not supported when the base path of the source file is unknown')
             else:
                 filepath = os.path.join(basedir, filepath)
         return codecs.open(filepath, 'r', 'latin-1').read()
@@ -1827,7 +1841,6 @@ if __name__ == "__main__":
     code = args.source_file.read()
     compiler = KSPCompiler(
         code,
-        basedir,
         compact=args.compact,
         compactVars=args.compact_variables,
         comments_on_expansion=False,
