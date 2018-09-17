@@ -508,7 +508,7 @@ def expand_macros(lines, macros, level=0):
 class playSound:
 
     def file(filename):
-        dir_path = os.path.join(sublime.packages_path(), "KSP", "sounds", filename)
+        dir_path = os.path.join(sublime.packages_path(), "KSP (Kontakt Script Processor)", "sounds", filename)
 
         if sublime.platform() == "osx":
             if os.path.isfile(dir_path):
