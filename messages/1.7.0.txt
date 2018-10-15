@@ -1,0 +1,19 @@
+Version: 1.7.0
+
+Updates:
+
+-SublimeKSP now supports all new syntax introduced by Kontakt 6. From the KSP Reference
+	• New engine_par constants for new KONTAKT 6 effects.
+	• New engine_par constants for new Wavetable mode.
+	• New UI control: ui_wavetable including new commands and built-in variables.
+	• New commands for variable watching through Creator Tools: watch_var() and watch_array_idx()
+	• New control parameter allows deactivating text position shifts when clicking on buttons and switches: $CONTROL_PAR_DISABLE_TEXT_SHIFTING
+	• New command enables use of custom dynamic fonts: get_font_id()
+	• New control parameters allow granular control over font types for a button’s or menu’s different states: $CONTROL_PAR_FONT_TYPE_ON, $CONTROL_PAR_FONT_TYPE_OFF_PRESSED,
+	$CONTROL_PAR_FONT_TYPE_ON_PRESSED, $CONTROL_PAR_FONT_TYPE_OFF_HOVER and $CONTROL_PAR_FONT_TYPE_ON_HOVER
+	• New command allows for quickly disabling emission of messages, warnings or watched variable events to both the Kontakt Status Bar and Creator Tools: disable_logging() with one of the following as the: $NI_LOG_MESSAGE, $NI_LOG_WARNING, $NI_LOG_WATCHING
+	• New built-in variable and related built-in constants for the XY Pad allow identification of the mouse events that trigger its callback: $NI_MOUSE_EVENT_TYPE, $NI_MOUSE_EVENT_TYPE_LEFT_BUTTON_DOWN, $NI_MOUSE_EVENT_TYPE_LEFT_BUTTON_UP and $NI_MOUSE_EVENT_TYPE_DRAG
+
+-USE_CODE_IF behavior has now improved to support nesting. SET_CONDITION now no longer is processed if inside another USE_CODE_IF() block which has been processed and omitted due to conditionals.
+
+-Compilation now cancels with a message if the save_compiled_source path is not valid.
