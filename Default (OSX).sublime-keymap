@@ -1,0 +1,29 @@
+[
+        {
+            "keys": ["super+k"],
+             "command" : "compile_ksp",
+             "context": [{ "key": "selector", "operator": "equal", "operand": "source.ksp" }]
+        },
+        {
+            "keys": ["super+shift+k"],
+             "command" : "ksp_recompile",
+             "context": [{ "key": "selector", "operator": "equal", "operand": "source.ksp" }]
+        },
+        {
+            "keys": ["super+alt+c"],
+            "command": "numeric_sequence",
+            "context": [{ "key": "selector", "operator": "equal", "operand": "source.ksp" }]
+        },
+        {
+            "keys": ["enter"],
+            "command": "ksp_on_enter",
+            "context": [{ "key": "selector", "operator": "equal", "operand": "source.ksp", },
+                        { "key": "auto_complete_visible", "operator": "equal", "operand": false }]
+        },
+        {
+            "keys": ["super+alt+u"],
+            "command": "ksp_uncompress_code",
+            "context": [{ "key": "selector", "operator": "equal", "operand": "source.ksp" }]
+        },
+
+]

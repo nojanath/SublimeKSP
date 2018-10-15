@@ -1,0 +1,7 @@
+{
+    "extensions":["ksp"],
+    "word_separators": "/\\()\"'-:,;<>~#^&*|+=[]{}`~?",
+    "auto_indent": true,
+    "smart_indent": true,
+    "match_brackets_angle": false,
+}

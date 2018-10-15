@@ -508,7 +508,7 @@ def expand_macros(lines, macros, level=0):
 class playSound:
 
     def file(filename):
-        dir_path = os.path.join(sublime.packages_path(), "KSP", "sounds", filename)
+        dir_path = os.path.join(sublime.packages_path(), "KSP (Kontakt Script Processor)", "sounds", filename)
 
         if sublime.platform() == "osx":
             if os.path.isfile(dir_path):
@@ -1599,8 +1599,8 @@ class KSPCompiler(object):
         if m:
             self.output_file = m.group(1)
             
-##            if not os.path.isfile(self.output_file):    
-  ##              raise ParseException(Line("", [(None, 1)], None), 'The filepath in save_compiled_source does not exist!')
+            if not os.path.isfile(self.output_file):    
+                raise ParseException(Line("", [(None, 1)], None), 'The filepath in save_compiled_source does not exist!')
 
         # find info about which variable names not to compact
         pragma_re = re.compile(r'\{ ?\#pragma\s+preserve_names\s+(.*?)\s*\}')

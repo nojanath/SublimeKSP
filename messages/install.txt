@@ -1,0 +1,9 @@
+See the Wiki at https://github.com/nojanath/SublimeKSP/wiki for the latest features and updates.
+
+If you like this plugin go to Nils' site at http://nilsliberg.se/ksp/ and leave him a donation for his awesome work.
+
+If you have any problems or suggestions please open an issue or, even better, a pull request at https://github.com/nojanath/SublimeKSP.
+
+Happy scripting! 
+
+JT

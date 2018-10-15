@@ -1,0 +1,10 @@
+<snippet>
+    <content><![CDATA[
+macro ${1:name}
+	${0}
+end macro
+]]></content>
+	<description>macro</description>
+    <tabTrigger>macro</tabTrigger>
+    <scope>source.ksp</scope>
+</snippet>

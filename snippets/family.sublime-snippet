@@ -1,0 +1,10 @@
+<snippet>
+    <content><![CDATA[
+family ${1:myfam}
+	${0}
+end family
+]]></content>
+	<description>family</description>
+    <tabTrigger>family</tabTrigger>
+    <scope>source.ksp</scope>
+</snippet>

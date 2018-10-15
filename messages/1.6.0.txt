@@ -1,0 +1,10 @@
+Version: 1.6.0
+
+New features:
+- Kontakt 5.7 Support (new engine parameters and control parameters).
+- You can now use the "instpers" keyword for declaring variables and automatically calling the make_instr_persistent() method on them.
+
+Bug Fixes:
+- Autocomplete for functions now works regardless of where the function is being used and what type of function it is.
+- Updated autocomplete snippets for declaring controls and writing callbacks.
+- Syntax coloring fixes for the KScript Light and Dark themes.

@@ -1,0 +1,10 @@
+<snippet>
+    <content><![CDATA[
+struct ${0:name}
+	${1}
+end struct
+]]></content>
+	<description>struct block</description>
+    <tabTrigger>struct</tabTrigger>
+    <scope>source.ksp</scope>
+</snippet>

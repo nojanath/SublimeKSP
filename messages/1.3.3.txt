@@ -1,0 +1,9 @@
+Version:
+- 1.3.3
+
+Bug fixes:
+- Fixed bug with new comment symbol // that affected strings containing URLs
+
+Misc:
+- General plugin cleanup: removed old unused files, updated syntax file to
+KSP.sublime-syntax

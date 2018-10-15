@@ -1,0 +1,10 @@
+<snippet>
+	<content><![CDATA[
+on init
+	${0}
+end on
+]]></content>
+	<description>init callback</description>
+	<tabTrigger>icb</tabTrigger>
+	<scope>source.ksp</scope>
+</snippet>

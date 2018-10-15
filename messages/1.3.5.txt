@@ -1,0 +1,10 @@
+Version: 1.3.5
+
+New features:
+- Multidimensional UI arrays
+
+Create multidimensional UI arrays. This works in the same way that normal multidimensional arrays work. If you want to access the single dimension version you prefix the name with an underscore. Because UI elements also have a variable name, these will also have the underscore. You must use define constants or literals for the array dimensions. There is no automatically generated .SIZE_D1 constants like in the regular multidimensional arrays.
+
+- literate_macro.  New feature suggested by neblix, and implemented by Andreas.
+
+You can now define a set of literals strings to use in a new function called literate_macro(). These literal strings are used by the function to call a macro multiple times, each time using a different string as the argument. In similar fashion to the iterate_macro() function, you first need to create a macro with 1 argument, but this time the argument is any text replacement. Check if you can achieve what you want by using UI arrays before trying this method.

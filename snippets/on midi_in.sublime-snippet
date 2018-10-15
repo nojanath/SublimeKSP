@@ -1,0 +1,10 @@
+<snippet>
+    <content><![CDATA[
+on midi_in
+	${0}
+end on
+]]></content>
+	<description>MIDI in callback</description>
+    <tabTrigger>midi</tabTrigger>
+    <scope>source.ksp</scope>
+</snippet>
