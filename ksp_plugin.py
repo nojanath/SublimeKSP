@@ -148,7 +148,7 @@ class CompileKspThread(threading.Thread):
         try:
             sublime.status_message('Compiling...')
 
-            self.compiler = ksp_compiler.KSPCompiler(code, self.base_path, compact, compactVars, comments_on_expansion,
+            self.compiler = ksp_compiler.KSPCompiler(code, compact, compactVars, comments_on_expansion,
                                                      read_file_func=self.read_file_function,
                                                      optimize=optimize and check,
                                                      extra_syntax_checks=check,
@@ -449,7 +449,7 @@ class KspFixLineEndings(sublime_plugin.EventListener):
             return False
 
     def set_ksp_syntax(self, view):
-        view.set_syntax_file("Packages/KSP (Kontakt Script Processor)/KSP.sublime-syntax")
+        view.set_syntax_file("KSP.sublime-syntax")
 
     def on_load(self, view):
         if self.is_probably_ksp_file(view):
