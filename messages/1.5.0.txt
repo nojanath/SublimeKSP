@@ -1,4 +1,0 @@
-Version: 1.5.0
-
-New features:
-- Kontakt 5.6 support

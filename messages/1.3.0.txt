@@ -1,1 +1,0 @@
-* Major additions from Sam Windell (https://github.com/SamWindell).  Details on all of the new features are here: https://github.com/nojanath/SublimeKSP/wiki/Added-Features

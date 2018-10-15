@@ -1,4 +1,0 @@
-Version: 1.3.8
-
-Bug fixes:
-- Fix the floating point bug with using a divide operator in define constant values

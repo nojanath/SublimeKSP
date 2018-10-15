@@ -1,6 +1,0 @@
-<snippet>
-	<content><![CDATA[declare const ${1:name}]]></content>
-	<description>constant</description>
-	<tabTrigger>const</tabTrigger>
-	<scope>source.ksp</scope>
-</snippet>

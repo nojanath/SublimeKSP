@@ -1,6 +1,0 @@
-<snippet>
-	<content><![CDATA[declare ui_menu ${1:name}]]></content>
-	<description>ui_menu</description>
-	<tabTrigger>ui_menu</tabTrigger>
-	<scope>source.ksp</scope>
-</snippet>
