@@ -150,8 +150,8 @@ class CompileKspThread(threading.Thread):
 
             self.compiler = ksp_compiler.KSPCompiler(code, self.base_path, compact, compactVars, comments_on_expansion,
                                                      read_file_func=self.read_file_function,
-                                                     optimize=optimize and check,
                                                      extra_syntax_checks=check,
+                                                     optimize=optimize and check,
                                                      check_empty_compound_statements=check_empty_compound_statements)
             if self.compiler.compile(callback=self.compile_on_progress):
                 last_compiler = self.compiler
