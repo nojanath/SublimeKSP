@@ -1579,13 +1579,15 @@ class KSPCompiler(object):
         if m:
             dir_check = m.group(1)
             if not os.path.isabs(dir_check):
+                if self.basedir == None:
+                    raise Exception('Please save the file being compiled before attempting to compile to a relative path.')
+                    
                 dir_check = os.path.join(self.basedir, dir_check) 
 
             if not os.path.exists(os.path.dirname(dir_check)):
-                raise ParseException(Line("", [(None, 1)], None), 'The filepath in save_compiled_source does not exist!')
+                raise Exception('The filepath in save_compiled_source does not exist!')
             else:
                 self.output_file = dir_check
-
 
         # find info about which variable names not to compact
         pragma_re = re.compile(r'\{ ?\#pragma\s+preserve_names\s+(.*?)\s*\}')
