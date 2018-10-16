@@ -870,7 +870,7 @@ get_purge_state(<group-index>):integer
 get_sample_length(<zone-id>):integer
 get_ui_id(<variable>):integer
 get_ui_wf_property(<waveform>,<property>,<index>):integer
-get_voice_limit(<voice­type>)
+get_voice_limit(<voice­type>):integer
 group_name(<group-index>):string
 hide_part(<variable>,<value>)
 ignore_controller()
