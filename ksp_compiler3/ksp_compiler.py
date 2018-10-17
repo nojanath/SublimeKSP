@@ -1403,12 +1403,10 @@ class playSound:
                 call(["afplay", "-v", str(1), dir_path])
 
         if sublime.platform() == "windows":
-            dir_path = SOUNDS_DIR_PATH()
             if os.path.isfile(dir_path):
                 winsound.PlaySound(dir_path, winsound.SND_FILENAME | winsound.SND_ASYNC | winsound.SND_NODEFAULT)
 
         if sublime.platform() == "linux":
-            dir_path = SOUNDS_DIR_PATH()
             if os.path.isfile(dir_path):
                 call(["aplay", dir_path])
 
