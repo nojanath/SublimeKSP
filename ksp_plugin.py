@@ -15,6 +15,13 @@ sys.path.append(os.path.join(os.path.dirname(__file__), 'ksp_compiler3'))
 import ksp_compiler
 import ksp_ast
 
+import urllib, tarfile, json, shutil
+from subprocess import call
+try:
+    import winsound
+except Exception:
+    pass
+
 last_compiler = None
 
 class KspRecompile(sublime_plugin.ApplicationCommand):
@@ -58,6 +65,26 @@ class CompileKspCommand(sublime_plugin.ApplicationCommand):
         self.thread.start()
         self.last_filename = view.file_name()
 
+class CompilerSounds:
+    dir = None 
+
+    def __init__(self):
+        self.dir = os.path.join(os.path.dirname(__file__), 'sounds')
+
+    def play(self, **kwargs):
+        sound_path = os.path.join(self.dir, '{}.wav'.format(kwargs['command']))
+
+        if sublime.platform() == "osx":
+            if os.path.isfile(sound_path):
+                call(["afplay", "-v", str(1), sound_path])
+
+        if sublime.platform() == "windows":
+            if os.path.isfile(sound_path):
+                winsound.PlaySound(sound_path, winsound.SND_FILENAME | winsound.SND_ASYNC | winsound.SND_NODEFAULT)
+
+        if sublime.platform() == "linux":
+            if os.path.isfile(sound_path):
+                call(["aplay", sound_path])
 
 class CompileKspThread(threading.Thread):
 
@@ -145,6 +172,8 @@ class CompileKspThread(threading.Thread):
         error_lineno = None
         error_filename = filepath # path to main script
 
+        sound_utility = CompilerSounds()
+
         try:
             sublime.status_message('Compiling...')
 
@@ -191,8 +220,12 @@ class CompileKspThread(threading.Thread):
         except Exception as e:
             error_msg = str(e)
             error_msg = ''.join(traceback.format_exception(*sys.exc_info()))
+            
         if error_msg:
             self.compile_handle_error(error_msg, error_lineno, error_filename)
+            sound_utility.play(command="error")
+        else:
+            sound_utility.play(command="finished")
 
     def description(self, *args):
         return 'Compiled KSP'

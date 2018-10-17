@@ -29,7 +29,6 @@ import ply.lex as lex
 from logger import logger_code
 import time
 from preprocessor_plugins import pre_macro_functions, macro_iter_functions, post_macro_functions
-##from cStringIO import StringIO
 
 variable_prefixes = '$%@!?~'
 
@@ -1675,7 +1674,6 @@ class KSPCompiler(object):
         # NOTE(Sam): Add a ksp comment at the beginning of the compiled script to display the time and date it was compiled on
         localtime = time.asctime( time.localtime(time.time()) )
         self.compiled_code = "{ Compiled on " + localtime + " }\n" + self.compiled_code
-
 
     def uncompress_variable_names(self, compiled_code):
         def sub_func(match_obj):
