@@ -30,6 +30,13 @@ from logger import logger_code
 import time
 from preprocessor_plugins import pre_macro_functions, macro_iter_functions, post_macro_functions
 ##from cStringIO import StringIO
+import sublime, sublime_plugin
+import urllib, tarfile, json, shutil
+from subprocess import call
+try:
+    import winsound
+except Exception:
+    pass
 
 variable_prefixes = '$%@!?~'
 
@@ -152,6 +159,7 @@ class ParseException(ExceptionWithMessage):
         Exception.__init__(self, msg)
         self.line = line
         self.message = msg
+        playSound.file("error.wav")
 
 class Line:
     def __init__(self, s, locations=None, namespaces=None):
@@ -1382,6 +1390,26 @@ class ASTModifierFixPrefixesAndFixControlPars(ASTModifierFixPrefixes):
         else:
             return node
 
+## playSound: there should be a better way to query the /sounds folder without using the parent folder. Since the devs might
+## have different names for the parent folder (e.g. if they pull sKSP via PackageControl vs if they pull it from GitHub), 
+## we should change the path in os.path.join to be relative to /sounds.
+class playSound:
+
+    def file(filename):
+        dir_path = os.path.join(sublime.packages_path(), "KSP (Kontakt Script Processor)", "sounds", filename)
+
+        if sublime.platform() == "osx":
+            if os.path.isfile(dir_path):
+                call(["afplay", "-v", str(1), dir_path])
+
+        if sublime.platform() == "windows":
+            if os.path.isfile(dir_path):
+                winsound.PlaySound(dir_path, winsound.SND_FILENAME | winsound.SND_ASYNC | winsound.SND_NODEFAULT)
+
+        if sublime.platform() == "linux":
+            if os.path.isfile(dir_path):
+                call(["aplay", dir_path])
+
 def mark_used_functions_using_depth_first_traversal(call_graph, start_node=None, visited=None):
     ''' Make a depth-first traversal of call graph and set the used attribute of functions invoked directly or indirectly from some callback.
         The graph is represented by a dictionary where graph[f1] == f1 means that the function with name f1 calls the function with name f2 (the names are strings).'''
@@ -1672,10 +1700,11 @@ class KSPCompiler(object):
         self.module.emit(emitter)
         self.compiled_code = buffer.getvalue()
 
+        playSound.file("compile.wav")
+
         # NOTE(Sam): Add a ksp comment at the beginning of the compiled script to display the time and date it was compiled on
         localtime = time.asctime( time.localtime(time.time()) )
         self.compiled_code = "{ Compiled on " + localtime + " }\n" + self.compiled_code
-
 
     def uncompress_variable_names(self, compiled_code):
         def sub_func(match_obj):
