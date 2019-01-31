@@ -68,7 +68,7 @@ contexts:
         - meta_scope: function.ksp
         - match: \)|$
           pop: true
-        - match: "out|in "
+        - match: "out |in "
           scope: keyword.other.source.ksp
         - match: "[a-zA-Z0-9_#.]+"
           scope: variable.parameter.function.source.ksp
