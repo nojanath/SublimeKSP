@@ -27,7 +27,12 @@ NOTICE: Robert Villwock and Nils Liberg have placed this source code into the
                        STACK_UNDERFLOW  }
 
 macro tcm.init(stack_depth)  { 'imports', initializes, and configures the TCM }
-  declare const MEM_SIZE := 0x8000          { memory subsystem size }
+  USE_CODE_IF_NOT(TCM_LARGE)
+      declare const MEM_SIZE := 32768
+  END_USE_CODE
+  USE_CODE_IF(TCM_LARGE)
+      declare const MEM_SIZE := 1000000
+  END_USE_CODE
   declare const STACK_SIZE := stack_depth   { maximum stack depth allocated by user }
   declare const MAX_TASKS := MEM_SIZE/STACK_SIZE - 1       { max tasks supported }
   declare const TASK_0 := MEM_SIZE - STACK_SIZE*MAX_TASKS  { address of task 0 }
