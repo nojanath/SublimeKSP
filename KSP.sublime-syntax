@@ -96,7 +96,10 @@ contexts:
         - match: \)|$
           pop: true
         - include: main
-    - match: (?!#)\b(struct|define|literals|on|pers|instpers|read|list +|function|taskfunc|macro|declare|const|polyphonic|end|local|global|family|import|as|property|override|declare|ui_label|ui_button|ui_switch|ui_slider|ui_menu|ui_value_edit|ui_waveform|ui_wavetable|ui_knob|ui_table|ui_xy|call|step|ui_text_edit|ui_level_meter|ui_file_selector)\b(?!#)
+    - match: '^\s*(end)*\s+(on|const|family|function|taskfunc|macro|struct|if|for|while|select|property)'
+      comment: End keywords
+      scope: keyword.other.source.ksp
+    - match: (?!#)\b(on|define|struct|property|pers|instpers|read|list|polyphonic|local|global|import|as|override|declare|ui_label|ui_button|ui_switch|ui_slider|ui_menu|ui_value_edit|ui_waveform|ui_wavetable|ui_knob|ui_table|ui_xy|call|step|ui_text_edit|ui_level_meter|ui_file_selector)\b(?!#)
       comment: Other keywords
       scope: keyword.other.source.ksp
     - match: '"(?:[^"\\]|\\.)*"'
