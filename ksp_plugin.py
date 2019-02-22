@@ -460,7 +460,7 @@ class KspUncompressCode(sublime_plugin.TextCommand):
 
 class KspAboutCommand(sublime_plugin.ApplicationCommand):
     def run(self):
-        webbrowser.open('http://nilsliberg.se/ksp/')
+        webbrowser.open('https://github.com/nojanath/SublimeKSP/wiki')
 
     def is_visible(self):
         # only show the command when a file with KSP syntax highlighting is visible
