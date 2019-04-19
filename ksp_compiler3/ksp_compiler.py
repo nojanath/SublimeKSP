@@ -34,7 +34,7 @@ variable_prefixes = '$%@!?~'
 
 # regular expressions:
 white_space = r'(?ms)(\s*(\{[^\n]*?\})?\s*)' # regexp for normal white space/comments
-comment_re = re.compile(r'(?<!["\'])\{.*?\}|\(\*.*?\*\)', re.DOTALL)   # if { is preceeded by ' or " don't treat it as a comment
+comment_re = re.compile(r'(?<!["\'])\{.*?\}|\(\*.*?\*\)|/\*.*?\*/', re.DOTALL)   # if { is preceeded by ' or " don't treat it as a comment
 string_re = re.compile(r'".*?(?<!\\)"|' + r"'.*?(?<!\\)'")
 line_continuation_re = re.compile(r'\.\.\.\s*\n', re.MULTILINE)
 placeholder_re = re.compile(r'\[\[\[\d+\]\]\]')
