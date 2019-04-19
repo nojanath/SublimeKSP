@@ -7,11 +7,11 @@ file_extensions:
 scope: source.ksp
 contexts:
   main:
-    - match: '\{|\(\*'
+    - match: '\{|\(\*|/\*'
       comment: Block comment
       push:
         - meta_scope: comment.block.source.ksp
-        - match: '\}|\*\)'
+        - match: '\}|\*\)|\*/'
           pop: true
     - match: //
       comment: Comment
