@@ -1,0 +1,10 @@
+Version: 1.8.0
+
+Updates:
+
+-Added syntax support for all new parameters in Kontakt 6.1.
+-SublimeKSP now supports multi-line block commenting using the popular /* and */ delimiters.
+-SublimeKSP Tools menu options are now properly stored in a submenu.
+-Added functionality to optionally play a sound upon compiler finish (enabled in Tools > SublimeKSP)
+-Syntax coloring fixed for "out" and "var" keywords in taskfunc parameter lists.
+-XY Pad callbacks are now recognized in the Sublime function list. (Ctrl + R)
