@@ -165,6 +165,7 @@ class CompileKspThread(threading.Thread):
         optimize = settings.get('ksp_optimize_code', False)
         comments_on_expansion = settings.get('ksp_comment_inline_functions', False)
         check_empty_compound_statements = settings.get('ksp_signal_empty_ifcase', True)
+        should_play_sound = settings.get('ksp_play_sound', False)
 
         error_msg = None
         error_lineno = None
@@ -219,11 +220,12 @@ class CompileKspThread(threading.Thread):
             error_msg = str(e)
             error_msg = ''.join(traceback.format_exception(*sys.exc_info()))
 
-        if error_msg:
-            self.compile_handle_error(error_msg, error_lineno, error_filename)
-            sound_utility.play(command="error")
-        else:
-            sound_utility.play(command="finished")
+        if should_play_sound:
+            if error_msg:
+                self.compile_handle_error(error_msg, error_lineno, error_filename)
+                sound_utility.play(command="error")
+            else:
+                sound_utility.play(command="finished")
 
     def description(self, *args):
         return 'Compiled KSP'

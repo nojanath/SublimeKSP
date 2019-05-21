@@ -76,6 +76,13 @@
 				"args": {"setting": "ksp_comment_inline_functions", "default": false},
 				"caption": "KSP: Insert Comments When Expanding Functions",
 				"mnemonic": "I",
+				"id": "play_sound"
+			},
+			{
+				"command": "ksp_global_setting_toggle",
+				"args": {"setting": "ksp_play_sound", "default": false},
+				"caption": "KSP: Play Sound on Compile Finish",
+				"mnemonic": "S",
 				"id": "comment_inline_functions"
 			},
 			{
