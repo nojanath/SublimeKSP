@@ -1,96 +1,108 @@
 [
 	{
-		"caption": "Tools","mnemonic": "T","id": "tools",
+
+		"id": "tools",
 		"children":
 		[
 			{
-				"command": "compile_ksp",
-				"context":
-				[{
-					"key": "selector",
-					"operator": "equal",
-					"operand": "source.ksp"
-				}],
-				"caption": "KSP: Compile",
-				"mnemonic": "C",
-				"id": "compile"
+				"id": "end",
 			},
 			{
-				"command": "ksp_recompile",
-				"context":
-				[{
-					"key": "selector",
-					"operator": "equal",
-					"operand": "source.ksp"
-				}],
-				"caption": "KSP: Recompile Last Script",
-				"mnemonic": "R",
-				"id": "recompile"
-			},
-			{
-				"command": "ksp_uncompress_code",
-				"args": {},
-				"caption": "KSP: Uncompress Selected Compiled Code",
-				"mnemonic": "U",
-				"id": "uncompress"
-			},
-			{"caption": "-"}, //separator
-			{
-				"command": "ksp_global_setting_toggle",
-				"args": {"setting": "ksp_compact_output", "default": false},
-				"caption": "KSP: Remove Indents and Empty Lines",
-				"mnemonic": "p",
-				"id": "compact_output",
-				"checkbox": true
-			},
-			{
-				"command": "ksp_global_setting_toggle",
-				"args": {"setting": "ksp_compact_variables", "default": false},
-				"caption": "KSP: Compact Variables",
-				"mnemonic": "v",
-				"id": "compact_variables"
-			},
-			{
-				"command": "ksp_global_setting_toggle",
-				"args": {"setting": "ksp_extra_checks", "default": true},
-				"caption": "KSP: Extra Syntax Checks",
-				"mnemonic": "x",
-				"id": "extra_syntax_checks"
-			},
-			{
-				"command": "ksp_global_setting_toggle",
-				"args": {"setting": "ksp_signal_empty_ifcase", "default": true},
-				"caption": "KSP: Signal Error on Empty if/case Statements",
-				"mnemonic": "e",
-				"id": "signal_empty_ifcase"
-			},
-			{
-				"command": "ksp_global_setting_toggle",
-				"args": {"setting": "ksp_optimize_code", "default": false},
-				"caption": "KSP: Optimize Compiled Code",
-				"mnemonic": "t",
-				"id": "optimize_compiled"
-			},
-			{
-				"command": "ksp_global_setting_toggle",
-				"args": {"setting": "ksp_comment_inline_functions", "default": false},
-				"caption": "KSP: Insert Comments When Expanding Functions",
-				"mnemonic": "I",
-				"id": "comment_inline_functions"
-			},
-			{
-				"command": "copy_as_bb_code",
-				"caption": "KSP: Copy as BB Code",
-				"mnemonic": "B",
-				"id": "copy_as_bb_code"
-			},
-			{"caption":"-"}, //separator
-			{
-				"command": "ksp_about",
-				"caption": "KSP: About SublimeKSP",
-				"mnemonic": "A",
-				"id": "about"
-			},
+				"caption": "SublimeKSP",
+				"mnemonic": "S",
+				"children":
+				[
+					{
+						"command": "compile_ksp",
+						"context":
+						[{
+							"key": "selector",
+							"operator": "equal",
+							"operand": "source.ksp"
+						}],
+						"caption": "Compile",
+						"id": "compile"
+					},
+					{
+						"command": "ksp_recompile",
+						"context":
+						[{
+							"key": "selector",
+							"operator": "equal",
+							"operand": "source.ksp"
+						}],
+						"caption": "Recompile Last Script",
+						"id": "recompile"
+					},
+					{
+						"command": "ksp_uncompress_code",
+						"args": {},
+						"caption": "Uncompress Selected Compiled Code",
+						"id": "uncompress"
+					},
+
+					{"caption": "-"}, //separator
+
+					{
+						"command": "ksp_global_setting_toggle",
+						"args": {"setting": "ksp_compact_output", "default": false},
+						"caption": "Remove Indents and Empty Lines",
+						"mnemonic": "I",
+						"id": "compact_output",
+						"checkbox": true
+					},
+					{
+						"command": "ksp_global_setting_toggle",
+						"args": {"setting": "ksp_compact_variables", "default": false},
+						"caption": "Compact Variables",
+						"mnemonic": "C",
+						"id": "compact_variables"
+					},
+					{
+						"command": "ksp_global_setting_toggle",
+						"args": {"setting": "ksp_extra_checks", "default": true},
+						"caption": "Extra Syntax Checks",
+						"mnemonic": "x",
+						"id": "extra_syntax_checks"
+					},
+					{
+						"command": "ksp_global_setting_toggle",
+						"args": {"setting": "ksp_signal_empty_ifcase", "default": true},
+						"caption": "Signal Error on Empty if/case Statements",
+						"mnemonic": "e",
+						"id": "signal_empty_ifcase"
+					},
+					{
+						"command": "ksp_global_setting_toggle",
+						"args": {"setting": "ksp_optimize_code", "default": false},
+						"caption": "Optimize Compiled Code",
+						"mnemonic": "t",
+						"id": "optimize_compiled"
+					},
+					{
+						"command": "ksp_global_setting_toggle",
+						"args": {"setting": "ksp_play_sound", "default": false},
+						"caption": "Play Sound on Compile Finish",
+						"mnemonic": "S",
+						"id": "play_sound"
+					},
+					{
+						"command": "ksp_global_setting_toggle",
+						"args": {"setting": "ksp_comment_inline_functions", "default": false},
+						"caption": "Insert Comments When Expanding Functions",
+						"mnemonic": "W",
+						"id": "comment_inline_functions"
+					},
+
+					{"caption":"-"}, //separator
+
+					{
+						"command": "ksp_about",
+						"caption": "About SublimeKSP...",
+						"id": "about"
+					}
+				]
+			}
 		]
 	}
 ]
