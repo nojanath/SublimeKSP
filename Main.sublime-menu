@@ -79,13 +79,13 @@
 						"mnemonic": "t",
 						"id": "optimize_compiled"
 					},
-          {
-            "command": "ksp_global_setting_toggle",
-            "args": {"setting": "ksp_play_sound", "default": false},
-            "caption": "KSP: Play Sound on Compile Finish",
-            "mnemonic": "S",
-            "id": "play_sound"
-          },
+					{
+						"command": "ksp_global_setting_toggle",
+						"args": {"setting": "ksp_play_sound", "default": false},
+						"caption": "Play Sound on Compile Finish",
+						"mnemonic": "S",
+						"id": "play_sound"
+					},
 					{
 						"command": "ksp_global_setting_toggle",
 						"args": {"setting": "ksp_comment_inline_functions", "default": false},
