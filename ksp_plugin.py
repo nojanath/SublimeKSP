@@ -25,7 +25,7 @@ except Exception:
 last_compiler = None
 
 class KspRecompile(sublime_plugin.ApplicationCommand):
-    def is_visible(self):
+    def is_enabled(self):
         # only show the command when a file with KSP syntax highlighting is visible
         view = sublime.active_window().active_view()
         if view:
@@ -40,7 +40,7 @@ class CompileKspCommand(sublime_plugin.ApplicationCommand):
         self.thread = None
         self.last_filename = None
 
-    def is_visible(self):
+    def is_enabled(self):
         # only show the command when a file with KSP syntax highlighting is visible
         view = sublime.active_window().active_view()
         if view:
@@ -65,7 +65,7 @@ class CompileKspCommand(sublime_plugin.ApplicationCommand):
         self.last_filename = view.file_name()
 
 class CompilerSounds:
-    dir = None 
+    dir = None
 
     def __init__(self):
         self.dir = os.path.join(os.path.dirname(__file__), 'sounds')
@@ -86,7 +86,6 @@ class CompilerSounds:
                 call(["aplay", sound_path])
 
 class CompileKspThread(threading.Thread):
-
     def __init__(self, view):
         threading.Thread.__init__(self)
         self.base_path = None
@@ -261,7 +260,6 @@ magic_control_pars.sort()
 
 
 class KSPCompletions(sublime_plugin.EventListener):
-
     def _extract_completions(self, view, prefix, point):
         # the sublime view.extract_completions implementation doesn't seem to allow for
         # the . character to be included in the prefix irrespectively of the "word_separators" setting
@@ -310,7 +308,6 @@ class KSPCompletions(sublime_plugin.EventListener):
 
 
 class NumericSequenceCommand(sublime_plugin.TextCommand):
-
     def run(self, edit):
         if len(self.view.sel()) < 2:
             return
@@ -321,6 +318,7 @@ class NumericSequenceCommand(sublime_plugin.TextCommand):
 
         for i, selection in enumerate(self.view.sel()):
             self.view.replace(edit, selection, str(start + i))
+
 
 class ReplaceTextWithCommand(sublime_plugin.TextCommand):
     def run(self, edit, new_text=''):
@@ -336,19 +334,14 @@ class KspGlobalSettingToggleCommand(sublime_plugin.ApplicationCommand):
     def is_checked(self, setting, default):
         return bool(sublime.load_settings("KSP.sublime-settings").get(setting, default))
 
-    def is_visible(self):
-        # only show the command when a file with KSP syntax highlighting is visible
-        view = sublime.active_window().active_view()
-        if view:
-            return 'KSP.sublime-syntax' in view.settings().get('syntax', '')
 
 class KspIndentListener(sublime_plugin.EventListener):
     def on_text_command(self, view, command_name, args):
-        #print (list(view.sel()), args)
         if command_name == 'reindent' and view.sel()[0].size() > 0:
             return ('ksp_reindent', args)
         else:
             return None
+
 
 class KspReindent(sublime_plugin.TextCommand):
     def get_indent(self, line):
@@ -438,6 +431,7 @@ class KspOnEnter(sublime_plugin.TextCommand):
             #print('')
             self.view.run_command('move_to', {"to": "eol"})
 
+
 class KspUncompressCode(sublime_plugin.TextCommand):
     def run(self, edit):
         global last_compiler
@@ -450,24 +444,15 @@ class KspUncompressCode(sublime_plugin.TextCommand):
                 code = self.view.substr(selection)
                 self.view.replace(edit, selection, uncompress(code))
 
-    def is_visible(self):
+    def is_enabled(self):
         # only show the command when a file with KSP syntax highlighting is visible
-        #view = sublime.active_window().active_view()
-        #if view and len(self.view.sel()):
         return 'KSP.sublime-syntax' in self.view.settings().get('syntax', '')
 
-    #def is_enabled(self):
-    #    return len(self.view.sel()) >= 1
 
 class KspAboutCommand(sublime_plugin.ApplicationCommand):
     def run(self):
-        webbrowser.open('http://nilsliberg.se/ksp/')
+        webbrowser.open('https://github.com/nojanath/SublimeKSP/wiki')
 
-    def is_visible(self):
-        # only show the command when a file with KSP syntax highlighting is visible
-        view = sublime.active_window().active_view()
-        if view:
-            return 'KSP.sublime-syntax' in view.settings().get('syntax', '')
 
 class KspFixLineEndings(sublime_plugin.EventListener):
     def is_probably_ksp_file(self, view):
@@ -494,6 +479,5 @@ class KspFixLineEndings(sublime_plugin.EventListener):
                 if changes:
                     s = '\n'.join(x.rstrip() for x in s.split('\n')) # strip trailing white-space too while we're at it
                     view.run_command('replace_text_with', {'new_text': s})
-                    #sublime.set_timeout(lambda: sublime.message_dialog('This file had spurious line-endings. These have been automatically fixed. Please save the file in order to keep these changes.'), 100)
                     sublime.set_timeout(lambda: sublime.status_message('EOL characters automatically fixed. Please save to keep the changes.'), 100)
             self.set_ksp_syntax(view)
