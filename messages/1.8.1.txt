@@ -1,0 +1,5 @@
+Version: 1.8.0
+
+Emergency Fix:
+
+-Compilation was not displaying error messages when Play Sound feature was turned off.
