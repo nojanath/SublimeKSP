@@ -220,11 +220,12 @@ class CompileKspThread(threading.Thread):
             error_msg = str(e)
             error_msg = ''.join(traceback.format_exception(*sys.exc_info()))
 
-        if should_play_sound:
-            if error_msg:
-                self.compile_handle_error(error_msg, error_lineno, error_filename)
+        if error_msg:
+            self.compile_handle_error(error_msg, error_lineno, error_filename)
+            if should_play_sound:
                 sound_utility.play(command="error")
-            else:
+        else:
+            if should_play_sound:
                 sound_utility.play(command="finished")
 
     def description(self, *args):
