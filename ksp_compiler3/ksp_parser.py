@@ -27,7 +27,7 @@ reserved = (
     'FUNCTION', 'TASKFUNC', 'AND', 'OR', 'NOT', 'IF', 'TO', 'DOWNTO', 'ELSE', 'FOR', 'WHILE', 'DECLARE',
     'SELECT', 'CASE', 'CONST', 'POLYPHONIC', 'END', 'LOCAL', 'GLOBAL', 'FAMILY', 'IMPORT', 'AS', 'PROPERTY',
     'UI_LABEL', 'UI_BUTTON', 'UI_SWITCH', 'UI_SLIDER', 'UI_MENU', 'UI_VALUE_EDIT', 'UI_WAVEFORM', 'UI_WAVETABLE', 'UI_KNOB', 'UI_TABLE', 'UI_XY', 'CALL', 'STEP',
-    'UI_TEXT_EDIT', 'UI_LEVEL_METER', 'UI_FILE_SELECTOR', 'OVERRIDE',
+    'UI_TEXT_EDIT', 'UI_LEVEL_METER', 'UI_FILE_SELECTOR', 'UI_PANEL', 'OVERRIDE',
 )
 reserved_map = dict(((r.lower(), r) for r in reserved))
 reserved_map['SET_CONDITION'] = 'SET_CONDITION'
@@ -76,7 +76,7 @@ def t_BITWISE_NOT(t):
     return t
 
 def t_BEGIN_CALLBACK(t):
-    r'on\s+(init|note|release|midi_in|controller|rpn|nrpn|ui_update|_pgs_changed|pgs_changed|poly_at|listener|async_complete|persistence_changed|persistence_changed|(ui_control\s*?\(.+?\)))'
+    r'on\s+(init|note|release|midi_in|controller|rpn|nrpn|ui_update|_pgs_changed|pgs_changed|poly_at|listener|async_complete|persistence_changed|(ui_control\s*?\(.+?\)))'
     t.type = 'BEGIN_CALLBACK'
     variable = None
     parts = t.value.split()
@@ -552,6 +552,7 @@ def p_decl_modifier_opt(p):
                              | UI_TEXT_EDIT
                              | UI_LEVEL_METER
                              | UI_FILE_SELECTOR
+                             | UI_PANEL
                              | UI_WAVETABLE'''
     p[0] = [p[1]]
 
