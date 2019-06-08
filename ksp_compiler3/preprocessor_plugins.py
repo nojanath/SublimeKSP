@@ -981,7 +981,7 @@ def handleOpenSizeArrays(lines):
 		line = lines[lineIdx].command.strip()
 		m = re.search(openArrayRe, line)
 		if m:
-			stringList = re.split(commasNotInBrackets, line[line.find("(") + 1 : len(line) - 1])
+			stringList = ksp_compiler.split_args(line[line.find("(") + 1 : len(line) - 1], line)
 			numElements = len(stringList)
 			name = m.group("name")
 			newLines.append(lines[lineIdx].copy(line[: line.find("[") + 1] + str(numElements) + line[line.find("[") + 1 :]))
