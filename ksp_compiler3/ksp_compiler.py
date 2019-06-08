@@ -115,13 +115,20 @@ def split_args(arg_string, line):
     args = []
     cur_arg = ''
     unmatched_left_paren = 0
-    for ch in arg_string + ',':    # extra ',' to include the last argument
+    single_quote_on = False
+    double_quote_on = False
+
+    for idx, ch in enumerate(arg_string + ','):    # extra ',' to include the last argument
         # square brackets are also checked as there may be commas in them (for properties/2D arrays)
-        if ch == '(' or ch == '[':
+        if ch is '\'':
+            single_quote_on = not single_quote_on
+        elif ch is '\"' and idx > 0 and arg_string[idx - 1] is not '\\':
+            double_quote_on = not double_quote_on
+        elif ch in ['(', '[']:
             unmatched_left_paren += 1
-        elif ch == ')' or ch == ']':
+        elif ch in [')', ']']:
             unmatched_left_paren -= 1
-        if ch == ',' and unmatched_left_paren == 0:
+        if ch == ',' and unmatched_left_paren == 0 and not single_quote_on and not double_quote_on:
             cur_arg = cur_arg.strip()
             if not cur_arg:
                 raise ParseException(line, 'Syntax error - empty argument in function call: %s' % arg_string)
