@@ -118,11 +118,12 @@ def split_args(arg_string, line):
     single_quote_on = False
     double_quote_on = False
 
+    print(arg_string)
     for idx, ch in enumerate(arg_string + ','):    # extra ',' to include the last argument
         # square brackets are also checked as there may be commas in them (for properties/2D arrays)
         if ch is '\'':
             single_quote_on = not single_quote_on
-        elif ch is '\"' and idx > 0 and arg_string[idx - 1] is not '\\':
+        elif ch is '\"' and (idx == 0 or arg_string[idx - 1] is not '\\'):
             double_quote_on = not double_quote_on
         elif ch in ['(', '[']:
             unmatched_left_paren += 1
