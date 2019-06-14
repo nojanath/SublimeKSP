@@ -1,0 +1,4 @@
+Version: 1.8.4
+
+-I had to remove support for single quote ('text') in the fix for argument comma separation, because it would break with normal text that uses apostrophes (it would see one and expect another, ignoring the end of the string).
+	I could normally allow it to be escaped using the \ character, howvever KSP does not require single quote escaping, so the \ character would actually appear in the strings (such as help text). If you would like to write strings in initialization lists or macro arguments, please use double quotes ("text").
