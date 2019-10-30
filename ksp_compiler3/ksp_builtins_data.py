@@ -836,7 +836,7 @@ change_vol(<ID-number>,<volume>,<relative-bit>)
 cos(<real-value>):real
 dec(<expression>):integer
 delete_event_mark(<ID-number>,<bit-mark>)
-disable_logging(<log_type>,<value>)
+disable_logging(<log_type>)
 disallow_group(<group-index>)
 dont_use_machine_mode(<ID-number>)
 event_status(<ID-number>):integer
