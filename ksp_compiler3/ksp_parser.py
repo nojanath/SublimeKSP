@@ -27,7 +27,7 @@ reserved = (
     'FUNCTION', 'TASKFUNC', 'AND', 'OR', 'NOT', 'IF', 'TO', 'DOWNTO', 'ELSE', 'FOR', 'WHILE', 'DECLARE',
     'SELECT', 'CASE', 'CONST', 'POLYPHONIC', 'END', 'LOCAL', 'GLOBAL', 'FAMILY', 'IMPORT', 'AS', 'PROPERTY',
     'UI_LABEL', 'UI_BUTTON', 'UI_SWITCH', 'UI_SLIDER', 'UI_MENU', 'UI_VALUE_EDIT', 'UI_WAVEFORM', 'UI_WAVETABLE', 'UI_KNOB', 'UI_TABLE', 'UI_XY', 'CALL', 'STEP',
-    'UI_TEXT_EDIT', 'UI_LEVEL_METER', 'UI_FILE_SELECTOR', 'UI_PANEL', 'OVERRIDE',
+    'UI_TEXT_EDIT', 'UI_LEVEL_METER', 'UI_FILE_SELECTOR', 'UI_PANEL', 'UI_MOUSE_AREA', 'OVERRIDE',
 )
 reserved_map = dict(((r.lower(), r) for r in reserved))
 reserved_map['SET_CONDITION'] = 'SET_CONDITION'
@@ -552,8 +552,9 @@ def p_decl_modifier_opt(p):
                              | UI_TEXT_EDIT
                              | UI_LEVEL_METER
                              | UI_FILE_SELECTOR
+                             | UI_WAVETABLE
                              | UI_PANEL
-                             | UI_WAVETABLE'''
+                             | UI_MOUSE_AREA'''
     p[0] = [p[1]]
 
 def p_decl_modifier_opt_empty(p):
@@ -815,7 +816,7 @@ def p_error(p):
 # g('                      | FAMILY ident NEWLINE stmts-opt error     ', RaiseParseException("Expected 'end family'"))
 # g('global-modifier-opt   : LOCAL | GLOBAL', AddToEmptyList())
 # g('                      | empty         ', EmptyList)
-# g('decl-modifier-opt     : CONST | POLYPHONIC | UI_LABEL | UI_BUTTON | UI_SWITCH | UI_SLIDER | UI_MENU | UI_KNOB | UI_TABLE | UI_VALUE_EDIT | UI_WAVEFORM | UI_TEXT_EDIT | UI_LEVEL_METER | UI_FILE_SELECTOR | UI_WAVETABLE |', AddToEmptyList())
+# g('decl-modifier-opt     : CONST | POLYPHONIC | UI_LABEL | UI_BUTTON | UI_SWITCH | UI_SLIDER | UI_MENU | UI_KNOB | UI_TABLE | UI_VALUE_EDIT | UI_WAVEFORM | UI_TEXT_EDIT | UI_LEVEL_METER | UI_FILE_SELECTOR | UI_WAVETABLE | UI_PANEL | UI_MOUSE_AREA', AddToEmptyList())
 # g('                      | empty             ', EmptyList)
 # g('initial-value-opt     : ASSIGN expression     ', ReturnParam(2))
 # g('                      | empty                 ', ReturnNone)

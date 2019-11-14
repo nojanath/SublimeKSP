@@ -15,7 +15,11 @@ $CONTROL_PAR_COLUMN_WIDTH
 $CONTROL_PAR_CURSOR_PICTURE
 $CONTROL_PAR_DEFAULT_VALUE
 $CONTROL_PAR_DISABLE_TEXT_SHIFTING
+$CONTROL_PAR_DND_ACCEPT_ARRAY
+$CONTROL_PAR_DND_ACCEPT_AUDIO
+$CONTROL_PAR_DND_ACCEPT_MIDI
 $CONTROL_PAR_DND_BEHAVIOUR
+$CONTROL_PAR_ENABLE_DND
 $CONTROL_PAR_FILE_TYPE
 $CONTROL_PAR_FILEPATH
 $CONTROL_PAR_FONT_TYPE
@@ -55,6 +59,7 @@ $CONTROL_PAR_PICTURE
 $CONTROL_PAR_PICTURE_STATE
 $CONTROL_PAR_POS_X
 $CONTROL_PAR_POS_Y
+$CONTROL_PAR_RECEIVE_DRAG_EVENTS
 $CONTROL_PAR_SELECTED_ITEM_IDX
 $CONTROL_PAR_SHOW_ARROWS
 $CONTROL_PAR_SLICEMARKERS_COLOR
@@ -95,6 +100,7 @@ $EFFECT_TYPE_AET_FILTER
 $EFFECT_TYPE_BUS_COMP
 $EFFECT_TYPE_CABINET
 $EFFECT_TYPE_CAT
+$EFFECT_TYPE_CHORAL
 $EFFECT_TYPE_CHORUS
 $EFFECT_TYPE_COMPRESSOR
 $EFFECT_TYPE_CRYWAH
@@ -103,6 +109,7 @@ $EFFECT_TYPE_DISTORTION
 $EFFECT_TYPE_DSTORTION
 $EFFECT_TYPE_FB_COMP
 $EFFECT_TYPE_FILTER
+$EFFECT_TYPE_FLAIR
 $EFFECT_TYPE_FLANGER
 $EFFECT_TYPE_GAINER
 $EFFECT_TYPE_HOTSOLO
@@ -113,6 +120,7 @@ $EFFECT_TYPE_LIMITER
 $EFFECT_TYPE_LOFI
 $EFFECT_TYPE_NONE
 $EFFECT_TYPE_PHASER
+$EFFECT_TYPE_PHASIS
 $EFFECT_TYPE_PLATEREVERB
 $EFFECT_TYPE_REPLIKA
 $EFFECT_TYPE_REVERB
@@ -154,6 +162,16 @@ $ENGINE_PAR_CH_DEPTH
 $ENGINE_PAR_CH_PHASE
 $ENGINE_PAR_CH_SPEED
 $ENGINE_PAR_CH_SPEED_UNIT
+$ENGINE_PAR_CHORAL_AMOUNT
+$ENGINE_PAR_CHORAL_DELAY
+$ENGINE_PAR_CHORAL_FEEDBACK
+$ENGINE_PAR_CHORAL_INVERT_PHASE
+$ENGINE_PAR_CHORAL_MIX
+$ENGINE_PAR_CHORAL_MODE
+$ENGINE_PAR_CHORAL_RATE
+$ENGINE_PAR_CHORAL_SCATTER
+$ENGINE_PAR_CHORAL_VOICES
+$ENGINE_PAR_CHORAL_WIDTH
 $ENGINE_PAR_COMP_ATTACK
 $ENGINE_PAR_COMP_DECAY
 $ENGINE_PAR_CT_BALLS
@@ -221,6 +239,21 @@ $ENGINE_PAR_FL_FEEDBACK
 $ENGINE_PAR_FL_PHASE
 $ENGINE_PAR_FL_SPEED
 $ENGINE_PAR_FL_SPEED_UNIT
+$ENGINE_PAR_FLAIR_AMOUNT
+$ENGINE_PAR_FLAIR_CHORD
+$ENGINE_PAR_FLAIR_DAMPING
+$ENGINE_PAR_FLAIR_DETUNE
+$ENGINE_PAR_FLAIR_FEEDBACK
+$ENGINE_PAR_FLAIR_INVERT_PHASE
+$ENGINE_PAR_FLAIR_MIX
+$ENGINE_PAR_FLAIR_MODE
+$ENGINE_PAR_FLAIR_OFFSET
+$ENGINE_PAR_FLAIR_PITCH
+$ENGINE_PAR_FLAIR_RATE
+$ENGINE_PAR_FLAIR_RATE_UNIT
+$ENGINE_PAR_FLAIR_SCANMODE
+$ENGINE_PAR_FLAIR_VOICES
+$ENGINE_PAR_FLAIR_WIDTH
 $ENGINE_PAR_FORMANT
 $ENGINE_PAR_FORMANT_SHARP
 $ENGINE_PAR_FORMANT_SHIFT
@@ -238,6 +271,7 @@ $ENGINE_PAR_GLIDE_COEF
 $ENGINE_PAR_GLIDE_COEF_UNIT
 $ENGINE_PAR_GN_GAIN
 $ENGINE_PAR_GRAIN_LENGTH
+$ENGINE_PAR_GROUP_DYNAMICS
 $ENGINE_PAR_HOLD
 $ENGINE_PAR_HOLD_UNIT
 $ENGINE_PAR_HP_CUTOFF
@@ -300,6 +334,19 @@ $ENGINE_PAR_PR_HIDAMP
 $ENGINE_PAR_PR_LOWSHELF
 $ENGINE_PAR_PR_PREDELAY
 $ENGINE_PAR_PR_STEREO
+$ENGINE_PAR_PHASIS_AMOUNT
+$ENGINE_PAR_PHASIS_CENTER
+$ENGINE_PAR_PHASIS_FEEDBACK
+$ENGINE_PAR_PHASIS_INVERT_MOD_MIX
+$ENGINE_PAR_PHASIS_INVERT_PHASE
+$ENGINE_PAR_PHASIS_MIX
+$ENGINE_PAR_PHASIS_MOD_MIX
+$ENGINE_PAR_PHASIS_NOTCHES
+$ENGINE_PAR_PHASIS_RATE
+$ENGINE_PAR_PHASIS_RATE_UNIT
+$ENGINE_PAR_PHASIS_SPREAD
+$ENGINE_PAR_PHASIS_STEREO
+$ENGINE_PAR_PHASIS_ULTRA
 $ENGINE_PAR_RATIO
 $ENGINE_PAR_RDL_AMOUNT
 $ENGINE_PAR_RDL_BBDTYPE
@@ -604,6 +651,12 @@ $LFO_TYPE_RECTANGLE
 $LFO_TYPE_SAWTOOTH
 $LFO_TYPE_SINE
 $LFO_TYPE_TRIANGLE
+$LOOP_PAR_COUNT
+$LOOP_PAR_LENGTH
+$LOOP_PAR_MODE
+$LOOP_PAR_START
+$LOOP_PAR_TUNING
+$LOOP_PAR_XFADE
 $MARK_1
 $MARK_2
 $MARK_3
@@ -667,11 +720,28 @@ $NI_CB_TYPE_RPN
 $NI_CB_TYPE_UI_CONTROL
 $NI_CB_TYPE_UI_UPDATE
 $NI_CONTROL_PAR_IDX
+$NI_CHORAL_MODE_DIMENSION
+$NI_CHORAL_MODE_ENSEMBLE
+$NI_CHORAL_MODE_SYNTH
+$NI_CHORAL_MODE_UNIVERSAL
 $NI_DISTORTION_TYPE_TRANS
 $NI_DISTORTION_TYPE_TUBE
+$NI_DND_ACCEPT_MULTIPLE
+$NI_DND_ACCEPT_NONE
+$NI_DND_ACCEPT_ONE
+$NI_FILE_EXTENSION
+$NI_FILE_FULL_PATH
+$NI_FILE_FULL_PATH_OS
+$NI_FILE_NAME
 $NI_FILE_TYPE_ARRAY
 $NI_FILE_TYPE_AUDIO
 $NI_FILE_TYPE_MIDI
+$NI_FLAIR_MODE_SCAN
+$NI_FLAIR_MODE_STANDARD
+$NI_FLAIR_MODE_THRU_ZERO
+$NI_FLAIR_SCANMODE_SAW_DOWN
+$NI_FLAIR_SCANMODE_SAW_UP
+$NI_FLAIR_SCANMODE_TRIANGLE
 $NI_KEY_TYPE_CONTROL
 $NI_KEY_TYPE_DEFAULT
 $NI_KEY_TYPE_NONE
@@ -680,8 +750,10 @@ $NI_LOG_WARNING
 $NI_LOG_WATCHING
 $NI_MOUSE_EVENT_TYPE
 $NI_MOUSE_EVENT_TYPE_DRAG
+$NI_MOUSE_EVENT_TYPE_DROP
 $NI_MOUSE_EVENT_TYPE_LEFT_BUTTON_DOWN
 $NI_MOUSE_EVENT_TYPE_LEFT_BUTTON_UP
+$NI_MOUSE_OVER_CONTROL
 $NI_REPLIKA_TYPE_ANALOGUE
 $NI_REPLIKA_TYPE_DIFFUSION
 $NI_REPLIKA_TYPE_MODERN
@@ -689,6 +761,33 @@ $NI_REPLIKA_TYPE_TAPE
 $NI_REPLIKA_TYPE_VINTAGE
 $NI_REVERB2_TYPE_HALL
 $NI_REVERB2_TYPE_ROOM
+$NI_DETECT_DRUM_TYPE_CLAP
+$NI_DETECT_DRUM_TYPE_CLOSED_HH
+$NI_DETECT_DRUM_TYPE_CYMBAL
+$NI_DETECT_DRUM_TYPE_INVALID
+$NI_DETECT_DRUM_TYPE_KICK
+$NI_DETECT_DRUM_TYPE_OPEN_HH
+$NI_DETECT_DRUM_TYPE_PERC_DRUM
+$NI_DETECT_DRUM_TYPE_PERC_OTHER
+$NI_DETECT_DRUM_TYPE_SHAKER
+$NI_DETECT_DRUM_TYPE_SNARE
+$NI_DETECT_DRUM_TYPE_TOM
+$NI_DETECT_INSTRUMENT_TYPE_BASS
+$NI_DETECT_INSTRUMENT_TYPE_BOWED_STRING
+$NI_DETECT_INSTRUMENT_TYPE_BRASS
+$NI_DETECT_INSTRUMENT_TYPE_FLUTE
+$NI_DETECT_INSTRUMENT_TYPE_GUITAR
+$NI_DETECT_INSTRUMENT_TYPE_INVALID
+$NI_DETECT_INSTRUMENT_TYPE_KEYBOARD
+$NI_DETECT_INSTRUMENT_TYPE_MALLET
+$NI_DETECT_INSTRUMENT_TYPE_ORGAN
+$NI_DETECT_INSTRUMENT_TYPE_PLUCKED_STRING
+$NI_DETECT_INSTRUMENT_TYPE_REED
+$NI_DETECT_INSTRUMENT_TYPE_SYNTH
+$NI_DETECT_INSTRUMENT_TYPE_VOCAL
+$NI_DETECT_SAMPLE_TYPE_DRUM
+$NI_DETECT_SAMPLE_TYPE_INSTRUMENT
+$NI_DETECT_SAMPLE_TYPE_INVALID
 $NI_SHAPE_TYPE_CLASSIC
 $NI_SHAPE_TYPE_DRUMS
 $NI_SHAPE_TYPE_ENHANCED
@@ -774,6 +873,22 @@ $UI_WF_PROP_TABLE_VAL
 $VALUE_EDIT_MODE_NOTE_NAMES
 $VCC_MONO_AT
 $VCC_PITCH_BEND
+$ZONE_PAR_FADE_HIGH_KEY
+$ZONE_PAR_FADE_HIGH_VELO
+$ZONE_PAR_FADE_LOW_KEY
+$ZONE_PAR_FADE_LOW_VELO
+$ZONE_PAR_GROUP
+$ZONE_PAR_HIGH_KEY
+$ZONE_PAR_HIGH_VELO
+$ZONE_PAR_LOW_KEY
+$ZONE_PAR_LOW_VELO
+$ZONE_PAR_PAN
+$ZONE_PAR_ROOT_KEY
+$ZONE_PAR_SAMPLE_END
+$ZONE_PAR_SAMPLE_MOD_RANGE
+$ZONE_PAR_SAMPLE_START
+$ZONE_PAR_TUNE
+$ZONE_PAR_VOLUME
 %CC
 %CC_TOUCHED
 %EVENT_PAR
@@ -782,9 +897,17 @@ $VCC_PITCH_BEND
 %KEY_DOWN
 %KEY_DOWN_OCT
 %NOTE_DURATION
+%NI_USER_ZONE_IDS
 %POLY_AT
+~NI_DETECT_LOUDNESS_INVALID
+~NI_DETECT_PEAK_INVALID
+~NI_DETECT_PITCH_INVALID
+~NI_DETECT_RMS_INVALID
 ~NI_MATH_E
 ~NI_MATH_PI
+!NI_DND_ITEMS_ARRAY
+!NI_DND_ITEMS_AUDIO
+!NI_DND_ITEMS_MIDI
 
 [functions]
 END_USE_CODE()
@@ -793,74 +916,82 @@ SET_CONDITION(<condition>)
 USE_CODE_IF(<condition>)
 USE_CODE_IF_NOT(<condition>)
 _delay_event_for_loading_slots(<unknown>)
-_get_engine_par(<parameter>,<group>,<slot>,<generic>):integer
-_get_engine_par_disp(<parameter>,<group>,<slot>,<generic>):string
+_get_engine_par(<parameter>, <group>, <slot>, <generic>):integer
+_get_engine_par_disp(<parameter>, <group>, <slot>, <generic>):string
 _get_folder(<path variable>):string
-_load_ir_sample(<file name>,<slot>,<generic>):integer
-_num_slices(<group-index>):integer
-_pgs_create_key(<key-id>,<size>)
-_pgs_get_key_val(<key-id>,<index>):integer
+_load_ir_sample(<file-name>, <slot>, <generic>):integer
+_num_slices(<group-idx>):integer
+_pgs_create_key(<key-id>, <size>)
+_pgs_get_key_val(<key-id>, <index>):integer
 _pgs_key_exists(<key-id>):boolean
-_pgs_set_key_val(<key-id>,<index>,<value>)
+_pgs_set_key_val(<key-id>, <index>, <value>)
 _read_persistent_var(<variable>)
 _reset_rls_trig_counter(<note>)
-_set_engine_par(<parameter>,<value>,<group>,<slot>,<generic>):integer
+_set_engine_par(<parameter>, <value>, <group>, <slot>, <generic>):integer
 _set_skin_offset(<offset>)
-_slice_idx_loop_end(<group-index>,<loop-index>):integer
-_slice_idx_loop_start(<group-index>,<loop-index>):integer
-_slice_length(<group-index>,<slice-index>):integer
-_slice_loop_count(<group-index>,<loop-index>):integer
-_slice_start(<group-index>,<slice-index>):integer
+_slice_idx_loop_end(<group-idx>, <loop-idx>):integer
+_slice_idx_loop_start(<group-idx>, <loop-idx>):integer
+_slice_length(<group-idx>, <slice-idx>):integer
+_slice_loop_count(<group-idx>, <loop-idx>):integer
+_slice_start(<group-idx>, <slice-idx>):integer
 _will_never_terminate(<event-id>)
 abs(<real-value>):real
 acos(<real-value>):real
-add_menu_item(<variable>,<text>,<number>)
-add_text_line(<variable>,<text>)
-allow_group(<group-index>)
-array_equal(<array-variable>,<array-variable>):boolean
+add_menu_item(<variable>, <text>, <number>)
+add_text_line(<variable>, <text>)
+allow_group(<group-idx>)
+array_equal(<array-variable>, <array-variable>):boolean
 asin(<real-value>):real
 atan(<real-value>):real
-attach_level_meter(<uiID>,<groupIdx>,<slotIdx>,<channelIdx>,<busIdx>)
-attach_zone(<waveform>,<zone-id>,<parameter>)
+attach_level_meter(<ui-id>, <group-idx>, <slot-idx>, <channel-idx>, <bus-idx>)
+attach_zone(<waveform>, <zone-id>, <parameter>)
 by_marks(<bit-mark>):integer
-by_track(<track-index>):integer
+by_track(<track-idx>):integer
 cc_delivery_request(<controller-number>)
 ceil(<real-value>):real
-change_listener_par(<signal_type>,<parameter>)
-change_note(<ID-number>,<new-note-number>)
-change_pan(<ID-number>,<panorama>,<relative-bit>)
-change_time_with_pitch(<ID-number>,<time>):integer
-change_tune(<ID-number>,<tune-amount>,<relative-bit>)
-change_velo(<ID-number>,<new-velocity-number>)
-change_vol(<ID-number>,<volume>,<relative-bit>)
+change_listener_par(<signal-type>, <parameter>)
+change_note(<event-id>, <new-note-number>)
+change_pan(<event-id>, <panorama>, <relative-bit>)
+change_time_with_pitch(<event-id>, <time>):integer
+change_tune(<event-id>, <tune-amount>, <relative-bit>)
+change_velo(<event-id>, <new-velocity-number>)
+change_vol(<event-id>, <volume>, <relative-bit>)
 cos(<real-value>):real
 dec(<expression>):integer
-delete_event_mark(<ID-number>,<bit-mark>)
-disable_logging(<log_type>)
-disallow_group(<group-index>)
-dont_use_machine_mode(<ID-number>)
-event_status(<ID-number>):integer
+delay_event_for_loading_slots(<unknown>)
+delete_event_mark(<event-id>, <bit-mark>)
+detect_pitch(<zone-id>, <return-variable>):integer
+detect_rms(<zone-id>, <return-variable>):integer
+detect_peak(<zone-id>, <return-variable>):integer
+detect_loudness(<zone-id>, <return-variable>):integer
+detect_sample_type(<zone-id>, <return-variable>):integer
+detect_instrument_type(<zone-id>, <return-variable>):integer
+detect_drum_type(<zone-id>, <return-variable>):integer
+disable_logging(<log-type>)
+disallow_group(<group-idx>)
+dont_use_machine_mode(<event-id>)
+event_status(<event-id>):integer
 exit()
 exp(<real-value>):real
-fade_in(<ID-number>,<fade-time>)
-fade_out(<ID-number>,<fade-time>,<stop-voice>)
+fade_in(<event-id>, <fade-time>)
+fade_out(<event-id>, <fade-time>, <stop-voice>)
 find_group(<group-name>):integer
-find_mod(<group-idx>,<mod-name>):integer
-find_target(<group-idx>,<mod-idx>,<target-name>):integer
+find_mod(<group-idx>, <mod-name>):integer
+find_target(<group-idx>, <mod-idx>, <target-name>):integer
 find_zone(<sample-name>):integer
 floor(<real-value>):real
-fs_get_filename(<ui-id>,<return-parameter>):string
-fs_navigate(<ui-id>,<direction>)
-get_control_par(<ui-id>,<control-parameter>):integer
-get_control_par_arr(<ui-id>,<control-parameter>,<index>):integer
-get_control_par_str(<ui-id>,<control-parameter>):string
-get_engine_par(<parameter>,<group>,<slot>,<generic>):integer
-get_engine_par_disp(<parameter>,<group>,<slot>,<generic>):string
-get_engine_par_disp_m(<parameter>,<instrument-slot-id>,<unknown>,<unknown>):string
-get_engine_par_m(<parameter>,<instrument-slot-id>,<unknown>,<unknown>)
+fs_get_filename(<ui-id>, <return-parameter>):string
+fs_navigate(<ui-id>, <direction>)
+get_control_par(<ui-id>, <control-parameter>):integer
+get_control_par_arr(<ui-id>, <control-parameter>, <index>):integer
+get_control_par_str(<ui-id>, <control-parameter>):string
+get_engine_par(<parameter>, <group>, <slot>, <generic>):integer
+get_engine_par_disp(<parameter>, <group>, <slot>, <generic>):string
+get_engine_par_disp_m(<parameter>, <instrument-slot-idx>, <slot>, <generic>):string
+get_engine_par_m(<parameter>, <instrument-slot-idx>, <slot>, <generic>):integer
 get_event_ids(<array-variable>)
-get_event_par(<ID-number>,<parameter>):integer
-get_event_par_arr(<ID-number>,<parameter>,<group-idx>):integer
+get_event_par(<event-id>, <parameter>):integer
+get_event_par_arr(<event-id>, <parameter>, <group-idx>):integer
 get_folder(<path variable>):string
 get_font_id(<path-text>):integer
 get_key_color(<note-number>):integer
@@ -870,58 +1001,63 @@ get_key_type(<note-number>):integer
 get_keyrange_max_note(<note-number>):integer
 get_keyrange_min_note(<note-number>):integer
 get_keyrange_name(<note-number>):integer
-get_menu_item_str(<menu_id>,<index>):string
-get_menu_item_value(<menu_id>,<index>):integer
-get_menu_item_visibility(<menu_id>,<index>):integer
-get_purge_state(<group-index>):integer
+get_loop_par(<zone-id>, <loop-id>, <parameter>):integer
+get_menu_item_str(<ui-id>, <index>):string
+get_menu_item_value(<ui-id>, <index>):integer
+get_menu_item_visibility(<ui-id>, <index>):integer
+get_purge_state(<group-idx>):integer
+get_sample(<zone-id>,<return-parameter>):string
 get_sample_length(<zone-id>):integer
 get_ui_id(<variable>):integer
-get_ui_wf_property(<waveform>,<property>,<index>):integer
+get_ui_wf_property(<waveform>, <property>, <index>):integer
 get_voice_limit(<voice­type>):integer
-group_name(<group-index>):string
-hide_part(<variable>,<value>)
+get_zone_par(<zone-id>, <parameter>):integer
+group_name(<group-idx>):string
+guiidx_to_slotidx(<instrument-gui-idx>):integer
+hide_part(<variable>, <value>)
 ignore_controller()
-ignore_event(<ID-number>)
+ignore_event(<event-id>)
 ignore_midi()
-in_range(<expression>,<lower>,<upper>):boolean
+in_range(<expression>, <lower>, <upper>):boolean
 inc(<expression>)
 int_to_real(<integer>):real
+is_zone_empty(<zone-id>)
 iterate_macro(<expression>)
 literate_macro(<expression>)
-load_array(<array-or-string-array-variable>,<mode>):integer
-load_array_str(<array-or-string-array-variable>,<path-text>):integer
-load_ir_sample(<file name>,<slot>,<generic>):integer
-load_ir_sample_m(<unknown>)
+load_array(<array-or-string-array-variable>, <mode>):integer
+load_array_str(<array-or-string-array-variable>, <path-text>):integer
+load_ir_sample(<file-name>, <slot>, <generic>):integer
+load_ir_sample_m(<file-name>, <output-number>, <slot>, <generic>):integer
 load_midi_file(<path-text>):integer
-load_patch(<path-text>,<channel>)
-load_performance_view(<file name>):string
+load_patch(<path-text>, <instrument-slot-idx>)
+load_performance_view(<file-name>):string
 log(<real-value>):real
 lsb(<variable>):integer
 make_instr_persistent(<variable>)
 make_perfview()
 make_persistent(<variable>)
-message(<number variable or text>)
+message(<variable-or-text>)
 mf_get_buffer_size():integer
 mf_get_byte_one():integer
 mf_get_byte_two():integer
 mf_get_channel():integer
 mf_get_command():integer
-mf_get_event_par(<event-id>,<parameter>):integer
-mf_get_first(<track-index>)
+mf_get_event_par(<event-id>, <parameter>):integer
+mf_get_first(<track-idx>)
 mf_get_id():integer
-mf_get_last(<track-index>)
+mf_get_last(<track-idx>)
 mf_get_length():integer
-mf_get_mark(<event-id>,<mark>):integer
-mf_get_next(<track-index>)
-mf_get_next_at(<track-index>,<pos>)
+mf_get_mark(<event-id>, <mark>):integer
+mf_get_next(<track-idx>)
+mf_get_next_at(<track-idx>, <pos>)
 mf_get_note_length():integer
 mf_get_num_tracks():integer
 mf_get_pos():integer
-mf_get_prev(<track-index>)
-mf_get_prev_at(<track-index>,<pos>)
+mf_get_prev(<track-idx>)
+mf_get_prev_at(<track-idx>, <pos>)
 mf_get_track_idx():integer
-mf_insert_event(<track>,<pos>,<command>,<byte1>,<byte2>):integer
-mf_insert_file(<path-text>,<track-offset>,<position-offset>,<mode>):integer
+mf_insert_event(<track>, <pos>, <command>, <byte1>, <byte2>):integer
+mf_insert_file(<path-text>, <track-offset>, <position-offset>, <mode>):integer
 mf_remove_event(<event-id>)
 mf_reset():integer
 mf_set_buffer_size(<size>):integer
@@ -929,120 +1065,126 @@ mf_set_byte_one(<par>)
 mf_set_byte_two(<par>)
 mf_set_channel(<midi-channel>)
 mf_set_command(<par>)
-mf_set_event_par(<event-id>,<parameter>,<value>)
-mf_set_export_area(<name>,<start-pos>,<end-pos>,<start-track>,<end-track>):integer
+mf_set_event_par(<event-id>, <parameter>, <value>)
+mf_set_export_area(<name>, <start-pos>, <end-pos>, <start-track>, <end-track>):integer
 mf_set_note_length(<value>)
 mf_set_length(<par>)
-mf_set_mark(<event-id>,<mark>,<status>)
+mf_set_mark(<event-id>, <mark>, <status>)
 mf_set_pos(<par>)
-move_control(<variable>,<xpos>,<ypos>)
-move_control_px(<variable>,<x-position>,<y-position>)
+move_control(<variable>, <xpos>, <ypos>)
+move_control_px(<variable>, <x-position>, <y-position>)
 ms_to_ticks(<microseconds>):integer
 msb(<variable>):integer
-note_off(<ID-number>)
+note_off(<event-id>)
 num_elements(<array-or-string-array-variable>):integer
-num_slices(<group-index>):integer
+num_slices(<group-idx>):integer
 num_slices_zone(<zone-id>):integer
 output_channel_name(<output-number>):integer
-pgs_create_key(<key-id>,<size>)
+pgs_create_key(<key-id>, <size>)
 pgs_create_str_key(<key-id>)
-pgs_get_key_val(<key-id>,<index>):integer
+pgs_get_key_val(<key-id>, <index>):integer
 pgs_get_str_key_val(<key-id>):string
 pgs_key_exists(<key-id>):boolean
-pgs_set_key_val(<key-id>,<index>,<value>)
-pgs_set_str_key_val(<key-id>,<text>)
+pgs_set_key_val(<key-id>, <index>, <value>)
+pgs_set_str_key_val(<key-id>, <text>)
 pgs_str_key_exists(<key-id>):boolean
-play_note(<note-number>,<velocity>,<sample-offset>,<duration>):integer
-pow(<real-value>,<real-value>):real
-purge_group(<group-index>,<mode>)
-random(<min>,<max>):integer
+play_note(<note-number>, <velocity>, <sample-offset>, <duration>):integer
+pow(<real-value>, <real-value>):real
+purge_group(<group-idx>, <mode>)
+random(<min>, <max>):integer
 read_persistent_var(<variable>)
 real_to_int(<real-value>):integer
 redirect_midi(<unknown>)
-redirect_output(<event-id>,<type>,<channel>)
+redirect_output(<event-id>, <type>, <channel>)
 remove_keyrange(<key-number>)
 reset_engine()
 reset_ksp_timer()
 reset_rls_trig_counter(<note>)
 round(<real-value>):real
-save_array(<array-or-string-array-variable>,<mode>):integer
-save_array_str(<array-or-string-array-variable>,<path-text>):integer
+save_array(<array-or-string-array-variable>, <mode>):integer
+save_array_str(<array-or-string-array-variable>, <path-text>):integer
 save_midi_file(<path-text>):integer
-search(<array-variable>,<value>):integer
+search(<array-variable>, <value>):integer
 set_bounds(<control>, <x>, <y>, <width>, <height>)
-set_button_properties(<button>, <text>, <picture>, <text_alignment>, <font_type>, <textpos_y>)
-set_control_help(<variable>,<text>)
-set_control_par(<ui-id>,<control-parameter>,<value>)
-set_control_par_arr(<ui-id>,<control-parameter>,<value>,<index>)
-set_control_par_str(<ui-id>,<control-parameter>,<text>)
-set_control_par_str_arr(<ui-id>,<control-parameter>,<text>,<index>)
-set_controller(<controller-number>,<controller-value>)
-set_engine_par(<parameter>,<value>,<group>,<slot>,<generic>):integer
-set_engine_par_disp_m(<unknown>)
-set_engine_par_m(<parameter>,<value>,<instrument-slot-id>,<unknown>,<unknown>)
-set_event_mark(<ID-number>,<bit-mark>)
-set_event_par(<ID-number>,<parameter>,<value>)
-set_event_par_arr(<ID-number>,<parameter>,<value>,<group-idx>)
-set_key_color(<note-number>,<key-color-constant>)
-set_key_name(<key-number>,<key-name>)
-set_key_pressed(<key-number>,<value>)
+set_button_properties(<button>, <text>, <picture>, <text-alignment>, <font-type>, <textpos-y>)
+set_control_help(<variable>, <text>)
+set_control_par(<ui-id>, <control-parameter>, <value>)
+set_control_par_arr(<ui-id>, <control-parameter>, <value>, <index>)
+set_control_par_str(<ui-id>, <control-parameter>, <text>)
+set_control_par_str_arr(<ui-id>, <control-parameter>, <text>, <index>)
+set_controller(<controller-number>, <controller-value>)
+set_engine_par(<parameter>, <value>, <group>, <slot>, <generic>):integer
+set_engine_par_m(<parameter>, <value>, <instrument-slot-idx>, <slot>, <generic>):integer
+set_event_mark(<event-id>, <bit-mark>)
+set_event_par(<event-id>, <parameter>, <value>)
+set_event_par_arr(<event-id>, <parameter>, <value>, <group-idx>)
+set_group_dyn_par_name(<group-dyn-par>, <name>)
+set_key_color(<note-number>, <key-color-constant>)
+set_key_name(<key-number>, <key-name>)
+set_key_pressed(<key-number>, <value>)
 set_key_pressed_support(<value>)
-set_key_type(<note-number>,key_type_constant>)
-set_keyrange(<key-number1>,<key-number2>,<range-name>)
-set_knob_defval(<knob-variable>,<value>)
-set_knob_label(<knob-variable>,<text>)
+set_key_type(<note-number>, key-type-constant>)
+set_keyrange(<key-number1>, <key-number2>, <range-name>)
+set_knob_defval(<knob-variable>, <value>)
+set_knob_label(<knob-variable>, <text>)
 set_knob_properties(<knob>, <text>, <default>)
-set_knob_unit(<knob-variable>,<unit>)
-set_label_properties(<label>, <text>, <picture>, <text_alignment>, <font_type>, <textpos_y>)
-set_level_meter_properties(<lev>, <bg_color>, <off_color>, <on_color>, <overload_color>)
-set_listener(<signal_type>,<parameter>)
-set_menu_item_str(<menu-id>,<index>,<text>)
-set_menu_item_value(<menu-id>,<index>,<value>)
-set_menu_item_visibility(<menu-id>,<index>,<visibility>)
-set_menu_properties(<menu>, <picture>, <font_type>, <text_alignment>, <textpos_y>)
-set_midi(<channel>,<command>,<byte1>,<byte2>)
-set_nrpn(<address>,<value>)
-set_rpn(<address>,<value>)
+set_knob_unit(<knob-variable>, <unit>)
+set_label_properties(<label>, <text>, <picture>, <text-alignment>, <font-type>, <textpos-y>)
+set_level_meter_properties(<level-meter>, <bg-color>, <off-color>, <on-color>, <overload-color>)
+set_listener(<signal-type>, <parameter>)
+set_loop_par(<zone-id>, <loop-id>, <parameter>, <value>):integer
+set_menu_item_str(<menu-id>, <index>, <text>)
+set_menu_item_value(<menu-id>, <index>, <value>)
+set_menu_item_visibility(<menu-id>, <index>, <visibility>)
+set_menu_properties(<menu>, <picture>, <font-type>, <text-alignment>, <textpos-y>)
+set_midi(<channel>, <command>, <byte1>, <byte2>)
+set_nrpn(<address>, <value>)
+set_num_user_zones(<size>)
+set_rpn(<address>, <value>)
+set_sample(<zone-id>, <path-text>):integer
 set_script_title(<text>)
 set_skin_offset(<offset>)
-set_slider_properties(<slider>, <default>, <picture>, <mouse_behaviour>)
+set_slider_properties(<slider>, <default>, <picture>, <mouse-behaviour>)
 set_snapshot_type(<type>)
-set_switch_properties(<switch>, <text>, <picture>, <text_alignment>, <font_type>, <textpos_y>)
-set_table_properties(<table>, <bar_color>, <zero_line_color>)
-set_table_steps_shown(<array-variable>,<num-steps>)
-set_text(<variable>,<text>)
+set_switch_properties(<switch>, <text>, <picture>, <text-alignment>, <font-type>, <textpos-y>)
+set_table_properties(<table>, <bar-color>, <zero-line-color>)
+set_table_steps_shown(<array-variable>, <num-steps>)
+set_text(<variable>, <text>)
 set_ui_color(<hex-value>)
 set_ui_height(<height>)
 set_ui_height_px(<height>)
-set_ui_wf_property(<waveform>,<property>,<index>,<value>)
+set_ui_wf_property(<waveform>, <property>, <index>, <value>)
 set_ui_width_px(<width>)
 set_voice_limit(<voice­type>,<value>)
-set_waveform_properties(<waveform>, <bar_color>, <zero_line_color>)
-sh_left(<expression>,<amount>):integer
-sh_right(<expression>,<amount>):integer
+set_waveform_properties(<waveform>, <bar-color>, <zero-line-color>)
+set_zone_par(<zone-id>, <parameter>, <value>):integer
+sh_left(<expression>, <amount>):integer
+sh_right(<expression>, <amount>):integer
 show_library_tab()
 sin(<real-value>):real
-slice_idx_loop_end(<group-index>,<loop-index>):integer
-slice_idx_loop_start(<group-index>,<loop-index>):integer
-slice_length(<group-index>,<slice-index>):integer
-slice_loop_count(<group-index>,<loop-index>):integer
-slice_start(<group-index>,<slice-index>):integer
-sort(<array-variable>,<direction>)
+slice_idx_loop_end(<group-idx>, <loop-idx>):integer
+slice_idx_loop_start(<group-idx>, <loop-idx>):integer
+slice_length(<group-idx>, <slice-idx>):integer
+slice_loop_count(<group-idx>, <loop-idx>):integer
+slice_start(<group-idx>, <slice-idx>):integer
+slotidx_to_guiidx(<instrument-slot-idx>):integer
+sort(<array-variable>, <direction>)
 sqrt(<real-value>):real
-stop_wait(<callbackID>,<par>)
+stop_wait(<callback-id>, <par>)
 tan(<real-value>):real
 ticks_to_ms(<ticks>):integer
-unload_slot(<instrument-slot-id>)
+unload_slot(<instrument-slot-idx>)
 wait(<wait-time>)
+wait_async(<event-id>)
 watch_var(<variable>)
-watch_array_idx(<array-variable>,<index>)
+watch_array_idx(<array-variable>, <index>)
 wait_ticks(<wait-time>)
 will_never_terminate(<event-id>)
-zone_slice_idx_loop_end(<zone-ID>,<loop-index>):integer
-zone_slice_idx_loop_start(<zone-ID>,<loop-index>):integer
-zone_slice_length(<zone-ID>,<slice-index>):integer
-zone_slice_loop_count(<zone-ID>,<loop-index>):integer
-zone_slice_start(<zone-ID>,<slice-index>):integer
+zone_slice_idx_loop_end(<zone-id>, <loop-idx>):integer
+zone_slice_idx_loop_start(<zone-id>, <loop-idx>):integer
+zone_slice_length(<zone-id>, <slice-idx>):integer
+zone_slice_loop_count(<zone-id>, <loop-idx>):integer
+zone_slice_start(<zone-id>, <slice-idx>):integer
 
 [functions_with_forced_parenthesis]
 mf_reset

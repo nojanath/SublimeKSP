@@ -1,6 +1,6 @@
 <snippet>
 	<content><![CDATA[declare ui_label ${1:name} (${2:width}, ${3:height})]]></content>
 	<description>ui_label</description>
-	<tabTrigger>ui_label</tabTrigger>
+	<tabTrigger>ui_la</tabTrigger>
 	<scope>source.ksp</scope>
 </snippet>

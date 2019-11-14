@@ -48,8 +48,8 @@ line_continuation_re = re.compile(r'\.\.\.\s*\n', re.MULTILINE)
 
 placeholders = {}           # mapping from placeholder number to contents (placeholders used for comments, strings and ...)
 functions = OrderedDict()   # maps from function name to AST node corresponding to the function definition
-variables = set()           # a set of the names of the declared variables (prefixed with $, %, ! or @)
-ui_variables = set()        # a set of the names of the declared variables of UI type, like ui_knob, ui_value_edit, etc. (prefixed with $, %, ! or @)
+variables = set()           # a set of the names of the declared variables (prefixed with $, %, !, ? or @)
+ui_variables = set()        # a set of the names of the declared variables of UI type, like ui_knob, ui_value_edit, etc. (prefixed with $, %, !, ? or @)
 families = set()            # a set of the family names (prefixed with namespaces)
 properties = set()
 functions_invoking_wait = set()

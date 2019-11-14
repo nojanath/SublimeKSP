@@ -3,6 +3,6 @@
 literate_macro(${1:macro}) on ${2:literals}
 ]]></content>
 	<description>literate macro</description>
-    <tabTrigger>literate_macro</tabTrigger>
+    <tabTrigger>liter</tabTrigger>
     <scope>source.ksp</scope>
 </snippet>

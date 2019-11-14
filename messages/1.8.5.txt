@@ -1,0 +1,7 @@
+Version: 1.8.5
+
+- support for commands, widgets and engine parameters added in Kontakt 6.2.0
+- added some descriptions to <unknown> arguments in builtins_data
+- added more keys for auto-recognizing KSP scripts according to syntax - also reduced number of necessary hits to recognize a valid KSP script from three or more, to two or more
+- tweaked most snippets, shortening the triggers so they show up sooner in auto-complete list
+- removed some duplicate snippets
