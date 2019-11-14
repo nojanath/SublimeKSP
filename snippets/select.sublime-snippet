@@ -8,6 +8,6 @@ select ${1:value}
 end select
 ]]></content>
 	<description>select</description>
-	<tabTrigger>select</tabTrigger>
+	<tabTrigger>sel</tabTrigger>
 	<scope>source.ksp</scope>
 </snippet>

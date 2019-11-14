@@ -458,15 +458,15 @@ class KspAboutCommand(sublime_plugin.ApplicationCommand):
 class KspFixLineEndings(sublime_plugin.EventListener):
     def is_probably_ksp_file(self, view):
         ext = os.path.splitext(view.file_name())[1].lower()
-        if ext == '.ksp':
+        if ext == '.ksp' or ext == '.b3s' or ext == '.nbsc':
             return True
-        elif ext == '.txt':
+        elif ext == ".txt":
             code = view.substr(sublime.Region(0, view.size()))
-            score = sum(sc for (pat, sc) in [(r'^on init\b', 1), ('^end function', 1), ('EVENT_VELOCITY', 2), ('EVENT_ID', 2), ('^on ui_control', 3), (r'make_persistent\(', 2), ('^end on', 1), (r'-> result', 2), (r'declare \w+\[\w+\]', 2)]
+            score = sum(sc for (pat, sc) in [(r'^on init\b', 1), (r'^on note\b', 1), (r'^on release\b', 1), (r'^on controller\b', 1), ('^end function', 1), ('EVENT_ID', 2), ('EVENT_NOTE', 2), ('EVENT_VELOCITY', 2), ('^on ui_control', 3), (r'make_persistent', 2), ('^end on', 1), (r'-> result', 2), (r'declare \w+\[\w+\]', 2)]
                         if re.search('(?m)' + pat, code))
-            return score >= 3
+            return score >= 2
         else:
-            return False
+            return false
 
     def set_ksp_syntax(self, view):
         view.set_syntax_file("KSP.sublime-syntax")
