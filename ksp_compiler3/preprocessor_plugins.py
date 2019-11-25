@@ -1,4 +1,3 @@
-
 # Preprocessor Plugins
 #
 # This file is part of the SublimeKSP Compiler which is released under GNU General Public License version 3.
@@ -1380,3 +1379,4 @@ def handleLiterateMacro(lines):
 		newLines.append(lines[lineIdx])
 	replaceLines(lines, newLines)
 	return scan
+
