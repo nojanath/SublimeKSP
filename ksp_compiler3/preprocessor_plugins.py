@@ -1,4 +1,3 @@
-
 # Preprocessor Plugins
 #
 # This file is part of the SublimeKSP Compiler which is released under GNU General Public License version 3.
@@ -1280,8 +1279,9 @@ class UIArray(object):
 			else:
 				text = "declare %s %s %s %s" % (self.persistence, self.uiType, self.prefixSymbol + uiName + str(i), self.uiParams)
 			newLines.append(line.copy(text))
-			text = "%s[%s] := get_ui_id(%s)" % (self.familyPrefix + uiName, str(i), self.familyPrefix + uiName + str(i))
-			newLines.append(line.copy(text))
+		newLines.append(line.copy("for preproc_i := 0 to %s" % (self.numElements)))
+		newLines.append(line.copy("%s[preproc_i] := get_ui_id(%s) + preproc_i" % (self.familyPrefix + uiName, self.familyPrefix + uiName + '0')))
+		newLines.append(line.copy("end for"))
 		return(newLines)
 
 def handleUIArrays(lines):
@@ -1292,7 +1292,12 @@ def handleUIArrays(lines):
 	for lineNum in range(len(lines)):
 		line = lines[lineNum].command.strip()
 		famCount = countFamily(line, famCount)
-		if line.startswith("decl"):
+		if line.startswith("on"):
+			if re.search(initRe, line):
+				newLines.append(lines[lineNum])
+				newLines.append(lines[lineNum].copy("declare preproc_i"))
+				continue
+		elif line.startswith("decl"):
 			m = re.search(uiArrayRe, line)
 			if m:
 				uiType = m.group("uitype")
@@ -1374,3 +1379,4 @@ def handleLiterateMacro(lines):
 		newLines.append(lines[lineIdx])
 	replaceLines(lines, newLines)
 	return scan
+
