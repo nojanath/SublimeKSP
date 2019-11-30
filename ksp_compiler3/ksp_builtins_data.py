@@ -1150,13 +1150,17 @@ set_switch_properties(<switch>, <text>, <picture>, <text-alignment>, <font-type>
 set_table_properties(<table>, <bar-color>, <zero-line-color>)
 set_table_steps_shown(<array-variable>, <num-steps>)
 set_text(<variable>, <text>)
+set_text_edit_properties(<text-edit>, <text>, <picture>, <text-alignment>, <font-type>, <textpos-y>)
 set_ui_color(<hex-value>)
 set_ui_height(<height>)
 set_ui_height_px(<height>)
 set_ui_wf_property(<waveform>, <property>, <index>, <value>)
 set_ui_width_px(<width>)
+set_value_edit_properties(<value-edit>, <text>, <font-type>, <textpos-y>, <show-arrows>)
 set_voice_limit(<voice­type>,<value>)
-set_waveform_properties(<waveform>, <bar-color>, <zero-line-color>)
+set_waveform_properties(<waveform>, <bar-color>, <zero-line-color>, <bg-color>, <bg-alpha>, <wave-color>, <wave-cursor-color>, <slicemarkers-color>, <wf-vis-mode>)
+set_wavetable2d_properties(<wavetable>, <wt-zone>, <bg-color>, <bg-alpha>, <wave-color>, <wave-alpha>, <wave-end-color>, <wave-end-alpha>)
+set_wavetable3d_properties(<wavetable>, <wt-zone>, <bg-color>, <bg-alpha>, <wavetable-color>, <wavetable-alpha>, <wavetable-end-color>, <wavetable-end-alpha>, <parallax-x>, <parallax-y>)
 set_zone_par(<zone-id>, <parameter>, <value>):integer
 sh_left(<expression>, <amount>):integer
 sh_right(<expression>, <amount>):integer
