@@ -15,6 +15,7 @@
 import re
 import os
 import collections
+from collections import OrderedDict
 import ksp_ast
 import ksp_ast_processing
 from ksp_ast_processing import flatten
@@ -29,6 +30,7 @@ import ply.lex as lex
 from logger import logger_code
 import time
 from preprocessor_plugins import pre_macro_functions, macro_iter_functions, post_macro_functions
+import json
 
 variable_prefixes = '$%@!?~'
 
@@ -306,10 +308,11 @@ def parse_lines_and_handle_imports(code, filename=None, namespaces=None, read_fi
         code = preprocessor_func(code, namespaces)
 
     lines = parse_lines(code, filename, namespaces)
-
+    
     new_lines = collections.deque()
     while lines:
         line = lines.popleft()
+        
         # if line seems to be an import line
         if import_basic_re.match(line.command):
             line.replace_placeholders()
@@ -1476,6 +1479,55 @@ def compress_variable_name(name):
 def default_read_file_func(filepath):
     return open(filepath, 'r').read()
 
+def parse_nckp(path):
+    prefix = ["$", "$", "$", "$", "$", "$", "$", "$", "$", "%", "@", "$", "$", "$", "?", "$"]
+    cur_prefix = []
+                            
+    if os.path.exists(path):
+
+        def search_ui_in_dict_recursively(dictionary):
+            tree = ""
+            name = ""
+            key = 'index'
+            for k, v in dictionary.items():
+                if k == key:
+                    cur_prefix.append(prefix[v])
+                    tree = dictionary["value"]["common"]["id"]
+                    yield tree
+                elif isinstance(v, dict):
+                    for result in search_ui_in_dict_recursively(v):
+                        if tree:
+                            name = tree+"_"+result
+                        else:
+                            name = result
+                        yield name
+                elif isinstance(v, list):
+                    for d in v:
+                        for result in search_ui_in_dict_recursively(d):
+                            yield result
+
+        with open(path, 'r') as read_file:
+            data = json.load(read_file, object_pairs_hook=OrderedDict)
+            
+        ui_controls_names = list(search_ui_in_dict_recursively(data))
+        
+        for i,p in enumerate(ui_controls_names):
+            yield cur_prefix[i]+p
+
+def import_nckp(source):
+    lines = source.splitlines()
+    for line in lines:
+        if 'import_nckp' in line:
+            nckp_path = line[line.find('(')+1:line.find(')')][1:-1]
+            if nckp_path:
+                ui_to_import = list(parse_nckp(nckp_path))
+                for i,v in enumerate(ui_to_import):
+                    print("adding: " + v)
+                    variables.add(v.lower())
+                    ui_variables.add(v.lower())
+
+    return bool(nckp_path)
+
 class KSPCompiler(object):
     def __init__(self, source, basedir, compact=True, compactVars=False, comments_on_expansion=True, read_file_func=default_read_file_func, extra_syntax_checks=False, optimize=False, check_empty_compound_statements=False):
         self.source = source
@@ -1544,12 +1596,18 @@ class KSPCompiler(object):
             else:
                 # if there is no persistence_changed callback then generate one
                 source = source + "\non persistence_changed\ncheckPrintFlag()\nend on\n"            
-
-
+                        
         self.lines = parse_lines_and_handle_imports(source,
                                                     read_file_function=self.read_file_func,
                                                     preprocessor_func=self.examine_pragmas)
         handle_conditional_lines(self.lines)
+
+        if import_nckp(source):
+            for line_obj in self.lines:
+                line = line_obj.command
+                ls_line = line.lstrip()
+                if 'import_nckp' in line:
+                    line_obj.command = re.sub(r'[^\r\n]', '', line)
 
 
     # NOTE(Sam): Previously done in the expand_macros function, the lines are converted into a block in separately

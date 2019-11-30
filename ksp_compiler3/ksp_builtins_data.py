@@ -1018,6 +1018,7 @@ hide_part(<variable>, <value>)
 ignore_controller()
 ignore_event(<event-id>)
 ignore_midi()
+import_nckp(<path variable>):string
 in_range(<expression>, <lower>, <upper>):boolean
 inc(<expression>)
 int_to_real(<integer>):real
