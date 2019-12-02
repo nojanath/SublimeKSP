@@ -1480,9 +1480,33 @@ def default_read_file_func(filepath):
     return open(filepath, 'r').read()
 
 def parse_nckp(path):
+
+    '''
+    The prefix list is orderd to match the integer number representing each ui_control:
+
+    0. panel
+    1. button
+    2. fileselector
+    3. knob
+    4. label 
+    5. levelmeter
+    6. menu
+    7. slider
+    8. switch
+    9. table
+    10. textedit
+    11. valueedit
+    12. waveform
+    13. wavetable
+    14. xypad
+    15. mousearea
+
+    '''
+
     prefix = ["$", "$", "$", "$", "$", "$", "$", "$", "$", "%", "@", "$", "$", "$", "?", "$"]
     cur_prefix = []
-                            
+    
+    # if the nckp file is found, iterate recursively into the nested data                      
     if os.path.exists(path):
 
         def search_ui_in_dict_recursively(dictionary):
@@ -1511,6 +1535,7 @@ def parse_nckp(path):
             
         ui_controls_names = list(search_ui_in_dict_recursively(data))
         
+        # pair the collected prefix to the parsed ui_control names
         for i,p in enumerate(ui_controls_names):
             yield cur_prefix[i]+p
 
