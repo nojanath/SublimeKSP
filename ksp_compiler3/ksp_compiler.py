@@ -1520,10 +1520,7 @@ def parse_nckp(path):
                     yield tree
                 elif isinstance(v, dict):
                     for result in search_ui_in_dict_recursively(v):
-                        if tree:
-                            name = tree+"_"+result
-                        else:
-                            name = result
+                        name = (tree+"_"+result) if tree else result
                         yield name
                 elif isinstance(v, list):
                     for d in v:
@@ -1539,7 +1536,7 @@ def parse_nckp(path):
         for i,p in enumerate(ui_controls_names):
             yield cur_prefix[i]+p
 
-def import_nckp(source):
+def strip_import_nckp_function_from_source(source):
     lines = source.splitlines()
     for line in lines:
         if 'import_nckp' in line:
@@ -1627,7 +1624,7 @@ class KSPCompiler(object):
                                                     preprocessor_func=self.examine_pragmas)
         handle_conditional_lines(self.lines)
 
-        if import_nckp(source):
+        if strip_import_nckp_function_from_source(source):
             for line_obj in self.lines:
                 line = line_obj.command
                 ls_line = line.lstrip()
