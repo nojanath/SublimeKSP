@@ -533,7 +533,6 @@ class ASTVisitorCheckDeclarations(ASTVisitor):
         if not name in ksp_builtins.variables and not name in ksp_builtins.functions and not name.lower() in symbol_table and not name in special_names and not name in user_defined_functions:
             raise ParseException(node, 'Undeclared variable/function: %s' % name)
 
-
 class ASTModifierSimplifyExpressions(ASTModifier):
     def __init__(self, module_ast, replace_constants=True):
         ASTModifier.__init__(self)

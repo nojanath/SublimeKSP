@@ -1520,7 +1520,7 @@ def parse_nckp(path):
                     yield tree
                 elif isinstance(v, dict):
                     for result in search_ui_in_dict_recursively(v):
-                        name = (tree+"_"+result) if tree else result
+                        name = (tree + "_" + result) if tree else result
                         yield name
                 elif isinstance(v, list):
                     for d in v:
@@ -1536,7 +1536,8 @@ def parse_nckp(path):
         for i,p in enumerate(ui_controls_names):
             yield cur_prefix[i]+p
 
-def strip_import_nckp_function_from_source(source):
+def open_nckp(source):
+    nckp_path = '' # predeclared to avoid errors if the import_nckp ksp function is not used
     lines = source.splitlines()
     for line in lines:
         if 'import_nckp' in line:
@@ -1549,6 +1550,14 @@ def strip_import_nckp_function_from_source(source):
                     ui_variables.add(v.lower())
 
     return bool(nckp_path)
+
+def strip_import_nckp_function_from_source(source, lines):
+    if open_nckp(source):
+        for line_obj in lines:
+            line = line_obj.command
+            ls_line = line.lstrip()
+            if 'import_nckp' in line:
+                line_obj.command = re.sub(r'[^\r\n]', '', line)
 
 class KSPCompiler(object):
     def __init__(self, source, basedir, compact=True, compactVars=False, comments_on_expansion=True, read_file_func=default_read_file_func, extra_syntax_checks=False, optimize=False, check_empty_compound_statements=False):
@@ -1624,13 +1633,7 @@ class KSPCompiler(object):
                                                     preprocessor_func=self.examine_pragmas)
         handle_conditional_lines(self.lines)
 
-        if strip_import_nckp_function_from_source(source):
-            for line_obj in self.lines:
-                line = line_obj.command
-                ls_line = line.lstrip()
-                if 'import_nckp' in line:
-                    line_obj.command = re.sub(r'[^\r\n]', '', line)
-
+        strip_import_nckp_function_from_source(source, self.lines)
 
     # NOTE(Sam): Previously done in the expand_macros function, the lines are converted into a block in separately
     # because the preprocessor needs to be called after the macros and before this.
