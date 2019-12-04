@@ -19,6 +19,7 @@ import re
 import math
 
 symbol_table = {}
+nckp_table = []
 user_defined_functions = {}
 key_ids = {}
 
@@ -32,6 +33,9 @@ def clear_symbol_table():
     symbol_table.clear()
     key_ids.clear()
     user_defined_functions.clear()
+
+def add_nckp_var_to_nckp_table(nckp_ui_variable):
+        nckp_table.append(nckp_ui_variable)
 
 class ValueUndefinedException(ParseException):
     def __init__(self, node, msg='Value of variable undefined'):
@@ -530,7 +534,7 @@ class ASTVisitorCheckDeclarations(ASTVisitor):
     def visitID(self, parent, node, *args):
         name = str(node)
         special_names = ['NO_SYS_SCRIPT_RLS_TRIG', 'NO_SYS_SCRIPT_PEDAL', 'NO_SYS_SCRIPT_GROUP_START', 'NO_SYS_SCRIPT_ALL_NOTES_OFF']
-        if not name in ksp_builtins.variables and not name in ksp_builtins.functions and not name.lower() in symbol_table and not name in special_names and not name in user_defined_functions:
+        if not name in ksp_builtins.variables and not name in ksp_builtins.functions and not name.lower() in symbol_table and not name in special_names and not name in user_defined_functions and not name in nckp_table:
             raise ParseException(node, 'Undeclared variable/function: %s' % name)
 
 class ASTModifierSimplifyExpressions(ASTModifier):
