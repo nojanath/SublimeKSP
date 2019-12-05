@@ -1548,7 +1548,7 @@ def open_nckp(source):
                     print("adding: " + v)
                     variables.add(v.lower())
                     ui_variables.add(v.lower())
-                    comp_extras.add_nckp_var_to_nckp_table(v.lower())
+                    comp_extras.add_nckp_var_to_nckp_table(v)
 
     return bool(nckp_path)
 
