@@ -1505,52 +1505,62 @@ def parse_nckp(path):
 
     prefix = ["$", "$", "$", "$", "$", "$", "$", "$", "$", "%", "@", "$", "$", "$", "?", "$"]
     cur_prefix = []
-    
-    # if the nckp file is found, iterate recursively into the nested data                      
-    if os.path.exists(path):
 
-        def search_ui_in_dict_recursively(dictionary):
-            tree = ""
-            name = ""
-            key = 'index'
-            for k, v in dictionary.items():
-                if k == key:
-                    cur_prefix.append(prefix[v])
-                    tree = dictionary["value"]["common"]["id"]
-                    yield tree
-                elif isinstance(v, dict):
-                    for result in search_ui_in_dict_recursively(v):
-                        name = (tree + "_" + result) if tree else result
-                        yield name
-                elif isinstance(v, list):
-                    for d in v:
-                        for result in search_ui_in_dict_recursively(d):
-                            yield result
+    # iterate recursively into the nested data
+    def search_ui_in_dict_recursively(dictionary):
+        tree = ""
+        name = ""
+        key = 'index'
+        for k, v in dictionary.items():
+            if k == key:
+                cur_prefix.append(prefix[v])
+                tree = dictionary["value"]["common"]["id"]
+                yield tree
+            elif isinstance(v, dict):
+                for result in search_ui_in_dict_recursively(v):
+                    name = (tree + "_" + result) if tree else result
+                    yield name
+            elif isinstance(v, list):
+                for d in v:
+                    for result in search_ui_in_dict_recursively(d):
+                        yield result
 
-        with open(path, 'r') as read_file:
-            data = json.load(read_file, object_pairs_hook=OrderedDict)
-            
-        ui_controls_names = list(search_ui_in_dict_recursively(data))
+    with open(path, 'r') as read_file:
+        data = json.load(read_file, object_pairs_hook=OrderedDict)
         
-        # pair the collected prefix to the parsed ui_control names
-        for i,p in enumerate(ui_controls_names):
-            yield cur_prefix[i]+p
+    ui_controls_names = list(search_ui_in_dict_recursively(data))
+    
+    # pair the collected prefix to the parsed ui_control names
+    for i,p in enumerate(ui_controls_names):
+        yield cur_prefix[i]+p
 
-def open_nckp(source):
+def open_nckp(source, basedir):
     nckp_path = '' # predeclared to avoid errors if the import_nckp ksp function is not used
+    ui_to_import = []
     lines = source.splitlines()
     for line in lines:
         if 'import_nckp' in line:
             nckp_path = line[line.find('(')+1:line.find(')')][1:-1]
             if nckp_path:
-                ui_to_import = list(parse_nckp(nckp_path))
-                for i,v in enumerate(ui_to_import):
-                    print("adding: " + v)
-                    variables.add(v.lower())
-                    ui_variables.add(v.lower())
-                    comp_extras.add_nckp_var_to_nckp_table(v)
 
-    return bool(nckp_path)
+                # check if the path is relative or not
+                if not os.path.isabs(nckp_path):
+                    nckp_path = os.path.join(basedir, nckp_path)
+
+                if os.path.exists(nckp_path):
+
+                    ui_to_import = list(parse_nckp(nckp_path))
+
+                    for i,v in enumerate(ui_to_import):
+                        print("adding: " + v)
+                        variables.add(v.lower())
+                        ui_variables.add(v.lower())
+                        comp_extras.add_nckp_var_to_nckp_table(v)
+
+                else:
+                    print('can not locate ' + nckp_path)
+
+    return bool(ui_to_import)
 
 def strip_import_nckp_function_from_source(source, lines):
     for line_obj in lines:
@@ -1633,7 +1643,7 @@ class KSPCompiler(object):
                                                     preprocessor_func=self.examine_pragmas)
         handle_conditional_lines(self.lines)
 
-        if open_nckp(source):
+        if open_nckp(source, self.basedir):
             strip_import_nckp_function_from_source(source, self.lines)
 
     # NOTE(Sam): Previously done in the expand_macros function, the lines are converted into a block in separately
