@@ -1279,7 +1279,7 @@ class UIArray(object):
 			else:
 				text = "declare %s %s %s %s" % (self.persistence, self.uiType, self.prefixSymbol + uiName + str(i), self.uiParams)
 			newLines.append(line.copy(text))
-		newLines.append(line.copy("for preproc_i := 0 to %s" % (self.numElements)))
+		newLines.append(line.copy("for preproc_i := 0 to %s" % (self.numElements - 1)))
 		newLines.append(line.copy("%s[preproc_i] := get_ui_id(%s) + preproc_i" % (self.familyPrefix + uiName, self.familyPrefix + uiName + '0')))
 		newLines.append(line.copy("end for"))
 		return(newLines)
