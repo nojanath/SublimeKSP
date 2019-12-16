@@ -1558,7 +1558,7 @@ def open_nckp(source, basedir):
                         comp_extras.add_nckp_var_to_nckp_table(v)
 
                 else:
-                    print('can not locate ' + nckp_path)
+                    raise ParseException(Line(line, [(None, list(lines).index(line)+1)], None), 'No nckp file found.\n')
 
     return bool(ui_to_import)
 
