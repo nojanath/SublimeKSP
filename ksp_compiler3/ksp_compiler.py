@@ -1540,25 +1540,36 @@ def open_nckp(source, basedir):
     lines = source.splitlines()
     for line in lines:
         if 'import_nckp' in line:
-            nckp_path = line[line.find('(')+1:line.find(')')][1:-1]
-            if nckp_path:
 
-                # check if the path is relative or not
-                if not os.path.isabs(nckp_path):
-                    nckp_path = os.path.join(basedir, nckp_path)
+            if 'load_performance_view' in source:
 
-                if os.path.exists(nckp_path):
+                # raise an error if load_performance_view and make_perfview co-exist onto the same script
+                for l in lines:
+                    if 'make_perfview' in l:
+                        raise ParseException(Line(l, [(None, list(lines).index(l)+1)], None), 'If \'load_performance_view\' is used \'make_perfview\' is not necessary, please remove it!\n')
 
-                    ui_to_import = list(parse_nckp(nckp_path))
+                nckp_path = line[line.find('(')+1:line.find(')')][1:-1]
+                if nckp_path:
 
-                    for i,v in enumerate(ui_to_import):
-                        print("adding: " + v)
-                        variables.add(v.lower())
-                        ui_variables.add(v.lower())
-                        comp_extras.add_nckp_var_to_nckp_table(v)
+                    # check if the path is relative or not
+                    if not os.path.isabs(nckp_path):
+                        nckp_path = os.path.join(basedir, nckp_path)
 
-                else:
-                    raise ParseException(Line(line, [(None, list(lines).index(line)+1)], None), 'No nckp file found.\n')
+                    if os.path.exists(nckp_path):
+
+                        ui_to_import = list(parse_nckp(nckp_path))
+
+                        for i,v in enumerate(ui_to_import):
+                            print("adding: " + v)
+                            variables.add(v.lower())
+                            ui_variables.add(v.lower())
+                            comp_extras.add_nckp_var_to_nckp_table(v)
+
+                    else:
+                        raise ParseException(Line(line, [(None, list(lines).index(line)+1)], None), '.nkcp file not found at: <' + os.path.abspath(nckp_path) + '> !\n')
+
+            else:
+                raise ParseException(Line(line, [(None, list(lines).index(line)+1)], None), 'import_nckp used but no load_performance_view found in the script!\n')                
 
     return bool(ui_to_import)
 
