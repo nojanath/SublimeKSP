@@ -985,6 +985,7 @@ fs_navigate(<ui-id>, <direction>)
 get_control_par(<ui-id>, <control-parameter>):integer
 get_control_par_arr(<ui-id>, <control-parameter>, <index>):integer
 get_control_par_str(<ui-id>, <control-parameter>):string
+get_control_par_str_arr(<ui-id>, <control-parameter>, <index>):string
 get_engine_par(<parameter>, <group>, <slot>, <generic>):integer
 get_engine_par_disp(<parameter>, <group>, <slot>, <generic>):string
 get_engine_par_disp_m(<parameter>, <instrument-slot-idx>, <slot>, <generic>):string
