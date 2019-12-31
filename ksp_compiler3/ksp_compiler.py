@@ -15,9 +15,10 @@
 import re
 import os
 import collections
+from collections import OrderedDict
 import ksp_ast
 import ksp_ast_processing
-from ksp_ast_processing import flatten
+from ksp_compiler_extras import flatten
 import ksp_compiler_extras as comp_extras
 import ksp_builtins
 from ksp_parser import parse
@@ -29,6 +30,7 @@ import ply.lex as lex
 from logger import logger_code
 import time
 from preprocessor_plugins import pre_macro_functions, macro_iter_functions, post_macro_functions
+import json
 
 variable_prefixes = '$%@!?~'
 
@@ -306,10 +308,11 @@ def parse_lines_and_handle_imports(code, filename=None, namespaces=None, read_fi
         code = preprocessor_func(code, namespaces)
 
     lines = parse_lines(code, filename, namespaces)
-
+    
     new_lines = collections.deque()
     while lines:
         line = lines.popleft()
+        
         # if line seems to be an import line
         if import_basic_re.match(line.command):
             line.replace_placeholders()
@@ -1476,6 +1479,107 @@ def compress_variable_name(name):
 def default_read_file_func(filepath):
     return open(filepath, 'r').read()
 
+def parse_nckp(path):
+
+    '''
+    The prefix list is orderd to match the integer number representing each ui_control:
+
+    0. panel
+    1. button
+    2. fileselector
+    3. knob
+    4. label 
+    5. levelmeter
+    6. menu
+    7. slider
+    8. switch
+    9. table
+    10. textedit
+    11. valueedit
+    12. waveform
+    13. wavetable
+    14. xypad
+    15. mousearea
+
+    '''
+
+    prefix = ["$", "$", "$", "$", "$", "$", "$", "$", "$", "%", "@", "$", "$", "$", "?", "$"]
+    cur_prefix = []
+
+    # iterate recursively into the nested data
+    def search_ui_in_dict_recursively(dictionary):
+        tree = ""
+        name = ""
+        key = 'index'
+        for k, v in dictionary.items():
+            if k == key:
+                cur_prefix.append(prefix[v])
+                tree = dictionary["value"]["common"]["id"]
+                yield tree
+            elif isinstance(v, dict):
+                for result in search_ui_in_dict_recursively(v):
+                    name = (tree + "_" + result) if tree else result
+                    yield name
+            elif isinstance(v, list):
+                for d in v:
+                    for result in search_ui_in_dict_recursively(d):
+                        yield result
+
+    with open(path, 'r') as read_file:
+        data = json.load(read_file, object_pairs_hook=OrderedDict)
+        
+    ui_controls_names = list(search_ui_in_dict_recursively(data))
+    
+    # pair the collected prefix to the parsed ui_control names
+    for i,p in enumerate(ui_controls_names):
+        yield cur_prefix[i]+p
+
+def open_nckp(source, basedir):
+    nckp_path = '' # predeclared to avoid errors if the import_nckp ksp function is not used
+    ui_to_import = []
+    lines = source.splitlines()
+    for line in lines:
+        if 'import_nckp' in line:
+
+            if 'load_performance_view' in source:
+
+                # raise an error if load_performance_view and make_perfview co-exist onto the same script
+                for l in lines:
+                    if 'make_perfview' in l:
+                        raise ParseException(Line(l, [(None, list(lines).index(l)+1)], None), 'If \'load_performance_view\' is used \'make_perfview\' is not necessary, please remove it!\n')
+
+                nckp_path = line[line.find('(')+1:line.find(')')][1:-1]
+                if nckp_path:
+
+                    # check if the path is relative or not
+                    if not os.path.isabs(nckp_path):
+                        nckp_path = os.path.join(basedir, nckp_path)
+
+                    if os.path.exists(nckp_path):
+
+                        ui_to_import = list(parse_nckp(nckp_path))
+
+                        for i,v in enumerate(ui_to_import):
+                            print("adding: " + v)
+                            variables.add(v.lower())
+                            ui_variables.add(v.lower())
+                            comp_extras.add_nckp_var_to_nckp_table(v)
+
+                    else:
+                        raise ParseException(Line(line, [(None, list(lines).index(line)+1)], None), '.nkcp file not found at: <' + os.path.abspath(nckp_path) + '> !\n')
+
+            else:
+                raise ParseException(Line(line, [(None, list(lines).index(line)+1)], None), 'import_nckp used but no load_performance_view found in the script!\n')                
+
+    return bool(ui_to_import)
+
+def strip_import_nckp_function_from_source(source, lines):
+    for line_obj in lines:
+        line = line_obj.command
+        ls_line = line.lstrip()
+        if 'import_nckp' in line:
+            line_obj.command = re.sub(r'[^\r\n]', '', line)
+
 class KSPCompiler(object):
     def __init__(self, source, basedir, compact=True, compactVars=False, comments_on_expansion=True, read_file_func=default_read_file_func, extra_syntax_checks=False, optimize=False, check_empty_compound_statements=False):
         self.source = source
@@ -1544,13 +1648,14 @@ class KSPCompiler(object):
             else:
                 # if there is no persistence_changed callback then generate one
                 source = source + "\non persistence_changed\ncheckPrintFlag()\nend on\n"            
-
-
+                        
         self.lines = parse_lines_and_handle_imports(source,
                                                     read_file_function=self.read_file_func,
                                                     preprocessor_func=self.examine_pragmas)
         handle_conditional_lines(self.lines)
 
+        if open_nckp(source, self.basedir):
+            strip_import_nckp_function_from_source(source, self.lines)
 
     # NOTE(Sam): Previously done in the expand_macros function, the lines are converted into a block in separately
     # because the preprocessor needs to be called after the macros and before this.
