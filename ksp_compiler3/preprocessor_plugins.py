@@ -572,15 +572,19 @@ def handleUIFunctions(lines):
 	# with'set_' is assumed to be true later on.
 	uiControlPropertyFunctionTemplates = [
 	"set_bounds(ui-id, x, y, width, height)",
+	"set_button_properties(ui-id, text, picture, text_alignment, font_type, textpos_y)",
+	"set_knob_properties(ui-id, text, default)",
+	"set_label_properties(ui-id, text, picture, text_alignment, font_type, textpos_y)",
+	"set_level_meter_properties(ui-id, bg_color, off_color, on_color, overload_color)",
+	"set_menu_properties(ui-id, picture, font_type, text_alignment, textpos_y)",
 	"set_slider_properties(ui-id, default, picture, mouse_behaviour)",
 	"set_switch_properties(ui-id, text, picture, text_alignment, font_type, textpos_y)",
-	"set_label_properties(ui-id, text, picture, text_alignment, font_type, textpos_y)",
-	"set_menu_properties(ui-id, picture, font_type, text_alignment, textpos_y)",
 	"set_table_properties(ui-id, bar_color, zero_line_color)",
-	"set_button_properties(ui-id, text, picture, text_alignment, font_type, textpos_y)",
-	"set_level_meter_properties(ui-id, bg_color, off_color, on_color, overload_color)",
-	"set_waveform_properties(ui-id, bar_color, zero_line_color)",
-	"set_knob_properties(ui-id, text, default)" ]
+	"set_text_edit_properties(ui-id, text, picture, text_alignment, font_type, textpos_y)",
+	"set_value_edit_properties(ui-id, text, font_type, textpos_y, show_arrows)",
+	"set_waveform_properties(ui-id, bar_color, zero_line_color, bg_color, bg_alpha, wave_color, wave_cursor_color, slicemarkers_color, wf_vis_mode)",
+	"set_wavetable2d_properties(ui-id, wt_zone, bg_color, bg_alpha, wave_color, wave_alpha, wave_end_color, wave_end_alpha)",
+	"set_wavetable3d_properties(ui-id, wt_zone, bg_color, bg_alpha, wavetable_color, wavetable_alpha, wavetable_end_color, wavetable_end_alpha, parallax_x, parallax_y)" ]
 
 	# Use the template string above to build a list of UIProperyTemplate objects.
 	uiFuncs = []
@@ -1231,7 +1235,7 @@ def createBuiltinDefines(lines):
 	timecodes = ['%S', '%M', '%H', '%I', '%p', '%d', '%m', '%Y', '%y', '%B', '%b', '%x', '%X']
 	timenames = ['__SEC__','__MIN__','__HOUR__','__HOUR12__','__AMPM__','__DAY__','__MONTH__','__YEAR__','__YEAR2__','__LOCALE_MONTH__','__LOCALE_MONTH_ABBR__','__LOCALE_DATE__','__LOCALE_TIME__']
 	defines = ['define {0} := \"{1}\"'.format(timenames[i], strftime(timecodes[i], localtime())) for i in range(len(timecodes))]
-	
+
 	newLines = collections.deque()
 
 	# append our defines on top of the script in a temporary deque
@@ -1379,4 +1383,3 @@ def handleLiterateMacro(lines):
 		newLines.append(lines[lineIdx])
 	replaceLines(lines, newLines)
 	return scan
-
