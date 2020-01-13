@@ -1,0 +1,14 @@
+Version: 1.9.0
+
+- added support for Creator Tools GUI designer file format .nckp
+    - use import_nckp(<path>) to load the .nckp file and parse it
+    - <path> can be absolute or relative
+    - you still need to load the performance view using load_performance_view("filename") command
+    - error is raised if the path doesn't point to a valid .nckp file, or if make_perfview is found along with load_performance_view() in init callback
+- simplified arrayed UI control initialization (uses a for loop to fill the array with UI IDs instead of inlining get_ui_id() after every UI control declaration)
+- implemented issue #82 - added shorthand commands for setting UI control parameters for ui_text_edit and ui_value_edit
+- expanded set_waveform_properties() shorthand with additional properties
+- added two different shorthands for setting ui_wavetable properties, depending on them being used in 2D or 3D mode
+- added two snippet variants for while loop
+- fixed incorrect number of arguments for disable_logging() command
+- added support for get_engine_par_str_arr() command (we had support for setter already, but not the getter)
