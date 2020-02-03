@@ -1092,7 +1092,7 @@ pgs_set_str_key_val(<key-id>, <text>)
 pgs_str_key_exists(<key-id>):boolean
 play_note(<note-number>, <velocity>, <sample-offset>, <duration>):integer
 pow(<real-value>, <real-value>):real
-purge_group(<group-idx>, <mode>)
+purge_group(<group-idx>, <mode>):integer
 random(<min>, <max>):integer
 read_persistent_var(<variable>)
 real_to_int(<real-value>):integer
