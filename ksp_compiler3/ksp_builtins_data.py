@@ -1181,7 +1181,7 @@ tan(<real-value>):real
 ticks_to_ms(<ticks>):integer
 unload_slot(<instrument-slot-idx>)
 wait(<wait-time>)
-wait_async(<event-id>)
+wait_async(<event-id>):integer
 watch_var(<variable>)
 watch_array_idx(<array-variable>, <index>)
 wait_ticks(<wait-time>)
