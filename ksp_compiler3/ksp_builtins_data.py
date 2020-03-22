@@ -1023,7 +1023,7 @@ import_nckp(<path variable>):string
 in_range(<expression>, <lower>, <upper>):boolean
 inc(<expression>)
 int_to_real(<integer>):real
-is_zone_empty(<zone-id>)
+is_zone_empty(<zone-id>):boolean
 iterate_macro(<expression>)
 literate_macro(<expression>)
 load_array(<array-or-string-array-variable>, <mode>):integer
