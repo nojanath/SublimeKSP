@@ -1075,8 +1075,6 @@ class IterateMacro(object):
 		if step:
 			self.step = int(tryStringEval(step, line, "step"))
 		self.direction = direction
-		if (self.minVal > self.maxVal and self.direction == "to") or (self.minVal < self.maxVal and self.direction == "downto"):
-			raise ksp_compiler.ParseException(line, "Min and max values are incorrectly weighted (For example, min > max when it should be min < max).\n")
 
 	def buildLines(self):
 		newLines = collections.deque()
@@ -1085,12 +1083,14 @@ class IterateMacro(object):
 			self.step = -self.step
 			offset = -1
 
-		if not self.isSingleLine:
-			for i in range(self.minVal, self.maxVal + offset, self.step):
-				newLines.append(self.line.copy("%s(%s)" % (self.macroName, str(i))))
-		else:
-			for i in range(self.minVal, self.maxVal + offset, self.step):
-				newLines.append(self.line.copy(self.macroName.replace("#n#", str(i))))
+		if not ((self.minVal > self.maxVal and self.direction == "to") or (self.minVal < self.maxVal and self.direction == "downto")):
+			if not self.isSingleLine:
+				for i in range(self.minVal, self.maxVal + offset, self.step):
+					newLines.append(self.line.copy("%s(%s)" % (self.macroName, str(i))))
+			else:
+				for i in range(self.minVal, self.maxVal + offset, self.step):
+					newLines.append(self.line.copy(self.macroName.replace("#n#", str(i))))
+
 		return(newLines)
 
 def handleIterateMacro(lines):
