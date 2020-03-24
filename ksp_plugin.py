@@ -328,9 +328,26 @@ class ReplaceTextWithCommand(sublime_plugin.TextCommand):
 
 class KspGlobalSettingToggleCommand(sublime_plugin.ApplicationCommand):
     def run(self, setting, default):
+        sksp_options_dict = {
+            "ksp_compact_output" : "Remove Indents and Empty Lines",
+            "ksp_compact_variables" : "Compact Variables",
+            "ksp_extra_checks" : "Extra Syntax Checks",
+            "ksp_signal_empty_ifcase" : "Signal Error on Empty if/case Statements",
+            "ksp_optimize_code" : "Optimize Compiled Code",
+            "ksp_play_sound" : "Play Sound on Compile Finish",
+            "ksp_comment_inline_functions" : "Insert Comments When Expanding Functions"
+        }
+
         s = sublime.load_settings("KSP.sublime-settings")
         s.set(setting, not s.get(setting, False))
         sublime.save_settings("KSP.sublime-settings")
+
+        if s.get(setting, False):
+            option_toggle = "enabled!"
+        else:
+            option_toggle = "disabled!"
+
+        sublime.status_message('SublimeKSP option %s is %s' % (sksp_options_dict[setting], option_toggle))
 
     def is_checked(self, setting, default):
         return bool(sublime.load_settings("KSP.sublime-settings").get(setting, default))
