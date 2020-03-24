@@ -1,0 +1,9 @@
+Version 1.9.1
+
+Small fixes from EvilDragon:
+- When toggling any of SublimeKSP options in the Tools menu, a status message is printed out in Sublime Text's status bar,
+    showing if the option is enabled or disabled. Particularly handy when using keyboard shortcuts to toggle certain options
+    (i.e. Compact variable names).
+- If range for iterate_macro() is invalid (i.e. minimum value is larger than maximum value), the compiler will simply skip
+    iterating the macro entirely instead of halting compilation. Updated the wiki to reflect this.
+- Fixed missing return value types for certain new KSP commands.
