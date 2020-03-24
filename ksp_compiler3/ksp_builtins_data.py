@@ -1023,7 +1023,7 @@ import_nckp(<path variable>):string
 in_range(<expression>, <lower>, <upper>):boolean
 inc(<expression>)
 int_to_real(<integer>):real
-is_zone_empty(<zone-id>)
+is_zone_empty(<zone-id>):boolean
 iterate_macro(<expression>)
 literate_macro(<expression>)
 load_array(<array-or-string-array-variable>, <mode>):integer
@@ -1092,7 +1092,7 @@ pgs_set_str_key_val(<key-id>, <text>)
 pgs_str_key_exists(<key-id>):boolean
 play_note(<note-number>, <velocity>, <sample-offset>, <duration>):integer
 pow(<real-value>, <real-value>):real
-purge_group(<group-idx>, <mode>)
+purge_group(<group-idx>, <mode>):integer
 random(<min>, <max>):integer
 read_persistent_var(<variable>)
 real_to_int(<real-value>):integer
@@ -1181,7 +1181,7 @@ tan(<real-value>):real
 ticks_to_ms(<ticks>):integer
 unload_slot(<instrument-slot-idx>)
 wait(<wait-time>)
-wait_async(<event-id>)
+wait_async(<event-id>):integer
 watch_var(<variable>)
 watch_array_idx(<array-variable>, <index>)
 wait_ticks(<wait-time>)
