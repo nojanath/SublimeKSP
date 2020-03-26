@@ -1604,22 +1604,19 @@ class KSPCompiler(object):
         self.variable_names_to_preserve = set()
 
     def do_imports_and_convert_to_line_objects(self):
-        source = self.source
-
         # Import files
-        self.lines = parse_lines_and_handle_imports(source,
+        self.lines = parse_lines_and_handle_imports(self.source,
                                                     read_file_function=self.read_file_func,
                                                     preprocessor_func=self.examine_pragmas)
 
         # Parse conditionals and remove lines if appropriate
         handle_conditional_lines(self.lines)
 
-
+    def special_compiler_features(self):
         # Update source to match the new lines
         for line in self.lines:
             line.replace_placeholders()
         source = '\n'.join([line.command for line in self.lines])
-        print(source)
 
         # Import nckp if import_nckp() found
         if open_nckp(source, self.basedir):
@@ -1826,6 +1823,7 @@ class KSPCompiler(object):
                  ('expanding macros',            lambda: self.expand_macros(),                                                True,      1),
                  # NOTE(Sam): Call the post-macro section of the preprocessor
                  ('post-macro processes',        lambda: post_macro_functions(self.lines),                 True,      1),
+                 ('compiler extensions',         lambda: self.special_compiler_features(),                 True,      1),
                  # NOTE(Sam): Convert the lines to a block in a separate function
                  ('convert lines to code block', lambda: self.convert_lines_to_code(),                                         True,      1),
                  ('parse code',                  lambda: self.parse_code(),                                                   True,      1),
