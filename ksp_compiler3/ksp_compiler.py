@@ -1578,8 +1578,8 @@ def strip_import_nckp_function_from_source(source, lines):
     for line_obj in lines:
         line = line_obj.command
         ls_line = line.lstrip()
-        if 'import_nckp' in line:
-            line_obj.command = re.sub(r'[^\r\n]', '', line)
+        if 'import_nckp' in ls_line:
+            line_obj.command = re.sub(r'[^\r\n]', '', ls_line)
 
 class KSPCompiler(object):
     def __init__(self, source, basedir, compact=True, compactVars=False, comments_on_expansion=True, read_file_func=default_read_file_func, extra_syntax_checks=False, optimize=False, check_empty_compound_statements=False):
@@ -1678,11 +1678,6 @@ class KSPCompiler(object):
             strip_import_nckp_function_from_source(source, self.lines)
 
         ###
-
-        # Re-parse new source back into lines
-        self.lines = parse_lines_and_handle_imports(source,
-                                                    read_file_function=self.read_file_func,
-                                                    preprocessor_func=self.examine_pragmas)
 
     # NOTE(Sam): Previously done in the expand_macros function, the lines are converted into a block in separately
     # because the preprocessor needs to be called after the macros and before this.
