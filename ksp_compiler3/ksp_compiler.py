@@ -260,6 +260,12 @@ class Macro:
 
         return new_macro
 
+def merge_lines(lines):
+    """ converts a list of Line objects to a source code string """
+    for line in lines:
+        line.replace_placeholders()
+    return '\n'.join([line.command for line in lines])
+
 def parse_lines(s, filename=None, namespaces=None):
     """ converts a source code string to a list of Line objects """
 
@@ -1540,17 +1546,12 @@ def open_nckp(source, basedir):
     lines = source.splitlines()
     for line in lines:
         if 'import_nckp' in line:
-
             if 'load_performance_view' in source:
-
-                # raise an error if load_performance_view and make_perfview co-exist onto the same script
-                for l in lines:
-                    if 'make_perfview' in l:
-                        raise ParseException(Line(l, [(None, list(lines).index(l)+1)], None), 'If \'load_performance_view\' is used \'make_perfview\' is not necessary, please remove it!\n')
+                if 'make_perfview' in source:
+                    raise ParseException(Line(l, [(None, list(lines).index(l)+1)], None), 'If \'load_performance_view\' is used \'make_perfview\' is not necessary, please remove it!\n')
 
                 nckp_path = line[line.find('(')+1:line.find(')')][1:-1]
                 if nckp_path:
-
                     # check if the path is relative or not
                     if not os.path.isabs(nckp_path):
                         nckp_path = os.path.join(basedir, nckp_path)
@@ -1609,26 +1610,19 @@ class KSPCompiler(object):
                                                     read_file_function=self.read_file_func,
                                                     preprocessor_func=self.examine_pragmas)
 
-        # Parse conditionals and remove lines if appropriate
-        handle_conditional_lines(self.lines)
+        handle_conditional_lines(self.lines) # Parse conditionals and remove lines if appropriate
 
-    def special_compiler_features(self):
-        # Update source to match the new lines
-        for line in self.lines:
-            line.replace_placeholders()
-        source = '\n'.join([line.command for line in self.lines])
+    def extensions_with_macros(self):
+        source = merge_lines(self.lines) # Merge back into a source string
 
-        # Import nckp if import_nckp() found
-        if open_nckp(source, self.basedir):
-            strip_import_nckp_function_from_source(source, self.lines)
+        ### Extensions ###
 
         # Add tcm code if tcm.init() is found
         if re.search(r'(?m)^\s*tcm.init', source):
             source = source + taskfunc_code
 
         # Add logger code if activate_logger is found.
-        m = re.search(r"(?m)^\s*activate_logger.*\)", source)
-        if m:
+        if re.search(r"(?m)^\s*activate_logger.*\)", source):
             amended_logger_code = logger_code
 
             new_comment_re = r'(?<!["\'])\/\/.*' # this is a single line new comment type // 
@@ -1664,6 +1658,27 @@ class KSPCompiler(object):
                 # if there is no persistence_changed callback then generate one
                 source = source + "\non persistence_changed\ncheckPrintFlag()\nend on\n"      
 
+        ###
+
+        # Re-parse new source back into lines
+        self.lines = parse_lines_and_handle_imports(source,
+                                                    read_file_function=self.read_file_func,
+                                                    preprocessor_func=self.examine_pragmas)
+
+        # Run conditional stage a second time to catch the new source additions.
+        handle_conditional_lines(self.lines)
+
+    def extensions_without_macros(self):
+        source = merge_lines(self.lines) # Merge back into a source string
+
+        ### Extensions ###
+
+        # Import nckp if import_nckp() found
+        if open_nckp(source, self.basedir):
+            strip_import_nckp_function_from_source(source, self.lines)
+
+        ###
+
         # Re-parse new source back into lines
         self.lines = parse_lines_and_handle_imports(source,
                                                     read_file_function=self.read_file_func,
@@ -1672,10 +1687,7 @@ class KSPCompiler(object):
     # NOTE(Sam): Previously done in the expand_macros function, the lines are converted into a block in separately
     # because the preprocessor needs to be called after the macros and before this.
     def convert_lines_to_code(self):
-        # replace placeholder strings
-        for line in self.lines:
-            line.replace_placeholders()
-        self.code = '\n'.join([line.command for line in self.lines])
+        self.code = merge_lines(self.lines)
 
     # Isolate macros into objects, removing from code
     def extract_macros(self):
@@ -1817,13 +1829,14 @@ class KSPCompiler(object):
             #     (description,                  function,                                                                    condition, time-weight)
             tasks = [
                  ('scanning and importing code', lambda: self.do_imports_and_convert_to_line_objects(),                       True,      1),
+                 ('extensions (w/ macros)',      lambda: self.extensions_with_macros(),                  True,      1),
                  # NOTE(Sam): Call the pre-macro section of the preprocessor
                  ('pre-macro processes',         lambda: pre_macro_functions(self.lines),                  True,      1),
                  ('parsing macros',              lambda: self.extract_macros(),                  True,      1),
                  ('expanding macros',            lambda: self.expand_macros(),                                                True,      1),
                  # NOTE(Sam): Call the post-macro section of the preprocessor
                  ('post-macro processes',        lambda: post_macro_functions(self.lines),                 True,      1),
-                 ('compiler extensions',         lambda: self.special_compiler_features(),                 True,      1),
+                 ('extensions (w/o macros)',     lambda: self.extensions_without_macros(),                  True,      1),
                  # NOTE(Sam): Convert the lines to a block in a separate function
                  ('convert lines to code block', lambda: self.convert_lines_to_code(),                                         True,      1),
                  ('parse code',                  lambda: self.parse_code(),                                                   True,      1),
