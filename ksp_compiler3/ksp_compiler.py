@@ -1604,14 +1604,32 @@ class KSPCompiler(object):
         self.variable_names_to_preserve = set()
 
     def do_imports_and_convert_to_line_objects(self):
-        # if the code contains tcm.init, then add taskfunc code at the end
         source = self.source
-        if re.search(r'(?m)^\s*tcm.init', self.source):
+
+        # Import files
+        self.lines = parse_lines_and_handle_imports(source,
+                                                    read_file_function=self.read_file_func,
+                                                    preprocessor_func=self.examine_pragmas)
+
+        # Parse conditionals and remove lines if appropriate
+        handle_conditional_lines(self.lines)
+
+
+        # Update source to match the new lines
+        for line in self.lines:
+            line.replace_placeholders()
+        source = '\n'.join([line.command for line in self.lines])
+        print(source)
+
+        # Import nckp if import_nckp() found
+        if open_nckp(source, self.basedir):
+            strip_import_nckp_function_from_source(source, self.lines)
+
+        # Add tcm code if tcm.init() is found
+        if re.search(r'(?m)^\s*tcm.init', source):
             source = source + taskfunc_code
 
-        # NOTE(Sam): Handle the activate_logger case, similarly to tcm.init, if the keyword is found in the init callback,
-        # the logger ksp code is imported into this script
-        # if the code contains activate_logger, then add the extra code
+        # Add logger code if activate_logger is found.
         m = re.search(r"(?m)^\s*activate_logger.*\)", source)
         if m:
             amended_logger_code = logger_code
@@ -1647,15 +1665,12 @@ class KSPCompiler(object):
                 source = source[: persistence_end] + "\ncheckPrintFlag()\n" + source[persistence_end :]
             else:
                 # if there is no persistence_changed callback then generate one
-                source = source + "\non persistence_changed\ncheckPrintFlag()\nend on\n"            
-                        
+                source = source + "\non persistence_changed\ncheckPrintFlag()\nend on\n"      
+
+        # Re-parse new source back into lines
         self.lines = parse_lines_and_handle_imports(source,
                                                     read_file_function=self.read_file_func,
                                                     preprocessor_func=self.examine_pragmas)
-        handle_conditional_lines(self.lines)
-
-        if open_nckp(source, self.basedir):
-            strip_import_nckp_function_from_source(source, self.lines)
 
     # NOTE(Sam): Previously done in the expand_macros function, the lines are converted into a block in separately
     # because the preprocessor needs to be called after the macros and before this.
