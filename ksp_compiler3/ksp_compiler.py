@@ -1566,6 +1566,11 @@ def open_nckp(source, basedir):
                             ui_variables.add(v.lower())
                             comp_extras.add_nckp_var_to_nckp_table(v)
 
+                            # Support the use of '.' variables in the compiler to reference controls with double underscores
+                            variables.add(v.lower().replace('__', '.'))
+                            ui_variables.add(v.lower().replace('__', '.'))
+                            comp_extras.add_nckp_var_to_nckp_table(v.replace('__', '.'))                            
+
                     else:
                         raise ParseException(Line(line, [(None, list(lines).index(line)+1)], None), '.nkcp file not found at: <' + os.path.abspath(nckp_path) + '> !\n')
 
