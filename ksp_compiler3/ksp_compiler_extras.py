@@ -155,27 +155,30 @@ def evaluate_expression(expr):
         return expr.value
     elif isinstance(expr, VarRef):
         name = str(expr.identifier)
-        if name.lower() not in symbol_table:
-            raise ParseException(expr, 'Variable not declared: %s' % name)
-        value = symbol_table[name.lower()].value
-        if value is None:
-            raise ValueUndefinedException(expr)
-        if len(expr.subscripts) > 1:
-            raise ParseException(expr, 'More than one subscript: %s' % str(expr))
-        if expr.subscripts:
-            subscript = int(evaluate_expression(expr.subscripts[0]))
+        if name.upper() in ksp_builtins.variables:
+            return 'NEGATE_CONST'
         else:
-            subscript = None
-        if (expr.identifier.prefix in '%!?') != (subscript is not None):
-            raise ParseException(expr, 'Use of subscript wrong.')
-        if subscript:
-            if 0 <= subscript < len(value):
-                return value[subscript]
+            if name.lower() not in symbol_table:
+                raise ParseException(expr, 'Variable not declared: %s' % name)
+            value = symbol_table[name.lower()].value
+            if value is None:
+                raise ValueUndefinedException(expr)
+            if len(expr.subscripts) > 1:
+                raise ParseException(expr, 'More than one subscript: %s' % str(expr))
+            if expr.subscripts:
+                subscript = int(evaluate_expression(expr.subscripts[0]))
             else:
-                # WARNING: index out of bounds
-                return 0
-        else:
-            return value
+                subscript = None
+            if (expr.identifier.prefix in '%!?') != (subscript is not None):
+                raise ParseException(expr, 'Use of subscript wrong.')
+            if subscript:
+                if 0 <= subscript < len(value):
+                    return value[subscript]
+                else:
+                    # WARNING: index out of bounds
+                    return 0
+            else:
+                return value
     elif isinstance(expr, FunctionCall):
         name = str(expr.function_name)
         parameters = [evaluate_expression(param) for param in expr.parameters]
@@ -525,7 +528,8 @@ class ASTVisitorCheckDeclarations(ASTVisitor):
             control_type = is_ui_control[0]
         else:
             control_type = None
-        is_constant = 'const' in node.modifiers
+
+        is_constant = ('const' in node.modifiers)
         is_polyphonic = 'polyphonic' in node.modifiers
         symbol_table[name.lower()] = Variable(node.variable, size, params, control_type, is_constant, is_polyphonic, initial_value)
         self.visit_children(parent, node, *args)
@@ -556,14 +560,19 @@ class ASTModifierSimplifyExpressions(ASTModifier):
                 return Boolean(expr.lexinfo, result)
         except SyntaxError:
             pass
+
         return expr
 
     def modifyDeclareStmt(self, node):
         ASTModifier.modifyDeclareStmt(self, node)
-        if 'const' in node.modifiers and self.replace_constants:
-            return []
-        else:
-            return [node]
+        return [node]
+
+        # The below code seemed to be intended to clear out const declare statements for replacement purposes, but it is unnecessary.
+
+        # if 'const' in node.modifiers and self.replace_constants:
+        #     return []
+        # else:
+        #     return [node]
 
     def modifyBinOp(self, node):
         node = ASTModifier.modifyBinOp(self, node)
