@@ -332,7 +332,7 @@ class KspGlobalSettingToggleCommand(sublime_plugin.ApplicationCommand):
             "ksp_compact_output" : "Remove Indents and Empty Lines",
             "ksp_compact_variables" : "Compact Variables",
             "ksp_extra_checks" : "Extra Syntax Checks",
-            "ksp_signal_empty_ifcase" : "Signal Error on Empty if/case Statements",
+            "ksp_signal_empty_ifcase" : "Raise Error on Empty if/case Statements",
             "ksp_optimize_code" : "Optimize Compiled Code",
             "ksp_play_sound" : "Play Sound on Compile Finish",
             "ksp_comment_inline_functions" : "Insert Comments When Expanding Functions"
@@ -352,6 +352,11 @@ class KspGlobalSettingToggleCommand(sublime_plugin.ApplicationCommand):
     def is_checked(self, setting, default):
         return bool(sublime.load_settings("KSP.sublime-settings").get(setting, default))
 
+    def is_enabled(self, setting, default):
+        if setting == "ksp_optimize_code":
+            return bool(sublime.load_settings("KSP.sublime-settings").get("ksp_extra_checks", default))
+        else:
+            return True
 
 class KspIndentListener(sublime_plugin.EventListener):
     def on_text_command(self, view, command_name, args):
