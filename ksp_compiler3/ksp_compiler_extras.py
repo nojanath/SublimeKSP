@@ -155,30 +155,27 @@ def evaluate_expression(expr):
         return expr.value
     elif isinstance(expr, VarRef):
         name = str(expr.identifier)
-        if name.upper() in ksp_builtins.variables:
-            return 'NEGATE_CONST'
+        if name.lower() not in symbol_table:
+            raise ParseException(expr, 'Variable not declared: %s' % name)
+        value = symbol_table[name.lower()].value
+        if value is None:
+            raise ValueUndefinedException(expr)
+        if len(expr.subscripts) > 1:
+            raise ParseException(expr, 'More than one subscript: %s' % str(expr))
+        if expr.subscripts:
+            subscript = int(evaluate_expression(expr.subscripts[0]))
         else:
-            if name.lower() not in symbol_table:
-                raise ParseException(expr, 'Variable not declared: %s' % name)
-            value = symbol_table[name.lower()].value
-            if value is None:
-                raise ValueUndefinedException(expr)
-            if len(expr.subscripts) > 1:
-                raise ParseException(expr, 'More than one subscript: %s' % str(expr))
-            if expr.subscripts:
-                subscript = int(evaluate_expression(expr.subscripts[0]))
+            subscript = None
+        if (expr.identifier.prefix in '%!?') != (subscript is not None):
+            raise ParseException(expr, 'Use of subscript wrong.')
+        if subscript:
+            if 0 <= subscript < len(value):
+                return value[subscript]
             else:
-                subscript = None
-            if (expr.identifier.prefix in '%!?') != (subscript is not None):
-                raise ParseException(expr, 'Use of subscript wrong.')
-            if subscript:
-                if 0 <= subscript < len(value):
-                    return value[subscript]
-                else:
-                    # WARNING: index out of bounds
-                    return 0
-            else:
-                return value
+                # WARNING: index out of bounds
+                return 0
+        else:
+            return value
     elif isinstance(expr, FunctionCall):
         name = str(expr.function_name)
         parameters = [evaluate_expression(param) for param in expr.parameters]
@@ -218,7 +215,6 @@ def highest_precision(type1, type2):
         return 'integer'
 
 class ASTVisitorDetermineExpressionTypes(ASTVisitor):
-
     def __init__(self, ast):
         ASTVisitor.__init__(self)
         self.traverse(ast)
@@ -504,14 +500,19 @@ class ASTVisitorCheckDeclarations(ASTVisitor):
                 raise ParseException(node.size, 'Array size is non-constant or uses undefined variables')
         else:
             size = 1
+
         initial_value = None
         if 'const' in node.modifiers:
-            if not node.initial_value:
-                raise ParseException(node.variable, 'A constant value has to be assigned to the constant')
-            try:
-                initial_value = evaluate_expression(node.initial_value)
-            except ValueUndefinedException:
-                raise ParseException(node.initial_value, 'Expression uses non-constant values or undefined constant variables')
+            # First need to check if the initial value is an NI constant
+            init_expr = node.initial_value
+            if not (isinstance(init_expr, VarRef) and str(init_expr.identifier).upper() in ksp_builtins.variables):
+                if not node.initial_value:
+                    raise ParseException(node.variable, 'A constant value has to be assigned to the constant')
+                try:
+                    initial_value = evaluate_expression(node.initial_value)
+                except ValueUndefinedException:
+                    raise ParseException(node.initial_value, 'Expression uses non-constant values or undefined constant variables')
+
         try:
             params = []
             for param in node.parameters:
@@ -529,7 +530,7 @@ class ASTVisitorCheckDeclarations(ASTVisitor):
         else:
             control_type = None
 
-        is_constant = ('const' in node.modifiers)
+        is_constant = ('const' in node.modifiers and initial_value is not None)
         is_polyphonic = 'polyphonic' in node.modifiers
         symbol_table[name.lower()] = Variable(node.variable, size, params, control_type, is_constant, is_polyphonic, initial_value)
         self.visit_children(parent, node, *args)
