@@ -1627,7 +1627,8 @@ class KSPCompiler(object):
             source = source + taskfunc_code
 
         # Add logger code if activate_logger is found.
-        if re.search(r"(?m)^\s*activate_logger.*\)", source):
+        m = re.search(r"(?m)^\s*activate_logger.*\)", source)
+        if m:
             amended_logger_code = logger_code
 
             new_comment_re = r'(?<!["\'])\/\/.*' # this is a single line new comment type // 
