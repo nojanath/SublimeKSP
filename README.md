@@ -16,7 +16,7 @@ This fork is based on [Nils Liberg's official SublimeKSP plugin, v1.11](http://n
 
 * Install [Package Control](https://packagecontrol.io/installation)
 * After installing Package Control and restarting Sublime:
-  * Open the Command Palette from the Tools menu or <kbd>Command</kbd><kbd>Shift</kbd><kbd>P</kbd> (OS X) or <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>P</kbd> (Windows)
+  * Open the Command Palette from the Tools menu or <kbd>Command</kbd><kbd>Shift</kbd><kbd>P</kbd> (macOS) or <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>P</kbd> (Windows)
   * Type “Install Package”
   * Type “KSP” or "Kontakt" and select "KSP (Kontakt Script Processor)"
   * Hit Enter to install
