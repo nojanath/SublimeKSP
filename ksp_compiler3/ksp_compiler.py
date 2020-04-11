@@ -31,6 +31,7 @@ from logger import logger_code
 import time
 from preprocessor_plugins import pre_macro_functions, macro_iter_functions, post_macro_functions
 import json
+import copy
 
 variable_prefixes = '$%@!?~'
 
@@ -262,9 +263,10 @@ class Macro:
 
 def merge_lines(lines):
     """ converts a list of Line objects to a source code string """
-    for line in lines:
+    lines_copy = copy.copy(lines)
+    for line in lines_copy:
         line.replace_placeholders()
-    return '\n'.join([line.command for line in lines])
+    return '\n'.join([line.command for line in lines_copy])
 
 def parse_lines(s, filename=None, namespaces=None):
     """ converts a source code string to a list of Line objects """
@@ -882,6 +884,8 @@ class ASTModifierFixPrefixes(ASTModifierBase):
         ''' Add a variable prefix (one of $, %, @, !, ? and ~) to each variable based on the list of variables previously built '''
         name = node.prefix + node.identifier
         first_part = name.split('.')[0]
+
+        print(name in functions)
         # if prefix is missing and this is not a function or family and does not start with a function parameter (eg. if a parameter is passed as param and then referenced as param__member)
         if node.prefix == '' and not (name in functions or
                                       name in ksp_builtins.functions or
@@ -1540,11 +1544,12 @@ def parse_nckp(path):
     for i,p in enumerate(ui_controls_names):
         yield cur_prefix[i]+p
 
-def open_nckp(source, basedir):
+def open_nckp(lines, basedir):
+    source = merge_lines(lines) # for checking purposes
     nckp_path = '' # predeclared to avoid errors if the import_nckp ksp function is not used
     ui_to_import = []
-    lines = source.splitlines()
-    for line in lines:
+    for l in lines:
+        line = l.command
         if 'import_nckp' in line:
             if 'load_performance_view' in source:
                 if 'make_perfview' in source:
@@ -1579,7 +1584,7 @@ def open_nckp(source, basedir):
 
     return bool(ui_to_import)
 
-def strip_import_nckp_function_from_source(source, lines):
+def strip_import_nckp_function_from_source(lines):
     for line_obj in lines:
         line = line_obj.command
         ls_line = line.lstrip()
@@ -1617,18 +1622,24 @@ class KSPCompiler(object):
 
         handle_conditional_lines(self.lines) # Parse conditionals and remove lines if appropriate
 
+    # PAST THIS FUNCTION, ALL IMPORTED AND UPDATED CODE LIVES IN SELF.LINES, NOT SOURCE. DO NOT ATTEMPT TO REPRODUCE LINE OBJECTS FROM SOURCE
+    # TO PRESERVE LINE PROPERTIES, SELF.LINES CAN NOT BE REMERGED INTO SOURCE
+
     def extensions_with_macros(self):
-        source = merge_lines(self.lines) # Merge back into a source string
+        check_source = merge_lines(self.lines) # only for checking purposes, not for reproducing lines
 
         ### Extensions ###
 
         # Add tcm code if tcm.init() is found
-        if re.search(r'(?m)^\s*tcm.init', source):
-            source = source + taskfunc_code
+        if re.search(r'(?m)^\s*tcm.init', check_source):
+            self.lines += parse_lines_and_handle_imports(taskfunc_code,
+                                            read_file_function=self.read_file_func,
+                                            preprocessor_func=self.examine_pragmas)
 
         # Add logger code if activate_logger is found.
-        m = re.search(r"(?m)^\s*activate_logger.*\)", source)
+        m = re.search(r"(?m)^\s*activate_logger.*\)", check_source)
         if m:
+            # Preparing a new source block to add called amended_logger_code
             amended_logger_code = logger_code
 
             new_comment_re = r'(?<!["\'])\/\/.*' # this is a single line new comment type // 
@@ -1653,35 +1664,46 @@ class KSPCompiler(object):
                 amended_logger_code = amended_logger_code.replace("#name#", "logger").replace("logger_filepath := filepath", new_logger_str)
             if valid_file_path_flag == False:
                 raise ParseException(Line("", [(None, 1)], None), 'Filepath of activate_logger is invalid.\nFilepaths must be in this format: "C:/Users/Name/LogFile.nka" or "/Users/Name/LogFile.nka"')
-            source = source + amended_logger_code
+            
+            # A persistance_changed callback function needs to be inserted if the script has one.
+            # Insert *directly* into self.lines if there is, or just add it to the new source block if there isn't.
+            pccb_start = -1
+            for i in range(0, len(self.lines)):
+                content = self.lines[i].command
+                m = re.search(r"(?m)^\s*on\s+persistence_changed", content)
+                if m:
+                    pccb_start = i
+                    break
 
-            # add the stuff to the persistence changed callback
-            m = re.search(r"(?m)^\s*on\s+persistence_changed", source)
-            if m:
-                persistence_end = source.find("end on", m.end())
-                source = source[: persistence_end] + "\ncheckPrintFlag()\n" + source[persistence_end :]
-            else:
-                # if there is no persistence_changed callback then generate one
-                source = source + "\non persistence_changed\ncheckPrintFlag()\nend on\n"      
+            if pccb_start is not -1:
+                pccb_end = -1
+                for i in range(pccb_start, len(self.lines)):
+                    content = self.lines[i].command
+                    if "end on" in content:
+                        pccb_end = i
 
-        ###
-
-        # Re-parse new source back into lines
-        self.lines = parse_lines_and_handle_imports(source,
+                insert_function_line_obj = parse_lines_and_handle_imports("checkPrintFlag()",
                                                     read_file_function=self.read_file_func,
                                                     preprocessor_func=self.examine_pragmas)
+                self.lines.insert(pccb_end - 1, insert_function_line_obj)
+            else:
+                # if there is no persistence_changed callback then generate one
+                amended_logger_code = amended_logger_code + "\non persistence_changed\ncheckPrintFlag()\nend on\n"
+
+            self.lines += parse_lines_and_handle_imports(amended_logger_code,
+                                                    read_file_function=self.read_file_func,
+                                                    preprocessor_func=self.examine_pragmas)
+        ###
 
         # Run conditional stage a second time to catch the new source additions.
         handle_conditional_lines(self.lines)
 
     def extensions_without_macros(self):
-        source = merge_lines(self.lines) # Merge back into a source string
-
         ### Extensions ###
 
         # Import nckp if import_nckp() found
-        if open_nckp(source, self.basedir):
-            strip_import_nckp_function_from_source(source, self.lines)
+        if open_nckp(self.lines, self.basedir):
+            strip_import_nckp_function_from_source(self.lines)
 
         ###
 
