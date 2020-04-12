@@ -1,0 +1,3 @@
+Version 1.9.3
+
+The previous release of SublimeKSP had broken namespaces. 1.9.3 rewrites the additions in 1.9.2 to match how the code worked prior, while still preserving the improvements.
