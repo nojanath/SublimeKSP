@@ -1681,11 +1681,19 @@ class KSPCompiler(object):
                     content = self.lines[i].command
                     if "end on" in content:
                         pccb_end = i
+                        break
 
                 insert_function_line_obj = parse_lines_and_handle_imports("checkPrintFlag()",
                                                     read_file_function=self.read_file_func,
                                                     preprocessor_func=self.examine_pragmas)
-                self.lines.insert(pccb_end - 1, insert_function_line_obj)
+
+                replace_lines = collections.deque([])
+                for i in range(0, len(self.lines)):
+                    if i == pccb_end:
+                        replace_lines.append(insert_function_line_obj[0])
+                    replace_lines.append(self.lines[i])
+
+                self.lines = replace_lines
             else:
                 # if there is no persistence_changed callback then generate one
                 amended_logger_code = amended_logger_code + "\non persistence_changed\ncheckPrintFlag()\nend on\n"
