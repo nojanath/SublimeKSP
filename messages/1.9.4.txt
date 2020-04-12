@@ -1,0 +1,4 @@
+Version 1.9.4
+
+In 1.9.3, the logger code was broken in attempt to make it comply with the data format required for adding code beyond the import file step.
+This fix repairs the issue and allows the logger to compile correctly.
