@@ -1553,7 +1553,7 @@ def open_nckp(lines, basedir):
         if 'import_nckp' in line:
             if 'load_performance_view' in source:
                 if 'make_perfview' in source:
-                    raise ParseException(Line(l, [(None, list(lines).index(l)+1)], None), 'If \'load_performance_view\' is used \'make_perfview\' is not necessary, please remove it!\n')
+                    raise ParseException(Line(line, [(None, lines.index(l)+1)], None), 'If \'load_performance_view\' is used \'make_perfview\' is not necessary, please remove it!\n')
 
                 nckp_path = line[line.find('(')+1:line.find(')')][1:-1]
                 if nckp_path:
