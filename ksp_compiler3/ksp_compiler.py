@@ -885,7 +885,6 @@ class ASTModifierFixPrefixes(ASTModifierBase):
         name = node.prefix + node.identifier
         first_part = name.split('.')[0]
 
-        print(name in functions)
         # if prefix is missing and this is not a function or family and does not start with a function parameter (eg. if a parameter is passed as param and then referenced as param__member)
         if node.prefix == '' and not (name in functions or
                                       name in ksp_builtins.functions or
