@@ -1565,7 +1565,6 @@ def open_nckp(lines, basedir):
                         ui_to_import = list(parse_nckp(nckp_path))
 
                         for i,v in enumerate(ui_to_import):
-                            print("adding: " + v)
                             variables.add(v.lower())
                             ui_variables.add(v.lower())
                             comp_extras.add_nckp_var_to_nckp_table(v)
