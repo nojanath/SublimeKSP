@@ -1967,10 +1967,11 @@ if __name__ == "__main__":
 
     # parse command line arguments
     arg_parser = argparse.ArgumentParser()
-    arg_parser.add_argument('--compact', dest='compact', action='store_true', help='minimize whitespace in compiled code')
-    arg_parser.add_argument('--compact_variables', dest='compact_variables', action='store_true', help='shorten and obfuscate variable names')
-    arg_parser.add_argument('--extra_syntax_checks', dest='extra_syntax_checks', action='store_true')
-    arg_parser.add_argument('--optimize', dest='optimize', action='store_true', help='optimize the generated code')
+    arg_parser.add_argument('--compact', dest='compact', action='store_true', default='false', help='minimize whitespace in compiled code')
+    arg_parser.add_argument('--compact_variables', dest='compact_variables', action='store_true', default='false', help='shorten and obfuscate variable names')
+    arg_parser.add_argument('--extra_syntax_checks', dest='extra_syntax_checks', action='store_true', default='false')
+    arg_parser.add_argument('--optimize', dest='optimize', action='store_true', default='false', help='optimize the generated code')
+    arg_parser.add_argument('--nocompiledate', dest='add_compiled_date_comment', action='store_false', default='true', help='optimize the generated code')
     arg_parser.add_argument('source_file', type=FileType('r', encoding='latin-1'))
     arg_parser.add_argument('output_file', type=FileType('w', encoding='latin-1'), nargs='?')
     args = arg_parser.parse_args()
@@ -1990,6 +1991,10 @@ if __name__ == "__main__":
                 filepath = os.path.join(basedir, filepath)
         return codecs.open(filepath, 'r', 'latin-1').read()
 
+    # make sure that extra syntax checks are enabled if --optimize argument is used
+    if args.optimize == True and args.extra_syntax_checks == False:
+        args.extra_syntax_checks = True
+        
     # read the source and compile it
     code = args.source_file.read()
     compiler = KSPCompiler(
@@ -2002,7 +2007,7 @@ if __name__ == "__main__":
         extra_syntax_checks=args.extra_syntax_checks,
         optimize=args.optimize,
         check_empty_compound_statements=False,
-        add_compiled_date_comment=True)
+        add_compiled_date_comment=args.compiledate)
     compiler.compile()
 
     # write the compiled code to output
