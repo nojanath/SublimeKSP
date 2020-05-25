@@ -1547,7 +1547,7 @@ def open_nckp(lines, basedir):
     source = merge_lines(lines) # for checking purposes
     nckp_path = '' # predeclared to avoid errors if the import_nckp ksp function is not used
     ui_to_import = []
-    for l, index in enumerate(lines):
+    for index, l in enumerate(lines):
         line = l.command
         if 'import_nckp' in line:
             if 'load_performance_view' in source:
