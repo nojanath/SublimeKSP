@@ -632,15 +632,20 @@ class Real(Expr):
         self.value = Decimal(value)
 
     def __str__(self):
-        # if '.' not in s and 'e' not in s:
-        #     s = s + '.0'
-        # if s.endswith('0'):   # change 3.40 into 3.4
-        #      parts = s.split('e')
-        #      parts[0] = parts[0].rstrip('0')
-        #      if parts[0][-1] == '.':
-        #          parts[0] = parts[0] + '0'
-        #      s = 'e'.join(parts)
-        return str(float(self.value))
+        # borrowed from "Karin" on Stack Overflow, a Duolingo software engineer
+        f = float(self.value)
+        float_string = repr(f)
+        if 'e' in float_string:  # detect scientific notation
+            digits, exp = float_string.split('e')
+            digits = digits.replace('.', '').replace('-', '')
+            exp = int(exp)
+            zero_padding = '0' * (abs(int(exp)) - 1)  # minus 1 for decimal point in the sci notation
+            sign = '-' if f < 0 else ''
+            if exp > 0:
+                float_string = '{}{}{}.0'.format(sign, digits, zero_padding)
+            else:
+                float_string = '{}0.{}{}'.format(sign, zero_padding, digits)
+        return float_string
 
     def get_childnodes(self):
         return ()
