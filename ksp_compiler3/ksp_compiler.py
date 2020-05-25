@@ -1967,11 +1967,11 @@ if __name__ == "__main__":
 
     # parse command line arguments
     arg_parser = argparse.ArgumentParser()
-    arg_parser.add_argument('--compact', dest='compact', action='store_true', default='false', help='minimize whitespace in compiled code')
-    arg_parser.add_argument('--compact_variables', dest='compact_variables', action='store_true', default='false', help='shorten and obfuscate variable names')
-    arg_parser.add_argument('--extra_syntax_checks', dest='extra_syntax_checks', action='store_true', default='false')
-    arg_parser.add_argument('--optimize', dest='optimize', action='store_true', default='false', help='optimize the generated code')
-    arg_parser.add_argument('--nocompiledate', dest='add_compiled_date_comment', action='store_false', default='true', help='optimize the generated code')
+    arg_parser.add_argument('--compact', dest='compact', action='store_true', default='false', help='Minimize whitespace in compiled code')
+    arg_parser.add_argument('--compact_variables', dest='compact_variables', action='store_true', default='false', help='Shorten and obfuscate variable names')
+    arg_parser.add_argument('--extra_syntax_checks', dest='extra_syntax_checks', action='store_true', default='false', help='Additional syntax checks')
+    arg_parser.add_argument('--optimize', dest='optimize', action='store_true', default='false', help='Optimize the generated code')
+    arg_parser.add_argument('--nocompiledate', dest='add_compiled_date_comment', action='store_true', default='true', help='Remove the compiler date argument')
     arg_parser.add_argument('source_file', type=FileType('r', encoding='latin-1'))
     arg_parser.add_argument('output_file', type=FileType('w', encoding='latin-1'), nargs='?')
     args = arg_parser.parse_args()
