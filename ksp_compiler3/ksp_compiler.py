@@ -2007,7 +2007,7 @@ if __name__ == "__main__":
         extra_syntax_checks=args.extra_syntax_checks,
         optimize=args.optimize,
         check_empty_compound_statements=False,
-        add_compiled_date_comment=args.compiledate)
+        add_compiled_date_comment=(not args.nocompiledate))
     compiler.compile()
 
     # write the compiled code to output
