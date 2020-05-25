@@ -21,6 +21,7 @@
 							"operand": "source.ksp"
 						}],
 						"caption": "Compile",
+						"mnemonic": "C",
 						"id": "compile"
 					},
 					{
@@ -32,12 +33,14 @@
 							"operand": "source.ksp"
 						}],
 						"caption": "Recompile Last Script",
+						"mnemonic": "L",
 						"id": "recompile"
 					},
 					{
 						"command": "ksp_uncompress_code",
 						"args": {},
 						"caption": "Uncompress Selected Compiled Code",
+						"mnemonic": "U",
 						"id": "uncompress"
 					},
 
@@ -55,43 +58,52 @@
 						"command": "ksp_global_setting_toggle",
 						"args": {"setting": "ksp_compact_variables", "default": false},
 						"caption": "Compact Variables",
-						"mnemonic": "C",
+						"mnemonic": "V",
 						"id": "compact_variables"
 					},
+					{"caption": "-"}, //separator
 					{
 						"command": "ksp_global_setting_toggle",
 						"args": {"setting": "ksp_extra_checks", "default": true},
 						"caption": "Extra Syntax Checks",
-						"mnemonic": "x",
+						"mnemonic": "E",
 						"id": "extra_syntax_checks"
 					},
 					{
 						"command": "ksp_global_setting_toggle",
 						"args": {"setting": "ksp_optimize_code", "default": false},
 						"caption": "Optimize Compiled Code",
-						"mnemonic": "t",
+						"mnemonic": "o",
 						"id": "optimize_compiled"
 					},
+					{"caption": "-"}, //separator
 					{
 						"command": "ksp_global_setting_toggle",
-						"args": {"setting": "ksp_signal_empty_ifcase", "default": true},
-						"caption": "Raise Error on Empty if/case Statements",
-						"mnemonic": "e",
+						"args": {"setting": "ksp_add_compiled_date", "default": true},
+						"caption": "Add Compilation Date/Time Comment",
+						"mnemonic": "D",
 						"id": "signal_empty_ifcase"
-					},
-					{
-						"command": "ksp_global_setting_toggle",
-						"args": {"setting": "ksp_play_sound", "default": false},
-						"caption": "Play Sound on Compile Finish",
-						"mnemonic": "S",
-						"id": "play_sound"
 					},
 					{
 						"command": "ksp_global_setting_toggle",
 						"args": {"setting": "ksp_comment_inline_functions", "default": false},
 						"caption": "Insert Comments When Expanding Functions",
-						"mnemonic": "W",
+						"mnemonic": "F",
 						"id": "comment_inline_functions"
+					},
+					{
+						"command": "ksp_global_setting_toggle",
+						"args": {"setting": "ksp_signal_empty_ifcase", "default": true},
+						"caption": "Raise Error on Empty 'if' or 'case' Statements",
+						"mnemonic": "R",
+						"id": "signal_empty_ifcase"
+					},
+					{
+						"command": "ksp_global_setting_toggle",
+						"args": {"setting": "ksp_play_sound", "default": false},
+						"caption": "Play Sound When Compilation Finishes",
+						"mnemonic": "S",
+						"id": "play_sound"
 					},
 
 					{"caption":"-"}, //separator
@@ -99,6 +111,7 @@
 					{
 						"command": "ksp_about",
 						"caption": "About SublimeKSP...",
+						"mnemonic": "A",
 						"id": "about"
 					}
 				]

@@ -283,7 +283,7 @@ class ASTVisitorDetermineExpressionTypes(ASTVisitor):
             raise Exception()
 
         if expr.op in '+ - * / < <= > >= = #' and expr.left.type != expr.right.type:
-            raise ParseException(expr, 'Operands are of different types: %s and %s. Please use the real_to_int(...) and int_to_real(...) functions to explicitly cast the type.' % (expr.left.type, expr.right.type))
+            raise ParseException(expr, 'Operands are of different types: %s and %s. Please use real_to_int(...) or int_to_real(...) functions to explicitly cast the type.' % (expr.left.type, expr.right.type))
 
         return False
 
@@ -343,12 +343,12 @@ class ASTVisitorCheckNoEmptyIfCaseStatements(ASTVisitor):
     def visitIfStmt(self, parent, node, *args):
         (condition, stmts) = node.condition_stmts_tuples[0]
         if len(stmts) == 0:
-            raise ParseException(node, 'Warning: due to a ksp bug an empty if-statement is equivalent to invoking the exit function. Please make sure the body of your if-statement is not empty.')
+            raise ParseException(node, "Warning: due to a KSP bug, an empty 'if' statement is equivalent to invoking the exit function. Please make sure the body of your 'if' statement is not empty!")
 
     def visitSelectStmt(self, parent, node, *args):
         for ((start, stop), stmts) in node.range_stmts_tuples:
             if len(stmts) == 0:
-                raise ParseException(start, 'Warning: due to a ksp bug an empty case-statement is equivalent to invoking the exit function. Please make sure the body of your case-statement is not empty.')
+                raise ParseException(start, "Warning: due to a KSP bug, an empty 'case' statement is equivalent to invoking the exit function. Please make sure the body of your 'case' statement is not empty!")
 
 class ASTVisitorCheckStatementExprTypes(ASTVisitor):
     def __init__(self, ast):

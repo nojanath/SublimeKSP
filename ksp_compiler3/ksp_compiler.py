@@ -316,11 +316,11 @@ def parse_lines_and_handle_imports(code, filename=None, namespaces=None, read_fi
         code = preprocessor_func(code, namespaces)
 
     lines = parse_lines(code, filename, namespaces)
-    
+
     new_lines = collections.deque()
     while lines:
         line = lines.popleft()
-        
+
         # if line seems to be an import line
         if import_basic_re.match(line.command):
             line.replace_placeholders()
@@ -361,7 +361,7 @@ def handle_conditional_lines(lines):
     for line_obj in lines:
         line = line_obj.command
         ls_line = line.lstrip()
-        
+
         clear_this_line = false_index + 1
 
         if 'END_USE_CODE' in line:
@@ -1497,7 +1497,7 @@ def parse_nckp(path):
     1. button
     2. fileselector
     3. knob
-    4. label 
+    4. label
     5. levelmeter
     6. menu
     7. slider
@@ -1536,9 +1536,9 @@ def parse_nckp(path):
 
     with open(path, 'r') as read_file:
         data = json.load(read_file, object_pairs_hook=OrderedDict)
-        
+
     ui_controls_names = list(search_ui_in_dict_recursively(data))
-    
+
     # pair the collected prefix to the parsed ui_control names
     for i,p in enumerate(ui_controls_names):
         yield cur_prefix[i]+p
@@ -1572,7 +1572,7 @@ def open_nckp(lines, basedir):
                             # Support the use of '.' variables in the compiler to reference controls with double underscores
                             variables.add(v.lower().replace('__', '.'))
                             ui_variables.add(v.lower().replace('__', '.'))
-                            comp_extras.add_nckp_var_to_nckp_table(v.replace('__', '.'))                            
+                            comp_extras.add_nckp_var_to_nckp_table(v.replace('__', '.'))
 
                     else:
                         raise ParseException(Line(line, [(None, index + 1)], None), '.nkcp file not found at: <' + os.path.abspath(nckp_path) + '> !\n')
@@ -1590,7 +1590,7 @@ def strip_import_nckp_function_from_source(lines):
             line_obj.command = re.sub(r'[^\r\n]', '', ls_line)
 
 class KSPCompiler(object):
-    def __init__(self, source, basedir, compact=True, compactVars=False, comments_on_expansion=True, read_file_func=default_read_file_func, extra_syntax_checks=False, optimize=False, check_empty_compound_statements=False):
+    def __init__(self, source, basedir, compact=True, compactVars=False, comments_on_expansion=True, read_file_func=default_read_file_func, extra_syntax_checks=False, optimize=False, check_empty_compound_statements=False, add_compiled_date_comment=False):
         self.source = source
         self.basedir = basedir
         self.compact = compact
@@ -1599,6 +1599,7 @@ class KSPCompiler(object):
         self.read_file_func = read_file_func
         self.optimize = optimize
         self.check_empty_compound_statements = check_empty_compound_statements
+        self.add_compiled_date_comment = add_compiled_date_comment
         self.extra_syntax_checks = extra_syntax_checks or optimize
         self.abort_requested = False
 
@@ -1640,7 +1641,7 @@ class KSPCompiler(object):
             # Preparing a new source block to add called amended_logger_code
             amended_logger_code = logger_code
 
-            new_comment_re = r'(?<!["\'])\/\/.*' # this is a single line new comment type // 
+            new_comment_re = r'(?<!["\'])\/\/.*' # this is a single line new comment type //
             activate_line = m.group(0).strip()
             activate_line = re.sub(new_comment_re, '', activate_line)
             filepath_m = re.search(r"(\"|\').*(\"|\')", str(activate_line))
@@ -1662,7 +1663,7 @@ class KSPCompiler(object):
                 amended_logger_code = amended_logger_code.replace("#name#", "logger").replace("logger_filepath := filepath", new_logger_str)
             if valid_file_path_flag == False:
                 raise ParseException(Line("", [(None, 1)], None), 'Filepath of activate_logger is invalid.\nFilepaths must be in this format: "C:/Users/Name/LogFile.nka" or "/Users/Name/LogFile.nka"')
-            
+
             # A persistance_changed callback function needs to be inserted if the script has one.
             # Insert *directly* into self.lines if there is, or just add it to the new source block if there isn't.
             pccb_start = -1
@@ -1724,7 +1725,7 @@ class KSPCompiler(object):
 
     # Run stored macros on the code
     def expand_macros(self):
-        # Initial Expansion 
+        # Initial Expansion
         normal_lines, callback_lines = expand_macros(self.lines, self.macros)
         self.lines = normal_lines + callback_lines
 
@@ -1732,7 +1733,7 @@ class KSPCompiler(object):
         while macro_iter_functions(self.lines):
             normal_lines, callback_lines = expand_macros(self.lines, self.macros)
             self.lines = normal_lines + callback_lines
-        
+
     def examine_pragmas(self, code, namespaces):
         # find info about output file
         pragma_re = re.compile(r'\{ ?\#pragma\s+save_compiled_source\s+(.*)\}')
@@ -1742,8 +1743,8 @@ class KSPCompiler(object):
             if not os.path.isabs(dir_check):
                 if self.basedir == None:
                     raise Exception('Please save the file being compiled before attempting to compile to a relative path.')
-                    
-                dir_check = os.path.join(self.basedir, dir_check) 
+
+                dir_check = os.path.join(self.basedir, dir_check)
 
             if not os.path.exists(os.path.dirname(dir_check)):
                 raise Exception('The filepath in save_compiled_source does not exist!')
@@ -1834,8 +1835,9 @@ class KSPCompiler(object):
         self.compiled_code = buffer.getvalue()
 
         # NOTE(Sam): Add a ksp comment at the beginning of the compiled script to display the time and date it was compiled on
-        localtime = time.asctime( time.localtime(time.time()) )
-        self.compiled_code = "{ Compiled on " + localtime + " }\n" + self.compiled_code
+        if self.add_compiled_date_comment:
+            localtime = time.asctime( time.localtime(time.time()) )
+            self.compiled_code = "{ Compiled on " + localtime + " }\n" + self.compiled_code
 
     def uncompress_variable_names(self, compiled_code):
         def sub_func(match_obj):
@@ -1854,7 +1856,8 @@ class KSPCompiler(object):
             used_variables = set()
 
             do_extra = self.extra_syntax_checks
-            do_optim = self.extra_syntax_checks and self.optimize
+            do_optim = do_extra and self.optimize
+            do_emptycheck = self.check_empty_compound_statements and not do_optim
             #     (description,                  function,                                                                    condition, time-weight)
             tasks = [
                  ('scanning and importing code', lambda: self.do_imports_and_convert_to_line_objects(),                       True,      1),
@@ -1886,7 +1889,7 @@ class KSPCompiler(object):
                  ('removing unused functions',   lambda: comp_extras.ASTModifierRemoveUnusedFunctions(self.module, used_functions), do_optim, 1),
                  ('removing unused variables',   lambda: comp_extras.ASTVisitorFindUsedVariables(self.module, used_variables),      do_optim, 1),
                  ('removing unused variables',   lambda: comp_extras.ASTModifierRemoveUnusedVariables(self.module, used_variables), do_optim, 1),
-                 ('checking empty if-stmts',     lambda: comp_extras.ASTVisitorCheckNoEmptyIfCaseStatements(self.module),     self.check_empty_compound_statements, 1),
+                 ('checking empty if-stmts',     lambda: comp_extras.ASTVisitorCheckNoEmptyIfCaseStatements(self.module),     do_emptycheck, 1),
                  ('compact variable names',      self.compact_names,                                                          self.compactVars, 1),
                  ('generate code',               self.generate_compiled_code,                                                 True,      1),
             ]
@@ -1964,10 +1967,11 @@ if __name__ == "__main__":
 
     # parse command line arguments
     arg_parser = argparse.ArgumentParser()
-    arg_parser.add_argument('--compact', dest='compact', action='store_true', help='minimize whitespace in compiled code')
-    arg_parser.add_argument('--compact_variables', dest='compact_variables', action='store_true', help='shorten and obfuscate variable names')
-    arg_parser.add_argument('--extra_syntax_checks', dest='extra_syntax_checks', action='store_true')
-    arg_parser.add_argument('--optimize', dest='optimize', action='store_true', help='optimize the generated code')
+    arg_parser.add_argument('--compact', dest='compact', action='store_true', default='false', help='minimize whitespace in compiled code')
+    arg_parser.add_argument('--compact_variables', dest='compact_variables', action='store_true', default='false', help='shorten and obfuscate variable names')
+    arg_parser.add_argument('--extra_syntax_checks', dest='extra_syntax_checks', action='store_true', default='false')
+    arg_parser.add_argument('--optimize', dest='optimize', action='store_true', default='false', help='optimize the generated code')
+    arg_parser.add_argument('--nocompiledate', dest='add_compiled_date_comment', action='store_false', default='true', help='optimize the generated code')
     arg_parser.add_argument('source_file', type=FileType('r', encoding='latin-1'))
     arg_parser.add_argument('output_file', type=FileType('w', encoding='latin-1'), nargs='?')
     args = arg_parser.parse_args()
@@ -1987,6 +1991,10 @@ if __name__ == "__main__":
                 filepath = os.path.join(basedir, filepath)
         return codecs.open(filepath, 'r', 'latin-1').read()
 
+    # make sure that extra syntax checks are enabled if --optimize argument is used
+    if args.optimize == True and args.extra_syntax_checks == False:
+        args.extra_syntax_checks = True
+        
     # read the source and compile it
     code = args.source_file.read()
     compiler = KSPCompiler(
@@ -1998,7 +2006,8 @@ if __name__ == "__main__":
         read_file_func=read_file_func,
         extra_syntax_checks=args.extra_syntax_checks,
         optimize=args.optimize,
-        check_empty_compound_statements=False)
+        check_empty_compound_statements=False,
+        add_compiled_date_comment=(not args.nocompiledate))
     compiler.compile()
 
     # write the compiled code to output
