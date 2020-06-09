@@ -1,0 +1,14 @@
+Version 1.9.9
+
+Fixed a bug where using any define macro names inside of strings would attempt to evaluate them instead of leaving them as string content.
+
+For example:
+
+```
+define real(x) := int_to_real(x)
+on init
+message("Ready for real-time audio!")
+end on
+```
+
+This code would attempt to evaluate real as a function and cause the compiler to error due to lack of arguments.

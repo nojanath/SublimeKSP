@@ -1156,6 +1156,11 @@ class DefineConstant(object):
 				newCommand = re.sub(r"\b%s\b" % self.name, self.value, command)
 			else:
 				lineObj = line or self.line
+
+				strings = re.findall(ksp_compiler.string_re, command)
+				for s in strings:
+					command = command.replace(s, ' ' * len(s))
+
 				matchIt = re.finditer(r"\b%s\b" % self.name, command)
 				for match in matchIt:
 					# Parse the match
@@ -1163,6 +1168,7 @@ class DefineConstant(object):
 					parenthCount = 0
 					preBracketFlag = True # Flag to show when the first bracket is found.
 					foundString = []
+						
 					for char in command[matchPos:]:
 						if char == "(":
 							parenthCount += 1
