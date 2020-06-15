@@ -287,16 +287,20 @@ def parse_lines(s, filename=None, namespaces=None):
     lines = s.replace('\r\n', '\n').replace('\r', '\n').split('\n')
     # encode lines numbers as '[[[lineno]]]' at the beginning of each line
     lines = ['[[[%.5d]]]%s' % (lineno+1, x) for (lineno, x) in enumerate(lines)]
+    s = '\n'.join(lines)
+
+    # remove comments and multi-line indicators ('...\n')
+    s = comment_re.sub('', s)
+    s = line_continuation_re.sub('', s)
+    
+    lines = s.split('\n')
+
     # NOTE(Sam): Remove any occurances of the new comment type //
     for i in range(len(lines)):
         m = re.search(r"^(?:(?!\/\/|[\"\']).|[\"\'][^\"\']*[\"\'])*(\/\/.*$)", lines[i])
         if m:
             lines[i] = lines[i].replace(m.group(1), "")
     s = '\n'.join(lines)
-
-    # remove comments and multi-line indicators ('...\n')
-    s = comment_re.sub('', s)
-    s = line_continuation_re.sub('', s)
 
     # substitute strings with place-holders
     s = string_re.sub(replace_func, s)
