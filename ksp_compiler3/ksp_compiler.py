@@ -291,7 +291,6 @@ def parse_lines(s, filename=None, namespaces=None):
 
     # remove comments and multi-line indicators ('...\n')
     s = comment_re.sub('', s)
-    s = line_continuation_re.sub('', s)
     
     lines = s.split('\n')
 
@@ -302,6 +301,8 @@ def parse_lines(s, filename=None, namespaces=None):
             lines[i] = lines[i].replace(m.group(1), "")
     s = '\n'.join(lines)
 
+    s = line_continuation_re.sub('', s)
+    
     # substitute strings with place-holders
     s = string_re.sub(replace_func, s)
 
