@@ -1383,8 +1383,8 @@ def handleLiterateMacro(lines):
 					for text in targets:
 						newLines.append(lines[lineIdx].copy("%s(%s)" % (name, text)))
 				else:
-					for text in targets:
-						newLines.append(lines[lineIdx].copy(name.replace("#l#", text)))
+					for index, text in enumerate(targets):
+						newLines.append(lines[lineIdx].copy(name.replace("#l#", text).replace("#n#", str(index))))
 				continue
 		newLines.append(lines[lineIdx])
 	replaceLines(lines, newLines)
