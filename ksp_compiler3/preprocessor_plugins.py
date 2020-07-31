@@ -1045,7 +1045,7 @@ def handlePersistence(lines):
 				persWord = m.group("persistence")
 				m = re.search(nameInDeclareStmtRe, line)
 				if m:
-					variableName = m.group("name")
+					variableName = m.group("prefix") + m.group("name")
 					if famCount != 0: # Counting the family state is much faster than inspecting on every line.
 						famPre = inspectFamilyState(lines, i)
 						if famPre:
