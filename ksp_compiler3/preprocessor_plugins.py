@@ -1157,7 +1157,8 @@ class DefineConstant(object):
 			else:
 				lineObj = line or self.line
 
-				strings = re.findall(ksp_compiler.string_re, command)
+				strings = re.findall(r'".*?(?<!\\)"|' + r"'.*?(?<!\\)'", command)
+				print(strings)
 				for s in strings:
 					command = command.replace(s, ' ' * len(s))
 
