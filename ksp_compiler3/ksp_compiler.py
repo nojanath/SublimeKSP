@@ -263,10 +263,7 @@ class Macro:
 
 def merge_lines(lines):
     """ converts a list of Line objects to a source code string """
-    lines_copy = copy.copy(lines)
-    for line in lines_copy:
-        line.replace_placeholders()
-    return '\n'.join([line.command for line in lines_copy])
+    return '\n'.join([line.command for line in lines])
 
 def parse_lines(s, filename=None, namespaces=None):
     """ converts a source code string to a list of Line objects """
@@ -1722,6 +1719,8 @@ class KSPCompiler(object):
     # NOTE(Sam): Previously done in the expand_macros function, the lines are converted into a block in separately
     # because the preprocessor needs to be called after the macros and before this.
     def convert_lines_to_code(self):
+        for line in self.lines:
+            line.replace_placeholders()
         self.code = merge_lines(self.lines)
 
     # Isolate macros into objects, removing from code
