@@ -1707,20 +1707,20 @@ class KSPCompiler(object):
         # Run conditional stage a second time to catch the new source additions.
         handle_conditional_lines(self.lines)
 
-    def extensions_without_macros(self):
-        ### Extensions ###
-
+    def search_for_nckp(self):
         # Import nckp if import_nckp() found
         if open_nckp(self.lines, self.basedir):
             strip_import_nckp_function_from_source(self.lines)
 
         ###
 
+    def replace_string_placeholders(self):
+        for line in self.lines:
+            line.replace_placeholders()
+
     # NOTE(Sam): Previously done in the expand_macros function, the lines are converted into a block in separately
     # because the preprocessor needs to be called after the macros and before this.
     def convert_lines_to_code(self):
-        for line in self.lines:
-            line.replace_placeholders()
         self.code = merge_lines(self.lines)
 
     # Isolate macros into objects, removing from code
@@ -1865,16 +1865,17 @@ class KSPCompiler(object):
             #     (description,                  function,                                                                    condition, time-weight)
             tasks = [
                  ('scanning and importing code', lambda: self.do_imports_and_convert_to_line_objects(),                       True,      1),
-                 ('extensions (w/ macros)',      lambda: self.extensions_with_macros(),                  True,      1),
+                 ('extensions (w/ macros)',      lambda: self.extensions_with_macros(),                                       True,      1),
                  # NOTE(Sam): Call the pre-macro section of the preprocessor
-                 ('pre-macro processes',         lambda: pre_macro_functions(self.lines),                  True,      1),
-                 ('parsing macros',              lambda: self.extract_macros(),                  True,      1),
+                 ('pre-macro processes',         lambda: pre_macro_functions(self.lines),                                     True,      1),
+                 ('parsing macros',              lambda: self.extract_macros(),                                               True,      1),
                  ('expanding macros',            lambda: self.expand_macros(),                                                True,      1),
                  # NOTE(Sam): Call the post-macro section of the preprocessor
-                 ('post-macro processes',        lambda: post_macro_functions(self.lines),                 True,      1),
-                 ('extensions (w/o macros)',     lambda: self.extensions_without_macros(),                  True,      1),
+                 ('post-macro processes',        lambda: post_macro_functions(self.lines),                                    True,      1),
+                 ('replace string placeholders', lambda: self.replace_string_placeholders(),                                    True,      1),
+                 ('search for nckp import',      lambda: self.search_for_nckp(),                                              True,      1),
                  # NOTE(Sam): Convert the lines to a block in a separate function
-                 ('convert lines to code block', lambda: self.convert_lines_to_code(),                                         True,      1),
+                 ('convert lines to code block', lambda: self.convert_lines_to_code(),                                        True,      1),
                  ('parse code',                  lambda: self.parse_code(),                                                   True,      1),
                  ('various tasks',               lambda: ASTModifierFixReferencesAndFamilies(self.module, self.lines),        True,      1),
                  ('add variable name prefixes',  lambda: ASTModifierFixPrefixesIncludingLocalVars(self.module),               True,      1),
