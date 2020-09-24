@@ -1045,11 +1045,12 @@ def handlePersistence(lines):
 				persWord = m.group("persistence")
 				m = re.search(nameInDeclareStmtRe, line)
 				if m:
-					variableName = m.group("prefix") + m.group("name")
+					variableName = m.group("name")
 					if famCount != 0: # Counting the family state is much faster than inspecting on every line.
 						famPre = inspectFamilyState(lines, i)
 						if famPre:
 							variableName = famPre + variableName.strip()
+					variableName = m.group("prefix") + variableName
 					newLines.append(lines[i].copy(re.sub(r"\b%s\b" % persWord, "", line)))
 					if persWord == "pers":
 						newLines.append(lines[i].copy("make_persistent(%s)" % variableName))
