@@ -345,12 +345,12 @@ class KspGlobalSettingToggleCommand(sublime_plugin.ApplicationCommand):
     def is_enabled(self, setting, default):
         extra_checks = bool(sublime.load_settings("KSP.sublime-settings").get("ksp_extra_checks", default))
         optim_code = bool(sublime.load_settings("KSP.sublime-settings").get("ksp_optimize_code", default))
-        signal_empty = bool(sublime.load_settings("KSP.sublime-settings").get("ksp_signal_empty_ifcase", default))
+        signal_empty = not (extra_checks and optim_code)
 
         if setting == "ksp_optimize_code":
             return extra_checks
         elif setting == "ksp_signal_empty_ifcase":
-            return signal_empty and not (extra_checks and optim_code)
+            return signal_empty
         else:
             return True
 
