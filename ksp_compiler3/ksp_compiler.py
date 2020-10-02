@@ -14,6 +14,7 @@
 
 import re
 import os
+import copy
 import collections
 from collections import OrderedDict
 import ksp_ast
@@ -1627,7 +1628,11 @@ class KSPCompiler(object):
     # TO PRESERVE LINE PROPERTIES, SELF.LINES CAN NOT BE REMERGED INTO SOURCE
 
     def extensions_with_macros(self):
-        check_source = merge_lines(self.lines) # only for checking purposes, not for reproducing lines
+        check_lines = copy.copy(self.lines)
+        for line in check_lines:
+            line.replace_placeholders()
+
+        check_source = merge_lines(check_lines) # only for checking purposes, not for reproducing lines
 
         ### Extensions ###
 
@@ -1872,7 +1877,7 @@ class KSPCompiler(object):
                  ('expanding macros',            lambda: self.expand_macros(),                                                True,      1),
                  # NOTE(Sam): Call the post-macro section of the preprocessor
                  ('post-macro processes',        lambda: post_macro_functions(self.lines),                                    True,      1),
-                 ('replace string placeholders', lambda: self.replace_string_placeholders(),                                    True,      1),
+                 ('replace string placeholders', lambda: self.replace_string_placeholders(),                                  True,      1),
                  ('search for nckp import',      lambda: self.search_for_nckp(),                                              True,      1),
                  # NOTE(Sam): Convert the lines to a block in a separate function
                  ('convert lines to code block', lambda: self.convert_lines_to_code(),                                        True,      1),
