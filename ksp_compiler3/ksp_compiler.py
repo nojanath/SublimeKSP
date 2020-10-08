@@ -1628,7 +1628,7 @@ class KSPCompiler(object):
     # TO PRESERVE LINE PROPERTIES, SELF.LINES CAN NOT BE REMERGED INTO SOURCE
 
     def extensions_with_macros(self):
-        check_lines = copy.copy(self.lines)
+        check_lines = [copy.copy(l) for l in self.lines]
         for line in check_lines:
             line.replace_placeholders()
 
