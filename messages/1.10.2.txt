@@ -1,4 +1,4 @@
-Version 1.10.1b
+Version 1.10.2
 ---------------------------------------------------
 
 In the fix for the last issue with the logger, the bug of define evaluation happening in strings was re-introduced. The following fix is verified to have fixed both problems.
