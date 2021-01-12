@@ -1,0 +1,4 @@
+Version 1.9.7
+
+-Fixes the issue where SublimeKSP simplified float ("real") constants with scientific notation (i.e. "1 / 1000000.0" would simplify to "1e-6").
+-(From EvilDragon) Adds a new menu option to disable the compile date comment to the compiled code.

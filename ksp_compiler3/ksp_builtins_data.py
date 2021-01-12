@@ -24,10 +24,10 @@ $CONTROL_PAR_FILE_TYPE
 $CONTROL_PAR_FILEPATH
 $CONTROL_PAR_FONT_TYPE
 $CONTROL_PAR_FONT_TYPE_OFF
-$CONTROL_PAR_FONT_TYPE_ON
 $CONTROL_PAR_FONT_TYPE_OFF_HOVER
-$CONTROL_PAR_FONT_TYPE_ON_HOVER
 $CONTROL_PAR_FONT_TYPE_OFF_PRESSED
+$CONTROL_PAR_FONT_TYPE_ON
+$CONTROL_PAR_FONT_TYPE_ON_HOVER
 $CONTROL_PAR_FONT_TYPE_ON_PRESSED
 $CONTROL_PAR_GRID_HEIGHT
 $CONTROL_PAR_GRID_WIDTH
@@ -41,6 +41,7 @@ $CONTROL_PAR_KEY_CONTROL
 $CONTROL_PAR_KEY_SHIFT
 $CONTROL_PAR_LABEL
 $CONTROL_PAR_MAX_VALUE
+$CONTROL_PAR_MIDI_EXPORT_AREA_IDX
 $CONTROL_PAR_MIN_VALUE
 $CONTROL_PAR_MOUSE_BEHAVIOUR
 $CONTROL_PAR_MOUSE_BEHAVIOUR_X
@@ -131,9 +132,11 @@ $EFFECT_TYPE_SHAPER
 $EFFECT_TYPE_SKREAMER
 $EFFECT_TYPE_SOLID_GEQ
 $EFFECT_TYPE_STEREO
+$EFFECT_TYPE_SUPERGT
 $EFFECT_TYPE_SURROUND_PANNER
 $EFFECT_TYPE_TAPE_SAT
 $EFFECT_TYPE_TRANS_MASTER
+$EFFECT_TYPE_TRANSLIM
 $EFFECT_TYPE_TWANG
 $EFFECT_TYPE_VAN51
 $ENGINE_PAR_AC_BASS
@@ -174,6 +177,8 @@ $ENGINE_PAR_CHORAL_VOICES
 $ENGINE_PAR_CHORAL_WIDTH
 $ENGINE_PAR_COMP_ATTACK
 $ENGINE_PAR_COMP_DECAY
+$ENGINE_PAR_COMP_LINK
+$ENGINE_PAR_COMP_TYPE
 $ENGINE_PAR_CT_BALLS
 $ENGINE_PAR_CT_BASS
 $ENGINE_PAR_CT_DISTORTION
@@ -210,6 +215,10 @@ $ENGINE_PAR_EFFECT_BYPASS
 $ENGINE_PAR_EFFECT_SUBTYPE
 $ENGINE_PAR_EFFECT_TYPE
 $ENGINE_PAR_ENVELOPE_ORDER
+$ENGINE_PAR_ENVF_ADAPTION
+$ENGINE_PAR_ENVF_ATTACK
+$ENGINE_PAR_ENVF_GAIN_BOOST
+$ENGINE_PAR_ENVF_RELEASE
 $ENGINE_PAR_EXP_FILTER_AMOUNT
 $ENGINE_PAR_EXP_FILTER_MORPH
 $ENGINE_PAR_EXTMOD_INTENSITY
@@ -319,6 +328,7 @@ $ENGINE_PAR_LFO_TRI
 $ENGINE_PAR_LIM_IN_GAIN
 $ENGINE_PAR_LIM_RELEASE
 $ENGINE_PAR_LP_CUTOFF
+$ENGINE_PAR_LR_SWAP
 $ENGINE_PAR_MOD_TARGET_INTENSITY
 $ENGINE_PAR_NOISECOLOR
 $ENGINE_PAR_NOISELEVEL
@@ -329,11 +339,7 @@ $ENGINE_PAR_PH_FEEDBACK
 $ENGINE_PAR_PH_PHASE
 $ENGINE_PAR_PH_SPEED
 $ENGINE_PAR_PH_SPEED_UNIT
-$ENGINE_PAR_PR_DECAY
-$ENGINE_PAR_PR_HIDAMP
-$ENGINE_PAR_PR_LOWSHELF
-$ENGINE_PAR_PR_PREDELAY
-$ENGINE_PAR_PR_STEREO
+$ENGINE_PAR_PHASE_INVERT
 $ENGINE_PAR_PHASIS_AMOUNT
 $ENGINE_PAR_PHASIS_CENTER
 $ENGINE_PAR_PHASIS_FEEDBACK
@@ -347,6 +353,11 @@ $ENGINE_PAR_PHASIS_RATE_UNIT
 $ENGINE_PAR_PHASIS_SPREAD
 $ENGINE_PAR_PHASIS_STEREO
 $ENGINE_PAR_PHASIS_ULTRA
+$ENGINE_PAR_PR_DECAY
+$ENGINE_PAR_PR_HIDAMP
+$ENGINE_PAR_PR_LOWSHELF
+$ENGINE_PAR_PR_PREDELAY
+$ENGINE_PAR_PR_STEREO
 $ENGINE_PAR_RATIO
 $ENGINE_PAR_RDL_AMOUNT
 $ENGINE_PAR_RDL_BBDTYPE
@@ -394,6 +405,7 @@ $ENGINE_PAR_RV_PREDELAY
 $ENGINE_PAR_RV_SIZE
 $ENGINE_PAR_RV_STEREO
 $ENGINE_PAR_SCOMP_ATTACK
+$ENGINE_PAR_SCOMP_LINK
 $ENGINE_PAR_SCOMP_MAKEUP
 $ENGINE_PAR_SCOMP_MIX
 $ENGINE_PAR_SCOMP_RATIO
@@ -463,6 +475,18 @@ $ENGINE_PAR_START_CRITERIA_SLICE_IDX
 $ENGINE_PAR_START_CRITERIA_ZONE_IDX
 $ENGINE_PAR_STEREO
 $ENGINE_PAR_STEREO_PAN
+$ENGINE_PAR_STEREO_PSEUDO
+$ENGINE_PAR_SUPERGT_ATTACK
+$ENGINE_PAR_SUPERGT_CHANNEL_LINK_MODE
+$ENGINE_PAR_SUPERGT_CHAR_MODE
+$ENGINE_PAR_SUPERGT_CHARACTER
+$ENGINE_PAR_SUPERGT_COMPRESS
+$ENGINE_PAR_SUPERGT_HPF_MODE
+$ENGINE_PAR_SUPERGT_MIX
+$ENGINE_PAR_SUPERGT_RELEASE
+$ENGINE_PAR_SUPERGT_SAT_MODE
+$ENGINE_PAR_SUPERGT_SATURATION
+$ENGINE_PAR_SUPERGT_TRIM
 $ENGINE_PAR_SUSTAIN
 $ENGINE_PAR_THRESHOLD
 $ENGINE_PAR_TP_GAIN
@@ -474,6 +498,9 @@ $ENGINE_PAR_TR_INPUT
 $ENGINE_PAR_TR_SMOOTH
 $ENGINE_PAR_TR_SUSTAIN
 $ENGINE_PAR_TRANSIENT_SIZE
+$ENGINE_PAR_TRANSLIM_CEILING
+$ENGINE_PAR_TRANSLIM_RELEASE
+$ENGINE_PAR_TRANSLIM_THRESHOLD
 $ENGINE_PAR_TUNE
 $ENGINE_PAR_TW_BASS
 $ENGINE_PAR_TW_BRIGHT
@@ -514,6 +541,7 @@ $EVENT_PAR_1
 $EVENT_PAR_2
 $EVENT_PAR_3
 $EVENT_PAR_ALLOW_GROUP
+$EVENT_PAR_CUSTOM
 $EVENT_PAR_ID
 $EVENT_PAR_MIDI_BYTE_1
 $EVENT_PAR_MIDI_BYTE_2
@@ -524,6 +552,7 @@ $EVENT_PAR_NOTE_LENGTH
 $EVENT_PAR_PAN
 $EVENT_PAR_PLAY_POS
 $EVENT_PAR_POS
+$EVENT_PAR_REL_VELOCITY
 $EVENT_PAR_SOURCE
 $EVENT_PAR_TRACK_NR
 $EVENT_PAR_TUNE
@@ -719,48 +748,14 @@ $NI_CB_TYPE_RELEASE
 $NI_CB_TYPE_RPN
 $NI_CB_TYPE_UI_CONTROL
 $NI_CB_TYPE_UI_UPDATE
-$NI_CONTROL_PAR_IDX
 $NI_CHORAL_MODE_DIMENSION
 $NI_CHORAL_MODE_ENSEMBLE
 $NI_CHORAL_MODE_SYNTH
 $NI_CHORAL_MODE_UNIVERSAL
-$NI_DISTORTION_TYPE_TRANS
-$NI_DISTORTION_TYPE_TUBE
-$NI_DND_ACCEPT_MULTIPLE
-$NI_DND_ACCEPT_NONE
-$NI_DND_ACCEPT_ONE
-$NI_FILE_EXTENSION
-$NI_FILE_FULL_PATH
-$NI_FILE_FULL_PATH_OS
-$NI_FILE_NAME
-$NI_FILE_TYPE_ARRAY
-$NI_FILE_TYPE_AUDIO
-$NI_FILE_TYPE_MIDI
-$NI_FLAIR_MODE_SCAN
-$NI_FLAIR_MODE_STANDARD
-$NI_FLAIR_MODE_THRU_ZERO
-$NI_FLAIR_SCANMODE_SAW_DOWN
-$NI_FLAIR_SCANMODE_SAW_UP
-$NI_FLAIR_SCANMODE_TRIANGLE
-$NI_KEY_TYPE_CONTROL
-$NI_KEY_TYPE_DEFAULT
-$NI_KEY_TYPE_NONE
-$NI_LOG_MESSAGE
-$NI_LOG_WARNING
-$NI_LOG_WATCHING
-$NI_MOUSE_EVENT_TYPE
-$NI_MOUSE_EVENT_TYPE_DRAG
-$NI_MOUSE_EVENT_TYPE_DROP
-$NI_MOUSE_EVENT_TYPE_LEFT_BUTTON_DOWN
-$NI_MOUSE_EVENT_TYPE_LEFT_BUTTON_UP
-$NI_MOUSE_OVER_CONTROL
-$NI_REPLIKA_TYPE_ANALOGUE
-$NI_REPLIKA_TYPE_DIFFUSION
-$NI_REPLIKA_TYPE_MODERN
-$NI_REPLIKA_TYPE_TAPE
-$NI_REPLIKA_TYPE_VINTAGE
-$NI_REVERB2_TYPE_HALL
-$NI_REVERB2_TYPE_ROOM
+$NI_COMP_TYPE_CLASSIC
+$NI_COMP_TYPE_ENHANCED
+$NI_COMP_TYPE_PRO
+$NI_CONTROL_PAR_IDX
 $NI_DETECT_DRUM_TYPE_CLAP
 $NI_DETECT_DRUM_TYPE_CLOSED_HH
 $NI_DETECT_DRUM_TYPE_CYMBAL
@@ -788,6 +783,50 @@ $NI_DETECT_INSTRUMENT_TYPE_VOCAL
 $NI_DETECT_SAMPLE_TYPE_DRUM
 $NI_DETECT_SAMPLE_TYPE_INSTRUMENT
 $NI_DETECT_SAMPLE_TYPE_INVALID
+$NI_DISTORTION_TYPE_TRANS
+$NI_DISTORTION_TYPE_TUBE
+$NI_DND_ACCEPT_MULTIPLE
+$NI_DND_ACCEPT_NONE
+$NI_DND_ACCEPT_ONE
+$NI_FILE_EXTENSION
+$NI_FILE_FULL_PATH
+$NI_FILE_FULL_PATH_OS
+$NI_FILE_NAME
+$NI_FILE_TYPE_ARRAY
+$NI_FILE_TYPE_AUDIO
+$NI_FILE_TYPE_MIDI
+$NI_FLAIR_MODE_SCAN
+$NI_FLAIR_MODE_STANDARD
+$NI_FLAIR_MODE_THRU_ZERO
+$NI_FLAIR_SCANMODE_SAW_DOWN
+$NI_FLAIR_SCANMODE_SAW_UP
+$NI_FLAIR_SCANMODE_TRIANGLE
+$NI_GROUP_PAR_COLOR
+$NI_GROUP_PAR_HIGH_KEY
+$NI_GROUP_PAR_LOW_KEY
+$NI_GROUP_PAR_NUM_ZONES
+$NI_INSERT_BUS
+$NI_KEY_TYPE_CONTROL
+$NI_KEY_TYPE_DEFAULT
+$NI_KEY_TYPE_NONE
+$NI_LOG_MESSAGE
+$NI_LOG_WARNING
+$NI_LOG_WATCHING
+$NI_MAIN_BUS
+$NI_MOUSE_EVENT_TYPE
+$NI_MOUSE_EVENT_TYPE_DRAG
+$NI_MOUSE_EVENT_TYPE_DROP
+$NI_MOUSE_EVENT_TYPE_LEFT_BUTTON_DOWN
+$NI_MOUSE_EVENT_TYPE_LEFT_BUTTON_UP
+$NI_MOUSE_OVER_CONTROL
+$NI_REPLIKA_TYPE_ANALOGUE
+$NI_REPLIKA_TYPE_DIFFUSION
+$NI_REPLIKA_TYPE_MODERN
+$NI_REPLIKA_TYPE_TAPE
+$NI_REPLIKA_TYPE_VINTAGE
+$NI_REVERB2_TYPE_HALL
+$NI_REVERB2_TYPE_ROOM
+$NI_SEND_BUS
 $NI_SHAPE_TYPE_CLASSIC
 $NI_SHAPE_TYPE_DRUMS
 $NI_SHAPE_TYPE_ENHANCED
@@ -797,6 +836,18 @@ $NI_SIGNAL_TRANSP_START
 $NI_SIGNAL_TRANSP_STOP
 $NI_SIGNAL_TYPE
 $NI_SONG_POSITION
+$NI_SUPERGT_CHANNEL_LINK_MODE_DUAL_MONO
+$NI_SUPERGT_CHANNEL_LINK_MODE_MS
+$NI_SUPERGT_CHANNEL_LINK_MODE_STEREO
+$NI_SUPERGT_CHAR_MODE_BRIGHT
+$NI_SUPERGT_CHAR_MODE_FAT
+$NI_SUPERGT_CHAR_MODE_WARM
+$NI_SUPERGT_HPF_MODE_100
+$NI_SUPERGT_HPF_MODE_300
+$NI_SUPERGT_HPF_MODE_OFF
+$NI_SUPERGT_SAT_MODE_HOT
+$NI_SUPERGT_SAT_MODE_MILD
+$NI_SUPERGT_SAT_MODE_MODERATE
 $NI_SYNC_UNIT_16TH
 $NI_SYNC_UNIT_16TH_TRIPLET
 $NI_SYNC_UNIT_256TH
@@ -896,8 +947,8 @@ $ZONE_PAR_VOLUME
 %GROUPS_SELECTED
 %KEY_DOWN
 %KEY_DOWN_OCT
-%NOTE_DURATION
 %NI_USER_ZONE_IDS
+%NOTE_DURATION
 %POLY_AT
 ~NI_DETECT_LOUDNESS_INVALID
 ~NI_DETECT_PEAK_INVALID
@@ -985,6 +1036,7 @@ fs_navigate(<ui-id>, <direction>)
 get_control_par(<ui-id>, <control-parameter>):integer
 get_control_par_arr(<ui-id>, <control-parameter>, <index>):integer
 get_control_par_str(<ui-id>, <control-parameter>):string
+get_control_par_str_arr(<ui-id>, <control-parameter>, <index>):string
 get_engine_par(<parameter>, <group>, <slot>, <generic>):integer
 get_engine_par_disp(<parameter>, <group>, <slot>, <generic>):string
 get_engine_par_disp_m(<parameter>, <instrument-slot-idx>, <slot>, <generic>):string
@@ -994,6 +1046,7 @@ get_event_par(<event-id>, <parameter>):integer
 get_event_par_arr(<event-id>, <parameter>, <group-idx>):integer
 get_folder(<path variable>):string
 get_font_id(<path-text>):integer
+get_group_oar(<group-idx>, <parameter>):integer
 get_key_color(<note-number>):integer
 get_key_name(<note-number>):integer
 get_key_triggerstate(<note-number>):integer
@@ -1018,10 +1071,11 @@ hide_part(<variable>, <value>)
 ignore_controller()
 ignore_event(<event-id>)
 ignore_midi()
+import_nckp(<path variable>):string
 in_range(<expression>, <lower>, <upper>):boolean
 inc(<expression>)
 int_to_real(<integer>):real
-is_zone_empty(<zone-id>)
+is_zone_empty(<zone-id>):integer
 iterate_macro(<expression>)
 literate_macro(<expression>)
 load_array(<array-or-string-array-variable>, <mode>):integer
@@ -1037,6 +1091,7 @@ make_instr_persistent(<variable>)
 make_perfview()
 make_persistent(<variable>)
 message(<variable-or-text>)
+mf_copy_export_area(<zone-id>)
 mf_get_buffer_size():integer
 mf_get_byte_one():integer
 mf_get_byte_two():integer
@@ -1068,6 +1123,7 @@ mf_set_command(<par>)
 mf_set_event_par(<event-id>, <parameter>, <value>)
 mf_set_export_area(<name>, <start-pos>, <end-pos>, <start-track>, <end-track>):integer
 mf_set_note_length(<value>)
+mf_set_num_export_areas(<value>)
 mf_set_length(<par>)
 mf_set_mark(<event-id>, <mark>, <status>)
 mf_set_pos(<par>)
@@ -1090,7 +1146,7 @@ pgs_set_str_key_val(<key-id>, <text>)
 pgs_str_key_exists(<key-id>):boolean
 play_note(<note-number>, <velocity>, <sample-offset>, <duration>):integer
 pow(<real-value>, <real-value>):real
-purge_group(<group-idx>, <mode>)
+purge_group(<group-idx>, <mode>):integer
 random(<min>, <max>):integer
 read_persistent_var(<variable>)
 real_to_int(<real-value>):integer
@@ -1150,13 +1206,17 @@ set_switch_properties(<switch>, <text>, <picture>, <text-alignment>, <font-type>
 set_table_properties(<table>, <bar-color>, <zero-line-color>)
 set_table_steps_shown(<array-variable>, <num-steps>)
 set_text(<variable>, <text>)
+set_text_edit_properties(<text-edit>, <text>, <picture>, <text-alignment>, <font-type>, <textpos-y>)
 set_ui_color(<hex-value>)
 set_ui_height(<height>)
 set_ui_height_px(<height>)
 set_ui_wf_property(<waveform>, <property>, <index>, <value>)
 set_ui_width_px(<width>)
+set_value_edit_properties(<value-edit>, <text>, <font-type>, <textpos-y>, <show-arrows>)
 set_voice_limit(<voice­type>,<value>)
-set_waveform_properties(<waveform>, <bar-color>, <zero-line-color>)
+set_waveform_properties(<waveform>, <bar-color>, <zero-line-color>, <bg-color>, <bg-alpha>, <wave-color>, <wave-cursor-color>, <slicemarkers-color>, <wf-vis-mode>)
+set_wavetable2d_properties(<wavetable>, <wt-zone>, <bg-color>, <bg-alpha>, <wave-color>, <wave-alpha>, <wave-end-color>, <wave-end-alpha>)
+set_wavetable3d_properties(<wavetable>, <wt-zone>, <bg-color>, <bg-alpha>, <wavetable-color>, <wavetable-alpha>, <wavetable-end-color>, <wavetable-end-alpha>, <parallax-x>, <parallax-y>)
 set_zone_par(<zone-id>, <parameter>, <value>):integer
 sh_left(<expression>, <amount>):integer
 sh_right(<expression>, <amount>):integer
@@ -1175,7 +1235,7 @@ tan(<real-value>):real
 ticks_to_ms(<ticks>):integer
 unload_slot(<instrument-slot-idx>)
 wait(<wait-time>)
-wait_async(<event-id>)
+wait_async(<event-id>):integer
 watch_var(<variable>)
 watch_array_idx(<array-variable>, <index>)
 wait_ticks(<wait-time>)

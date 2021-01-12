@@ -1,0 +1,13 @@
+Version 1.9.2
+
+New (and much-needed) improvements:
+- Sublime's autocomplete now supports variables starting with `$` prefixes. Requested by many!
+- The Log File Debugger, TCM module, and NI nckp (for Creator Tools GUI) import steps are now all properly supported if used inside of imported files.
+	Previously, they would only work if contained in the file the compilation was run on.
+- When referencing controls in an NI performance view where any control names contain double-underscores `__`, SublimeKSP can correctly use dots (`.`) as a replacement token.
+    For example, a control like `Editor__Panel__Control1` can be referenced in code as `Editor.Panel.Control1` and compile correctly.
+- Added a snippet for using START_INC() to help devs remember the END_INC.
+
+Bugfix:
+- When using `declare const` to assign to an NI KSP constant (for example `declare const BLUE := KEY_COLOR_BLUE`) with code optimization enabled, SublimeKSP would not compile.
+    The only fix for this is to disable optimization for these specific constants, and they will show up in the compiled code as they would in vanilla KSP.

@@ -19,6 +19,7 @@ import re
 import math
 
 symbol_table = {}
+nckp_table = []
 user_defined_functions = {}
 key_ids = {}
 
@@ -32,6 +33,9 @@ def clear_symbol_table():
     symbol_table.clear()
     key_ids.clear()
     user_defined_functions.clear()
+
+def add_nckp_var_to_nckp_table(nckp_ui_variable):
+        nckp_table.append(nckp_ui_variable.lower())
 
 class ValueUndefinedException(ParseException):
     def __init__(self, node, msg='Value of variable undefined'):
@@ -211,7 +215,6 @@ def highest_precision(type1, type2):
         return 'integer'
 
 class ASTVisitorDetermineExpressionTypes(ASTVisitor):
-
     def __init__(self, ast):
         ASTVisitor.__init__(self)
         self.traverse(ast)
@@ -280,7 +283,7 @@ class ASTVisitorDetermineExpressionTypes(ASTVisitor):
             raise Exception()
 
         if expr.op in '+ - * / < <= > >= = #' and expr.left.type != expr.right.type:
-            raise ParseException(expr, 'Operands are of different types: %s and %s. Please use the real_to_int(...) and int_to_real(...) functions to explicitly cast the type.' % (expr.left.type, expr.right.type))
+            raise ParseException(expr, 'Operands are of different types: %s and %s. Please use real_to_int(...) or int_to_real(...) functions to explicitly cast the type.' % (expr.left.type, expr.right.type))
 
         return False
 
@@ -340,12 +343,12 @@ class ASTVisitorCheckNoEmptyIfCaseStatements(ASTVisitor):
     def visitIfStmt(self, parent, node, *args):
         (condition, stmts) = node.condition_stmts_tuples[0]
         if len(stmts) == 0:
-            raise ParseException(node, 'Warning: due to a ksp bug an empty if-statement is equivalent to invoking the exit function. Please make sure the body of your if-statement is not empty.')
+            raise ParseException(node, "Warning: due to a KSP bug, an empty 'if' statement is equivalent to invoking the exit function. Please make sure the body of your 'if' statement is not empty!")
 
     def visitSelectStmt(self, parent, node, *args):
         for ((start, stop), stmts) in node.range_stmts_tuples:
             if len(stmts) == 0:
-                raise ParseException(start, 'Warning: due to a ksp bug an empty case-statement is equivalent to invoking the exit function. Please make sure the body of your case-statement is not empty.')
+                raise ParseException(start, "Warning: due to a KSP bug, an empty 'case' statement is equivalent to invoking the exit function. Please make sure the body of your 'case' statement is not empty!")
 
 class ASTVisitorCheckStatementExprTypes(ASTVisitor):
     def __init__(self, ast):
@@ -497,14 +500,19 @@ class ASTVisitorCheckDeclarations(ASTVisitor):
                 raise ParseException(node.size, 'Array size is non-constant or uses undefined variables')
         else:
             size = 1
+
         initial_value = None
         if 'const' in node.modifiers:
-            if not node.initial_value:
-                raise ParseException(node.variable, 'A constant value has to be assigned to the constant')
-            try:
-                initial_value = evaluate_expression(node.initial_value)
-            except ValueUndefinedException:
-                raise ParseException(node.initial_value, 'Expression uses non-constant values or undefined constant variables')
+            # First need to check if the initial value is an NI constant
+            init_expr = node.initial_value
+            if not (isinstance(init_expr, VarRef) and str(init_expr.identifier).upper() in ksp_builtins.variables):
+                if not node.initial_value:
+                    raise ParseException(node.variable, 'A constant value has to be assigned to the constant')
+                try:
+                    initial_value = evaluate_expression(node.initial_value)
+                except ValueUndefinedException:
+                    raise ParseException(node.initial_value, 'Expression uses non-constant values or undefined constant variables')
+
         try:
             params = []
             for param in node.parameters:
@@ -521,7 +529,8 @@ class ASTVisitorCheckDeclarations(ASTVisitor):
             control_type = is_ui_control[0]
         else:
             control_type = None
-        is_constant = 'const' in node.modifiers
+
+        is_constant = ('const' in node.modifiers and initial_value is not None)
         is_polyphonic = 'polyphonic' in node.modifiers
         symbol_table[name.lower()] = Variable(node.variable, size, params, control_type, is_constant, is_polyphonic, initial_value)
         self.visit_children(parent, node, *args)
@@ -530,9 +539,8 @@ class ASTVisitorCheckDeclarations(ASTVisitor):
     def visitID(self, parent, node, *args):
         name = str(node)
         special_names = ['NO_SYS_SCRIPT_RLS_TRIG', 'NO_SYS_SCRIPT_PEDAL', 'NO_SYS_SCRIPT_GROUP_START', 'NO_SYS_SCRIPT_ALL_NOTES_OFF']
-        if not name in ksp_builtins.variables and not name in ksp_builtins.functions and not name.lower() in symbol_table and not name in special_names and not name in user_defined_functions:
+        if not name in ksp_builtins.variables and not name in ksp_builtins.functions and not name.lower() in symbol_table and not name in special_names and not name in user_defined_functions and not name.lower() in nckp_table:
             raise ParseException(node, 'Undeclared variable/function: %s' % name)
-
 
 class ASTModifierSimplifyExpressions(ASTModifier):
     def __init__(self, module_ast, replace_constants=True):
@@ -553,14 +561,19 @@ class ASTModifierSimplifyExpressions(ASTModifier):
                 return Boolean(expr.lexinfo, result)
         except SyntaxError:
             pass
+
         return expr
 
     def modifyDeclareStmt(self, node):
         ASTModifier.modifyDeclareStmt(self, node)
-        if 'const' in node.modifiers and self.replace_constants:
-            return []
-        else:
-            return [node]
+        return [node]
+
+        # The below code seemed to be intended to clear out const declare statements for replacement purposes, but it is unnecessary.
+
+        # if 'const' in node.modifiers and self.replace_constants:
+        #     return []
+        # else:
+        #     return [node]
 
     def modifyBinOp(self, node):
         node = ASTModifier.modifyBinOp(self, node)

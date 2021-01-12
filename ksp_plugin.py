@@ -106,8 +106,7 @@ class CompileKspThread(threading.Thread):
             return sublime.active_window().active_view()
         if not os.path.isabs(filename) and base_path:
             filename = os.path.join(base_path, filename)
-        #else:
-        #    return sublime.active_window().find_open_file(filename)
+
         for window in sublime.windows():
             for view in window.views():
                 if view.file_name() and view.file_name() == filename:
@@ -148,7 +147,6 @@ class CompileKspThread(threading.Thread):
     def run(self, *args):
         global last_compiler
 
-        #view = sublime.active_window().active_view()
         view = self.view
         code = view.substr(sublime.Region(0, view.size()))
         filepath = view.file_name()
@@ -165,6 +163,7 @@ class CompileKspThread(threading.Thread):
         optimize = settings.get('ksp_optimize_code', False)
         comments_on_expansion = settings.get('ksp_comment_inline_functions', False)
         check_empty_compound_statements = settings.get('ksp_signal_empty_ifcase', True)
+        add_compiled_date_comment = settings.get('ksp_add_compiled_date', True)
         should_play_sound = settings.get('ksp_play_sound', False)
 
         error_msg = None
@@ -180,7 +179,8 @@ class CompileKspThread(threading.Thread):
                                                      read_file_func=self.read_file_function,
                                                      extra_syntax_checks=check,
                                                      optimize=optimize and check,
-                                                     check_empty_compound_statements=check_empty_compound_statements)
+                                                     check_empty_compound_statements=check_empty_compound_statements,
+                                                     add_compiled_date_comment=add_compiled_date_comment)
             if self.compiler.compile(callback=self.compile_on_progress):
                 last_compiler = self.compiler
                 code = self.compiler.compiled_code
@@ -189,8 +189,6 @@ class CompileKspThread(threading.Thread):
                     if not os.path.isabs(self.compiler.output_file):
                         self.compiler.output_file = os.path.join(self.base_path, self.compiler.output_file)
                     codecs.open(self.compiler.output_file, 'w', 'latin-1').write(code)
-                    #codecs.open(self.compiler.output_file, 'w', 'mac-roman').write(code)
-                    #codecs.open(self.compiler.output_file, 'w', 'utf-8').write(code)
                     sublime.status_message("Successfully compiled (compiled code saved to %s)." % self.compiler.output_file)
                 else:
                     sublime.status_message("Successfully compiled (the code is now on the clipboard ready to be pasted into Kontakt).")
@@ -198,24 +196,17 @@ class CompileKspThread(threading.Thread):
             else:
                 sublime.status_message('Compilation aborted.')
         except ksp_ast.ParseException as e:
-            #raise
-            #import traceback
-            #traceback.print_exc()
             error_msg = unicode(e)
-            line_object = self.compiler.lines[e.lineno] # self.compiler.lines.get(e.lineno, None)
-            if line_object: # and not line_object.filename:
+            line_object = self.compiler.lines[e.lineno]
+            if line_object:
                 error_lineno = line_object.lineno-1
                 error_filename = line_object.filename
             if line_object:
                 error_msg = re.sub(r'line (\d+)', 'line %s' % line_object.lineno, error_msg)
         except ksp_compiler.ParseException as e:
-            #raise
-            #if e.line.filename is None: # if error in currently edited file
-            #print ('exc message is ' + e.message)
             error_lineno = e.line.lineno-1
             error_filename = e.line.filename
             error_msg = e.message
-            #error_msg = unicode(str(e), errors='ignore').replace('__', '.')
         except Exception as e:
             error_msg = str(e)
             error_msg = ''.join(traceback.format_exception(*sys.exc_info()))
@@ -269,7 +260,6 @@ class KSPCompletions(sublime_plugin.EventListener):
             code = view.substr(sublime.Region(0, view.size()))
             return sorted(re.findall(re.escape(prefix) + r'[a-zA-Z0-9_.]+', code))
         else:
-            #return sorted(view.extract_completions(prefix, point)) # default implementation if no '.' in the prefix
             return view.extract_completions(prefix, point) # default implementation if no '.' in the prefix
 
     def unique(self, seq):
@@ -285,7 +275,6 @@ class KSPCompletions(sublime_plugin.EventListener):
         if not view.match_selector(locations[0], 'source.ksp -string -comment -constant'):
             return []
         pt = locations[0] # - len(prefix) - 1
-        #ch = view.substr(sublime.Region(pt, pt + 1))    # the character before the trigger
         line_start_pos = view.line(sublime.Region(pt, pt)).begin()
         line = view.substr(sublime.Region(line_start_pos, pt))    # the character before the trigger
 
@@ -295,7 +284,7 @@ class KSPCompletions(sublime_plugin.EventListener):
             compl = magic_control_pars
         else:
             compl = self._extract_completions(view, prefix, pt)
-            compl = [(item + "\tdefault", item) for item in compl
+            compl = [(item + "\tdefault", item.replace('$', '\\$', 1)) for item in compl
                      if len(item) > 3 and item not in all_builtins]
             if '.' not in prefix:
                 bc = []
@@ -328,13 +317,42 @@ class ReplaceTextWithCommand(sublime_plugin.TextCommand):
 
 class KspGlobalSettingToggleCommand(sublime_plugin.ApplicationCommand):
     def run(self, setting, default):
+        sksp_options_dict = {
+            "ksp_compact_output" : "Remove Indents and Empty Lines",
+            "ksp_compact_variables" : "Compact Variables",
+            "ksp_extra_checks" : "Extra Syntax Checks",
+            "ksp_optimize_code" : "Optimize Compiled Code",
+            "ksp_signal_empty_ifcase" : "Raise Error on Empty 'if' or 'case' Statements",
+            "ksp_add_compiled_date" : "Add Compilation Date/Time Comment",
+            "ksp_comment_inline_functions" : "Insert Comments When Expanding Functions",
+            "ksp_play_sound" : "Play Sound When Compilation Finishes"
+        }
+
         s = sublime.load_settings("KSP.sublime-settings")
         s.set(setting, not s.get(setting, False))
         sublime.save_settings("KSP.sublime-settings")
 
+        if s.get(setting, False):
+            option_toggle = "enabled!"
+        else:
+            option_toggle = "disabled!"
+
+        sublime.status_message('SublimeKSP option %s is %s' % (sksp_options_dict[setting], option_toggle))
+
     def is_checked(self, setting, default):
         return bool(sublime.load_settings("KSP.sublime-settings").get(setting, default))
 
+    def is_enabled(self, setting, default):
+        extra_checks = bool(sublime.load_settings("KSP.sublime-settings").get("ksp_extra_checks", default))
+        optim_code = bool(sublime.load_settings("KSP.sublime-settings").get("ksp_optimize_code", default))
+        signal_empty = not (extra_checks and optim_code)
+
+        if setting == "ksp_optimize_code":
+            return extra_checks
+        elif setting == "ksp_signal_empty_ifcase":
+            return signal_empty
+        else:
+            return True
 
 class KspIndentListener(sublime_plugin.EventListener):
     def on_text_command(self, view, command_name, args):
@@ -403,7 +421,6 @@ class KspOnEnter(sublime_plugin.TextCommand):
         self.view.run_command('insert', {'characters': '\n'})
         for selection in self.view.sel():
             row, col = self.view.rowcol(selection.begin())
-            #print('row=%d last=%d' % (row, self.get_last_lineno()))
             prev_line = self.get_line(row-1)
             this_line = self.get_line(row)
             next_line = self.get_line(row+1)
@@ -412,13 +429,6 @@ class KspOnEnter(sublime_plugin.TextCommand):
             if (not (next_line and next_line.lstrip().startswith('end ') and
                      len(self.get_indent(next_line)) == len(self.get_indent(prev_line))) and
                len(self.get_indent(next_line)) <= len(self.get_indent(prev_line)) and m):
-                # in the case of 'on' callbacks add indentation
-                # if False and re.match(r'\s*(on [a-z_]+|\bproperty\b)', prev_line):
-                #     tab_size = int(self.view.settings().get('tab_size', 8))
-                #     use_spaces = self.view.settings().get('translate_tabs_to_spaces', True)
-                #     ind = ' ' * tab_size if use_spaces else '\t'
-                #     self.view.insert(edit, selection.a, ind)
-                #     selection = sublime.Region(selection.a + len(ind))
                 # insert end text
                 indent = self.get_indent(prev_line)
                 end_line = '\n%send %s' % (indent, m.group(1))
@@ -426,10 +436,6 @@ class KspOnEnter(sublime_plugin.TextCommand):
                 # remove the old selection and add a new
                 self.view.sel().subtract(self.view.line(self.view.text_point(row+1, 0)))
                 self.view.sel().add(sublime.Region(self.view.text_point(row, len(this_line))))
-            #print('prev', repr(prev_line))
-            #print('next', repr(next_line))
-            #print(m)
-            #print('')
             self.view.run_command('move_to', {"to": "eol"})
 
 

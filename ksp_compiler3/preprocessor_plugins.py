@@ -572,15 +572,19 @@ def handleUIFunctions(lines):
 	# with'set_' is assumed to be true later on.
 	uiControlPropertyFunctionTemplates = [
 	"set_bounds(ui-id, x, y, width, height)",
+	"set_button_properties(ui-id, text, picture, text_alignment, font_type, textpos_y)",
+	"set_knob_properties(ui-id, text, default)",
+	"set_label_properties(ui-id, text, picture, text_alignment, font_type, textpos_y)",
+	"set_level_meter_properties(ui-id, bg_color, off_color, on_color, overload_color)",
+	"set_menu_properties(ui-id, picture, font_type, text_alignment, textpos_y)",
 	"set_slider_properties(ui-id, default, picture, mouse_behaviour)",
 	"set_switch_properties(ui-id, text, picture, text_alignment, font_type, textpos_y)",
-	"set_label_properties(ui-id, text, picture, text_alignment, font_type, textpos_y)",
-	"set_menu_properties(ui-id, picture, font_type, text_alignment, textpos_y)",
 	"set_table_properties(ui-id, bar_color, zero_line_color)",
-	"set_button_properties(ui-id, text, picture, text_alignment, font_type, textpos_y)",
-	"set_level_meter_properties(ui-id, bg_color, off_color, on_color, overload_color)",
-	"set_waveform_properties(ui-id, bar_color, zero_line_color)",
-	"set_knob_properties(ui-id, text, default)" ]
+	"set_text_edit_properties(ui-id, text, picture, text_alignment, font_type, textpos_y)",
+	"set_value_edit_properties(ui-id, text, font_type, textpos_y, show_arrows)",
+	"set_waveform_properties(ui-id, bar_color, zero_line_color, bg_color, bg_alpha, wave_color, wave_cursor_color, slicemarkers_color, wf_vis_mode)",
+	"set_wavetable2d_properties(ui-id, wt_zone, bg_color, bg_alpha, wave_color, wave_alpha, wave_end_color, wave_end_alpha)",
+	"set_wavetable3d_properties(ui-id, wt_zone, bg_color, bg_alpha, wavetable_color, wavetable_alpha, wavetable_end_color, wavetable_end_alpha, parallax_x, parallax_y)" ]
 
 	# Use the template string above to build a list of UIProperyTemplate objects.
 	uiFuncs = []
@@ -1046,6 +1050,7 @@ def handlePersistence(lines):
 						famPre = inspectFamilyState(lines, i)
 						if famPre:
 							variableName = famPre + variableName.strip()
+					variableName = m.group("prefix") + variableName
 					newLines.append(lines[i].copy(re.sub(r"\b%s\b" % persWord, "", line)))
 					if persWord == "pers":
 						newLines.append(lines[i].copy("make_persistent(%s)" % variableName))
@@ -1071,8 +1076,6 @@ class IterateMacro(object):
 		if step:
 			self.step = int(tryStringEval(step, line, "step"))
 		self.direction = direction
-		if (self.minVal > self.maxVal and self.direction == "to") or (self.minVal < self.maxVal and self.direction == "downto"):
-			raise ksp_compiler.ParseException(line, "Min and max values are incorrectly weighted (For example, min > max when it should be min < max).\n")
 
 	def buildLines(self):
 		newLines = collections.deque()
@@ -1081,12 +1084,14 @@ class IterateMacro(object):
 			self.step = -self.step
 			offset = -1
 
-		if not self.isSingleLine:
-			for i in range(self.minVal, self.maxVal + offset, self.step):
-				newLines.append(self.line.copy("%s(%s)" % (self.macroName, str(i))))
-		else:
-			for i in range(self.minVal, self.maxVal + offset, self.step):
-				newLines.append(self.line.copy(self.macroName.replace("#n#", str(i))))
+		if not ((self.minVal > self.maxVal and self.direction == "to") or (self.minVal < self.maxVal and self.direction == "downto")):
+			if not self.isSingleLine:
+				for i in range(self.minVal, self.maxVal + offset, self.step):
+					newLines.append(self.line.copy("%s(%s)" % (self.macroName, str(i))))
+			else:
+				for i in range(self.minVal, self.maxVal + offset, self.step):
+					newLines.append(self.line.copy(self.macroName.replace("#n#", str(i))))
+
 		return(newLines)
 
 def handleIterateMacro(lines):
@@ -1152,6 +1157,7 @@ class DefineConstant(object):
 				newCommand = re.sub(r"\b%s\b" % self.name, self.value, command)
 			else:
 				lineObj = line or self.line
+				
 				matchIt = re.finditer(r"\b%s\b" % self.name, command)
 				for match in matchIt:
 					# Parse the match
@@ -1159,6 +1165,7 @@ class DefineConstant(object):
 					parenthCount = 0
 					preBracketFlag = True # Flag to show when the first bracket is found.
 					foundString = []
+						
 					for char in command[matchPos:]:
 						if char == "(":
 							parenthCount += 1
@@ -1231,7 +1238,7 @@ def createBuiltinDefines(lines):
 	timecodes = ['%S', '%M', '%H', '%I', '%p', '%d', '%m', '%Y', '%y', '%B', '%b', '%x', '%X']
 	timenames = ['__SEC__','__MIN__','__HOUR__','__HOUR12__','__AMPM__','__DAY__','__MONTH__','__YEAR__','__YEAR2__','__LOCALE_MONTH__','__LOCALE_MONTH_ABBR__','__LOCALE_DATE__','__LOCALE_TIME__']
 	defines = ['define {0} := \"{1}\"'.format(timenames[i], strftime(timecodes[i], localtime())) for i in range(len(timecodes))]
-	
+
 	newLines = collections.deque()
 
 	# append our defines on top of the script in a temporary deque
@@ -1279,7 +1286,7 @@ class UIArray(object):
 			else:
 				text = "declare %s %s %s %s" % (self.persistence, self.uiType, self.prefixSymbol + uiName + str(i), self.uiParams)
 			newLines.append(line.copy(text))
-		newLines.append(line.copy("for preproc_i := 0 to %s" % (self.numElements)))
+		newLines.append(line.copy("for preproc_i := 0 to %s" % (self.numElements - 1)))
 		newLines.append(line.copy("%s[preproc_i] := get_ui_id(%s) + preproc_i" % (self.familyPrefix + uiName, self.familyPrefix + uiName + '0')))
 		newLines.append(line.copy("end for"))
 		return(newLines)
@@ -1373,10 +1380,9 @@ def handleLiterateMacro(lines):
 					for text in targets:
 						newLines.append(lines[lineIdx].copy("%s(%s)" % (name, text)))
 				else:
-					for text in targets:
-						newLines.append(lines[lineIdx].copy(name.replace("#l#", text)))
+					for index, text in enumerate(targets):
+						newLines.append(lines[lineIdx].copy(name.replace("#l#", text).replace("#n#", str(index))))
 				continue
 		newLines.append(lines[lineIdx])
 	replaceLines(lines, newLines)
 	return scan
-
