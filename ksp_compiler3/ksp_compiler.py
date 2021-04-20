@@ -1567,6 +1567,9 @@ def open_nckp(lines, basedir):
 
                         ui_to_import = list(parse_nckp(nckp_path))
 
+                        if not ui_to_import:
+                            raise ParseException(Line(line, [(None, index + 1)], None), 'no controls to import from the nckp file!\n')
+
                         for i,v in enumerate(ui_to_import):
                             variables.add(v.lower())
                             ui_variables.add(v.lower())
