@@ -67,13 +67,6 @@ macro tcm.init(stack_depth)
 	tx := 0					// set initial task id to zero
 	tstate.id[0] := -1		// Only task 0 is initially active
 
-	// read only exception code
-	property tcm.exception
-		function get() -> result
-			result := pgs_get_key_val(TCM_EXCEPTION, CURRENT_SCRIPT_SLOT)
-		end function
-	end property
-
 	// read only active task id
 	property tcm.task
 		function get() -> result
@@ -81,11 +74,21 @@ macro tcm.init(stack_depth)
 		end function
 	end property
 
+	// read only exception code
+	USE_CODE_IF_NOT(TCM_DISABLE_EXCEPTION_HANDLING)
+	property tcm.exception
+		function get() -> result
+			result := pgs_get_key_val(TCM_EXCEPTION, CURRENT_SCRIPT_SLOT)
+		end function
+	end property
+
 	pgs_create_key(TCM_EXCEPTION, 5)	// one for each script slot
 
 	// initialy reset exception code for this script slot
 	pgs_set_key_val(TCM_EXCEPTION, CURRENT_SCRIPT_SLOT, 0)
+	END_USE_CODE
 end macro
+
 
 // pops 'value' from the top of the active task stack
 function tcm.pop() -> result
@@ -126,7 +129,6 @@ end function
 
 { support functions }
 
-
 function check_empty()
 	if sp >= fp - 1	// user stack area is empty, can't pop
 		set_exception(STACK_UNDERFLOW)
@@ -151,7 +153,9 @@ end function
 
 // used by system code only
 function set_exception(ecode)
+	USE_CODE_IF_NOT(TCM_DISABLE_EXCEPTION_HANDLING)
 	pgs_set_key_val(TCM_EXCEPTION, CURRENT_SCRIPT_SLOT, ecode)
+	END_USE_CODE
 end function
 
 // inner KN function called by twait
