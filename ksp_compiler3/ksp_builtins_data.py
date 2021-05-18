@@ -1054,7 +1054,7 @@ get_event_par(<event-id>, <parameter>):integer
 get_event_par_arr(<event-id>, <parameter>, <group-idx>):integer
 get_folder(<path variable>):string
 get_font_id(<path-text>):integer
-get_group_oar(<group-idx>, <parameter>):integer
+get_group_par(<group-idx>, <parameter>):integer
 get_key_color(<note-number>):integer
 get_key_name(<note-number>):integer
 get_key_triggerstate(<note-number>):integer
