@@ -60,6 +60,8 @@ $CONTROL_PAR_PICTURE
 $CONTROL_PAR_PICTURE_STATE
 $CONTROL_PAR_POS_X
 $CONTROL_PAR_POS_Y
+$CONTROL_PAR_RANGE_MIN
+$CONTROL_PAR_RANGE_MAX
 $CONTROL_PAR_RECEIVE_DRAG_EVENTS
 $CONTROL_PAR_SELECTED_ITEM_IDX
 $CONTROL_PAR_SHOW_ARROWS
@@ -553,6 +555,7 @@ $EVENT_PAR_MIDI_BYTE_1
 $EVENT_PAR_MIDI_BYTE_2
 $EVENT_PAR_MIDI_CHANNEL
 $EVENT_PAR_MIDI_COMMAND
+$EVENT_PAR_MOD_VALUE_ID
 $EVENT_PAR_NOTE
 $EVENT_PAR_NOTE_LENGTH
 $EVENT_PAR_PAN
@@ -816,6 +819,9 @@ $NI_KEY_TYPE_CONTROL
 $NI_KEY_TYPE_DEFAULT
 $NI_KEY_TYPE_NONE
 $NI_KONTAKT_IS_HEADLESS
+$NI_LEVEL_METER_GROUP
+$NI_LEVEL_METER_INSERT
+$NI_LEVEL_METER_MAIN
 $NI_LOG_MESSAGE
 $NI_LOG_WARNING
 $NI_LOG_WATCHING
@@ -902,6 +908,10 @@ $NOTE_HELD
 $NUM_GROUPS
 $NUM_OUTPUT_CHANNELS
 $NUM_ZONES
+$OUTPUT_TYPE_DEFAULT
+$OUTPUT_TYPE_MASTER_OUT
+$OUTPUT_TYPE_AUX_OUT
+$OUTPUT_TYPE_BUS_OUT
 $PLAYED_VOICES_INST
 $PLAYED_VOICES_TOTAL
 $POLY_AT_NUM
@@ -1049,7 +1059,7 @@ get_engine_par_disp(<parameter>, <group>, <slot>, <generic>):string
 get_engine_par_disp_m(<parameter>, <instrument-slot-idx>, <slot>, <generic>):string
 get_engine_par_m(<parameter>, <instrument-slot-idx>, <slot>, <generic>):integer
 get_event_ids(<array-variable>)
-get_event_mark(<event-id>):integer
+get_event_mark(<event-id>, <bit-mark>):integer
 get_event_par(<event-id>, <parameter>):integer
 get_event_par_arr(<event-id>, <parameter>, <group-idx>):integer
 get_folder(<path variable>):string
@@ -1159,7 +1169,7 @@ random(<min>, <max>):integer
 read_persistent_var(<variable>)
 real_to_int(<real-value>):integer
 redirect_midi(<unknown>)
-redirect_output(<event-id>, <type>, <channel>)
+redirect_output(<event-id>, <output-number>, <type>)
 remove_keyrange(<key-number>)
 reset_engine()
 reset_ksp_timer()
