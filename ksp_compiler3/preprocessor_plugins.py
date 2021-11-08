@@ -1023,7 +1023,7 @@ def handleStringArrayInitialisation(lines):
 						for ii in range(len(stringList)):
 							# first check if we're dealing with a placeholder
 							# (importing other .ksp files resolves placeholders from them, we don't need to re-add those)
-							if stringList[ii][0] == '{' and stringList[ii][-1] == '}':
+							if re.match(r"\{\d+\}", stringList[ii]):
 								# get our actual string from placeholders array
 								strVal = ksp_compiler.placeholders[int(stringList[ii][1:-1])]
 
