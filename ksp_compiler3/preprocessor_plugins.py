@@ -1021,15 +1021,16 @@ def handleStringArrayInitialisation(lines):
 					newLines.append(lines[i].copy(line[: line.find(":")]))
 					if len(stringList) != 1:
 						for ii in range(len(stringList)):
+							strVal = ""
+
 							# first check if we're dealing with a placeholder
-							# (importing other .ksp files resolves placeholders from them, we don't need to re-add those)
 							if re.match(r"\{\d+\}", stringList[ii]):
 								# get our actual string from placeholders array
 								strVal = ksp_compiler.placeholders[int(stringList[ii][1:-1])]
 
-								# if it's an empty string or was an already resolved placeholder, don't add it to new lines
-								if strVal != '\"\"':
-									newLines.append(lines[i].copy("%s[%s] := %s" % (name, str(ii), stringList[ii])))
+							# if it's an empty string don't add it to new lines
+							if strVal != '\"\"':
+								newLines.append(lines[i].copy("%s[%s] := %s" % (name, str(ii), stringList[ii])))
 					else:
 						newLines.append(lines[i].copy("for string_it := 0 to %s - 1" % m.group("arraysize")))
 						newLines.append(lines[i].copy("%s[string_it] := %s" % (name, "".join(stringList))))
