@@ -1024,9 +1024,13 @@ def handleStringArrayInitialisation(lines):
 							strVal = ""
 
 							# first check if we're dealing with a placeholder
-							if re.match(r"\{\d+\}", stringList[ii]):
-								# get our actual string from placeholders array
-								strVal = ksp_compiler.placeholders[int(stringList[ii][1:-1])]
+							check = re.match(r"(.*)(\{\d+\})(.*)", stringList[ii])
+
+							# recreate the string from placeholders array
+							# including any possible prefix/postfix non-placeholders
+							# (i.e. string defines concatenated with regular strings)
+							if check:
+								strVal = str(check.group(1)) + ksp_compiler.placeholders[int(check.group(2)[1:-1])] + str(check.group(3))
 
 							# if it's an empty string don't add it to new lines
 							if strVal != '\"\"':
