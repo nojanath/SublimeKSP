@@ -1,0 +1,10 @@
+<snippet>
+	<content>
+<![CDATA[USE_CODE_IF_NOT(${1:condition})
+	${2:code}
+END_USE_CODE]]>
+</content>
+	<description>USE_CODE_IF_NOT</description>
+	<tabTrigger>USEN</tabTrigger>
+	<scope>source.ksp</scope>
+</snippet>
