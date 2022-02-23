@@ -289,7 +289,7 @@ def parse_lines(s, filename=None, namespaces=None):
 
     # remove comments and multi-line indicators ('...\n')
     s = comment_re.sub('', s)
-    
+
     lines = s.split('\n')
 
     # NOTE(Sam): Remove any occurances of the new comment type //
@@ -300,7 +300,7 @@ def parse_lines(s, filename=None, namespaces=None):
     s = '\n'.join(lines)
 
     s = line_continuation_re.sub('', s)
-    
+
     # substitute strings with place-holders
     s = string_re.sub(replace_func, s)
 
@@ -1558,13 +1558,16 @@ def open_nckp(lines, basedir):
                     raise ParseException(Line(line, [(None, index + 1)], None), 'If \'load_performance_view\' is used \'make_perfview\' is not necessary, please remove it!\n')
 
                 nckp_path = line[line.find('(')+1:line.find(')')][1:-1]
+
                 if nckp_path:
+                    # normalize the extracted path so that it works on Mac if it has backward slashes
+                    nckp_path = nckp_path.replace("\\", "/")
+
                     # check if the path is relative or not
                     if not os.path.isabs(nckp_path):
                         nckp_path = os.path.join(basedir, nckp_path)
 
                     if os.path.exists(nckp_path):
-
                         ui_to_import = list(parse_nckp(nckp_path))
 
                         if not ui_to_import:
@@ -1582,9 +1585,8 @@ def open_nckp(lines, basedir):
 
                     else:
                         raise ParseException(Line(line, [(None, index + 1)], None), '.nkcp file not found at: <' + os.path.abspath(nckp_path) + '> !\n')
-
             else:
-                raise ParseException(Line(line, [(None, index + 1)], None), 'import_nckp used but no load_performance_view found in the script!\n')                
+                raise ParseException(Line(line, [(None, index + 1)], None), 'import_nckp used but no load_performance_view found in the script!\n')
 
     return bool(ui_to_import)
 
@@ -2007,7 +2009,7 @@ if __name__ == "__main__":
     # make sure that extra syntax checks are enabled if --optimize argument is used
     if args.optimize == True and args.extra_syntax_checks == False:
         args.extra_syntax_checks = True
-        
+
     # read the source and compile it
     code = args.source_file.read()
     compiler = KSPCompiler(
