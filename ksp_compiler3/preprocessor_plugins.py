@@ -1021,7 +1021,20 @@ def handleStringArrayInitialisation(lines):
 					newLines.append(lines[i].copy(line[: line.find(":")]))
 					if len(stringList) != 1:
 						for ii in range(len(stringList)):
-							newLines.append(lines[i].copy("%s[%s] := %s" % (name, str(ii), stringList[ii])))
+							strVal = ""
+
+							# first check if we're dealing with a placeholder
+							check = re.match(r"(.*)(\{\d+\})(.*)", stringList[ii])
+
+							# recreate the string from placeholders array
+							# including any possible prefix/postfix non-placeholders
+							# (i.e. string defines concatenated with regular strings)
+							if check:
+								strVal = str(check.group(1)) + ksp_compiler.placeholders[int(check.group(2)[1:-1])] + str(check.group(3))
+
+							# if it's an empty string don't add it to new lines
+							if strVal != '\"\"':
+								newLines.append(lines[i].copy("%s[%s] := %s" % (name, str(ii), stringList[ii])))
 					else:
 						newLines.append(lines[i].copy("for string_it := 0 to %s - 1" % m.group("arraysize")))
 						newLines.append(lines[i].copy("%s[string_it] := %s" % (name, "".join(stringList))))
