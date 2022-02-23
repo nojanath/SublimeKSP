@@ -1168,7 +1168,7 @@ random(<min>, <max>):integer
 read_persistent_var(<variable>)
 real_to_int(<real-value>):integer
 redirect_midi(<unknown>)
-redirect_output(<event-id>, <output-number>, <type>)
+redirect_output(<event-id>, <type>, <output-number>)
 remove_keyrange(<key-number>)
 reset_engine()
 reset_ksp_timer()
