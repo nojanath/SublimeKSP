@@ -1750,7 +1750,7 @@ class KSPCompiler(object):
 
     def examine_pragmas(self, code, namespaces):
         # find info about output file
-        pragma_re = re.compile(r'\{ ?\#pragma\s+save_compiled_source\s+(.*)\}')
+        pragma_re = re.compile(r'\{\s*\#pragma\s+save_compiled_source\s+(.*)\}')
         m = pragma_re.search(code)
         if m:
             dir_check = m.group(1)
@@ -1766,7 +1766,7 @@ class KSPCompiler(object):
                 self.output_file = dir_check
 
         # find info about which variable names not to compact
-        pragma_re = re.compile(r'\{ ?\#pragma\s+preserve_names\s+(.*?)\s*\}')
+        pragma_re = re.compile(r'\{\s*\#pragma\s+preserve_names\s+(.*?)\s*\}')
         for m in pragma_re.finditer(code):
             names = re.sub(r'[$!%@?~]', '', m.group(1))  # remove any prefixes
             for variable_name_pattern in re.split(r'\s+,?\s*|\s*,\s+|,', names):
