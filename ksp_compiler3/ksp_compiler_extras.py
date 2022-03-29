@@ -509,7 +509,11 @@ class ASTVisitorCheckDeclarations(ASTVisitor):
                 if not node.initial_value:
                     raise ParseException(node.variable, 'A constant value has to be assigned to the constant')
                 try:
-                    initial_value = evaluate_expression(node.initial_value)
+                    test = evaluate_expression(node.initial_value)
+                    if test == None:
+                        raise ParseException(node.variable, 'A constant can have only one value assigned, it cannot be an array')
+                    else:
+                        initial_value = test
                 except ValueUndefinedException:
                     raise ParseException(node.initial_value, 'Expression uses non-constant values or undefined constant variables')
 
