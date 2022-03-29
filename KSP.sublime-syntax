@@ -8,7 +8,7 @@ scope: source.ksp
 contexts:
   main:
     - match: '\{'
-      comment: Curly bracked block comment
+      comment: Curly bracket block comment
       push:
         - meta_scope: comment.block.source.ksp
         - match: '\}'
