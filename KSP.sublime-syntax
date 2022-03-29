@@ -7,11 +7,23 @@ file_extensions:
 scope: source.ksp
 contexts:
   main:
-    - match: '\{|\(\*|/\*'
-      comment: Block comment
+    - match: '\{'
+      comment: Curly bracked block comment
       push:
         - meta_scope: comment.block.source.ksp
-        - match: '\}|\*\)|\*/'
+        - match: '\}'
+          pop: true
+    - match: '\(\*'
+      comment: Old Pascal-style block comment
+      push:
+        - meta_scope: comment.block.source.ksp
+        - match: '\*\)'
+          pop: true
+    - match: '/\*'
+      comment: C-style block comment
+      push:
+        - meta_scope: comment.block.source.ksp
+        - match: '\*/'
           pop: true
     - match: //
       comment: Comment
