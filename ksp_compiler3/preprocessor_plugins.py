@@ -1170,7 +1170,7 @@ class DefineConstant(object):
 				newCommand = re.sub(r"\b%s\b" % self.name, self.value, command)
 			else:
 				lineObj = line or self.line
-				
+
 				matchIt = re.finditer(r"\b%s\b" % self.name, command)
 				for match in matchIt:
 					# Parse the match
@@ -1178,7 +1178,7 @@ class DefineConstant(object):
 					parenthCount = 0
 					preBracketFlag = True # Flag to show when the first bracket is found.
 					foundString = []
-						
+
 					for char in command[matchPos:]:
 						if char == "(":
 							parenthCount += 1
@@ -1232,11 +1232,12 @@ def handleDefineConstants(lines):
 		newLines.append(lines[lineIdx])
 
 	if defineConstants:
-		# Replace all occurances where other defines are used in define values.
-		for i in range(len(defineConstants)):
+		# Replace all occurences where other defines are used in define values - do it a few times to catch some deeper nested defines.
+		for i in range(0, 3):
 			for j in range(len(defineConstants)):
-				defineConstants[i].setValue(defineConstants[j].substituteValue(defineConstants[i].getValue(), defineConstants))
-			defineConstants[i].evaluateValue()
+				for k in range(len(defineConstants)):
+					defineConstants[j].setValue(defineConstants[k].substituteValue(defineConstants[j].getValue(), defineConstants))
+				defineConstants[j].evaluateValue()
 
 		# For each line, replace any places the defines are used.
 		for lineIdx in range(len(newLines)):
