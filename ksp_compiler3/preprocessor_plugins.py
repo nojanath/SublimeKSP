@@ -1119,7 +1119,7 @@ def handleIterateMacro(lines):
 				iterateObj = IterateMacro(m.group("macro"), m.group("min"), m.group("max"), m.group("step"), m.group("direction"), lines[lineIdx])
 				newLines.extend(iterateObj.buildLines())
 			else:
-				newLines.append(lines[lineIdx])
+				raise ksp_compiler.ParseException(lines[lineIdx], "Syntax error in iterate_macro: Incomplete or missing parameters.\n")
 		else:
 			newLines.append(lines[lineIdx])
 	replaceLines(lines, newLines)
@@ -1397,6 +1397,8 @@ def handleLiterateMacro(lines):
 					for index, text in enumerate(targets):
 						newLines.append(lines[lineIdx].copy(name.replace("#l#", text).replace("#n#", str(index))))
 				continue
+			else:
+				raise ksp_compiler.ParseException(lines[lineIdx], "Syntax error in literate_macro: Incomplete or missing parameters.\n")
 		newLines.append(lines[lineIdx])
 	replaceLines(lines, newLines)
 	return scan
