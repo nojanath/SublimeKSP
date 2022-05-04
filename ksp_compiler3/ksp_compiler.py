@@ -1598,12 +1598,11 @@ def strip_import_nckp_function_from_source(lines):
             line_obj.command = re.sub(r'[^\r\n]', '', ls_line)
 
 class KSPCompiler(object):
-    def __init__(self, source, basedir, compact=True, compactVars=False, comments_on_expansion=True, read_file_func=default_read_file_func, extra_syntax_checks=False, optimize=False, check_empty_compound_statements=False, add_compiled_date_comment=False):
+    def __init__(self, source, basedir, compact=True, compactVars=False, read_file_func=default_read_file_func, extra_syntax_checks=False, optimize=False, check_empty_compound_statements=False, add_compiled_date_comment=False):
         self.source = source
         self.basedir = basedir
         self.compact = compact
         self.compactVars = compactVars
-        self.comments_on_expansion = comments_on_expansion
         self.read_file_func = read_file_func
         self.optimize = optimize
         self.check_empty_compound_statements = check_empty_compound_statements
@@ -2017,7 +2016,6 @@ if __name__ == "__main__":
         basedir,
         compact=args.compact,
         compactVars=args.compact_variables,
-        comments_on_expansion=False,
         read_file_func=read_file_func,
         extra_syntax_checks=args.extra_syntax_checks,
         optimize=args.optimize,
