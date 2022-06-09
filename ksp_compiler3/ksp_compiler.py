@@ -1753,7 +1753,7 @@ class KSPCompiler(object):
         pragma_re = re.compile(r'\{\s*\#pragma\s+save_compiled_source\s+(.*)\}')
         m = pragma_re.search(code)
         if m:
-            dir_check = m.group(1)
+            dir_check = m.group(1).strip()
             if not os.path.isabs(dir_check):
                 if self.basedir == None:
                     raise Exception('Please save the file being compiled before attempting to compile to a relative path.')
