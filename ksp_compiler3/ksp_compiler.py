@@ -1188,7 +1188,7 @@ class ASTModifierFunctionExpander(ASTModifierBase):
         if node.using_call_keyword:
             # verify that there are no parameters (unless it's a taskfunc function call)
             if not func.is_taskfunc and node.parameters:
-                raise ksp_ast.ParseException(node, "Parameters for function invokations using 'call' not supported by Kontakt")
+                raise ksp_ast.ParseException(node, "Parameters for function invocations using 'call' not supported by Kontakt")
             # verify that 'call' is not used within some expression (eg. as in the incorrect "x := call myfunc")
             if not node.is_procedure and not func.is_taskfunc:
                 raise ksp_ast.ParseException(node, 'Using "call" inside an expression is not allowed for non-taskfunc functions. "call" needs to be the first word of the line.')
@@ -1236,7 +1236,7 @@ class ASTModifierFunctionExpander(ASTModifierBase):
         return (prologue, epilogue)
 
     def modifyFunctionCall(self, node, parent_toplevel=None, function_stack=None, assign_stmt_lhs=None):
-        ''' For invokations of user-defined functions check that the function is defined and that the number of parameters match.
+        ''' For invocations of user-defined functions check that the function is defined and that the number of parameters match.
             Unless "call" is used inline the function '''
 
         function_name = node.function_name.identifier  # shorter name alias

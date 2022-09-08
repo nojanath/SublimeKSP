@@ -206,7 +206,7 @@ def assert_type(node, type):
         raise Exception()
     node_type = node.type
     if node_type != type and not (node_type in ('integer', 'real') and type == 'numeric'):
-        raise ParseException(node, 'Expected expression of %s type, got %s.' % (type, node_type))
+        raise ParseException(node, 'Expected expression of %s type, got %s type instead.' % (type, node_type))
 
 def highest_precision(type1, type2):
     if type1 == 'real' or type2 == 'real':
@@ -239,14 +239,17 @@ class ASTVisitorDetermineExpressionTypes(ASTVisitor):
                         # special case: the abs function returns an integer or real
                         # depending on what param type it's given
                         node.type = passed_param.type
-                    elif 'array-or-string-array-variable' in param_descriptor:
+                    elif 'any-array-variable' in param_descriptor:
                         pass
+                    elif 'array-or-string-array-variable' in param_descriptor:
+                        if not passed_param.type in ('array-variable', 'string-array'):
+                            assert_type(passed_param, 'integer or string array')
                     elif 'string-array' in param_descriptor:
-                        assert_type(passed_param, 'array of string')
+                        assert_type(passed_param, 'string array')
                     elif 'array-variable' in param_descriptor:
-                        assert_type(passed_param, 'array of integer')
+                        assert_type(passed_param, 'integer array')
                     elif 'real-variable' in param_descriptor:
-                        assert_type(passed_param, 'array of real')
+                        assert_type(passed_param, 'real array')
                     elif 'key-id' in param_descriptor:
                         if not isinstance(passed_param, VarRef):
                             raise ParseException(node, 'Expected key-id.')
@@ -310,15 +313,15 @@ class ASTVisitorDetermineExpressionTypes(ASTVisitor):
         expr.type = 'string'
 
     def visitRawArrayInitializer(self, parent, expr, *args):
-        expr.type = 'array of integer'
+        expr.type = 'integer array'
 
     def visitID(self, parent, expr, *args):
         if expr.prefix:
             expr.type = {'$': 'integer',
-                         '%': 'array of integer',
+                         '%': 'integer array',
                          '@': 'string',
-                         '!': 'array of string',
-                         '?': 'array of real',
+                         '!': 'string array',
+                         '?': 'real array',
                          '~': 'real'}[expr.prefix]
         else:
             expr.type = 'integer' # function return value
@@ -329,8 +332,8 @@ class ASTVisitorDetermineExpressionTypes(ASTVisitor):
             assert_type(expr.subscripts[0], 'integer')
             if not expr.identifier.type.startswith('array'):
                 raise ParseException(expr.identifier, 'Expected array')
-            # an added subscript turns eg. an array of integer into just an integer
-            expr.type = expr.identifier.type.replace('array of ', '')
+            # an added subscript turns eg. an integer array into just an integer
+            expr.type = expr.identifier.type.replace(' array', '')
         else:
             expr.type = expr.identifier.type
         return False
