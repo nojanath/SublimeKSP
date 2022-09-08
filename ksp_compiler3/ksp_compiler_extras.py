@@ -242,7 +242,7 @@ class ASTVisitorDetermineExpressionTypes(ASTVisitor):
                     elif 'any-array-variable' in param_descriptor:
                         pass
                     elif 'array-or-string-array-variable' in param_descriptor:
-                        if not passed_param.type in ('array-variable', 'string-array'):
+                        if not passed_param.type in ('integer array', 'string array'):
                             assert_type(passed_param, 'integer or string array')
                     elif 'string-array' in param_descriptor:
                         assert_type(passed_param, 'string array')
@@ -252,7 +252,7 @@ class ASTVisitorDetermineExpressionTypes(ASTVisitor):
                         assert_type(passed_param, 'real array')
                     elif 'key-id' in param_descriptor:
                         if not isinstance(passed_param, VarRef):
-                            raise ParseException(node, 'Expected key-id.')
+                            raise ParseException(node, 'Expected key id.')
                         passed_param.type = 'key-id'
                     elif 'real-value' in param_descriptor:
                         assert_type(passed_param, 'real')
@@ -330,7 +330,7 @@ class ASTVisitorDetermineExpressionTypes(ASTVisitor):
         self.visit_children(parent, expr, *args)
         if expr.subscripts:
             assert_type(expr.subscripts[0], 'integer')
-            if not expr.identifier.type.startswith('array'):
+            if not expr.identifier.type.endswith(' array'):
                 raise ParseException(expr.identifier, 'Expected array')
             # an added subscript turns eg. an integer array into just an integer
             expr.type = expr.identifier.type.replace(' array', '')
