@@ -52,18 +52,27 @@ concatSyntax = "concat" # The name of the function to concat arrays.
 stringEvaluator = SimpleEval() # Object used to evaluate strings as maths expressions.
 
 #=================================================================================================
+def substituteDefines(lines, define_cache = None):
+	cache = handleDefineConstants(lines, define_cache)
+	handleDefineLiterals(lines) # Define literals are only avilable for backwards compatibility as regular defines now serve this purpose.
+
+	return cache
+
 def pre_macro_functions(lines):
-	""" This function is called before the macros have been expanded. lines is a collections.deque
+	""" This function is called before the macros have been expanded. Returns the resulting define objects as a cache to be re-used. lines is a collections.deque
 	of Line objects - see ksp_compiler.py."""
 	createBuiltinDefines(lines)
 	removeActivateLoggerPrint(lines)
-	handleDefineConstants(lines)
-	# Define literals are only avilable for backwards compatibility as regular defines now serve this purpose.
-	handleDefineLiterals(lines)
+	
+	return substituteDefines(lines)
 
 def macro_iter_functions(lines):
 	""" Will process macro iteration and return true if any were found """
 	return (handleIterateMacro(lines) or handleLiterateMacro(lines))
+
+def post_macro_iter_functions(lines):
+	""" Will process macro iteration and return true if any were found """
+	return (handleIteratePostMacro(lines)) or (handleLiteratePostMacro(lines))
 
 def post_macro_functions(lines):
 	""" This function is called after the regular macros have been expanded. lines is a
@@ -1127,6 +1136,26 @@ def handleIterateMacro(lines):
 	return scan
 
 #=================================================================================================
+def handleIteratePostMacro(lines):
+	scan = False
+	newLines = collections.deque()
+	for lineIdx in range(len(lines)):
+		line = lines[lineIdx].command.strip()
+		if line.startswith("iterate_post_macro"):
+			scan = True
+			m = re.search(r"^iterate_post_macro\s*\((?P<macro>.+)\)\s*:=\s*(?P<min>.+)\b(?P<direction>to|downto)(?P<max>(?:.(?!\bstep\b))+)(?:\s+step\s+(?P<step>.+))?$", line)
+			if m:
+				iterateObj = IterateMacro(m.group("macro"), m.group("min"), m.group("max"), m.group("step"), m.group("direction"), lines[lineIdx])
+				newLines.extend(iterateObj.buildLines())
+			else:
+				newLines.append(lines[lineIdx])
+		else:
+			newLines.append(lines[lineIdx])
+	replaceLines(lines, newLines)
+
+	return scan
+
+#=================================================================================================
 class DefineConstant(object):
 	def __init__(self, name, value, argString, line):
 		self.name = name
@@ -1215,9 +1244,14 @@ class DefineConstant(object):
 					newCommand = newCommand.replace(foundString, newVal)
 		return(newCommand)
 
-def handleDefineConstants(lines):
+def handleDefineConstants(lines, define_cache = None):
 	defineRe = r"^define\s+%s\s*(?:\((?P<args>.+)\))?\s*:=(?P<val>.+)$" % variableNameRe
-	defineConstants = collections.deque()
+
+	if define_cache is not None:
+		defineConstants = define_cache			
+	else:
+		defineConstants = collections.deque()
+
 	newLines = collections.deque()
 
 	# Scan through all the lines to find define declarations.
@@ -1239,12 +1273,19 @@ def handleDefineConstants(lines):
 					defineConstants[j].setValue(defineConstants[k].substituteValue(defineConstants[j].getValue(), defineConstants))
 				defineConstants[j].evaluateValue()
 
+		for i in range(len(defineConstants)):
+			for j in range(len(defineConstants)):
+				defineConstants[i].setValue(defineConstants[j].substituteValue(defineConstants[i].getValue(), defineConstants))
+			defineConstants[i].evaluateValue()
+
 		# For each line, replace any places the defines are used.
 		for lineIdx in range(len(newLines)):
 			line = newLines[lineIdx].command
 			for defineConst in defineConstants:
 				newLines[lineIdx].command = defineConst.substituteValue(newLines[lineIdx].command, defineConstants, newLines[lineIdx])
 	replaceLines(lines, newLines)
+
+	return defineConstants
 
 def createBuiltinDefines(lines):
 	# Create date-time variables
@@ -1399,6 +1440,30 @@ def handleLiterateMacro(lines):
 				continue
 			else:
 				raise ksp_compiler.ParseException(lines[lineIdx], "Syntax error in literate_macro: Incomplete or missing parameters.\n")
+		newLines.append(lines[lineIdx])
+	replaceLines(lines, newLines)
+	return scan
+
+#=================================================================================================
+def handleLiteratePostMacro(lines):
+	scan = False
+	newLines = collections.deque()
+	for lineIdx in range(len(lines)):
+		line = lines[lineIdx].command.strip()
+		if line.startswith("literate_post_macro"):
+			scan = True
+			m = re.search(r"^literate_post_macro\s*\((?P<macro>.+)\)\s+on\s+(?P<target>.+)$", line)
+			if m:
+				name = m.group("macro")
+				targets = ksp_compiler.split_args(m.group("target"), lines[lineIdx])
+				print(targets)
+				if not "#l#" in name:
+					for text in targets:
+						newLines.append(lines[lineIdx].copy("%s(%s)" % (name, text)))
+				else:
+					for index, text in enumerate(targets):
+						newLines.append(lines[lineIdx].copy(name.replace("#l#", text).replace("#n#", str(index))))
+				continue
 		newLines.append(lines[lineIdx])
 	replaceLines(lines, newLines)
 	return scan

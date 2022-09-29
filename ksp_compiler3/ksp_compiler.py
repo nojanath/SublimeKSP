@@ -30,7 +30,7 @@ import ply.lex as lex
 # NOTE(Sam): include preprocessor and logger
 from logger import logger_code
 import time
-from preprocessor_plugins import pre_macro_functions, macro_iter_functions, post_macro_functions
+from preprocessor_plugins import pre_macro_functions, macro_iter_functions, substituteDefines, post_macro_iter_functions, post_macro_functions
 import json
 import copy
 
@@ -1613,6 +1613,7 @@ class KSPCompiler(object):
         self.lines = []
         self.macros = []
         self.module = None
+        self.define_cache = None
 
         self.original2short = {}
         self.short2original = {}
@@ -1732,6 +1733,9 @@ class KSPCompiler(object):
     def convert_lines_to_code(self):
         self.code = merge_lines(self.lines)
 
+    def pre_macro_functions(self):
+        self.define_cache = pre_macro_functions(self.lines)
+
     # Isolate macros into objects, removing from code
     def extract_macros(self):
         self.lines, self.macros = extract_macros(self.lines)
@@ -1742,10 +1746,18 @@ class KSPCompiler(object):
         normal_lines, callback_lines = expand_macros(self.lines, self.macros)
         self.lines = normal_lines + callback_lines
 
-        # Nested Expansion
+        # Nested Expansion, supports now using macros to further specify define constants used for iterate and literate macros
         while macro_iter_functions(self.lines):
             normal_lines, callback_lines = expand_macros(self.lines, self.macros)
             self.lines = normal_lines + callback_lines
+
+        # Run define subs a 2nd time, catch returned cache just as a formality
+        self.define_cache = substituteDefines(self.lines, self.define_cache)
+
+        while post_macro_iter_functions(self.lines):
+            normal_lines, callback_lines = expand_macros(self.lines, self.macros)
+            self.lines = normal_lines + callback_lines
+
 
     def examine_pragmas(self, code, namespaces):
         # find info about output file
@@ -1876,7 +1888,7 @@ class KSPCompiler(object):
                  ('scanning and importing code', lambda: self.do_imports_and_convert_to_line_objects(),                       True,      1),
                  ('extensions (w/ macros)',      lambda: self.extensions_with_macros(),                                       True,      1),
                  # NOTE(Sam): Call the pre-macro section of the preprocessor
-                 ('pre-macro processes',         lambda: pre_macro_functions(self.lines),                                     True,      1),
+                 ('pre-macro processes',         lambda: self.pre_macro_functions(),                                     True,      1),
                  ('parsing macros',              lambda: self.extract_macros(),                                               True,      1),
                  ('expanding macros',            lambda: self.expand_macros(),                                                True,      1),
                  # NOTE(Sam): Call the post-macro section of the preprocessor
