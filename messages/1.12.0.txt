@@ -1,0 +1,33 @@
+Version 1.12.0
+---------------------------------------------------
+
+This release brings us the following:
+
+-New commands introduced in Kontakt 7.0.11!
+
+-Two new SublimeKSP commands: iterate_post_macro() and literate_post_macro(), which are variants of iterate/literate_macro() that are
+executed after macro expansion, which means one could use #macro_arguments# as define constants in these new commands.
+For example: literate_post_macro(declare #l#) on #obj#.CONTROLS is now possible!
+
+-Fix for watch_array_idx() not accepting string or real arrays as an argument (when "Extra Syntax Checks" was enabled)
+
+-Consequently, prior to this version it was possible to pass a real array to load/save_array() commands, which doesn't work in Kontakt.
+This is now remedied, so these commands will only ever accept integer and string arrays
+
+-Last but not the least: there was a superfluous trailing space in the compiled output for all UI widget declaration lines,
+which will not happen anymore
+
+
+---------------------------------------------------
+
+If you would like to roll back a version of SublimeKSP for time critical work prevented by a new bug:
+
+First, remove SublimeKSP from Sublime Package Control:
+1. Use the shortcut `Ctrl + Shift + P` on Windows/Linux or `Cmd + Shift + P` on Mac.
+2. Type "Remove Package" and select it, then select the "KSP (Kontakt Script Processor)" entry.
+
+Next, download the version you'd like here: https://github.com/nojanath/SublimeKSP/releases
+With your SublimeKSP package downloaded, you can install it as a user package in Sublime following these instructions:
+1. Open the Preferences menu in Sublime and click Browse Packages. A folder will open up.
+2. Extract the `SublimeKSP` folder out of the zip file and place it into this folder.
+3. Restart Sublime completely. Make sure it is not running in your OS task manager (or, restart the computer to be thorough!)
