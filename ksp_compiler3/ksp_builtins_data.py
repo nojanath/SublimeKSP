@@ -1292,7 +1292,7 @@ unload_slot(<instrument-slot-idx>)
 wait(<wait-time>)
 wait_async(<event-id>):integer
 watch_var(<variable>)
-watch_array_idx(<array-variable>, <index>)
+watch_array_idx(<any-array-variable>, <index>)
 wait_ticks(<wait-time>)
 will_never_terminate(<event-id>)
 zone_slice_idx_loop_end(<zone-id>, <loop-idx>):integer
