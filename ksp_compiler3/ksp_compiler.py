@@ -1188,7 +1188,7 @@ class ASTModifierFunctionExpander(ASTModifierBase):
         if node.using_call_keyword:
             # verify that there are no parameters (unless it's a taskfunc function call)
             if not func.is_taskfunc and node.parameters:
-                raise ksp_ast.ParseException(node, "Parameters for function invokations using 'call' not supported by Kontakt")
+                raise ksp_ast.ParseException(node, "Parameters for function invocations using 'call' not supported by Kontakt")
             # verify that 'call' is not used within some expression (eg. as in the incorrect "x := call myfunc")
             if not node.is_procedure and not func.is_taskfunc:
                 raise ksp_ast.ParseException(node, 'Using "call" inside an expression is not allowed for non-taskfunc functions. "call" needs to be the first word of the line.')
@@ -1236,7 +1236,7 @@ class ASTModifierFunctionExpander(ASTModifierBase):
         return (prologue, epilogue)
 
     def modifyFunctionCall(self, node, parent_toplevel=None, function_stack=None, assign_stmt_lhs=None):
-        ''' For invokations of user-defined functions check that the function is defined and that the number of parameters match.
+        ''' For invocations of user-defined functions check that the function is defined and that the number of parameters match.
             Unless "call" is used inline the function '''
 
         function_name = node.function_name.identifier  # shorter name alias
@@ -1598,12 +1598,11 @@ def strip_import_nckp_function_from_source(lines):
             line_obj.command = re.sub(r'[^\r\n]', '', ls_line)
 
 class KSPCompiler(object):
-    def __init__(self, source, basedir, compact=True, compactVars=False, comments_on_expansion=True, read_file_func=default_read_file_func, extra_syntax_checks=False, optimize=False, check_empty_compound_statements=False, add_compiled_date_comment=False):
+    def __init__(self, source, basedir, compact=True, compactVars=False, read_file_func=default_read_file_func, extra_syntax_checks=False, optimize=False, check_empty_compound_statements=False, add_compiled_date_comment=False):
         self.source = source
         self.basedir = basedir
         self.compact = compact
         self.compactVars = compactVars
-        self.comments_on_expansion = comments_on_expansion
         self.read_file_func = read_file_func
         self.optimize = optimize
         self.check_empty_compound_statements = check_empty_compound_statements
@@ -1762,10 +1761,10 @@ class KSPCompiler(object):
 
     def examine_pragmas(self, code, namespaces):
         # find info about output file
-        pragma_re = re.compile(r'\{ ?\#pragma\s+save_compiled_source\s+(.*)\}')
+        pragma_re = re.compile(r'\{\s*\#pragma\s+save_compiled_source\s+(.*)\}')
         m = pragma_re.search(code)
         if m:
-            dir_check = m.group(1)
+            dir_check = m.group(1).strip()
             if not os.path.isabs(dir_check):
                 if self.basedir == None:
                     raise Exception('Please save the file being compiled before attempting to compile to a relative path.')
@@ -1778,7 +1777,7 @@ class KSPCompiler(object):
                 self.output_file = dir_check
 
         # find info about which variable names not to compact
-        pragma_re = re.compile(r'\{ ?\#pragma\s+preserve_names\s+(.*?)\s*\}')
+        pragma_re = re.compile(r'\{\s*\#pragma\s+preserve_names\s+(.*?)\s*\}')
         for m in pragma_re.finditer(code):
             names = re.sub(r'[$!%@?~]', '', m.group(1))  # remove any prefixes
             for variable_name_pattern in re.split(r'\s+,?\s*|\s*,\s+|,', names):
@@ -2029,7 +2028,6 @@ if __name__ == "__main__":
         basedir,
         compact=args.compact,
         compactVars=args.compact_variables,
-        comments_on_expansion=False,
         read_file_func=read_file_func,
         extra_syntax_checks=args.extra_syntax_checks,
         optimize=args.optimize,

@@ -161,7 +161,6 @@ class CompileKspThread(threading.Thread):
         compactVars = settings.get('ksp_compact_variables', False)
         check = settings.get('ksp_extra_checks', True)
         optimize = settings.get('ksp_optimize_code', False)
-        comments_on_expansion = settings.get('ksp_comment_inline_functions', False)
         check_empty_compound_statements = settings.get('ksp_signal_empty_ifcase', True)
         add_compiled_date_comment = settings.get('ksp_add_compiled_date', True)
         should_play_sound = settings.get('ksp_play_sound', False)
@@ -175,7 +174,7 @@ class CompileKspThread(threading.Thread):
         try:
             sublime.status_message('Compiling...')
 
-            self.compiler = ksp_compiler.KSPCompiler(code, self.base_path, compact, compactVars, comments_on_expansion,
+            self.compiler = ksp_compiler.KSPCompiler(code, self.base_path, compact, compactVars,
                                                      read_file_func=self.read_file_function,
                                                      extra_syntax_checks=check,
                                                      optimize=optimize and check,

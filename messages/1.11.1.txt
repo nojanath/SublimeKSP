@@ -1,0 +1,25 @@
+Version 1.11.1
+---------------------------------------------------
+
+Updates from EvilDragon!
+
+-Real numbers: allow negative exponents in scientific notation, allow decimal numbers without integer part, f.i. .025 (issue #194)
+-Raise an exception if a constant is declared as an array - requires Extra syntax checks enabled (issue #86)
+-Fixed syntax coloring for multiple nested block comments (issue #197)
+-Allow more than one whitespace before pragma keyword (issue #198)
+-Raise a syntax error if iterate/literate_macro declarations are missing parameters or incomplete (issue #200)
+-Increase the number of passes for resolving nested define statements (thanks to Nabeel Ansari for info and fix for this one!)
+
+---------------------------------------------------
+
+If you would like to roll back a version of SublimeKSP for time critical work prevented by a new bug:
+
+First, remove SublimeKSP from Sublime Package Control:
+1. Use the shortcut `Ctrl + Shift + P` on Windows/Linux or `Cmd + Shift + P` on Mac.
+2. Type "Remove Package" and select it, then select the "KSP (Kontakt Script Processor)" entry.
+
+Next, download the version you'd like here: https://github.com/nojanath/SublimeKSP/releases
+With your SublimeKSP package downloaded, you can install it as a user package in Sublime following these instructions:
+1. Open the Preferences menu in Sublime and click Browse Packages. A folder will open up.
+2. Extract the `SublimeKSP` folder out of the zip file and place it into this folder.
+3. Restart Sublime completely. Make sure it is not running in your OS task manager (or, restart the computer to be thorough!)

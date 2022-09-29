@@ -1128,7 +1128,7 @@ def handleIterateMacro(lines):
 				iterateObj = IterateMacro(m.group("macro"), m.group("min"), m.group("max"), m.group("step"), m.group("direction"), lines[lineIdx])
 				newLines.extend(iterateObj.buildLines())
 			else:
-				newLines.append(lines[lineIdx])
+				raise ksp_compiler.ParseException(lines[lineIdx], "Syntax error in iterate_macro: Incomplete or missing parameters.\n")
 		else:
 			newLines.append(lines[lineIdx])
 	replaceLines(lines, newLines)
@@ -1199,7 +1199,7 @@ class DefineConstant(object):
 				newCommand = re.sub(r"\b%s\b" % self.name, self.value, command)
 			else:
 				lineObj = line or self.line
-				
+
 				matchIt = re.finditer(r"\b%s\b" % self.name, command)
 				for match in matchIt:
 					# Parse the match
@@ -1207,7 +1207,7 @@ class DefineConstant(object):
 					parenthCount = 0
 					preBracketFlag = True # Flag to show when the first bracket is found.
 					foundString = []
-						
+
 					for char in command[matchPos:]:
 						if char == "(":
 							parenthCount += 1
@@ -1266,11 +1266,12 @@ def handleDefineConstants(lines, define_cache = None):
 		newLines.append(lines[lineIdx])
 
 	if defineConstants:
-		# Replace all occurances where other defines are used in define values.
-		for i in range(len(defineConstants)):
+		# Replace all occurences where other defines are used in define values - do it a few times to catch some deeper nested defines.
+		for i in range(0, 3):
 			for j in range(len(defineConstants)):
-				defineConstants[i].setValue(defineConstants[j].substituteValue(defineConstants[i].getValue(), defineConstants))
-			defineConstants[i].evaluateValue()
+				for k in range(len(defineConstants)):
+					defineConstants[j].setValue(defineConstants[k].substituteValue(defineConstants[j].getValue(), defineConstants))
+				defineConstants[j].evaluateValue()
 
 		for i in range(len(defineConstants)):
 			for j in range(len(defineConstants)):
@@ -1437,6 +1438,8 @@ def handleLiterateMacro(lines):
 					for index, text in enumerate(targets):
 						newLines.append(lines[lineIdx].copy(name.replace("#l#", text).replace("#n#", str(index))))
 				continue
+			else:
+				raise ksp_compiler.ParseException(lines[lineIdx], "Syntax error in literate_macro: Incomplete or missing parameters.\n")
 		newLines.append(lines[lineIdx])
 	replaceLines(lines, newLines)
 	return scan

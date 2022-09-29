@@ -311,7 +311,7 @@ class DeclareStmt(Stmt):
         if self.size:
             out.write('[%s]' % self.size)
         if self.parameters:
-            out.write('(%s) ' % ', '.join((str(p) for p in self.parameters)))
+            out.write('(%s)' % ','.join((str(p) for p in self.parameters)))
         if self.initial_value:
             out.write(' := ')
 
