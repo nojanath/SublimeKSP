@@ -1216,7 +1216,7 @@ move_control_px(<variable>, <x-position>, <y-position>)
 ms_to_ticks(<microseconds>):integer
 msb(<variable>):integer
 note_off(<event-id>)
-num_elements(<array-or-string-array-variable>):integer
+num_elements(<any-array-variable>):integer
 num_slices(<group-idx>):integer
 num_slices_zone(<zone-id>):integer
 output_channel_name(<output-number>):integer
