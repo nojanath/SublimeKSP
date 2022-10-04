@@ -1276,8 +1276,7 @@ def handleDefineConstants(lines, define_cache = None):
 					for dc_j in defineConstants:
 						dc_i.setValue(dc_j.substituteValue(dc_i.getValue(), defineConstants))
 					dc_i.evaluateValue()
-		
-		# For each line, replace any places the defines are used.
+	
 		for l in newLines:
 			for dc in defineConstants:
 				l.command = dc.substituteValue(l.command, defineConstants, l)
@@ -1455,7 +1454,6 @@ def handleLiteratePostMacro(lines):
 			if m:
 				name = m.group("macro")
 				targets = ksp_compiler.split_args(m.group("target"), lines[lineIdx])
-				print(targets)
 				if not "#l#" in name:
 					for text in targets:
 						newLines.append(lines[lineIdx].copy("%s(%s)" % (name, text)))

@@ -247,12 +247,13 @@ class Macro:
             lines = self.lines[:]
         return Macro([l.copy(add_location=add_location) for l in lines])
 
-    def substitute_names(self, name_subst_dict):
+    def substitute_names(self, replace_string_placeholders, name_subst_dict):
         """ returns a copy of the block with the specified name substitutions made """
         new_macro = self.copy(lines=[line.substitute_names(name_subst_dict) for line in self.lines])
 
-        for line in new_macro.lines:
-            line.replace_placeholders()
+        if replace_string_placeholders:
+            for line in new_macro.lines:
+                line.replace_placeholders()
 
         # handle raw replacements (arguments like #var# should be substituted irrespectively of context)
         for name1, name2 in list(name_subst_dict.items()):
@@ -458,7 +459,7 @@ def extract_callback_lines(lines):
     return (normal_lines, callback_lines)
 
 
-def expand_macros(lines, macros, level=0):
+def expand_macros(lines, macros, level=0, replace_raw=True):
     ''' inline macro invocations by the body of the macro definition (with parameters properly replaced)
         returns tuple (normal_lines, callback_lines) where the latter are callbacks'''
     macro_call_re = re.compile(r'^\s*([\w_.]+)\s*(\(.*\))?%s$' % white_space)
@@ -468,6 +469,7 @@ def expand_macros(lines, macros, level=0):
         name = m.get_name_prefixed_by_namespace()
         if not (name == 'tcm.init' and name in name2macro):
             name2macro[name] = m
+            
     #name2macro = dict([(m.get_name_prefixed_by_namespace(), m) for m in macros])
     orig_lines = lines
     lines = collections.deque(orig_lines)
@@ -502,7 +504,7 @@ def expand_macros(lines, macros, level=0):
                 name_subst_dict = dict(list(zip(macro.parameters, args)))
 
                 macro = macro.copy(add_location=line.locations[0])
-                macro = macro.substitute_names(name_subst_dict)
+                macro = macro.substitute_names(replace_raw, name_subst_dict)
 
                 # add macro body
                 if args:
@@ -516,7 +518,7 @@ def expand_macros(lines, macros, level=0):
 
                 num_substitutions += 1
     if num_substitutions:
-        return expand_macros(new_lines + new_callback_lines, macros, level+1)
+        return expand_macros(new_lines + new_callback_lines, macros, level+1, replace_raw)
     else:
         return (new_lines, new_callback_lines)
 
@@ -1743,19 +1745,19 @@ class KSPCompiler(object):
     # Run stored macros on the code
     def expand_macros(self):
         # Initial Expansion
-        normal_lines, callback_lines = expand_macros(self.lines, self.macros)
+        normal_lines, callback_lines = expand_macros(self.lines, self.macros, 0, False)
         self.lines = normal_lines + callback_lines
 
         # Nested Expansion, supports now using macros to further specify define constants used for iterate and literate macros
         while macro_iter_functions(self.lines):
-            normal_lines, callback_lines = expand_macros(self.lines, self.macros)
+            normal_lines, callback_lines = expand_macros(self.lines, self.macros, 0, False)
             self.lines = normal_lines + callback_lines
 
         # Run define subs a 2nd time, catch returned cache just as a formality
         self.define_cache = substituteDefines(self.lines, self.define_cache)
 
         while post_macro_iter_functions(self.lines):
-            normal_lines, callback_lines = expand_macros(self.lines, self.macros)
+            normal_lines, callback_lines = expand_macros(self.lines, self.macros, 0, True)
             self.lines = normal_lines + callback_lines
 
 
