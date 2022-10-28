@@ -126,6 +126,12 @@ function tcm.wait_ticks(ticks)
 	call _twait_ticks()
 end function
 
+// provides a thread-safe pause for current asynchronous task
+function tcm.wait_async(time)
+	p[sp - 1] := time
+	call _twait_async()
+end function
+
 
 { support functions }
 
@@ -208,6 +214,36 @@ function _twait_ticks()
 
 		// It's now OK to allow another callback or resume of a callback
 		wait_ticks(p[sp - 1])
+
+		// wait has timed out, awaken original task
+		tstate.id[tx] := 0						// active task can now be released to the pool
+		tx := search(tstate.id, NI_CALLBACK_ID)	// find pre-wait task id
+		tstate.id[tx] := -1						// reactivate pre-wait task
+		fp := tstate.fp[tx]						// restore pre-wait pointers
+		sp := tstate.sp[tx]
+	end if
+end function
+
+// inner KN function called by twait_async
+function _twait_async()
+	p[sp - 2] := search(tstate.id, 0)	// find next available task id
+
+	if p[sp - 2] = -1	// no more left
+		set_exception(TOO_MANY_TASKS)
+	else	// save current task's state
+		tstate.id[tx] := NI_CALLBACK_ID
+		tstate.fp[tx] := fp
+		tstate.sp[tx] := sp
+		tx := p[sp - 2]	// new task's id
+
+		// now, initialize new active task state
+		tstate.id[tx] := -1					// this is now the active task
+		fp := tstate.fs[tx] + STACK_SIZE	// empty stack for new task
+		p[fp - 1] := p[sp - 1]				// copy wait time to new task frame
+		sp := fp							// user stack intially empty
+
+		// It's now OK to allow another callback or resume of a callback
+		wait_async(p[sp - 1])
 
 		// wait has timed out, awaken original task
 		tstate.id[tx] := 0						// active task can now be released to the pool
