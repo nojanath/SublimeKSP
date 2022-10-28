@@ -1119,18 +1119,18 @@ class IterateMacro(object):
 def handleIterateMacro(lines):
 	scan = False
 	newLines = collections.deque()
-	for lineIdx in range(len(lines)):
-		line = lines[lineIdx].command.strip()
-		if line.startswith("iterate_macro"):
+	for l in lines:
+		command = l.command.strip()
+		if command.startswith("iterate_macro"):
 			scan = True
-			m = re.search(r"^iterate_macro\s*\((?P<macro>.+)\)\s*:=\s*(?P<min>.+)\b(?P<direction>to|downto)(?P<max>(?:.(?!\bstep\b))+)(?:\s+step\s+(?P<step>.+))?$", line)
+			m = re.search(r"^iterate_macro\s*\((?P<macro>.+)\)\s*:=\s*(?P<min>.+)\b(?P<direction>to|downto)(?P<max>(?:.(?!\bstep\b))+)(?:\s+step\s+(?P<step>.+))?$", command)
 			if m:
-				iterateObj = IterateMacro(m.group("macro"), m.group("min"), m.group("max"), m.group("step"), m.group("direction"), lines[lineIdx])
+				iterateObj = IterateMacro(m.group("macro"), m.group("min"), m.group("max"), m.group("step"), m.group("direction"), l)
 				newLines.extend(iterateObj.buildLines())
 			else:
-				raise ksp_compiler.ParseException(lines[lineIdx], "Syntax error in iterate_macro: Incomplete or missing parameters.\n")
+				raise ksp_compiler.ParseException(l, "Syntax error in iterate_macro: Incomplete or missing parameters.\n")
 		else:
-			newLines.append(lines[lineIdx])
+			newLines.append(l)
 	replaceLines(lines, newLines)
 
 	return scan
@@ -1139,18 +1139,18 @@ def handleIterateMacro(lines):
 def handleIteratePostMacro(lines):
 	scan = False
 	newLines = collections.deque()
-	for lineIdx in range(len(lines)):
-		line = lines[lineIdx].command.strip()
-		if line.startswith("iterate_post_macro"):
+	for l in lines:
+		command = l.command.strip()
+		if command.startswith("iterate_post_macro"):
 			scan = True
-			m = re.search(r"^iterate_post_macro\s*\((?P<macro>.+)\)\s*:=\s*(?P<min>.+)\b(?P<direction>to|downto)(?P<max>(?:.(?!\bstep\b))+)(?:\s+step\s+(?P<step>.+))?$", line)
+			m = re.search(r"^iterate_post_macro\s*\((?P<macro>.+)\)\s*:=\s*(?P<min>.+)\b(?P<direction>to|downto)(?P<max>(?:.(?!\bstep\b))+)(?:\s+step\s+(?P<step>.+))?$", command)
 			if m:
-				iterateObj = IterateMacro(m.group("macro"), m.group("min"), m.group("max"), m.group("step"), m.group("direction"), lines[lineIdx])
+				iterateObj = IterateMacro(m.group("macro"), m.group("min"), m.group("max"), m.group("step"), m.group("direction"), l)
 				newLines.extend(iterateObj.buildLines())
 			else:
-				newLines.append(lines[lineIdx])
+				newLines.append(l)
 		else:
-			newLines.append(lines[lineIdx])
+			newLines.append(l)
 	replaceLines(lines, newLines)
 
 	return scan
@@ -1214,7 +1214,9 @@ class DefineConstant(object):
 							preBracketFlag = False
 						elif char == ")":
 							parenthCount -= 1
+							
 						foundString.append(char)
+
 						if parenthCount == 0 and preBracketFlag == False:
 							break
 					foundString = "".join(foundString)
@@ -1223,6 +1225,7 @@ class DefineConstant(object):
 					openBracketPos = foundString.find("(")
 					if openBracketPos == -1:
 						raise ksp_compiler.ParseException(lineObj, "No arguments found for define macro: %s" % foundString)
+
 					argsString = foundString[openBracketPos + 1 : len(foundString) - 1]
 					foundArgs = ksp_compiler.split_args(argsString, lineObj)
 					if len(foundArgs) != len(self.args):
@@ -1255,34 +1258,29 @@ def handleDefineConstants(lines, define_cache = None):
 	newLines = collections.deque()
 
 	# Scan through all the lines to find define declarations.
-	for lineIdx in range(len(lines)):
-		line = lines[lineIdx].command.strip()
-		if line.startswith("define"):
-			m = re.search(defineRe, line)
+	for l in lines:
+		command = l.command.strip()
+		if command.startswith("define"):
+			m = re.search(defineRe, command)
 			if m:
-				defineObj = DefineConstant(m.group("whole"), m.group("val").strip(), m.group("args"), lines[lineIdx])
+				defineObj = DefineConstant(m.group("whole"), m.group("val").strip(), m.group("args"), l)
 				defineConstants.append(defineObj)
 				continue
-		newLines.append(lines[lineIdx])
+		newLines.append(l)
 
 	if defineConstants:
 		# Replace all occurences where other defines are used in define values - do it a few times to catch some deeper nested defines.
-		for i in range(0, 3):
-			for j in range(len(defineConstants)):
-				for k in range(len(defineConstants)):
-					defineConstants[j].setValue(defineConstants[k].substituteValue(defineConstants[j].getValue(), defineConstants))
-				defineConstants[j].evaluateValue()
+		if define_cache is None:
+			for n in range(0, 3):
+				for dc_i in defineConstants:
+					for dc_j in defineConstants:
+						dc_i.setValue(dc_j.substituteValue(dc_i.getValue(), defineConstants))
+					dc_i.evaluateValue()
+	
+		for l in newLines:
+			for dc in defineConstants:
+				l.command = dc.substituteValue(l.command, defineConstants, l)
 
-		for i in range(len(defineConstants)):
-			for j in range(len(defineConstants)):
-				defineConstants[i].setValue(defineConstants[j].substituteValue(defineConstants[i].getValue(), defineConstants))
-			defineConstants[i].evaluateValue()
-
-		# For each line, replace any places the defines are used.
-		for lineIdx in range(len(newLines)):
-			line = newLines[lineIdx].command
-			for defineConst in defineConstants:
-				newLines[lineIdx].command = defineConst.substituteValue(newLines[lineIdx].command, defineConstants, newLines[lineIdx])
 	replaceLines(lines, newLines)
 
 	return defineConstants
@@ -1456,7 +1454,6 @@ def handleLiteratePostMacro(lines):
 			if m:
 				name = m.group("macro")
 				targets = ksp_compiler.split_args(m.group("target"), lines[lineIdx])
-				print(targets)
 				if not "#l#" in name:
 					for text in targets:
 						newLines.append(lines[lineIdx].copy("%s(%s)" % (name, text)))
