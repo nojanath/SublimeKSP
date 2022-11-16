@@ -85,11 +85,32 @@ contexts:
         - match: "[a-zA-Z0-9_#.]+"
           scope: variable.parameter.function.source.ksp
         - include: main
+    - match: '^\s*(const +)([a-zA-Z_.0-9]+)'
+      comment: Const block definition
+      scope: constblock.ksp
+      captures:
+        0: meta.constblock.source.ksp
+        1: keyword.other.source.ksp
+        2: entity.name.type.source.ksp
     - match: '^\s*(family +)([a-zA-Z_.0-9]+)'
       comment: Family definition
       scope: family.ksp
       captures:
         0: meta.family.source.ksp
+        1: keyword.other.source.ksp
+        2: entity.name.type.source.ksp
+    - match: '^\s*(list +)([a-zA-Z_.0-9]+)'
+      comment: List definition
+      scope: list.ksp
+      captures:
+        0: meta.list.source.ksp
+        1: keyword.other.source.ksp
+        2: entity.name.type.source.ksp
+    - match: '^\s*(struct +)([a-zA-Z_.0-9]+)'
+      comment: Struct definition
+      scope: struct.ksp
+      captures:
+        0: meta.struct.source.ksp
         1: keyword.other.source.ksp
         2: entity.name.type.source.ksp
     - match: '\b(call) +([A-Za-z0-9_.]+)?'
