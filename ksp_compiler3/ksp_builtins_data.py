@@ -1333,6 +1333,25 @@ zone_slice_start(<zone-id>, <slice-idx>):integer
 [functions_with_forced_parenthesis]
 mf_reset
 
+[functions_with_constant_return]
+abs
+acos
+asin
+atan
+by_marks
+by_track
+cos
+exp
+floor
+get_ui_id
+log
+lsb
+num_elements
+pow
+sin
+sqrt
+tan
+
 [keywords]
 _pgs_changed
 and

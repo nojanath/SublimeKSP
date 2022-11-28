@@ -508,7 +508,7 @@ class ASTVisitorCheckDeclarations(ASTVisitor):
         if 'const' in node.modifiers:
             # First need to check if the initial value is an NI constant
             init_expr = node.initial_value
-            if not (isinstance(init_expr, VarRef) and (str(init_expr.identifier).upper() in ksp_builtins.variables) or (str(node.initial_value.function_name) in ksp_builtins.functions)):
+            if not (isinstance(init_expr, VarRef) and (str(init_expr.identifier).upper() in ksp_builtins.variables) or (str(node.initial_value.function_name) in ksp_builtins.functions_with_constant_return)):
                 if not node.initial_value:
                     raise ParseException(node.variable, 'A constant value has to be assigned to the constant')
                 try:
@@ -519,7 +519,6 @@ class ASTVisitorCheckDeclarations(ASTVisitor):
                         initial_value = test
                 except ValueUndefinedException:
                     raise ParseException(node.initial_value, 'Expression uses non-constant values or undefined constant variables')
-
         try:
             params = []
             for param in node.parameters:
