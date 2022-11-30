@@ -101,11 +101,15 @@ def evaluate_expression(expr):
             elif op == '*':
                 return normalize_numeric(a * b)
             elif op == '/':
-                if type(a) is int and type(b) is int:
-                    # division with truncation:
-                    return int(math.copysign(abs(a) // abs(b), a / b)) # a // b yields the wrong result in case of negative numbers, eg. -10/9
+                if b == 0:
+                    return normalize_numeric(b)
                 else:
-                    return a / b
+                    if type(a) is int and type(b) is int:
+                        # division with truncation
+                        # a // b yields the wrong result in case of negative numbers, eg. -10/9
+                        return int(math.copysign(abs(a) // abs(b), a / b))
+                    else:
+                        return a / b
             elif op == '=':
                 # TODO: check if Kontakt treats 4.0 as equal to 4
                 return a == b
