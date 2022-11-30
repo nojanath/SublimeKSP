@@ -38,7 +38,7 @@ def add_nckp_var_to_nckp_table(nckp_ui_variable):
         nckp_table.append(nckp_ui_variable.lower())
 
 class ValueUndefinedException(ParseException):
-    def __init__(self, node, msg='Value of variable undefined'):
+    def __init__(self, node, msg='Value of variable is undefined'):
         ParseException.__init__(self, node, msg)
 
 class Variable:
@@ -60,7 +60,7 @@ def move_on_init_first(module):
 
 def toint(i, bits=32):
     ' converts to a signed integer with bits bits '
-    i &= (1 << bits) - 1  # get last "bits" bits, as unsigned
+    i &= (1 << bits) - 1       # get last "bits" bits, as unsigned
     if i & (1 << (bits - 1)):  # is negative in N-bit 2's comp
         i -= 1 << bits         # ... so make it negative
     return int(i)
@@ -75,7 +75,7 @@ def sign(x):
 
 def assert_numeric(x):
     if type(x) not in (int, Decimal):
-        raise ValueUndefinedException(x, 'Numeric value expected.')
+        raise ValueUndefinedException(x, 'Numeric value expected!')
 
 def normalize_numeric(x):
     # constrain integers to the range of a 32-bit signed int
@@ -87,13 +87,14 @@ def normalize_numeric(x):
 
 def evaluate_expression(expr):
     if isinstance(expr, BinOp):
-        # TODO: handle Decimal numbers here:
+        # TODO: handle Decimal numbers here
         a, b = evaluate_expression(expr.left), evaluate_expression(expr.right)
         op = expr.op
+
         if op in ['+', '-', '*', '/', '<', '<=', '>', '>=', '=', '#']:
-            #a, b = int(a), int(b)
             assert_numeric(a)
             assert_numeric(b)
+
             if op == '+':
                 return normalize_numeric(a + b)
             elif op == '-':
@@ -102,12 +103,12 @@ def evaluate_expression(expr):
                 return normalize_numeric(a * b)
             elif op == '/':
                 if type(a) is int and type(b) is int:
-                    # division with truncation:
-                    return int(math.copysign(abs(a) // abs(b), a / b)) # a // b yields the wrong result in case of negative numbers, eg. -10/9
+                    # division with truncation
+                    # a // b yields the wrong result in case of negative numbers, eg. -10/9
+                    return int(math.copysign(abs(a) // abs(b), a / b))
                 else:
                     return a / b
             elif op == '=':
-                # TODO: check if Kontakt treats 4.0 as equal to 4
                 return a == b
             elif op == '<':
                 return a < b
@@ -118,34 +119,38 @@ def evaluate_expression(expr):
             elif op == '>=':
                 return a >= b
             elif op == '#':
-                # TODO: check if Kontakt treats 4.0 as different than 4
                 return a != b
-        elif op in ['.and.', '.or.', 'mod']:
+        elif op in ['.and.', '.or.', '.xor.']:
             a, b = toint(a), toint(b)
+
             if op == '.and.':
                 return a & b
             elif op == '.or.':
                 return a | b
-            elif op == 'mod':
+            elif op == '.xor.':
+                return a ^ b
+        elif op == 'mod':
+            # we don't have to check if b is int type, since we already check for type mismatches in visitBinOp function
+            if type(a) is int:
+                a, b = toint(a), toint(b)
                 result = abs(a) % abs(b)
+
                 if a < 0:
                     return -result
                 else:
                     return result
+            elif type(a) is Decimal:
+                return Decimal(math.fmod(a, b))
         elif op == '&':
             return str(a) + str(b)
         elif op in ['and', 'or']:
             a, b = bool(a), bool(b)
-            #if type(a) is not bool:
-            #    raise ParseException(expr.left, 'Boolean expected.')
-            #if type(b) is not bool:
-            #    raise ParseException(expr.right, 'Boolean expected.')
+
             if op == 'and':
                 return a and b
             else:
                 return a or b
     elif isinstance(expr, UnaryOp):
-        #a = int(evaluate_expression(expr.right))
         a = evaluate_expression(expr.right)
         if expr.op == '-':
             return normalize_numeric(-a)
@@ -156,18 +161,18 @@ def evaluate_expression(expr):
     elif isinstance(expr, VarRef):
         name = str(expr.identifier)
         if name.lower() not in symbol_table:
-            raise ParseException(expr, 'Variable not declared: %s' % name)
+            raise ParseException(expr, 'Variable not declared: %s!' % name)
         value = symbol_table[name.lower()].value
         if value is None:
             raise ValueUndefinedException(expr)
         if len(expr.subscripts) > 1:
-            raise ParseException(expr, 'More than one subscript: %s' % str(expr))
+            raise ParseException(expr, 'More than one subscript found: %s!' % str(expr))
         if expr.subscripts:
             subscript = int(evaluate_expression(expr.subscripts[0]))
         else:
             subscript = None
         if (expr.identifier.prefix in '%!?') != (subscript is not None):
-            raise ParseException(expr, 'Use of subscript wrong.')
+            raise ParseException(expr, 'Use of subscript is invalid!')
         if subscript:
             if 0 <= subscript < len(value):
                 return value[subscript]
@@ -179,10 +184,10 @@ def evaluate_expression(expr):
     elif isinstance(expr, FunctionCall):
         name = str(expr.function_name)
         parameters = [evaluate_expression(param) for param in expr.parameters]
-        funcs2numparameters = {'abs': 1, 'in_range': 3, 'sh_left': 2, 'sh_right': 2, 'by_marks': 1, 'int_to_real': 1, 'real_to_int': 1}
+        funcs2numparameters = {'abs': 1, 'in_range': 3, 'sh_left': 2, 'sh_right': 2, 'by_marks': 1, 'int_to_real': 1, 'real_to_int': 1, 'int': 1, 'real': 1}
         if name in list(funcs2numparameters.keys()):
             if len(parameters) != funcs2numparameters[name]:
-                raise ParseException(expr, 'Wrong number of parameters to %s' % name)
+                raise ParseException(expr, 'Wrong number of parameters for %s!' % name)
             if name == 'abs':
                 return abs(parameters[0])
             elif name == 'in_range':
@@ -193,11 +198,11 @@ def evaluate_expression(expr):
                 return toint(parameters[0] >> (parameters[1] % 32))
             elif name == 'by_marks':   # TODO: check if this can be removed
                 return toint(parameters[0] | 0x80000000)
-            elif name == 'int_to_real':
+            elif name in ['int_to_real', 'real']:
                 return Decimal(toint(parameters[0]))
-            elif name == 'real_to_int':
+            elif name in ['real_to_int', 'real']:
                 return toint(int(parameters[0]))
-        raise ValueUndefinedException(expr, 'Constant value expected.')
+        raise ValueUndefinedException(expr, 'Constant value expected!')
 
 def assert_type(node, type):
     ''' verify that <node> has a type that matches (is compatible with) <type> '''
@@ -206,7 +211,7 @@ def assert_type(node, type):
         raise Exception()
     node_type = node.type
     if node_type != type and not (node_type in ('integer', 'real') and type == 'numeric'):
-        raise ParseException(node, 'Expected expression of %s type, got %s type instead.' % (type, node_type))
+        raise ParseException(node, 'Expected expression of %s type, got %s type instead!' % (type, node_type))
 
 def highest_precision(type1, type2):
     if type1 == 'real' or type2 == 'real':
@@ -230,14 +235,13 @@ class ASTVisitorDetermineExpressionTypes(ASTVisitor):
                 node.type = 'undefined'
             passed_params = node.parameters
             if len(passed_params) != len(params):
-                raise ParseException(node, 'Wrong number of parameters for %s: expected %d, got %d' % (function_name, len(params), len(passed_params)))
+                raise ParseException(node, 'Wrong number of parameters for %s: expected %d, got %d!' % (function_name, len(params), len(passed_params)))
             for (param_descriptor, passed_param) in zip(params, passed_params):
                 param_descriptor = param_descriptor.replace('<', '').replace('>', '')
                 is_text = 'text' in param_descriptor or param_descriptor.endswith('name') or param_descriptor.endswith('-path')
                 if not is_text:
                     if function_name == 'abs' and passed_param.type in ('integer', 'real'):
-                        # special case: the abs function returns an integer or real
-                        # depending on what param type it's given
+                        # special case: the abs function returns an integer or real depending on what param type it's given
                         node.type = passed_param.type
                     elif 'any-array-variable' in param_descriptor:
                         pass
@@ -252,7 +256,7 @@ class ASTVisitorDetermineExpressionTypes(ASTVisitor):
                         assert_type(passed_param, 'real array')
                     elif 'key-id' in param_descriptor:
                         if not isinstance(passed_param, VarRef):
-                            raise ParseException(node, 'Expected key id.')
+                            raise ParseException(node, 'Expected key id!')
                         passed_param.type = 'key-id'
                     elif 'real-value' in param_descriptor:
                         assert_type(passed_param, 'real')
@@ -263,14 +267,14 @@ class ASTVisitorDetermineExpressionTypes(ASTVisitor):
 
     def visitBinOp(self, parent, expr, *args):
         self.visit_children(parent, expr, *args)
-        #print expr.left.type, expr.op, expr.right.type
+
         if expr.op == '&':
             expr.type = 'string'
-        elif expr.op in ('+', '-', '*', '/'):
+        elif expr.op in ('+', '-', '*', '/', 'mod'):
             assert_type(expr.left, 'numeric')
             assert_type(expr.right, 'numeric')
             expr.type = highest_precision(expr.left.type, expr.right.type)
-        elif expr.op in ('mod', '.and.', '.or.'):
+        elif expr.op in ('.and.', '.or.', '.xor.'):
             assert_type(expr.left, 'integer')
             assert_type(expr.right, 'integer')
             expr.type = 'integer'
@@ -278,15 +282,15 @@ class ASTVisitorDetermineExpressionTypes(ASTVisitor):
             assert_type(expr.left, 'numeric')
             assert_type(expr.right, 'numeric')
             expr.type = 'boolean'
-        elif expr.op in 'and or':
+        elif expr.op in 'and or xor':
             assert_type(expr.left, 'boolean')
             assert_type(expr.right, 'boolean')
             expr.type = 'boolean'
         else:
             raise Exception()
 
-        if expr.op in '+ - * / < <= > >= = #' and expr.left.type != expr.right.type:
-            raise ParseException(expr, 'Operands are of different types: %s and %s. Please use real_to_int(...) or int_to_real(...) functions to explicitly cast the type.' % (expr.left.type, expr.right.type))
+        if expr.op in '+ - * / < <= > >= = # mod' and expr.left.type != expr.right.type:
+            raise ParseException(expr, 'Operands are of different types: %s and %s! Please use int(...) or real(...) functions to explicitly cast the type.' % (expr.left.type, expr.right.type))
 
         return False
 
@@ -331,8 +335,8 @@ class ASTVisitorDetermineExpressionTypes(ASTVisitor):
         if expr.subscripts:
             assert_type(expr.subscripts[0], 'integer')
             if not expr.identifier.type.endswith(' array'):
-                raise ParseException(expr.identifier, 'Expected array')
-            # an added subscript turns eg. an integer array into just an integer
+                raise ParseException(expr.identifier, 'Expected array!')
+            # an added subscript turns e.g. an integer array into just an integer
             expr.type = expr.identifier.type.replace(' array', '')
         else:
             expr.type = expr.identifier.type
@@ -346,7 +350,7 @@ class ASTVisitorCheckNoEmptyIfCaseStatements(ASTVisitor):
     def visitIfStmt(self, parent, node, *args):
         (condition, stmts) = node.condition_stmts_tuples[0]
         if len(stmts) == 0:
-            raise ParseException(node, "Warning: due to a KSP bug, an empty 'if' statement is equivalent to invoking the exit function. Please make sure the body of your 'if' statement is not empty!")
+            raise ParseException(node, "Warning: due to a KSP bug, an empty 'if' statement is equivalent to invoking the exit function! Please make sure the body of your 'if' statement is not empty!")
 
     def visitSelectStmt(self, parent, node, *args):
         for ((start, stop), stmts) in node.range_stmts_tuples:
@@ -389,7 +393,6 @@ class ASTVisitorCheckStatementExprTypes(ASTVisitor):
 
     def visitSelectStmt(self, parent, node, *args):
         for ((start, stop), stmts) in node.range_stmts_tuples:
-            # TODO: check if real numbers are allowed here
             assert_type(start, 'integer')
             if stop:
                 assert_type(stop, 'integer')
@@ -401,7 +404,8 @@ class ASTVisitorFindUsedVariables(ASTVisitor):
         self.traverse(ast)
 
     def visitDeclareStmt(self, parent, node, *args):
-        for child in node.get_childnodes()[1:]:  # visit all children but the first one (the declared variable)
+        # visit all children except the first one (the declared variable)
+        for child in node.get_childnodes()[1:]:
             self.dispatch(node, child, *args)
         return False
 
@@ -466,13 +470,14 @@ class ASTVisitorCheckDeclarations(ASTVisitor):
         function_name = node.function_name.identifier
 
         if function_name in pgs_functions:
-            for child in node.get_childnodes()[1:]:  # visit all children but the first one (the key-id)
+            # visit all children except the first one (the key-id)
+            for child in node.get_childnodes()[1:]:
                 self.dispatch(node, child, *args)
             return False
 
     def visitFunctionDef(self, parent, node, *args):
         if node.name.identifier in user_defined_functions:
-            raise ParseException(node, 'There is already a variable/function defined with the same name')
+            raise ParseException(node, 'A variable or a function with the same name already exists!')
         user_defined_functions[node.name.identifier] = node
         return True
 
@@ -480,12 +485,12 @@ class ASTVisitorCheckDeclarations(ASTVisitor):
         name = str(node.variable)
         is_ui_control = [x for x in node.modifiers if x.startswith('ui_')]
         if is_ui_control:
-            self.assert_true(not 'const' in node.modifiers,      node, 'A UI control cannot be constant')
-            self.assert_true(not 'polyphonic' in node.modifiers, node, 'A UI control cannot be polyphonic')
+            self.assert_true(not 'const' in node.modifiers,      node, 'A UI control cannot be constant!')
+            self.assert_true(not 'polyphonic' in node.modifiers, node, 'A UI control cannot be polyphonic!')
         if 'ui_label' in node.modifiers:
-            self.assert_true(node.parameters and len(node.parameters) == 2, node, 'Expected two parameters')
+            self.assert_true(node.parameters and len(node.parameters) == 2, node, 'Expected two parameters!')
         elif 'ui_button' in node.modifiers or 'ui_menu' in node.modifiers or 'ui_switch' in node.modifiers:
-            self.assert_true(not node.parameters, node, "Syntax error, didn't expect any parameter")
+            self.assert_true(not node.parameters, node, "Syntax error: didn't expect any parameters!")
         elif 'ui_slider' in node.modifiers:
             self.assert_true(node.parameters and len(node.parameters) == 2, node, 'Expected two parameters: min, max')
         elif 'ui_knob' in node.modifiers or 'ui_value_edit' in node.modifiers:
@@ -495,12 +500,12 @@ class ASTVisitorCheckDeclarations(ASTVisitor):
         elif 'ui_waveform' in node.modifiers:
             self.assert_true(node.parameters and len(node.parameters) == 2, node, 'Expected two parameters: width, height')
         if name.lower() in symbol_table:
-            raise ParseException(node.variable, 'Redeclaration of %s' % name)
+            raise ParseException(node.variable, 'Redeclaration of %s!' % name)
         if node.size:
             try:
                 size = evaluate_expression(node.size)
             except ValueUndefinedException:
-                raise ParseException(node.size, 'Array size is non-constant or uses undefined variables')
+                raise ParseException(node.size, 'Array size is not a constant or uses undefined variables!')
         else:
             size = 1
 
@@ -510,15 +515,15 @@ class ASTVisitorCheckDeclarations(ASTVisitor):
             init_expr = node.initial_value
             if not (isinstance(init_expr, VarRef) and str(init_expr.identifier).upper() in ksp_builtins.variables):
                 if not node.initial_value:
-                    raise ParseException(node.variable, 'A constant value has to be assigned to the constant')
+                    raise ParseException(node.variable, 'A constant value has to be assigned to the constant!')
                 try:
                     test = evaluate_expression(node.initial_value)
                     if test == None:
-                        raise ParseException(node.variable, 'A constant can have only one value assigned, it cannot be an array')
+                        raise ParseException(node.variable, 'A constant can have only one value assigned, it cannot be an array!')
                     else:
                         initial_value = test
                 except ValueUndefinedException:
-                    raise ParseException(node.initial_value, 'Expression uses non-constant values or undefined constant variables')
+                    raise ParseException(node.initial_value, 'Expression uses non-constant values or undefined constant variables!')
 
         try:
             params = []
@@ -530,8 +535,8 @@ class ASTVisitorCheckDeclarations(ASTVisitor):
                 else:
                     params.append(evaluate_expression(param))
         except ValueUndefinedException:
-            raise ParseException(node, 'Expression uses non-constant values or undefined constant variables')
-        #name, size=1, params=None, control_type=None, is_constant=False, value=None):
+            raise ParseException(node, 'Expression uses non-constant values or undefined constant variables!')
+
         if is_ui_control:
             control_type = is_ui_control[0]
         else:
@@ -547,7 +552,7 @@ class ASTVisitorCheckDeclarations(ASTVisitor):
         name = str(node)
         special_names = ['NO_SYS_SCRIPT_RLS_TRIG', 'NO_SYS_SCRIPT_PEDAL', 'NO_SYS_SCRIPT_GROUP_START', 'NO_SYS_SCRIPT_ALL_NOTES_OFF']
         if not name in ksp_builtins.variables and not name in ksp_builtins.functions and not name.lower() in symbol_table and not name in special_names and not name in user_defined_functions and not name.lower() in nckp_table:
-            raise ParseException(node, 'Undeclared variable/function: %s' % name)
+            raise ParseException(node, 'Undeclared variable or function: %s!' % name)
 
 class ASTModifierSimplifyExpressions(ASTModifier):
     def __init__(self, module_ast, replace_constants=True):
@@ -575,17 +580,11 @@ class ASTModifierSimplifyExpressions(ASTModifier):
         ASTModifier.modifyDeclareStmt(self, node)
         return [node]
 
-        # The below code seemed to be intended to clear out const declare statements for replacement purposes, but it is unnecessary.
-
-        # if 'const' in node.modifiers and self.replace_constants:
-        #     return []
-        # else:
-        #     return [node]
-
     def modifyBinOp(self, node):
         node = ASTModifier.modifyBinOp(self, node)
         node.left = self.evaluate_expression_or_same(node.left)
         node.right = self.evaluate_expression_or_same(node.right)
+
         if node.op == '*':
             if isinstance(node.left, (Integer, Real)):
                 if node.left.value == 0:
@@ -635,7 +634,8 @@ class ASTModifierSimplifyExpressions(ASTModifier):
 
     def modifyVarRef(self, node):
         node = ASTModifier.modifyVarRef(self, node)
-        if self.replace_constants and not mark_constant_re.match(node.identifier.identifier):  # MARK_%d constants are included in the symbol table in order to be possible to use on declaration lines, don't replace them with their values
+        # MARK_%d constants are included in the symbol table in order to be possible to use on declaration lines, don't replace them with their values
+        if self.replace_constants and not mark_constant_re.match(node.identifier.identifier):
             return self.evaluate_expression_or_same(node)
         else:
             return node
@@ -721,6 +721,7 @@ class ASTModifierRemoveUnusedBranches(ASTModifier):
                 for ((start, stop), stmts) in node.range_stmts_tuples:
                     start = evaluate_expression(start)
                     stop = evaluate_expression(stop)
+
                     if (stop is not None and start <= value <= stop) or (start == value):
                         return stmts
             except ParseException:
@@ -735,6 +736,7 @@ class ASTModifierRemoveUnusedBranches(ASTModifier):
             node = statements[0]
             try:
                 value = evaluate_expression(node.condition)
+
                 if value is False:
                     return []
             except ParseException:
@@ -750,7 +752,7 @@ class ASTModifierRemoveUnusedFunctions(ASTModifier):
         self.traverse(module_ast)
 
     def modifyModule(self, node, *args, **kwargs):
-        ''' only keep used functions '''
+        # only keep used functions
         node.blocks = [b for b in node.blocks if isinstance(b, Callback) or b.name.identifier in self.used_functions]
 
 class ASTModifierRemoveUnusedVariables(ASTModifier):
@@ -760,7 +762,7 @@ class ASTModifierRemoveUnusedVariables(ASTModifier):
         self.traverse(module_ast)
 
     def modifyDeclareStmt(self, node):
-        ''' only keep used variables '''
+        # only keep used variables
         statements = ASTModifier.modifyDeclareStmt(self, node)
         if len(statements) == 1:
             node = statements[0]
@@ -776,7 +778,7 @@ class ASTModifierFixCallbug(ASTModifier):
     def __init__(self, module_ast, used_variables):
         ASTModifier.__init__(self, modify_expressions=False)
 
-        self.dummy_assign = None  # dummy assignment statement, eg. $i = $i (using some variable $i that it finds in the script)
+        self.dummy_assign = None  # e.g. $i = $i (using some variable $i that it finds in the script)
 
         self.pass_num = 1
         self.traverse(module_ast)
@@ -798,7 +800,7 @@ class ASTModifierFixCallbug(ASTModifier):
             if self.dummy_assign:
                 result.append(self.dummy_assign)
             else:
-                raise ParseException(statements[-1], 'The compiler needs to add a dummy assignment (eg. $x := $x) after this line, but could not find any integer variables to use for this purpose. Please declare one.')
+                raise ParseException(statements[-1], 'The compiler needs to add a dummy assignment (eg. $x := $x) after this line, but could not find any integer variables to use for this purpose. Please declare one!')
         return result
 
     def modifyIfStmt(self, node):
@@ -842,10 +844,6 @@ def check_code(module, optimize=False, check_empty_compound_statements=False, ca
 
     yield ('progress', 'checking declarations', int(60*rescaler))
     ASTVisitorCheckDeclarations(module)
-
-    ##if call_bug_work_around:
-    ##    yield ('progress', 'automatically introducing work-around for call bug', int(68*rescaler))
-    ##    ASTModifierFixCallbug(module, used_variables)
 
     if optimize:
         yield ('progress', 'optimizing - simplying expressions', 70)

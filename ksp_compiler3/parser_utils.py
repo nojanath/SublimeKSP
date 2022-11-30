@@ -49,7 +49,7 @@ def raise_parse_exception(p, msg, error_token=-1):
         token = p
     raise ParseException(token, msg)
 
-def RaiseParseException(msg='Syntax error', error_token=-1):
+def RaiseParseException(msg='Syntax error!', error_token=-1):
     def func(p):
         emsg = msg
         if error_token:
@@ -79,7 +79,7 @@ def g(rule, func):
             module = sys.modules[f.f_locals['__name__']] # grab name of module and look it up
 
     if not ':' in rule and not rule.lstrip()[0] == '|':
-        raise Exception("Error in rule, it doesn't begin with | and contains no :")
+        raise Exception("Error in rule, it doesn't begin with | and contains no :!")
     # make it possible to write several | on the same line
     if rule.count('\n') == 0:
         rule = rule.replace('|', '\n|')

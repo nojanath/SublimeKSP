@@ -27,7 +27,6 @@ from taskfunc import taskfunc_code
 from collections import OrderedDict
 import hashlib
 import ply.lex as lex
-# NOTE(Sam): include preprocessor and logger
 from logger import logger_code
 import time
 from preprocessor_plugins import pre_macro_functions, macro_iter_functions, substituteDefines, post_macro_iter_functions, post_macro_functions
@@ -37,7 +36,7 @@ import copy
 variable_prefixes = '$%@!?~'
 
 # regular expressions:
-white_space = r'(?ms)(\s*(\{[^\n]*?\})?\s*)' # regexp for normal white space/comments
+white_space = r'(?ms)(\s*(\{[^\n]*?\})?\s*)' # regexp for normal whitespace/comments
 comment_re = re.compile(r'(?<!["\'])\{.*?\}|\(\*.*?\*\)|/\*.*?\*/', re.DOTALL)   # if { is preceeded by ' or " don't treat it as a comment
 string_re = re.compile(r'".*?(?<!\\)"|' + r"'.*?(?<!\\)'")
 line_continuation_re = re.compile(r'\.\.\.\s*\n', re.MULTILINE)
@@ -73,7 +72,7 @@ def init_globals():
     called_functions.clear()
     call_graph.clear()
 
-# simple class to work-around the problem that cStringIO cannot handle certain unicode input
+# simple class to work around the problem that cStringIO cannot handle certain Unicode input
 class StringIO:
     def __init__(self):
         self.parts = []
@@ -86,7 +85,6 @@ def prefix_with_ns(name, namespaces, function_parameter_names=None, force_prefix
     if not namespaces:
         return name
     function_parameter_names = function_parameter_names or []
-    ##name = name.replace('.', '__') # replace . by __
 
     if name[0] in variable_prefixes:
         prefix, unprefixed_name = name[0], name[1:]
@@ -101,7 +99,7 @@ def prefix_with_ns(name, namespaces, function_parameter_names=None, force_prefix
           name in ksp_builtins.functions or
           name in ksp_builtins.keywords or
           first_name_part in function_parameter_names) and not force_prefixing:
-        return name # don't add prefix
+        return name   # don't add prefix
 
     # add namespace to name
     return prefix + '.'.join(namespaces + [unprefixed_name])
@@ -113,7 +111,7 @@ def prefix_ID_with_ns(id, namespaces, function_parameter_names=None, force_prefi
         return id
 
 def split_args(arg_string, line):
-    """ converts eg. "x, y*(1+z), z" into a list ['x', 'y*(1+z)', 'z'] """
+    # converts eg. "x, y*(1+z), z" into a list ['x', 'y*(1+z)', 'z']
     if arg_string.strip() == '':
         return []
     args = []
@@ -132,13 +130,13 @@ def split_args(arg_string, line):
         if ch == ',' and unmatched_left_paren == 0 and not double_quote_on:
             cur_arg = cur_arg.strip()
             if not cur_arg:
-                raise ParseException(line, 'Syntax error - empty argument in function call: %s' % arg_string)
+                raise ParseException(line, 'Syntax error: empty argument in function call %s!' % arg_string)
             args.append(cur_arg)
             cur_arg = ''
         else:
             cur_arg += ch
     if unmatched_left_paren:
-        raise ParseException(line, 'Error - unmatched parenthesis in function call: %s' % arg_string)
+        raise ParseException(line, 'Error: unmatched parenthesis in function call %s!' % arg_string)
     return args
 
 class ExceptionWithMessage(Exception):
@@ -228,17 +226,17 @@ class Macro:
         return prefix_with_ns(self.name, self.lines[0].namespaces)
 
     def get_macro_name_and_parameters(self):
-        """ returns the function name, parameter list, and result variable (or None) as a tuple """
+        # returns the function name, parameter list, and result variable (or None) as a tuple
         param = white_space + r'([$%@!?~]?[\w\.]+|#[\w\.]+#)' + white_space
         params = r'%s(,%s)*' % (param, param)
         m = re.match(r'^\s*macro\s+(?P<name>[a-zA-Z0-9_]+(\.[a-zA-Z_0-9.]+)*)\s*(?P<params>\(%s\))?' % params, self.lines[0].command)
         if not m:
-            raise ParseException(self.lines[0], "Syntax error in macro declaration")
+            raise ParseException(self.lines[0], "Syntax error in macro declaration!")
         name = m.group('name')
         params = m.group('params') or []
         if params:
-            params = params[1:-1] # strip parenthesis
-            params = re.sub(white_space, '', params)  # strip whitespace (eg. comments)
+            params = params[1:-1]                     # strip parenthesis
+            params = re.sub(white_space, '', params)  # strip whitespace (e.g. comments)
             params = [x.strip() for x in params.split(',')]
         return (name, params)
 
@@ -248,7 +246,7 @@ class Macro:
         return Macro([l.copy(add_location=add_location) for l in lines])
 
     def substitute_names(self, replace_string_placeholders, name_subst_dict):
-        """ returns a copy of the block with the specified name substitutions made """
+        # returns a copy of the block with the specified name substitutions made
         new_macro = self.copy(lines=[line.substitute_names(name_subst_dict) for line in self.lines])
 
         if replace_string_placeholders:
@@ -264,11 +262,11 @@ class Macro:
         return new_macro
 
 def merge_lines(lines):
-    """ converts a list of Line objects to a source code string """
+    # converts a list of Line objects to a source code string
     return '\n'.join([line.command for line in lines])
 
 def parse_lines(s, filename=None, namespaces=None):
-    """ converts a source code string to a list of Line objects """
+    # converts a source code string to a list of Line objects
 
     if namespaces is None:
         namespaces = []
@@ -277,8 +275,8 @@ def parse_lines(s, filename=None, namespaces=None):
         # replace the match with a placeholder (eg. "{8}") and store the replaced string
         i = len(placeholders)
         s = match.group(0)
-        s = placeholder_re.sub('', s) # strip encoded line numbers (for multiline comments)
-        if s and s[0] == "'":         # convert single quotes (') to double quotes (")
+        s = placeholder_re.sub('', s)   # strip encoded line numbers (for multiline comments)
+        if s and s[0] == "'":           # convert single quotes (') to double quotes (")
             s = '"%s"' % s[1:-1].replace(r"\'", "'")
         placeholders[i] = s
         return '{%d}' % i
@@ -302,7 +300,7 @@ def parse_lines(s, filename=None, namespaces=None):
 
     s = line_continuation_re.sub('', s)
 
-    # substitute strings with place-holders
+    # substitute strings with placeholders
     s = string_re.sub(replace_func, s)
 
     # construct Line objects by extracting the line number and line parts
@@ -314,7 +312,7 @@ def parse_lines(s, filename=None, namespaces=None):
     return collections.deque(lines)
 
 def parse_lines_and_handle_imports(code, filename=None, namespaces=None, read_file_function=None, preprocessor_func=None):
-    """ reads one block from the lines deque """
+    # reads one block from the lines deque
 
     if preprocessor_func:
         code = preprocessor_func(code, namespaces)
@@ -332,15 +330,16 @@ def parse_lines_and_handle_imports(code, filename=None, namespaces=None, read_fi
             # check if it matches a more elaborate syntax
             m = import_re.match(str(line))
             if not m:
-                raise ParseException(line, "Syntax error in import statement.")
+                raise ParseException(line, "Syntax error in import statement!")
 
             # load the code in the given file
             filename = m.group('filename')
             namespace = m.group('asname')
+
             try:
                 code = read_file_function(filename)
             except IOError:
-                raise ParseException(line, "File does not exist or could not be read: '%s' \n(try saving the files before compiling to get relative search paths right)." % filename)
+                raise ParseException(line, "File does not exist or could not be read: '%s' \nTry saving the files before compiling in order to make relative paths work." % filename)
 
             # parse code and add an extra namespace if applicable
             namespaces = line.namespaces
@@ -358,7 +357,7 @@ def parse_lines_and_handle_imports(code, filename=None, namespaces=None, read_fi
     return new_lines
 
 def handle_conditional_lines(lines):
-    ''' handle SET_CONDITION, RESET_CONDITION, USE_CODE_IF and USE_CODE_IF_NOT '''
+    # handle SET_CONDITION, RESET_CONDITION, USE_CODE_IF and USE_CODE_IF_NOT
     use_code_conds = []
     false_index = -1
 
@@ -411,7 +410,7 @@ def handle_conditional_lines(lines):
             line_obj.command = re.sub(r'[^\r\n]', '', line)
 
 def extract_macros(lines_deque):
-    ''' returns (cleaned_lines, macros) '''
+    # returns (cleaned_lines, macros)
     macros = []
     lines = lines_deque
     cleaned_lines = []
@@ -429,9 +428,9 @@ def extract_macros(lines_deque):
                     found_end = True
                     break
                 if macro_start_re.match(line.command):
-                    raise ParseException(line, "Macro definitions may not be nested (maybe you forgot an 'end macro' line earlier).")
+                    raise ParseException(line, "Macro definitions cannot be nested! Maybe you forgot an 'end macro' line earlier?")
             if not found_end:
-                raise ParseException(macro_lines[0], "Did not find a corresponding 'end macro'.")
+                raise ParseException(macro_lines[0], "Could not find a corresponding 'end macro' statement.")
             macros.append(Macro(macro_lines))
         # else if line outside of macro definition
         else:
@@ -439,7 +438,7 @@ def extract_macros(lines_deque):
     return (cleaned_lines, macros)
 
 def extract_callback_lines(lines):
-    ''' returns (normal_lines, callback_lines) '''
+    # returns (normal_lines, callback_lines)
     normal_lines = []
     callback_lines = []
     inside_callback = False
@@ -460,8 +459,8 @@ def extract_callback_lines(lines):
 
 
 def expand_macros(lines, macros, level=0, replace_raw=True):
-    ''' inline macro invocations by the body of the macro definition (with parameters properly replaced)
-        returns tuple (normal_lines, callback_lines) where the latter are callbacks'''
+    # inline macro invocations by the body of the macro definition (with parameters properly replaced)
+    # returns tuple (normal_lines, callback_lines) where the latter are callbacks
     macro_call_re = re.compile(r'^\s*([\w_.]+)\s*(\(.*\))?%s$' % white_space)
     name2macro = {}
 
@@ -469,8 +468,7 @@ def expand_macros(lines, macros, level=0, replace_raw=True):
         name = m.get_name_prefixed_by_namespace()
         if not (name == 'tcm.init' and name in name2macro):
             name2macro[name] = m
-            
-    #name2macro = dict([(m.get_name_prefixed_by_namespace(), m) for m in macros])
+
     orig_lines = lines
     lines = collections.deque(orig_lines)
     new_lines = []
@@ -495,10 +493,10 @@ def expand_macros(lines, macros, level=0, replace_raw=True):
 
                 # verify that the parameter count is correct
                 if len(macro.parameters) != len(args):
-                    raise ParseException(line, "Wrong number of parameters. Expected %d, got %d." % (len(macro.parameters), len(args)))
+                    raise ParseException(line, "Wrong number of parameters! Expected %d, got %d." % (len(macro.parameters), len(args)))
 
                 if level > 40:
-                    raise ParseException(line, "This macro seems to be invoking itself recursively")
+                    raise ParseException(line, "This macro seems to be invoking itself recursively!")
 
                 # build a substitution mapping parameters to arguments, and substitute
                 name_subst_dict = dict(list(zip(macro.parameters, args)))
@@ -511,7 +509,9 @@ def expand_macros(lines, macros, level=0, replace_raw=True):
                     macro_call_str = '%s(%s)' % (macro_name, ', '.join([re.sub(white_space, '', a).strip() for a in args]))
                 else:
                     macro_call_str = '%s' % (macro_name)
-                macro_call_str = re.sub(white_space, '', macro_call_str) # erase any inner comments to not disturb outer
+
+                # erase any inner comments to not disturb outer
+                macro_call_str = re.sub(white_space, '', macro_call_str)
                 normal_lines, callback_lines = extract_callback_lines(macro.lines[1:-1])
                 new_lines.extend(normal_lines)
                 new_callback_lines.extend(callback_lines)
@@ -532,7 +532,7 @@ class ASTModifierBase(ksp_ast_processing.ASTModifier):
                                              '_pgs_create_key', '_pgs_key_exists', '_pgs_set_key_val', '_pgs_get_key_val',
                                              'pgs_create_key', 'pgs_key_exists', 'pgs_set_key_val', 'pgs_get_key_val',
                                              'pgs_create_str_key', 'pgs_str_key_exists', 'pgs_set_str_key_val', 'pgs_get_str_key_val']:
-            first_parameter_to_change = 1  # exclude the first parameter
+            first_parameter_to_change = 1
         else:
             first_parameter_to_change = 0
 
@@ -576,7 +576,7 @@ class ASTModifierFixReferencesAndFamilies(ASTModifierBase):
         return node
 
     def modifyForStmt(self, node, *args, **kwargs):
-        ''' Convert for-loops into while-loops '''
+        # Convert for-loops into while loops
 
         if node.downto:
             op = '>='
@@ -607,7 +607,7 @@ class ASTModifierFixReferencesAndFamilies(ASTModifierBase):
         return flatten([self.modify(stmt, *args, **kwargs) for stmt in statements])
 
     def modifyIfStmt(self, node, *args, **kwargs):
-        ''' Convert if-else if-else statements into just if-else statements by nesting them inside each other '''
+        # Convert if > else if > else statements into just if-else statements by nesting them inside each other
 
         # modify the if condition and the statements in the if-body
         if_condition, stmts = node.condition_stmts_tuples[0]
@@ -636,15 +636,15 @@ class ASTModifierFixReferencesAndFamilies(ASTModifierBase):
         # check syntax
         for func_name in list(node.functiondefs.keys()):
             if func_name not in ['get', 'set']:
-                raise ksp_ast.ParseException(node.functiondefs[func_name], "Expected function with name 'get' or 'set' but found '%s'" % func_name)
+                raise ksp_ast.ParseException(node.functiondefs[func_name], "Expected function with name 'get' or 'set', but found '%s'!" % func_name)
         if not node.get_func_def and not node.set_func_def:
-            raise ksp_ast.ParseException(node, "Expected function with name 'get' or 'set' but found no function definition.")
+            raise ksp_ast.ParseException(node, "Expected function with name 'get' or 'set', but found no function definition!")
         if node.get_func_def and not node.get_func_def.return_value:
-            raise ksp_ast.ParseException(node.get_func_def, "The 'get' function needs to have a return value.")
+            raise ksp_ast.ParseException(node.get_func_def, "The 'get' function needs to have a return value!")
         if node.set_func_def and node.set_func_def.return_value:
-            raise ksp_ast.ParseException(node.set_func_def, "The 'set' function must not have a return value.")
+            raise ksp_ast.ParseException(node.set_func_def, "The 'set' function cannot have a return value!")
         if node.set_func_def and not node.set_func_def.parameters:
-            raise ksp_ast.ParseException(node.set_func_def, "The 'set' function must have at least one parameter.")
+            raise ksp_ast.ParseException(node.set_func_def, "The 'set' function must have at least one parameter!")
 
         # prefix the name
         if kwargs['parent_families']:
@@ -654,10 +654,10 @@ class ASTModifierFixReferencesAndFamilies(ASTModifierBase):
 
         # change the get/set function names before proceeding to them
         if node.get_func_def:
-            node.get_func_def.name.identifier = node.name.identifier + '.get'   # if property is call prop, then this function is named prop.get
+            node.get_func_def.name.identifier = node.name.identifier + '.get'   # if property is called prop, then this function is named prop.get
             node.get_func_def = self.modify(node.get_func_def, parent_function=None, function_params=[], parent_families=[], add_name_prefix=False)
         if node.set_func_def:
-            node.set_func_def.name.identifier = node.name.identifier + '.set'   # if property is call prop, then this function is named prop.set
+            node.set_func_def.name.identifier = node.name.identifier + '.set'   # if property is called prop, then this function is named prop.set
             node.set_func_def = self.modify(node.set_func_def, parent_function=None, function_params=[], parent_families=[], add_name_prefix=False)
 
         # add property to list
@@ -665,14 +665,14 @@ class ASTModifierFixReferencesAndFamilies(ASTModifierBase):
         return []
 
     def modifyFunctionDef(self, node, parent_function=None, function_params=None, parent_families=None, add_name_prefix=True):
-        ''' Pass along som context information (eg. what function definition we're inside and what parameters it has)
-            Also initialize some member variables on the function object that will be modified inside its body (eg. local variable declarations) '''
+        ''' Pass along some context information (e.g. what function definition we're inside and which parameters it has)
+            Also initialize some member variables on the function object that will be modified inside its body (e.g. local variable declarations) '''
 
         node.local_declaration_statements = []
         node.global_declaration_statements = []
         node.taskfunc_declaration_statements = []
         node.locals_name_subst_dict = {}  # maps local variable names to their global counterpart
-        node.locals = set()               # a set containing the keys in node.locals_name_subst_dict, but all in lower-case
+        node.locals = set()               # a set containing the keys in node.locals_name_subst_dict, but all in lowercase
         node.used = False
 
         # as we visit the function definition, pass along information to nodes further down the tree of the function parameter names
@@ -690,7 +690,7 @@ class ASTModifierFixReferencesAndFamilies(ASTModifierBase):
             if functions[node.name.identifier].override:
                 node.lines = []  # clear the lines so we don't accidentally introduce some performance cost by handling these later
             else:
-                raise ksp_ast.ParseException(node, 'Function already declared')
+                raise ksp_ast.ParseException(node, 'Function already declared!')
         else:
             functions[node.name.identifier] = node
 
@@ -699,7 +699,7 @@ class ASTModifierFixReferencesAndFamilies(ASTModifierBase):
         return node
 
     def modifyFamilyStmt(self, node, parent_function=None, function_params=None, parent_families=None):
-        ''' First make sure the name of the family is prefixed with the right name space. Then pass this name as context to the further handling of the family body. '''
+        # First make sure the name of the family is prefixed with the right namespace, then pass this name as context to the further handling of the family body
 
         if parent_families is None:
             parent_families = []
@@ -760,18 +760,18 @@ class ASTModifierFixReferencesAndFamilies(ASTModifierBase):
             # check that the local variable name has not previously been used and add it to the list of locals
             local_varname = node.variable.identifier
             if local_varname.lower() in func.locals:
-                raise ksp_ast.ParseException(node.variable, "Local variable redeclared: %s" % local_varname)
+                raise ksp_ast.ParseException(node.variable, "Local variable %d redeclared!" % local_varname)
             func.locals.add(local_varname.lower())
 
             # add info about how to map the local name to the global name so that occurances of the local name can later be modified
             if func.is_taskfunc and not 'local' in node.modifiers:
-                # eg. map x to %p[$sp + 1], where 1 is used for the first local declaration, 2 for the second and so on
+                # e.g. map x to %p[$sp + 1], where 1 is used for the first local declaration, 2 for the second and so on
                 var_index = len(func.taskfunc_declaration_statements) + 1
                 li = node.variable.lexinfo
                 func.locals_name_subst_dict[local_varname] = ksp_ast.VarRef(node.lexinfo, ksp_ast.ID(node.lexinfo, '%p'),
                                                                             [ksp_ast.BinOp(li, ksp_ast.VarRef(li, ksp_ast.ID(li, '$fp')), '+', ksp_ast.Integer(li, var_index))])
             else:
-                # eg. map x to $_x
+                # e.g. map x to $_x
 
                 # change name of variable to be a combination of the function name and the declared name (and make sure it's unique)
                 global_varname = '%s_%s' % (node.variable.prefix, local_varname)
@@ -797,9 +797,9 @@ class ASTModifierFixReferencesAndFamilies(ASTModifierBase):
         return result
 
     def modifyDeclareStmt(self, node, *args, **kwargs):
-        ''' Add a variable prefix ($ or %) to the declaration if not already given.
+        ''' Add a variable prefix ($ or %) to the declaration, if not already given.
             If declared inside a family then prefix it with the names of the family definitions we're currently inside.
-            Otherwise prefix the name with the namespaces of the line its declared on (when that line was imported using "import ... as").
+            Otherwise prefix the name with the namespaces of the line it's declared on (when that line was imported using "import ... as").
             Handle the case when the variable is declared inside a user-defined function. '''
 
         # default handling of everything except the variable name:
@@ -835,7 +835,7 @@ class ASTModifierFixReferencesAndFamilies(ASTModifierBase):
             return [node]
 
     def modifyVarRef(self, node, parent_function=None, function_params=None, parent_families=None, is_name_in_declaration=False):
-        ''' Translate any references to local variables to their real name '''
+        # Translate any references to local variables to their real name
 
         # Note 1: previously this could all be handled in modifyID, but since the taskfunc system introduced VarRef objects with subscripts
         #         we now need to handle it here since if you replace eg. x by %p[$sp + 1] the subscript need to be included in the resulting node.
@@ -851,23 +851,21 @@ class ASTModifierFixReferencesAndFamilies(ASTModifierBase):
         return super(ASTModifierFixReferencesAndFamilies, self).modifyVarRef(node, parent_function, function_params, parent_families, is_name_in_declaration)
 
     def modifyID(self, node, parent_function=None, function_params=None, parent_families=None, is_name_in_declaration=False):
-        ''' Add namespace prefix and translate references to local variables to their globally unique counterpart as determined by the translation table of the function '''
+        # Add namespace prefix and translate references to local variables to their globally unique counterpart as determined by the translation table of the function
 
         # look up the line object from the first macro preprocessor phase in order to extract information about the namespace
         namespaces = self.line_map[node.lineno].namespaces
 
         # make sure to not add namespace twice
         if hasattr(node, 'namespace_prefix_done'):
-            #raise ksp_ast.ParseException(node, 'this one already has a namespace: ' + unicode(node))
             id = node
         else:
             id = prefix_ID_with_ns(node, namespaces, function_params, force_prefixing=is_name_in_declaration)
 
         # if this is a local variable name, then replace it with the corresponding global name
-        # most of these are handled by modifyVarRef, but here we catch some other cases like for example declaration statements (where the identifier isn't a varref)
+        # most of these are handled by modifyVarRef, but here we catch some other cases like for example declaration statements (where the identifier isn't a VarRef)
         if parent_function and id.identifier in parent_function.locals_name_subst_dict:
             id = parent_function.locals_name_subst_dict[id.identifier].identifier
-            #id = ksp_ast.ID(node.lexinfo, parent_function.locals_name_subst_dict[id.identifier])
 
         # mark node to avoid that we add namespace twice
         id.namespace_prefix_done = True
@@ -886,11 +884,12 @@ class ASTModifierFixPrefixes(ASTModifierBase):
         return ASTModifierBase.modifyVarRef(self, node, parent_function=parent_function, parent_varref=node) # pass along a reference to what varref we're currently inside
 
     def modifyID(self, node, parent_function=None, parent_varref=None):
-        ''' Add a variable prefix (one of $, %, @, !, ? and ~) to each variable based on the list of variables previously built '''
+        # Add a variable prefix (one of $, %, @, !, ? and ~) to each variable based on the list of variables previously built
         name = node.prefix + node.identifier
         first_part = name.split('.')[0]
 
-        # if prefix is missing and this is not a function or family and does not start with a function parameter (eg. if a parameter is passed as param and then referenced as param__member)
+        # if prefix is missing and this is not a function or family and does not start with a function parameter
+        # (e.g. if a parameter is passed as param and then referenced as param__member)
         if node.prefix == '' and not (name in functions or
                                       name in ksp_builtins.functions or
                                       name in families or
@@ -907,12 +906,12 @@ class ASTModifierFixPrefixes(ASTModifierBase):
             if len(possible_prefixes) == 0:
                 raise ksp_ast.ParseException(node, "%s has not been declared!" % name)
             if len(possible_prefixes) > 1:
-                raise ksp_ast.ParseException(node, "Type of %s ambigious (variable prefix could be any of: %s)" % (name, ', '.join(possible_prefixes)))
+                raise ksp_ast.ParseException(node, "Type of %s is ambigious! Variable prefix could be any of the following: %s)" % (name, ', '.join(possible_prefixes)))
             node.prefix = possible_prefixes[0]
             return node
 
         elif node.prefix and not (name.lower() in variables or name in ksp_builtins.variables):
-            raise ksp_ast.ParseException(node, "%s has not been declared." % name)
+            raise ksp_ast.ParseException(node, "%s has not been declared!" % name)
         else:
             return node
 
@@ -932,8 +931,7 @@ class ASTModifierFixPrefixesIncludingLocalVars(ASTModifierFixPrefixes):
 
 class ASTModifierIDSubstituter(ASTModifierBase):
     '''Class for replacing whole names with new names, eg. replace all "$x" by "$y" and all "$loop_counter" by "$plsd" (in case variable names are compacted).
-       If there is an "x" to "y" substitution and it sees the name x.z, then it will NOT be translated into y.z. Only whole names are changed.
-    '''
+       If there is an "x" to "y" substitution and it sees the name x.z, then it will NOT be translated into y.z. Only whole names are changed. '''
 
     def __init__(self, name_subst_dict, force_lower_case=False):
         self.name_subst_dict = name_subst_dict
@@ -941,7 +939,7 @@ class ASTModifierIDSubstituter(ASTModifierBase):
         ASTModifierBase.__init__(self, modify_expressions=True)
 
     def modifyID(self, node, *args, **kwargs):
-        ''' Translate identifiers according to the translation table '''
+        # Translate identifiers according to the translation table
 
         lookup_key = node.prefix + node.identifier
         if self.force_lower_case:
@@ -952,14 +950,14 @@ class ASTModifierIDSubstituter(ASTModifierBase):
             if type(new_identifier) in (str, str):
                 return ksp_ast.ID(node.lexinfo, new_identifier)
             else:
-                raise ksp_ast.ParseException(node, "Internal error when replacing variables. Expected a string to replace with.")
+                raise ksp_ast.ParseException(node, "Internal error when replacing variables! Expected a string to replace with.")
         else:
             return node
 
 class ASTModifierVarRefSubstituter(ASTModifierBase):
     '''Class for replacing certain variables references with an expression, eg. replace all "param" by "$y+1".
-       If there is an "x" to "y" substitution and it sees the name x.z, then this will (unlike if ASTModifierIDSubstituter had been used) be translated into y.z.
-    '''
+       If there is an "x" to "y" substitution and it sees the name x.z, then this will be translated into y.z.
+       (unlike if ASTModifierIDSubstituter had been used) '''
 
     def __init__(self, name_subst_dict, inlining_function_node=None, subscript_addition=False):
         self.name_subst_dict = name_subst_dict
@@ -968,7 +966,7 @@ class ASTModifierVarRefSubstituter(ASTModifierBase):
         ASTModifierBase.__init__(self, modify_expressions=True)
 
     def modify(self, node, *args, **kwargs):
-        ''' if a reference to a parent function that is being inlined should be added, then add it to the result (each statement of the result in case it's a list) '''
+        # if a reference to a parent function that is being inlined should be added, then add it to the result (each statement of the result in case it's a list)
         result = ASTModifierBase.modify(self, node, *args, **kwargs)
         if not (self.inlining_function_node is None):
             if result is None:
@@ -995,8 +993,6 @@ class ASTModifierVarRefSubstituter(ASTModifierBase):
                         subscripts = [self.modify(s, *args, **kwargs) for s in node.subscripts]
                     elif len(new_expr.subscripts) == 1 and len(node.subscripts) == 1:
                         subscripts = [ksp_ast.BinOp(node.lexinfo, new_expr.subscripts[0], '+', node.subscripts[0])]
-                    #else:
-                    #    raise ksp_ast.ParseException(node, 'Double subscript not allowed: %s' % unicode(node))
                 else:
                     subscripts = [self.modify(s, *args, **kwargs) for s in node.subscripts] + new_expr.subscripts
                 # build a new VarRef where the first part of the identifier has been replaced by the new_expr name.
@@ -1015,14 +1011,14 @@ class ASTModifierVarRefSubstituter(ASTModifierBase):
         return node
 
     def modifyFunctionCall(self, node, *args, **kwargs):
-        ''' Check if the function name in a function call is a parameter and substitute its name if that's the case '''
+        # Check if the function name in a function call is a parameter and substitute its name if that's the case
         func_call = node
 
         if node.function_name.identifier_first_part in self.name_subst_dict:
             # fetch the replacement expression and ensure that it's a variable reference
             new_expr = self.name_subst_dict[node.function_name.identifier_first_part]
             if not isinstance(new_expr, ksp_ast.VarRef):
-                raise ksp_ast.ParseException(node, 'Expected a function name parameter')
+                raise ksp_ast.ParseException(node, 'Expected a function name parameter!')
 
             # create a new FunctionCall object with the substituted function name
             function_name = ksp_ast.ID(new_expr.identifier.lexinfo, new_expr.identifier.identifier + node.function_name.identifier_last_part)
@@ -1031,14 +1027,14 @@ class ASTModifierVarRefSubstituter(ASTModifierBase):
         return ASTModifierBase.modifyFunctionCall(self, func_call, *args, **kwargs)
 
     def modifyID(self, node, *args, **kwargs):
-        ''' Translate identifiers according to the translation table (used for inlining functions, see ASTModifierFunctionExpander) '''
+        # Translate identifiers according to the translation table (used for inlining functions, see ASTModifierFunctionExpander)
         if node.identifier_first_part in self.name_subst_dict:
-            raise Exception('here although we expected not to be, ID=%s, %s' % (node.identifier, self.name_subst_dict))
+            raise Exception('Although we expected this not to be the case, we have ID = %s, %s!' % (node.identifier, self.name_subst_dict))
             new_expr = self.name_subst_dict[node.identifier]
             if type(new_expr) in (str, str):
                 new_expr = ksp_ast.ID(node.lexinfo, new_expr)
             else:
-                raise Exception('error')
+                raise Exception('Error!')
             return new_expr
         else:
             return node
@@ -1049,7 +1045,7 @@ class ASTModifierNameFixer(ASTModifierBase):
         self.traverse(ast)
 
     def replace_dots_in_name(self, name):
-        ''' Replaces . by __ in name'''
+        # Replaces . with __ in name
         return name.replace('.', '__')
 
     def modifyID(self, node, *args, **kwargs):
@@ -1066,7 +1062,7 @@ class ASTModifierFunctionExpander(ASTModifierBase):
         self.traverse(ast, parent_toplevel=None, function_stack=[])
 
     def modifyModule(self, node, *args, **kwargs):
-        ''' Add init callback if it is not already available and move it to the top (before all other functions and callbacks) '''
+        # Add init callback if it is not already available and move it to the top (before all other functions and callbacks)
 
         # find and extract 'on init' block
         on_init_block = None
@@ -1096,15 +1092,15 @@ class ASTModifierFunctionExpander(ASTModifierBase):
             return ASTModifierBase.modifyFunctionDef(self, node, parent_toplevel=node, function_stack=function_stack)
 
     def modifyCallback(self, node, parent_toplevel=None, function_stack=None):
-        ''' Add to context info about which function/callback we are currently inside '''
+        # Add to context info about which function/callback we are currently inside
         return ASTModifierBase.modifyCallback(self, node, parent_toplevel=node, function_stack=function_stack)
 
     def convert_property_access_to_function_call(self, node):
-        ''' Convert a property reference like myprop to a function call like myprop.get() '''
+        # Convert a property reference like myprop to a function call like myprop.get()
         assert(isinstance(node, ksp_ast.VarRef))
         func_name = '%s.get' % node.identifier.identifier
         if func_name not in functions:
-            raise ksp_ast.ParseException(node, 'The property %s has no get-function and can therefore not be written to.' % str(node.identifier.identifier))
+            raise ksp_ast.ParseException(node, 'The property %s has no get function, therefore it cannot be written to!' % str(node.identifier.identifier))
         get_function = functions[func_name]
 
         # if there is a subscript, pass it as a parameter to the get function
@@ -1113,7 +1109,7 @@ class ASTModifierFunctionExpander(ASTModifierBase):
         return ksp_ast.FunctionCall(node.lexinfo, get_function.name, parameters, is_procedure=False)
 
     def modifyVarRef(self, node, *args, **kwargs):
-        ''' If the varref is a property, then convert it to a call to the get-function of the property '''
+        # If the VarRef is a property, then convert it to a call to the get-function of the property
         if node.identifier.identifier in properties:
             return self.modifyFunctionCall(self.convert_property_access_to_function_call(node),
                                            *args, **kwargs)
@@ -1130,13 +1126,13 @@ class ASTModifierFunctionExpander(ASTModifierBase):
             hand side expression of that assignment is then what gets inlined into the expression. '''
 
         if not isinstance(node.varref, ksp_ast.VarRef):
-            raise ksp_ast.ParseException(node, 'The left hand side of the assignment needs to be a variable reference.')
+            raise ksp_ast.ParseException(node, 'The left hand side of the assignment needs to be a variable reference!')
 
         # if this is a property assignment, eg. myproperty := 5, convert it to a function call, eg. myproperty.set(5)
         if node.varref.identifier.identifier in properties:
             func_name = '%s.set' % node.varref.identifier.identifier
             if func_name not in functions:
-                raise ksp_ast.ParseException(node.varref, 'The property %s has no set-function and is therefore read-only.' % str(node.varref.identifier.identifier))
+                raise ksp_ast.ParseException(node.varref, 'The property %s has no set function, therefore it is read-only!' % str(node.varref.identifier.identifier))
             set_function = functions[func_name]
             parameters = node.varref.subscripts + [node.expression]
             function_call = ksp_ast.FunctionCall(node.lexinfo, set_function.name, parameters, is_procedure=True)
@@ -1161,44 +1157,44 @@ class ASTModifierFunctionExpander(ASTModifierBase):
             return ASTModifierBase.modifyAssignStmt(self, node, parent_toplevel=parent_toplevel, function_stack=function_stack)
 
     def doFunctionCallChecks(self, node, function_name, func, is_inside_init_callback, function_stack, assign_stmt_lhs):
-        ''' Make various checks that a function call is correct (eg. function exists, parameters match, not recursive, invoked from a valid context).
-            Factorered out from the modifyFunctionCall method in order to make the logic there easier to follow '''
+        ''' Make various checks that a function call is correct (e.g. function exists, parameters match, not recursive, invoked from a valid context).
+            Factored out from the modifyFunctionCall method in order to make the logic there easier to follow '''
 
         # verify that function exists
         if func is None:
-            raise ksp_ast.ParseException(node, "Unknown function: %s" % function_name)
+            raise ksp_ast.ParseException(node, "Unknown function: %s!" % function_name)
 
         # verify that it's not a recursive call
         if function_name in function_stack:
-            raise ksp_ast.ParseException(node, "Recursive functions calls (functions directly or indirectly calling themselves) not allowed: %s" % ' -> '.join(function_stack + [function_name]))
+            raise ksp_ast.ParseException(node, "Recursive functions calls (functions directly or indirectly calling themselves) are not allowed! %s" % ' -> '.join(function_stack + [function_name]))
 
         # verify that number of parameters and arguments matches
         if len(node.parameters) != len(func.parameters):
-            raise ksp_ast.ParseException(node, "Wrong number of parameters to %s. Expected %d, got %d." % (function_name, len(func.parameters), len(node.parameters)))
+            raise ksp_ast.ParseException(node, "Wrong number of parameters in %s! Expected %d, got %d." % (function_name, len(func.parameters), len(node.parameters)))
 
         # verify that function calls that are part of expressions invoke a function for which a return value variable has been defined
         if not node.is_procedure and func.return_value is None:
-            raise ksp_ast.ParseException(node, "Function %s does not return any value and cannot be used in this context" % function_name)
+            raise ksp_ast.ParseException(node, "Function %s does not return any value and cannot be used in this context!" % function_name)
 
         # verify that function is not used within some expression, unless it's a taskfunc function and it's the single thing on the right-hand side of an assignment
         if not node.is_procedure and func.is_taskfunc and assign_stmt_lhs is None:
-            raise ksp_ast.ParseException(node, 'When used inside an expression like this the function call needs to be the only thing on the right hand side of an assignment, eg. x := call myfunc().')
+            raise ksp_ast.ParseException(node, 'When used in an expression like this, the function call needs to be the only thing on the right hand side of an assignment! For example: x := call myfunc().')
         # verify that 'call' is not used from within 'on init'
         if is_inside_init_callback and (node.using_call_keyword or func.is_taskfunc):
-            raise ksp_ast.ParseException(node, 'Usage of "call" inside init callback is not allowed (please also verify that the function is not a taskfunc).')
+            raise ksp_ast.ParseException(node, 'Usage of "call" inside init callback is not allowed! Please also verify that the called function is not a taskfunc.')
 
         if node.using_call_keyword:
             # verify that there are no parameters (unless it's a taskfunc function call)
             if not func.is_taskfunc and node.parameters:
-                raise ksp_ast.ParseException(node, "Parameters for function invocations using 'call' not supported by Kontakt")
+                raise ksp_ast.ParseException(node, 'Functions with parameters called with "call" keyword are not supported by Kontakt!')
             # verify that 'call' is not used within some expression (eg. as in the incorrect "x := call myfunc")
             if not node.is_procedure and not func.is_taskfunc:
-                raise ksp_ast.ParseException(node, 'Using "call" inside an expression is not allowed for non-taskfunc functions. "call" needs to be the first word of the line.')
+                raise ksp_ast.ParseException(node, 'Using "call" inside an expression is not allowed for functions other than taskfuncs! "call" needs to be the first word of the line.')
             if func.is_taskfunc:
-                raise ksp_ast.ParseException(node, 'A taskfunc function cannot be invoked using the "call" keyword')
+                raise ksp_ast.ParseException(node, 'A taskfunc cannot be invoked using the "call" keyword!')
 
     def updateCallGraph(self, node, parent_toplevel=None, function_stack=None):
-        ''' This function takes a function call as parameter node and updates the call graph accordingly '''
+        # This function takes a function call as parameter node and updates the call graph accordingly
 
         if isinstance(parent_toplevel, ksp_ast.FunctionDef):
             parent_function_name = parent_toplevel.name.identifier
@@ -1208,7 +1204,7 @@ class ASTModifierFunctionExpander(ASTModifierBase):
         function_name = node.function_name.identifier
         if function_name not in ksp_builtins.functions:  # and not (isinstance(parent_toplevel, ksp_ast.FunctionCall) and function_name in parent_toplevel.locals_name_subst_dict):
             if function_name not in functions:
-                raise ksp_ast.ParseException(node.function_name, "Unknown function: %s" % function_name)
+                raise ksp_ast.ParseException(node.function_name, "Unknown function: %s!" % function_name)
             call_graph[parent_function_name].append(function_name)  # enter a link from the caller to the callee in the call graph
             call_graph[function_name] = call_graph[function_name]   # add target node if it doesn't already exist
             if node.using_call_keyword:
@@ -1305,7 +1301,7 @@ class ASTModifierFunctionExpander(ASTModifierBase):
                 if len(result) == 1 and isinstance(result[0], ksp_ast.AssignStmt) and result[0].varref.identifier.identifier == func.return_value.identifier:
                     return result[0].expression  # return the right-hand side of that single assignment
                 else:
-                    raise ksp_ast.ParseException(node, 'The definition of function %s needs to consist of a single line (eg. "result := <expr>") in order to be used in this context' % function_name)
+                    raise ksp_ast.ParseException(node, 'The definition of function %s needs to consist of a single line (e.g. "result := <expr>") in order to be used in this context!' % function_name)
         return result
 
 class ASTModifierTaskfuncFunctionHandler(ASTModifierBase):
@@ -1317,7 +1313,7 @@ class ASTModifierTaskfuncFunctionHandler(ASTModifierBase):
         return node
 
     def modifyFunctionDef(self, node, parent_taskfunc_function=None, assign_stmt_lhs=None):
-        ''' Add to context info about which taskfunc function we are currently inside '''
+        # Add to context info about which taskfunc function we are currently inside
         ID, BinOp, Integer, VarRef, AssignStmt, FunctionCall = ksp_ast.ID, ksp_ast.BinOp, ksp_ast.Integer, ksp_ast.VarRef, ksp_ast.AssignStmt, ksp_ast.FunctionCall
         if not node.is_taskfunc:
             return node
@@ -1343,13 +1339,15 @@ class ASTModifierTaskfuncFunctionHandler(ASTModifierBase):
         Pxmax = len(params)
         Txmax = len(node.taskfunc_declaration_statements)
         Ta = Pxmax + Txmax + 1
+
         line0 = AssignStmt(li, VarRef(li, ID(li, '%p'), [BinOp(li, VarRef(li, ID(li, '$sp')), '-', Integer(li, Ta))]), VarRef(li, ID(li, '$fp')))
         line1 = AssignStmt(li, VarRef(li, ID(li, '$fp')), BinOp(li, VarRef(li, ID(li, '$sp')), '-', Integer(li, Ta)))
         line2 = AssignStmt(li, VarRef(li, ID(li, '$sp')), VarRef(li, ID(li, '$fp')))
-        #line2 = AssignStmt(li, VarRef(li, ID(li, '$sp')), BinOp(li, VarRef(li, ID(li, '$fp')), '-', Integer(li, Txmax)))
+
         node.lines.insert(0, line0)
         node.lines.insert(1, line1)
         node.lines.insert(2, line2)
+
         if 'TCM_DEBUG' in true_conditions:
             line3 = FunctionCall(li, function_name=ID(li, 'check_full'), parameters=[], is_procedure=True, using_call_keyword=True)
             node.lines.insert(3, line3)
@@ -1360,7 +1358,7 @@ class ASTModifierTaskfuncFunctionHandler(ASTModifierBase):
         line0 = AssignStmt(li, VarRef(li, ID(li, '$sp')), VarRef(li, ID(li, '$fp')))
         line1 = AssignStmt(li, VarRef(li, ID(li, '$fp')), VarRef(li, ID(li, '%p'), [VarRef(li, ID(li, '$fp'))]))
         line2 = AssignStmt(li, VarRef(li, ID(li, '$sp')), BinOp(li, VarRef(li, ID(li, '$sp')), '+', Integer(li, Ta)))
-        #line3 = AssignStmt(li, VarRef(li, ID(li, '%tstate.ues'), [VarRef(li, ID(li, '$tx'))]), VarRef(li, ID(li, '$sp')))
+
         node.lines.append(line0)
         node.lines.append(line1)
         node.lines.append(line2)
@@ -1374,9 +1372,9 @@ class ASTModifierFixPrefixesAndFixControlPars(ASTModifierFixPrefixes):
         ASTModifierFixPrefixes.__init__(self, ast)
 
     def modifyVarRef(self, node, *args, **kwargs):
-        ''' Check that there is not more than one subscript '''
+        # Check that there is not more than one subscript
         if len(node.subscripts) > 1:
-            raise ksp_ast.ParseException(node.subscripts[0], 'Too many variable subscripts: %s. A normal array variable can have at most one.' % str(node))
+            raise ksp_ast.ParseException(node.subscripts[0], 'Too many variable subscripts: %s! A normal array variable can have at most one.' % str(node))
         return ASTModifierFixPrefixes.modifyVarRef(self, node, *args, **kwargs)
 
     def modifyFunctionCall(self, node, *args, **kwargs):
@@ -1386,7 +1384,8 @@ class ASTModifierFixPrefixesAndFixControlPars(ASTModifierFixPrefixes):
         else:
             node = result
 
-        function_name = node.function_name.identifier  # shorter name alias
+        # shorter name alias
+        function_name = node.function_name.identifier
 
         # if it's a builtin function that sets or gets a control par and the first parameter is not an integer ID, but rather a UI variable
         if function_name in ksp_builtins.functions and not node.using_call_keyword and \
@@ -1444,7 +1443,7 @@ def find_cycles(graph, ready=None):
             top = stack[-1]
             for node in graph[top]:
                 if node in stack:
-                    raise Exception('Recursion detected: ' + '->'.join(map(str, stack + [node])))
+                    raise Exception('Recursion detected! ' + '->'.join(map(str, stack + [node])))
                 if node in todo:
                     stack.append(node)
                     todo.remove(node)
@@ -1459,7 +1458,6 @@ def topological_sort(graph):
     count = {}
 
     # TODO: maybe replace None with empty string '' to make sorting easier
-    #nodes = sorted(graph.keys())  <-- OLD CODE
     nodes = ['' if k is None else k for k in graph.keys()]
     nodes.sort()
     nodes = [None if k == '' else k for k in nodes]
@@ -1494,27 +1492,25 @@ def default_read_file_func(filepath):
     return open(filepath, 'r').read()
 
 def parse_nckp(path):
-
     '''
-    The prefix list is orderd to match the integer number representing each ui_control:
+    The prefix list is ordered to match the integer number representing each ui_control:
 
     0. panel
     1. button
-    2. fileselector
+    2. file selector
     3. knob
     4. label
-    5. levelmeter
+    5. level meter
     6. menu
     7. slider
     8. switch
     9. table
-    10. textedit
-    11. valueedit
+    10. text edit
+    11. value edit
     12. waveform
     13. wavetable
-    14. xypad
-    15. mousearea
-
+    14. xy pad
+    15. mouse area
     '''
 
     prefix = ["$", "$", "$", "$", "$", "$", "$", "$", "$", "%", "@", "$", "$", "$", "?", "$"]
@@ -1552,12 +1548,13 @@ def open_nckp(lines, basedir):
     source = merge_lines(lines) # for checking purposes
     nckp_path = '' # predeclared to avoid errors if the import_nckp ksp function is not used
     ui_to_import = []
+
     for index, l in enumerate(lines):
         line = l.command
         if 'import_nckp' in line:
             if 'load_performance_view' in source:
                 if 'make_perfview' in source:
-                    raise ParseException(Line(line, [(None, index + 1)], None), 'If \'load_performance_view\' is used \'make_perfview\' is not necessary, please remove it!\n')
+                    raise ParseException(Line(line, [(None, index + 1)], None), 'If \'load_performance_view\' is used, \'make_perfview\' must be removed!\n')
 
                 nckp_path = line[line.find('(')+1:line.find(')')][1:-1]
 
@@ -1573,7 +1570,7 @@ def open_nckp(lines, basedir):
                         ui_to_import = list(parse_nckp(nckp_path))
 
                         if not ui_to_import:
-                            raise ParseException(Line(line, [(None, index + 1)], None), 'no controls to import from the nckp file!\n')
+                            raise ParseException(Line(line, [(None, index + 1)], None), 'No controls to import from the .nckp file!\n')
 
                         for i,v in enumerate(ui_to_import):
                             variables.add(v.lower())
@@ -1586,9 +1583,9 @@ def open_nckp(lines, basedir):
                             comp_extras.add_nckp_var_to_nckp_table(v.replace('__', '.'))
 
                     else:
-                        raise ParseException(Line(line, [(None, index + 1)], None), '.nkcp file not found at: <' + os.path.abspath(nckp_path) + '> !\n')
+                        raise ParseException(Line(line, [(None, index + 1)], None), '.nkcp file not found at: ' + os.path.abspath(nckp_path) + '!\n')
             else:
-                raise ParseException(Line(line, [(None, index + 1)], None), 'import_nckp used but no load_performance_view found in the script!\n')
+                raise ParseException(Line(line, [(None, index + 1)], None), 'import_nckp was used, but load_performance_view was not found in the script!\n')
 
     return bool(ui_to_import)
 
@@ -1629,7 +1626,8 @@ class KSPCompiler(object):
                                                     read_file_function=self.read_file_func,
                                                     preprocessor_func=self.examine_pragmas)
 
-        handle_conditional_lines(self.lines) # Parse conditionals and remove lines if appropriate
+        # Parse conditionals and remove lines if appropriate
+        handle_conditional_lines(self.lines)
 
     # PAST THIS FUNCTION, ALL IMPORTED AND UPDATED CODE LIVES IN SELF.LINES, NOT SOURCE. DO NOT ATTEMPT TO REPRODUCE LINE OBJECTS FROM SOURCE
     # TO PRESERVE LINE PROPERTIES, SELF.LINES CAN NOT BE REMERGED INTO SOURCE
@@ -1643,7 +1641,7 @@ class KSPCompiler(object):
 
         ### Extensions ###
 
-        # Add tcm code if tcm.init() is found
+        # Add TCM code if tcm.init() is found
         if re.search(r'(?m)^\s*tcm.init', check_source):
             self.lines += parse_lines_and_handle_imports(taskfunc_code,
                                             read_file_function=self.read_file_func,
@@ -1660,7 +1658,7 @@ class KSPCompiler(object):
             activate_line = re.sub(new_comment_re, '', activate_line)
             filepath_m = re.search(r"(\"|\').*(\"|\')", str(activate_line))
             if not filepath_m:
-                raise ParseException(Line("", [(None, 1)], None), 'No filepath in activate_logger.\n')
+                raise ParseException(Line("", [(None, 1)], None), 'No filepath used in activate_logger()!\n')
             filepath_m_string = filepath_m.group(0)
             quote_type_str = filepath_m_string[0]
             filepath = filepath_m.group(0)[1:-1]
@@ -1676,7 +1674,7 @@ class KSPCompiler(object):
                 new_logger_str = "logger_filepath := filepath & %slogger.nka%s" % (quote_type_str, quote_type_str)
                 amended_logger_code = amended_logger_code.replace("#name#", "logger").replace("logger_filepath := filepath", new_logger_str)
             if valid_file_path_flag == False:
-                raise ParseException(Line("", [(None, 1)], None), 'Filepath of activate_logger is invalid.\nFilepaths must be in this format: "C:/Users/Name/LogFile.nka" or "/Users/Name/LogFile.nka"')
+                raise ParseException(Line("", [(None, 1)], None), 'Invalid filepath used in activate_logger()).\nFilepaths must be in this format: "C:/Users/Name/LogFile.nka" or "/Users/Name/LogFile.nka"')
 
             # A persistance_changed callback function needs to be inserted if the script has one.
             # Insert *directly* into self.lines if there is, or just add it to the new source block if there isn't.
@@ -1744,16 +1742,16 @@ class KSPCompiler(object):
 
     # Run stored macros on the code
     def expand_macros(self):
-        # Initial Expansion
+        # initial expansion
         normal_lines, callback_lines = expand_macros(self.lines, self.macros, 0, False)
         self.lines = normal_lines + callback_lines
 
-        # Nested Expansion, supports now using macros to further specify define constants used for iterate and literate macros
+        # nested expansion, supports now using macros to further specify define constants used for iterate and literate macros
         while macro_iter_functions(self.lines):
             normal_lines, callback_lines = expand_macros(self.lines, self.macros, 0, False)
             self.lines = normal_lines + callback_lines
 
-        # Run define subs a 2nd time, catch returned cache just as a formality
+        # run define subs a second time, catch returned cache just as a formality
         self.define_cache = substituteDefines(self.lines, self.define_cache)
 
         while post_macro_iter_functions(self.lines):
@@ -1769,12 +1767,12 @@ class KSPCompiler(object):
             dir_check = m.group(1).strip()
             if not os.path.isabs(dir_check):
                 if self.basedir == None:
-                    raise Exception('Please save the file being compiled before attempting to compile to a relative path.')
+                    raise Exception('Please save the file to hard drive before attempting to compile to a relative path!')
 
                 dir_check = os.path.join(self.basedir, dir_check)
 
             if not os.path.exists(os.path.dirname(dir_check)):
-                raise Exception('The filepath in save_compiled_source does not exist!')
+                raise Exception('The filepath in save_compiled_source is invalid!')
             else:
                 self.output_file = dir_check
 
@@ -1808,12 +1806,14 @@ class KSPCompiler(object):
                                      for function_name in reversed(topological_sort(call_graph))
                                      if function_name in called_functions and function_name in used_functions]
 
-        # create a lookup table from function name to function definition, remove all function definitions and then add the ones used back in the right order (as determined by the topological sorting)
+        # create a lookup table from function name to function definition, remove all function definitions
+        # and then add the ones used back in the right order (as determined by the topological sorting)
         function_table = dict([(func.name.identifier, func) for func in self.module.blocks if isinstance(func, ksp_ast.FunctionDef)])
         self.module.blocks = [block for block in self.module.blocks if not isinstance(block, ksp_ast.FunctionDef)]
         self.module.blocks = [self.module.on_init] + [function_table[func_name] for func_name in function_definition_order] + self.module.blocks[1:]
 
-        # add local variable declarations to 'on init' in case they have not already been inserted (they could have been inserted earlier if the function was invoked from the init callback)
+        # add local variable declarations to 'on init' in case they have not already been inserted
+        # (they could have been inserted earlier if the function was invoked from the init callback)
         for f in reversed(list(functions.values())):
             if f.used and (f.global_declaration_statements or f.local_declaration_statements):
                 self.module.on_init.lines = f.global_declaration_statements + self.module.on_init.lines + f.local_declaration_statements
@@ -1824,11 +1824,11 @@ class KSPCompiler(object):
         global variables
         # convert all dots into '__' (and update the list of variables accordingly)
         # Note: for historical reasons the ksp_compiler_extras functions assume
-        # pure KSP as input and therefor cannot handle '.' in names.
+        # pure KSP as input and therefore cannot handle '.' in names.
 
-        # updated the AST
+        # update the AST
         name_fixer = ASTModifierNameFixer(self.module)
-        # updated the global list of variables similarly
+        # update the global list of variables similarly
         variables = set(name_fixer.replace_dots_in_name(v) for v in variables)
 
     def compact_names(self):
@@ -1839,15 +1839,13 @@ class KSPCompiler(object):
 
         for v in variables:
             if self.variable_names_to_preserve and preserve_pattern.match(v):
-                #self.original2short[v] = v
-                #self.short2original[v] = v
                 continue
             elif v not in self.original2short and v not in ksp_builtins.variables:
                 self.original2short[v] = '%s%s' % (v[0], compress_variable_name(v))
                 if self.original2short[v] in ksp_builtins.variables:
-                    raise Exception('This is your unlucky day. Even though the chance is only 3.2%%%% the variable %s was mapped to the same hash as that of a builtin KSP variable.' % (v))
+                    raise Exception('This is your unlucky day! Even though the chance is only 0.32%%, the variable %s was mapped to the same hash as that of a builtin KSP variable.' % (v))
                 if self.original2short[v] in self.short2original:
-                    raise Exception('This is your unlucky day. Even though the chance is only 3.2%%%% two variable names were compacted to the same short name: %s and %s' % (v, self.short2original[self.original2short[v]]))
+                    raise Exception('This is your unlucky day! Even though the chance is only 0.32%%, two variable names were compacted to the same short name: %s and %s.' % (v, self.short2original[self.original2short[v]]))
                 self.short2original[self.original2short[v]] = v
         ASTModifierIDSubstituter(self.original2short, force_lower_case=True).modify(self.module)
 
@@ -1861,7 +1859,7 @@ class KSPCompiler(object):
         self.module.emit(emitter)
         self.compiled_code = buffer.getvalue()
 
-        # NOTE(Sam): Add a ksp comment at the beginning of the compiled script to display the time and date it was compiled on
+        # NOTE(Sam): Add a KSP comment at the beginning of the compiled script to display the time and date it was compiled on
         if self.add_compiled_date_comment:
             localtime = time.asctime( time.localtime(time.time()) )
             self.compiled_code = "{ Compiled on " + localtime + " }\n" + self.compiled_code
@@ -1885,41 +1883,41 @@ class KSPCompiler(object):
             do_extra = self.extra_syntax_checks
             do_optim = do_extra and self.optimize
             do_emptycheck = self.check_empty_compound_statements and not do_optim
-            #     (description,                  function,                                                                    condition, time-weight)
+            #      description                   function                                                                           condition     time-weight
             tasks = [
-                 ('scanning and importing code', lambda: self.do_imports_and_convert_to_line_objects(),                       True,      1),
-                 ('extensions (w/ macros)',      lambda: self.extensions_with_macros(),                                       True,      1),
+                 ('scanning and importing code', lambda: self.do_imports_and_convert_to_line_objects(),                             True,             1),
+                 ('extensions (w/ macros)',      lambda: self.extensions_with_macros(),                                             True,             1),
                  # NOTE(Sam): Call the pre-macro section of the preprocessor
-                 ('pre-macro processes',         lambda: self.pre_macro_functions(),                                     True,      1),
-                 ('parsing macros',              lambda: self.extract_macros(),                                               True,      1),
-                 ('expanding macros',            lambda: self.expand_macros(),                                                True,      1),
+                 ('pre-macro processes',         lambda: self.pre_macro_functions(),                                                True,             1),
+                 ('parsing macros',              lambda: self.extract_macros(),                                                     True,             1),
+                 ('expanding macros',            lambda: self.expand_macros(),                                                      True,             1),
                  # NOTE(Sam): Call the post-macro section of the preprocessor
-                 ('post-macro processes',        lambda: post_macro_functions(self.lines),                                    True,      1),
-                 ('replace string placeholders', lambda: self.replace_string_placeholders(),                                  True,      1),
-                 ('search for nckp import',      lambda: self.search_for_nckp(),                                              True,      1),
+                 ('post-macro processes',        lambda: post_macro_functions(self.lines),                                          True,             1),
+                 ('replace string placeholders', lambda: self.replace_string_placeholders(),                                        True,             1),
+                 ('search for nckp import',      lambda: self.search_for_nckp(),                                                    True,             1),
                  # NOTE(Sam): Convert the lines to a block in a separate function
-                 ('convert lines to code block', lambda: self.convert_lines_to_code(),                                        True,      1),
-                 ('parse code',                  lambda: self.parse_code(),                                                   True,      1),
-                 ('various tasks',               lambda: ASTModifierFixReferencesAndFamilies(self.module, self.lines),        True,      1),
-                 ('add variable name prefixes',  lambda: ASTModifierFixPrefixesIncludingLocalVars(self.module),               True,      1),
-                 ('inline functions',            lambda: ASTModifierFunctionExpander(self.module),                            True,      1),
-                 ('handle taskfunc',             lambda: ASTModifierTaskfuncFunctionHandler(self.module),                     True,      1),
-                 ('handle local variables',      lambda: self.sort_functions_and_insert_local_variables_into_on_init(),       True,      1),
-                 ('add variable name prefixes',  lambda: ASTModifierFixPrefixesAndFixControlPars(self.module),                True,      1),
-                 ('convert dots to underscore',  lambda: self.convert_dots_to_double_underscore(),                            True,      1),
-                 ('init extra syntax checks',    lambda: self.init_extra_syntax_checks(),                                     do_extra,  1),
-                 ('check types',                 lambda: comp_extras.ASTVisitorDetermineExpressionTypes(self.module),         do_extra,  1),
-                 ('check types',                 lambda: comp_extras.ASTVisitorCheckStatementExprTypes(self.module),          do_extra,  1),
-                 ('check declarations',          lambda: comp_extras.ASTVisitorCheckDeclarations(self.module),                do_extra,  1),
-                 ('simplying expressions',       lambda: comp_extras.ASTModifierSimplifyExpressions(self.module, True),       do_optim,  1),
-                 ('removing unused branches',    lambda: comp_extras.ASTModifierRemoveUnusedBranches(self.module),            do_optim,  1),
-                 ('removing unused functions',   lambda: comp_extras.ASTVisitorFindUsedFunctions(self.module, used_functions),      do_optim, 1),
-                 ('removing unused functions',   lambda: comp_extras.ASTModifierRemoveUnusedFunctions(self.module, used_functions), do_optim, 1),
-                 ('removing unused variables',   lambda: comp_extras.ASTVisitorFindUsedVariables(self.module, used_variables),      do_optim, 1),
-                 ('removing unused variables',   lambda: comp_extras.ASTModifierRemoveUnusedVariables(self.module, used_variables), do_optim, 1),
-                 ('checking empty if-stmts',     lambda: comp_extras.ASTVisitorCheckNoEmptyIfCaseStatements(self.module),     do_emptycheck, 1),
-                 ('compact variable names',      self.compact_names,                                                          self.compactVars, 1),
-                 ('generate code',               self.generate_compiled_code,                                                 True,      1),
+                 ('convert lines to code block', lambda: self.convert_lines_to_code(),                                              True,             1),
+                 ('parse code',                  lambda: self.parse_code(),                                                         True,             1),
+                 ('various tasks',               lambda: ASTModifierFixReferencesAndFamilies(self.module, self.lines),              True,             1),
+                 ('add variable name prefixes',  lambda: ASTModifierFixPrefixesIncludingLocalVars(self.module),                     True,             1),
+                 ('inline functions',            lambda: ASTModifierFunctionExpander(self.module),                                  True,             1),
+                 ('handle taskfunc',             lambda: ASTModifierTaskfuncFunctionHandler(self.module),                           True,             1),
+                 ('handle local variables',      lambda: self.sort_functions_and_insert_local_variables_into_on_init(),             True,             1),
+                 ('add variable name prefixes',  lambda: ASTModifierFixPrefixesAndFixControlPars(self.module),                      True,             1),
+                 ('convert dots to underscore',  lambda: self.convert_dots_to_double_underscore(),                                  True,             1),
+                 ('init extra syntax checks',    lambda: self.init_extra_syntax_checks(),                                           do_extra,         1),
+                 ('check types',                 lambda: comp_extras.ASTVisitorDetermineExpressionTypes(self.module),               do_extra,         1),
+                 ('check types',                 lambda: comp_extras.ASTVisitorCheckStatementExprTypes(self.module),                do_extra,         1),
+                 ('check declarations',          lambda: comp_extras.ASTVisitorCheckDeclarations(self.module),                      do_extra,         1),
+                 ('simplying expressions',       lambda: comp_extras.ASTModifierSimplifyExpressions(self.module, True),             do_optim,         1),
+                 ('removing unused branches',    lambda: comp_extras.ASTModifierRemoveUnusedBranches(self.module),                  do_optim,         1),
+                 ('removing unused functions',   lambda: comp_extras.ASTVisitorFindUsedFunctions(self.module, used_functions),      do_optim,         1),
+                 ('removing unused functions',   lambda: comp_extras.ASTModifierRemoveUnusedFunctions(self.module, used_functions), do_optim,         1),
+                 ('removing unused variables',   lambda: comp_extras.ASTVisitorFindUsedVariables(self.module, used_variables),      do_optim,         1),
+                 ('removing unused variables',   lambda: comp_extras.ASTModifierRemoveUnusedVariables(self.module, used_variables), do_optim,         1),
+                 ('checking empty if-stmts',     lambda: comp_extras.ASTVisitorCheckNoEmptyIfCaseStatements(self.module),           do_emptycheck,    1),
+                 ('compact variable names',      self.compact_names,                                                                self.compactVars, 1),
+                 ('generate code',               self.generate_compiled_code,                                                       True,             1),
             ]
 
             # keep only tasks where the execution-condition is true
@@ -1936,7 +1934,6 @@ class KSPCompiler(object):
                     return False
             return True
         except ksp_ast.ParseException as e:
-            #raise  # TEMPORARY
             messages = []
             if isinstance(e.node, lex.LexToken):
                 line_numbers = [e.node.lineno]
@@ -1960,7 +1957,6 @@ if __name__ == "__main__":
 
     # definition of argsparse.FileType in Python 3.4 (with support for encoding) - in case we're running Python 3.3
     class FileType(object):
-
         def __init__(self, mode='r', bufsize=-1, encoding=None, errors=None):
             self._mode = mode
             self._bufsize = bufsize
@@ -2014,7 +2010,7 @@ if __name__ == "__main__":
     def read_file_func(filepath):
         if not os.path.isabs(filepath):
             if basedir is None:
-                raise Exception('Relative import paths not supported when the base path of the source file is unknown')
+                raise Exception('Relative import paths are not supported when the base path of the source file is unknown!')
             else:
                 filepath = os.path.join(basedir, filepath)
         return codecs.open(filepath, 'r', 'latin-1').read()
@@ -2047,5 +2043,3 @@ if __name__ == "__main__":
         output = codecs.open(output_path, 'w', encoding='latin-1')
     if output:
         output.write(code)
-
-

@@ -36,7 +36,7 @@ reserved_map['RESET_CONDITION'] = 'RESET_CONDITION'
 tokens = reserved + (
     'BEGIN_CALLBACK', 'END_CALLBACK',
     'SET_CONDITION', 'RESET_CONDITION',
-    'RIGHTARROW', 'PLUS', 'MINUS', 'TIMES', 'DIVIDE', 'MOD', 'BITWISE_AND', 'BITWISE_OR', 'BITWISE_NOT', 'COMPARE', 'CONCAT', 'ASSIGN',
+    'RIGHTARROW', 'PLUS', 'MINUS', 'TIMES', 'DIVIDE', 'MOD', 'BITWISE_AND', 'BITWISE_OR', 'BITWISE_XOR', 'BITWISE_NOT', 'COMPARE', 'CONCAT', 'ASSIGN',
     'LPAREN', 'RPAREN', 'LBRACK', 'RBRACK',
     'REAL', 'INTEGER', 'STRING',
     'ID',
@@ -44,7 +44,6 @@ tokens = reserved + (
     'COMMA', 'DOT', 'LINECONT', 'NEWLINE', 'COMMENT',
 )
 
-#t_RIGHTARROW = '->'
 t_PLUS, t_MINUS, t_TIMES, t_DIVIDE = [re.escape(op) for op in '+ - * /'.split()]
 t_LPAREN, t_RPAREN, t_LBRACK, t_RBRACK = [re.escape(op) for op in '()[]']
 t_COMPARE = '|'.join([re.escape(op) for op in '<= >= < > # ='.split()])
@@ -62,13 +61,17 @@ lsb_right_bin_re1 = re.compile('[0-1]+[bB]$')
 lsb_left_bin_re1 = re.compile('[bB][0-1]+$')
 number_re = re.compile('-?\d+')
 
-# define bitwise and/or/not as functions to make sure they are tried before the ID token
+# define bitwise and/or/xor/not as functions to make sure they are tried before the ID token
 def t_BITWISE_AND(t):
     r'\.and\.'
     return t
 
 def t_BITWISE_OR(t):
     r'\.or\.'
+    return t
+
+def t_BITWISE_XOR(t):
+    r'\.xor\.'
     return t
 
 def t_BITWISE_NOT(t):
@@ -99,16 +102,11 @@ def t_RIGHTARROW(t):
 
 def t_REAL(t):
     r'(\d*\.\d+)([eE]-?\d+)?'
-    #try:
-    #t.value = float(t.value)
-    #except ValueError:
-    #    print("Line %d: real %s is too large!" % (t.lineno, t.value))
-    #    t.value = 0
     return t
 
 def t_ID(t):
     r'[$%!@~?][A-Za-z0-9_.]+|[A-Za-z_][A-Za-z0-9_.]*|\d+[A-Za-z_][A-Za-z0-9_]*'
-    if t.value == 'mod': # mod operator
+    if t.value == 'mod': # modulo operator
         t.type = 'MOD'
     elif t.value.lower().startswith('0x') and hex_number_re1.match(t.value): # hex number, eg. 0x10
         t.type = 'INTEGER'
@@ -151,7 +149,6 @@ def t_MOD(t):
     return t
 
 def t_error(t):
-    #print ("Illegal character '%s'" % t.value[0], t.lineno)
     t.lexer.skip(1)
 
 t_ignore  = ' \t'
@@ -184,6 +181,7 @@ precedence = (
     ('left', 'AND'),
     ('right', 'NOT'),
     ('nonassoc', 'COMPARE'),
+    ('left', 'BITWISE_XOR'),
     ('left', 'BITWISE_OR'),
     ('left', 'BITWISE_AND'),
     ('right', 'BITWISE_NOT'),
@@ -202,7 +200,7 @@ def p_script(p):
 
 def p_script_error(p):
     'script               : newlines-opt error'
-    raise_parse_exception(p, 'syntax error')
+    raise_parse_exception(p, 'Syntax error!')
 
 def p_toplevels(p):
     'toplevels             : toplevel toplevels'
@@ -314,7 +312,7 @@ def p_if_stmt(p):
 
 def p_if_stmt_error(p):
     'if-stmt               : IF expression NEWLINE stmts-opt else-if-opt error'
-    raise_parse_exception(p, "Expected 'end if'")
+    raise_parse_exception(p, "Expected 'end if'!")
 
 def p_else_if_opt(p):
     'else-if-opt           : ELSE else-if-condition-opt NEWLINE stmts-opt else-if-opt'
@@ -338,7 +336,7 @@ def p_while_stmt(p):
 
 def p_while_stmt_error(p):
     'while-stmt            : WHILE expression NEWLINE stmts-opt error'
-    raise_parse_exception(p, "Expected 'end while'")
+    raise_parse_exception(p, "Expected 'end while'!")
 
 def p_for_stmt(p):
     'for-stmt              : FOR varref ASSIGN expression updownto expression NEWLINE stmts-opt END FOR'
@@ -350,7 +348,7 @@ def p_for_stmt_with_step(p):
 
 def p_for_stmt_error(p):
     'for-stmt              : FOR varref ASSIGN expression updownto expression NEWLINE stmts-opt error'
-    raise_parse_exception(p, "Expected 'end for'")
+    raise_parse_exception(p, "Expected 'end for'!")
 
 def p_updownto(p):
     '''updownto            : TO
@@ -363,7 +361,7 @@ def p_select_stmt(p):
 
 def p_select_stmt_error(p):
     'select-stmt           : SELECT expression NEWLINE select-cases error'
-    raise_parse_exception(p, "Expected 'end select'")
+    raise_parse_exception(p, "Expected 'end select'!")
 
 def p_select_cases(p):
     'select-cases          : select-case select-cases'
@@ -525,7 +523,7 @@ def p_family_declaration(p):
 
 def p_family_declaration_error(p):
     'family-declaration    : FAMILY ident NEWLINE stmts-opt error'
-    raise_parse_exception(p, "Expected 'end family'")
+    raise_parse_exception(p, "Expected 'end family'!")
 
 def p_global_modifier_opt(p):
     '''global-modifier-opt   : LOCAL
@@ -665,6 +663,7 @@ def p_expression_binary(p):
                            | expression MOD expression
                            | expression BITWISE_AND expression
                            | expression BITWISE_OR expression
+                           | expression BITWISE_XOR expression
                            | expression COMPARE expression
                            | expression AND expression
                            | expression OR expression
@@ -703,7 +702,28 @@ def p_empty(p):
 
 def p_error(p):
     'error                 :'
-    raise_parse_exception(p, 'Syntax error')
+    raise_parse_exception(p, 'Syntax error!')
+
+def init(outputdir=None):
+    outputdir = outputdir or os.path.dirname(__file__)
+    current_module = sys.modules[__name__]
+    debug = 0
+    optimize = 0
+    lexer = lex.lex(optimize=0, debug=debug)
+
+    return yacc.yacc(method="LALR", optimize=optimize, debug=debug,
+                     write_tables=0, module=current_module, start='script',
+                     outputdir=outputdir, tabmodule='ksp_parser_tab')
+
+parser = init()
+
+def parse(script_code):
+    lex.lexer.lineno = 0
+    lex.lexer.filename = 'current file'
+    data = script_code.replace('\r', '')
+    result = parser.parse(data, tracking=True)
+    return result
+
 
 # grammar:
 # # ---------------------------------------------------------------------------------
@@ -859,6 +879,7 @@ def p_error(p):
 #                          | expression MOD expression
 #                          | expression BITWISE_AND expression
 #                          | expression BITWISE_OR expression
+#                          | expression BITWISE_XOR expression
 #                          | expression COMPARE expression
 #                          | expression AND expression
 #                          | expression OR expression
@@ -877,36 +898,3 @@ def p_error(p):
 # g('dummy                 : COMMENT | LINECONT', lambda p: 'Dummy(%s)' % p[1])
 # g('empty                 :                   ', ReturnParam(0))
 # g('error                 :                   ', RaiseParseException())
-
-def init(outputdir=None):
-    outputdir = outputdir or os.path.dirname(__file__)  # os.getcwd()
-    current_module = sys.modules[__name__]
-    #print (outputdir, current_module)
-    debug = 0
-    optimize = 0
-    lexer = lex.lex(optimize=0, debug=debug)
-
-    # lexer.input('on init\n   declare shared parameter cutoff')
-    # while True:
-    #     tok = lexer.token()
-    #     if tok is None:
-    #         break
-    #     print (tok)
-
-    return yacc.yacc(method="LALR", optimize=optimize, debug=debug,
-                     write_tables=0, module=current_module, start='script',
-                     outputdir=outputdir, tabmodule='ksp_parser_tab')
-
-parser = init()
-
-def parse(script_code):
-    lex.lexer.lineno = 0
-    lex.lexer.filename = 'current file'  # filepath
-    data = script_code.replace('\r', '')
-    result = parser.parse(data, tracking=True)
-    return result
-
-##import os
-##visitor = ASTVisitorDotGenerator(module)
-##open('output.dot', 'w').write(visitor.get_dot_output())
-##os.system(r'"C:\Program Files\Graphviz\Graphviz\bin\dot.exe" -Tpng output.dot -o output.png')

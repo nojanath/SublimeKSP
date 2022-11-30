@@ -306,6 +306,8 @@ $ENGINE_PAR_FLAIR_RATE_UNIT
 $ENGINE_PAR_FLAIR_SCANMODE
 $ENGINE_PAR_FLAIR_VOICES
 $ENGINE_PAR_FLAIR_WIDTH
+$ENGINE_PAR_FLEXENV_LOOP
+$ENGINE_PAR_FLEXENV_ONESHOT
 $ENGINE_PAR_FORMANT
 $ENGINE_PAR_FORMANT_SHARP
 $ENGINE_PAR_FORMANT_SHIFT
@@ -346,6 +348,7 @@ $ENGINE_PAR_INTMOD_PULSEWIDTH
 $ENGINE_PAR_INTMOD_RETRIGGER
 $ENGINE_PAR_INTMOD_SUBTYPE
 $ENGINE_PAR_INTMOD_TYPE
+$ENGINE_PAR_IRC_AUTO_GAIN
 $ENGINE_PAR_IRC_ER_LR_BOUNDARY
 $ENGINE_PAR_IRC_FREQ_HIGHPASS_ER
 $ENGINE_PAR_IRC_FREQ_HIGHPASS_LR
@@ -571,6 +574,7 @@ $ENGINE_PAR_TRANSIENT_SIZE
 $ENGINE_PAR_TRANSLIM_CEILING
 $ENGINE_PAR_TRANSLIM_RELEASE
 $ENGINE_PAR_TRANSLIM_THRESHOLD
+$ENGINE_PAR_TM_LEGATO
 $ENGINE_PAR_TUNE
 $ENGINE_PAR_TW_BASS
 $ENGINE_PAR_TW_BRIGHT
@@ -618,6 +622,7 @@ $EVENT_PAR_MIDI_BYTE_2
 $EVENT_PAR_MIDI_CHANNEL
 $EVENT_PAR_MIDI_COMMAND
 $EVENT_PAR_MOD_VALUE_ID
+$EVENT_PAR_MOD_VALUE_EX_ID
 $EVENT_PAR_NOTE
 $EVENT_PAR_NOTE_LENGTH
 $EVENT_PAR_PAN
@@ -678,13 +683,17 @@ $FILTER_TYPE_PRO52
 $FILTER_TYPE_SIMPLE_LPHP
 $FILTER_TYPE_SV_BP2
 $FILTER_TYPE_SV_BP4
+$FILTER_TYPE_SV_BP6
 $FILTER_TYPE_SV_HP1
 $FILTER_TYPE_SV_HP2
 $FILTER_TYPE_SV_HP4
+$FILTER_TYPE_SV_HP6
 $FILTER_TYPE_SV_LP1
 $FILTER_TYPE_SV_LP2
 $FILTER_TYPE_SV_LP4
+$FILTER_TYPE_SV_LP6
 $FILTER_TYPE_SV_NOTCH4
+$FILTER_TYPE_SV_NOTCH6
 $FILTER_TYPE_SV_PAR_BPBP
 $FILTER_TYPE_SV_PAR_LPHP
 $FILTER_TYPE_SV_SER_LPHP
@@ -894,6 +903,7 @@ $NI_MOUSE_EVENT_TYPE_DROP
 $NI_MOUSE_EVENT_TYPE_LEFT_BUTTON_DOWN
 $NI_MOUSE_EVENT_TYPE_LEFT_BUTTON_UP
 $NI_MOUSE_OVER_CONTROL
+$NI_NOT_FOUND
 $NI_REPLIKA_TYPE_ANALOGUE
 $NI_REPLIKA_TYPE_DIFFUSION
 $NI_REPLIKA_TYPE_MODERN
@@ -1005,6 +1015,7 @@ $UI_WF_PROP_TABLE_VAL
 $VALUE_EDIT_MODE_NOTE_NAMES
 $VCC_MONO_AT
 $VCC_PITCH_BEND
+$ZONE_PAR_BPM
 $ZONE_PAR_FADE_HIGH_KEY
 $ZONE_PAR_FADE_HIGH_VELO
 $ZONE_PAR_FADE_LOW_KEY
@@ -1018,6 +1029,7 @@ $ZONE_PAR_PAN
 $ZONE_PAR_ROOT_KEY
 $ZONE_PAR_SAMPLE_END
 $ZONE_PAR_SAMPLE_MOD_RANGE
+$ZONE_PAR_SAMPLE_RATE
 $ZONE_PAR_SAMPLE_START
 $ZONE_PAR_TUNE
 $ZONE_PAR_VOLUME
@@ -1088,6 +1100,7 @@ change_time_with_pitch(<event-id>, <time>):integer
 change_tune(<event-id>, <tune-amount>, <relative-bit>)
 change_velo(<event-id>, <new-velocity-number>)
 change_vol(<event-id>, <volume>, <relative-bit>)
+cbrt(<real-value>):real
 cos(<real-value>):real
 dec(<expression>):integer
 delay_event_for_loading_slots(<unknown>)
@@ -1104,8 +1117,8 @@ disallow_group(<group-idx>)
 dont_use_machine_mode(<event-id>)
 event_status(<event-id>):integer
 exit()
-expose_controls()
 exp(<real-value>):real
+exp2(<real-value>):real
 fade_in(<event-id>, <fade-time>)
 fade_out(<event-id>, <fade-time>, <stop-voice>)
 find_group(<group-name>):integer
@@ -1117,6 +1130,7 @@ fs_get_filename(<ui-id>, <return-parameter>):string
 fs_navigate(<ui-id>, <direction>)
 get_control_par(<ui-id>, <control-parameter>):integer
 get_control_par_arr(<ui-id>, <control-parameter>, <index>):integer
+get_control_par_real_arr(<ui-id>, <control-parameter>, <index>):real
 get_control_par_str(<ui-id>, <control-parameter>):string
 get_control_par_str_arr(<ui-id>, <control-parameter>, <index>):string
 get_engine_par(<parameter>, <group>, <slot>, <generic>):integer
@@ -1129,6 +1143,7 @@ get_event_par(<event-id>, <parameter>):integer
 get_event_par_arr(<event-id>, <parameter>, <group-idx>):integer
 get_folder(<path variable>):string
 get_font_id(<path-text>):integer
+get_group_idx(<group-name>):integer
 get_group_par(<group-idx>, <parameter>):integer
 get_key_color(<note-number>):integer
 get_key_name(<note-number>):integer
@@ -1141,13 +1156,18 @@ get_loop_par(<zone-id>, <loop-id>, <parameter>):integer
 get_menu_item_str(<ui-id>, <index>):string
 get_menu_item_value(<ui-id>, <index>):integer
 get_menu_item_visibility(<ui-id>, <index>):integer
+get_mod_idx(<group-idx>, <mod-name>):integer
+get_num_zones():integer
 get_purge_state(<group-idx>):integer
 get_sample(<zone-id>,<return-parameter>):string
 get_sample_length(<zone-id>):integer
+get_target_idx(<group-idx>, <mod-idx>, <target-name>):integer
 get_ui_id(<variable>):integer
 get_ui_wf_property(<waveform>, <property>, <index>):integer
 get_voice_limit(<voice­type>):integer
+get_zone_id(<zone-idx>):integer
 get_zone_par(<zone-id>, <parameter>):integer
+get_zone_status(<zone-id>):integer
 group_name(<group-idx>):string
 guiidx_to_slotidx(<instrument-gui-idx>):integer
 hide_part(<variable>, <value>)
@@ -1157,6 +1177,7 @@ ignore_midi()
 import_nckp(<path variable>):string
 in_range(<expression>, <lower>, <upper>):boolean
 inc(<expression>)
+int(<real-value>):integer
 int_to_real(<integer>):real
 is_zone_empty(<zone-id>):integer
 iterate_macro(<expression>)
@@ -1170,6 +1191,8 @@ load_midi_file(<path-text>):integer
 load_patch(<path-text>, <instrument-slot-idx>)
 load_performance_view(<file-name>):string
 log(<real-value>):real
+log2(<real-value>):real
+log10(<real-value>):real
 lsb(<variable>):integer
 make_instr_persistent(<variable>)
 make_perfview()
@@ -1233,6 +1256,7 @@ pow(<real-value>, <real-value>):real
 purge_group(<group-idx>, <mode>):integer
 random(<min>, <max>):integer
 read_persistent_var(<variable>)
+real(<integer>):real
 real_to_int(<real-value>):integer
 redirect_midi(<unknown>)
 redirect_output(<event-id>, <type>, <output-number>)
@@ -1250,6 +1274,7 @@ set_button_properties(<button>, <text>, <picture>, <text-alignment>, <font-type>
 set_control_help(<variable>, <text>)
 set_control_par(<ui-id>, <control-parameter>, <value>)
 set_control_par_arr(<ui-id>, <control-parameter>, <value>, <index>)
+set_control_par_real_arr(<ui-id>, <control-parameter>, <real-value>, <index>)
 set_control_par_str(<ui-id>, <control-parameter>, <text>)
 set_control_par_str_arr(<ui-id>, <control-parameter>, <text>, <index>)
 set_controller(<controller-number>, <controller-value>)
@@ -1302,9 +1327,11 @@ set_waveform_properties(<waveform>, <bar-color>, <zero-line-color>, <bg-color>, 
 set_wavetable2d_properties(<wavetable>, <wt-zone>, <bg-color>, <bg-alpha>, <wave-color>, <wave-alpha>, <wave-end-color>, <wave-end-alpha>)
 set_wavetable3d_properties(<wavetable>, <wt-zone>, <bg-color>, <bg-alpha>, <wavetable-color>, <wavetable-alpha>, <wavetable-end-color>, <wavetable-end-alpha>, <parallax-x>, <parallax-y>)
 set_zone_par(<zone-id>, <parameter>, <value>):integer
+sgn(<real-value>):integer
 sh_left(<expression>, <amount>):integer
 sh_right(<expression>, <amount>):integer
 show_library_tab()
+signbit(<real-value>):integer
 sin(<real-value>):real
 slice_idx_loop_end(<group-idx>, <loop-idx>):integer
 slice_idx_loop_start(<group-idx>, <loop-idx>):integer

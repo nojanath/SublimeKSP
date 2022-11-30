@@ -112,9 +112,6 @@ end on
 
 '''
 
-#import codecs
-#code = codecs.open(r'D:\PythonProj\KScript EditorNewTest\test scripts\sample.txt', 'r', 'latin-1').read()
-
 output = do_compile(code, optimize=True, extra_syntax_checks=True)
 print()
 print(output)

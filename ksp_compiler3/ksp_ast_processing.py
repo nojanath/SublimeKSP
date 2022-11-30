@@ -84,10 +84,8 @@ class ASTVisitor(object):
         self.depth += 1
         try:
             result = meth(parent, node, *args, **kwargs)
-            #print meth
-            #print result != False and not meth == self.visit_default
+
             if result is not False and not meth == self.visit_default:
-                #print 'visit children'
                 self.visit_children(parent, node, *args, **kwargs)
         finally:
             self.depth -= 1
@@ -104,7 +102,7 @@ class ASTVisitor(object):
         self.dispatch(parent, node, *args, **kwargs)
 
     def traverse(self, tree, *args, **kwargs):
-        """Do walk of tree using visitor"""
+        # Do walk of tree using visitor
         self.dispatch(parent=None, node=tree, *args, **kwargs)
 
     visit = dispatch
@@ -121,25 +119,30 @@ class ASTModifier(object):
     def dispatch(self, node, *args, **kwargs):
         if not self._modify_expressions and isinstance(node, Expr):
             return node
+
         self.node = node
         klass = node.__class__
         meth = self._cache.get(klass, None)
+
         if meth is None:
             className = klass.__name__
             meth = getattr(self, 'modify' + className, None)
-            ##print 'modify' + className, node
             self._cache[klass] = meth
+
         if meth is None:
             return node
+
         self.depth += 1
+
         try:
             return meth(node, *args, **kwargs)
         finally:
             self.depth -= 1
+
         return node
 
     def indent(self):
-        return '  '*self.depth
+        return '  ' * self.depth
 
     def modify_default(self, node, *args, **kwargs):
         self.dispatch(node, *args, **kwargs)
@@ -244,140 +247,7 @@ class ASTModifier(object):
         node.blocks = flatten([self.modify(b, *args, **kwargs) for b in node.blocks])
 
     def traverse(self, tree, *args, **kwargs):
-        """Do walk of tree using AST modifier"""
+        # Do walk of tree using AST modifier
         self.dispatch(node=tree, *args, **kwargs)
 
     modify = dispatch
-
-
-##
-##class ASTVisitorDotGenerator(ASTVisitor):
-##    def __init__(self, ast):
-##        ASTVisitor.__init__(self, visit_expressions=True)
-##        self.output = StringIO.StringIO()
-##        self.traverse(ast)
-##    def name_of(self, node):
-##        if node:
-##            if isinstance(node, ID):
-##                return node.identifier
-##            else:
-##                return ASTNode.__str__(node)
-##        else:
-##            return 'None'
-##    def visit_default(self, parent, node, *args, **kwargs):
-##        if parent is None:
-##            n1 = self.name_of(parent)
-##        else:
-##            n1 = self.name_of(parent) + ' -> '
-##        n2 = self.name_of(node)
-##        if parent:
-##            self.output.write('  %s%s -> %s;\n' % (self.indent(), id(parent), id(node)))
-##        else:
-##            self.output.write('  %s%s\n' % (self.indent(), id(node)))
-##        self.output.write('  %s%s [label="%s"]\n' % (self.indent(), id(node), self.name_of(node)))
-##    def get_dot_output(self):
-##        return 'digraph G {rankdir=LR;ordering=out;size="10,40"; \n%s\n}' % self.output.getvalue()
-##
-##class Symbol:
-##    def __init__(self, name, type):
-##        self.name = name
-##        self.type = type
-##    def __str__(self):
-##        return self.name
-##
-##class Variable(Symbol):
-##    def __init__(self, name, vartype='$'):
-##        Symbol.__init__(self, name, type='variable')
-##
-##class Family(Symbol):
-##    def __init__(self, name):
-##        Symbol.__init__(self, name, type='family')
-##        self.env = None # members environment
-##
-##class Environment:
-##    def __init__(self, parent_env = None):
-##        self.dict = {}
-##        self.parent_env = parent_env
-##        self.level = 'module'
-##        self.declarations_allowed = True
-##        self.namespace = ''
-##
-##    def debug_print(self, name='', depth=0):
-##        indent = depth * '  '
-##        print indent, 'environment(%s - %s)' % (name, self.level)
-##        for (name, value) in self.dict.iteritems():
-##            if isinstance(value, Environment):
-##                value.debug_print(name, depth+1)
-##            else:
-##                print indent+'  ', name
-##
-##    def new_scope(self, level, declarations_allowed=True, family=None, namespace=''):  # level may be any of 'module', 'function', 'family'
-##        e = Environment(parent_env = self)
-##        e.level = level
-##        e.declarations_allowed = declarations_allowed
-##        e.namespace = ''
-##        if family:
-##            family.env = e
-##            e.namespace = unicode(family.name)
-##        return e
-##
-##    def put(self, name, value, top_level = False):
-##        if not self.declarations_allowed:
-##            raise ParseException('Declarations not allowed here')
-##        if self.redeclared(name):
-##            raise ParseException('Symbol already declared: %s' % name)
-##        env = self
-##        while env.level not in ['module', 'family']:
-##            env = env.parent_env
-##        env.dict[name] = value
-##
-##    def redeclared(self, name):
-##        try:
-##            (env, symbol) = self._get(name)
-##            print env.level, self.level
-##            return (env.level == self.level)  # name clash if same environment level
-##        except VariableNotDeclaredException:
-##            return False
-##
-##    def _get(self, name):
-##        'returns (environment, symbol)-tuple where symbol has the given name'
-##        if not name in self.dict:
-##            if self.parent_env:
-##                return self.parent_env._get(name)
-##            else:
-##                raise VariableNotDeclaredException('Symbol not declared: %s' % name)
-##        return (self, self.dict[name])
-##
-##    def get(self, name):
-##        env, symbol = self._get(name)
-##        return symbol
-##
-##class ASTVisitorEnv(ASTVisitor):
-##    def __init__(self, ast):
-##        ASTVisitor.__init__(self, visit_expressions=False)
-##        self.traverse(ast)
-##    def visitModule(self, parent, node, *args, **kwargs):
-##        node.env = Environment()
-##    def visitFunctionDef(self, parent, node, *args, **kwargs):
-##        node.env = parent.env.new_scope('function')
-##    def visitCallback(self, parent, node, *args, **kwargs):
-##        declarations_allowed = (node.name == 'init')
-##        node.env = parent.env #.new_scope('module', declarations_allowed)
-##    def visitFamilyStmt(self, parent, node, *args, **kwargs):
-##        family = Family(node.name)
-##        parent.env.put(node.name, family)
-##        node.env = parent.env.new_scope('family', declarations_allowed=parent.env.declarations_allowed, family=family)
-##    def visitDeclareStmt(self, parent, node, *args, **kwargs):
-##        name = node.variable.identifier
-##        if node.variable.prefix:
-##            vartype = node.variable.prefix
-##        elif node.size:
-##            vartype = '%'
-##        else:
-##            vartype = '$'
-##        node.env = parent.env
-##        node.env.put(name, Variable(name, vartype))
-##    def visit_default(self, parent, node, *args, **kwargs):
-##        node.env = parent.env
-##
-##
