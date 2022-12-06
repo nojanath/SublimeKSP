@@ -1330,8 +1330,18 @@ zone_slice_length(<zone-id>, <slice-idx>):integer
 zone_slice_loop_count(<zone-id>, <loop-idx>):integer
 zone_slice_start(<zone-id>, <slice-idx>):integer
 
-[functions_with_forced_parenthesis]
+[functions_with_forced_parentheses]
 mf_reset
+mf_get_buffer_size
+mf_get_byte_one
+mf_get_byte_two
+mf_get_channel
+mf_get_command
+mf_get_buffer_size
+mf_get_byte_one
+mf_get_byte_two
+mf_get_channel
+mf_get_command
 
 [functions_with_constant_return]
 abs
