@@ -101,11 +101,15 @@ def evaluate_expression(expr):
             elif op == '*':
                 return normalize_numeric(a * b)
             elif op == '/':
-                if type(a) is int and type(b) is int:
-                    # division with truncation:
-                    return int(math.copysign(abs(a) // abs(b), a / b)) # a // b yields the wrong result in case of negative numbers, eg. -10/9
+                if b == 0:
+                    return normalize_numeric(b)
                 else:
-                    return a / b
+                    if type(a) is int and type(b) is int:
+                        # division with truncation
+                        # a // b yields the wrong result in case of negative numbers, eg. -10/9
+                        return int(math.copysign(abs(a) // abs(b), a / b))
+                    else:
+                        return a / b
             elif op == '=':
                 # TODO: check if Kontakt treats 4.0 as equal to 4
                 return a == b
@@ -505,9 +509,10 @@ class ASTVisitorCheckDeclarations(ASTVisitor):
             size = 1
 
         initial_value = None
-        if 'const' in node.modifiers:
+        if 'const' in node.modifiers and not (isinstance(node.initial_value, Integer) or isinstance(node.initial_value, Real)):
             # First need to check if the initial value is an NI constant
             init_expr = node.initial_value
+
             if not (isinstance(init_expr, VarRef) and (str(init_expr.identifier).upper() in ksp_builtins.variables) or ("function_name" in init_expr.__dict__ and str(init_expr.function_name) in ksp_builtins.functions_with_constant_return)):
                 if not node.initial_value:
                     raise ParseException(node.variable, 'A constant value has to be assigned to the constant')
