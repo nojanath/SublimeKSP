@@ -16,7 +16,7 @@ import sys, types
 import ply.lex as lex
 import copy
 from decimal import Decimal
-from ksp_builtins import functions_with_forced_parenthesis
+from ksp_builtins import functions_with_forced_parentheses
 
 precedence = {  '&' :  0,
                 'or':  1,
@@ -408,7 +408,7 @@ class FunctionCall(Stmt):
 
     def __str__(self):
         s = str(self.function_name)
-        if self.parameters or not self.is_procedure or s in functions_with_forced_parenthesis:
+        if self.parameters or not self.is_procedure or s in functions_with_forced_parentheses:
             s += '(%s)' % ','.join((str(p) for p in self.parameters))
         if self.is_procedure:
             s += '\n'

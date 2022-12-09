@@ -1,0 +1,10 @@
+<snippet>
+    <content><![CDATA[
+const ${1:name}
+    ${2:entry}
+end const
+]]></content>
+    <description>const array</description>
+    <tabTrigger>car</tabTrigger>
+    <scope>source.ksp</scope>
+</snippet>
