@@ -13,7 +13,7 @@
 # GNU General Public License for more details.
 
 from ksp_ast import *
-from ksp_builtins import string_typed_control_parameters
+from ksp_builtins import string_typed_control_parameters, control_parameters, event_parameters
 #import io
 
 def stripNone(L):
@@ -41,13 +41,20 @@ def handle_set_control_par(control, parameter, value):
     remap = {'X': 'POS_X', 'Y': 'POS_Y', 'MAX': 'MAX_VALUE', 'MIN': 'MIN_VALUE', 'DEFAULT': 'DEFAULT_VALUE'}
     cp = parameter.identifier.upper()
     cp = '$CONTROL_PAR_%s' % remap.get(cp, cp)
-    control_par = VarRef(parameter.lexinfo, ID(parameter.lexinfo, cp))
-    if cp in string_typed_control_parameters:
-        func_name = 'set_control_par_str'
-    else:
-        func_name = 'set_control_par'
-    return FunctionCall(control.lexinfo, ID(control.lexinfo, func_name),
-                        parameters=[control, control_par, value], is_procedure=True)
+    if cp in control_parameters:
+        control_par = VarRef(parameter.lexinfo, ID(parameter.lexinfo, cp))
+        if cp in string_typed_control_parameters:
+            func_name = 'set_control_par_str'
+        else:
+            func_name = 'set_control_par'
+        return FunctionCall(control.lexinfo, ID(control.lexinfo, func_name),
+                            parameters=[control, control_par, value], is_procedure=True)
+    event_p = '$EVENT_PAR_%s' % parameter.identifier.upper()
+    if event_p in event_parameters:
+        event_par = VarRef(parameter.lexinfo, ID(parameter.lexinfo, event_p))
+        func_name = 'set_event_par'
+        return FunctionCall(control.lexinfo, ID(control.lexinfo, func_name),
+                            parameters=[control, event_par, value], is_procedure=True)
 
 def handle_get_control_par(control, parameter):
     remap = {'X': 'POS_X', 'Y': 'POS_Y', 'MAX': 'MAX_VALUE', 'MIN': 'MIN_VALUE', 'DEFAULT': 'DEFAULT_VALUE'}
