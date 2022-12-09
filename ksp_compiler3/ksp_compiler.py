@@ -1792,7 +1792,7 @@ class KSPCompiler(object):
         return code
 
     def parse_code(self):
-        self.module = parse(self.code)
+        self.module = parse(self.code, self.lines)
 
     def sort_functions_and_insert_local_variables_into_on_init(self):
         # make sure that used function that uses others set the used flag of those secondary ones as well

@@ -113,7 +113,12 @@ class ASTNode:
             if type(lexinfo) is tuple:
                 self.lexinfo = lexinfo
             else:
-                self.lexinfo = (lexinfo.lexer.filename, lexinfo.lineno(1), [])   # the last element is a list of function nodes related to inlining of functions
+                line_filename = lexinfo.lexer.lines[lexinfo.lineno(1)].locations[0][0]
+                line_namespaces = lexinfo.lexer.lines[lexinfo.lineno(1)].namespaces
+                if line_filename == None:
+                    self.lexinfo = (lexinfo.lexer.filename, lexinfo.lineno(1), [], None) # the 3rd element is a list of function nodes related to inlining of functions
+                else:
+                    self.lexinfo = (lexinfo.lexer.filename, lexinfo.lineno(1), [], line_namespaces)
         else:
             raise Exception('Missing lexinfo')
 
