@@ -1,0 +1,19 @@
+[
+	{
+		"caption": "KSP (Kontakt Script Processor): Compile",
+		"command": "compile_ksp"
+	},
+	{
+		"caption": "KSP (Kontakt Script Processor): Re-Compile",
+		"command": "ksp_recompile"
+	},
+	{
+		"caption": "Preferences: KSP (Kontakt Script Processor)",
+		"command": "edit_settings",
+		"args":
+		{
+			"base_file": "${packages}/KSP (Kontakt Script Processor)/KSP.sublime-settings",
+			"default": "{\n\t$0\n}\n"
+		}
+	}
+]
