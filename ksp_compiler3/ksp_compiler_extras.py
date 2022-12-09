@@ -509,7 +509,7 @@ class ASTVisitorCheckDeclarations(ASTVisitor):
             size = 1
 
         initial_value = None
-        if 'const' in node.modifiers and not (isinstance(node.initial_value, Integer) or isinstance(node.initial_value, Real)):
+        if 'const' in node.modifiers:
             # First need to check if the initial value is an NI constant
             init_expr = node.initial_value
 
