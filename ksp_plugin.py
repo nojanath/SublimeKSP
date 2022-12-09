@@ -8,6 +8,7 @@ import sys
 import re
 import threading
 import webbrowser
+import time
 
 sys.path.append(os.path.dirname(__file__))
 sys.path.append(os.path.join(os.path.dirname(__file__), 'ksp_compiler3'))
@@ -147,6 +148,7 @@ class CompileKspThread(threading.Thread):
     def run(self, *args):
         global last_compiler
 
+        init_compile_time = time.perf_counter()
         view = self.view
         code = view.substr(sublime.Region(0, view.size()))
         filepath = view.file_name()
@@ -184,6 +186,7 @@ class CompileKspThread(threading.Thread):
                 last_compiler = self.compiler
                 code = self.compiler.compiled_code
                 code = code.replace('\r', '')
+                print("final_compile_time: ", time.perf_counter() - init_compile_time)
                 if self.compiler.output_file:
                     if not os.path.isabs(self.compiler.output_file):
                         self.compiler.output_file = os.path.join(self.base_path, self.compiler.output_file)
