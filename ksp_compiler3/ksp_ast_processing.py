@@ -60,13 +60,20 @@ def handle_get_control_par(control, parameter):
     remap = {'X': 'POS_X', 'Y': 'POS_Y', 'MAX': 'MAX_VALUE', 'MIN': 'MIN_VALUE', 'DEFAULT': 'DEFAULT_VALUE'}
     cp = parameter.identifier.upper()
     cp = '$CONTROL_PAR_%s' % remap.get(cp, cp)
-    control_par = VarRef(parameter.lexinfo, ID(parameter.lexinfo, cp))
-    if cp in string_typed_control_parameters:
-        func_name = 'get_control_par_str'
-    else:
-        func_name = 'get_control_par'
-    return FunctionCall(control.lexinfo, ID(control.lexinfo, func_name),
-                        parameters=[control, control_par], is_procedure=False)
+    if cp in control_parameters:
+        control_par = VarRef(parameter.lexinfo, ID(parameter.lexinfo, cp))
+        if cp in string_typed_control_parameters:
+            func_name = 'get_control_par_str'
+        else:
+            func_name = 'get_control_par'
+        return FunctionCall(control.lexinfo, ID(control.lexinfo, func_name),
+                            parameters=[control, control_par], is_procedure=False)
+    event_p = '$EVENT_PAR_%s' % parameter.identifier.upper()
+    if event_p in event_parameters:
+        event_par = VarRef(parameter.lexinfo, ID(parameter.lexinfo, event_p))
+        func_name = 'get_event_par'
+        return FunctionCall(control.lexinfo, ID(control.lexinfo, func_name),
+                            parameters=[control, event_par], is_procedure=False)
 
 class VariableNotDeclaredException(ParseException):
     pass
