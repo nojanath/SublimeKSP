@@ -24,7 +24,7 @@ string_typed_control_parameters = set()
 engine_parameters = set()
 event_parameters = set()
 function_signatures = {}
-functions_with_forced_parenthesis = set()
+functions_with_forced_parentheses = set()
 functions_with_constant_return = set() # Functions with return values that can be used for const variables
 
 data = {'variables': variables,
@@ -34,7 +34,7 @@ data = {'variables': variables,
         'string_typed_control_parameters': string_typed_control_parameters,
         'engine_parameters': engine_parameters,
         'event_parameters' : event_parameters,
-        'functions_with_forced_parenthesis': functions_with_forced_parenthesis,
+        'functions_with_forced_parentheses': functions_with_forced_parentheses,
         'functions_with_constant_return': functions_with_constant_return
         }
 
