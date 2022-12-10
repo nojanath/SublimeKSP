@@ -45,7 +45,7 @@ class TestClass(unittest.TestCase):
           message(double(5))
         end on
         '''
-        parse(code)
+        #parse(code)
         #output = do_compile(code, optimize=True)
         #self.assertTrue('%data[34] := 99' in output)
         #self.assertTrue('message(%data[34])' in output)

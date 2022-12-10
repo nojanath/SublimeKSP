@@ -15,14 +15,25 @@
 from ksp_compiler import ParseException, KSPCompiler
 import unittest
 
+# To use cmd line: python3 -m unittest
+# To test classes: python3 -m unittest -k Callbacks
+# Cmd+B to run in IDE
+
 def default_read_file_func(filepath):
     return open(filepath, 'r').read()
 
-def do_compile(code, compact=True, compactVars=False, comments_on_expansion=True, read_file_func=default_read_file_func, extra_syntax_checks=True, optimize=False, check_empty_compound_statements=False):
+def do_compile(code, remove_preprocessor_vars=False, compact=True, compactVars=False, comments_on_expansion=True, read_file_func=default_read_file_func, extra_syntax_checks=True, optimize=False, check_empty_compound_statements=False, add_compiled_date_comment=False):
     #line_map = {}
-    compiler = KSPCompiler(code, compact, compactVars, comments_on_expansion, read_file_func=read_file_func, extra_syntax_checks=extra_syntax_checks, optimize=optimize, check_empty_compound_statements=check_empty_compound_statements)
+    compiler = KSPCompiler(code, None,compact=compact,compactVars=compactVars, read_file_func=default_read_file_func, extra_syntax_checks=extra_syntax_checks, optimize=optimize, check_empty_compound_statements=check_empty_compound_statements, add_compiled_date_comment=add_compiled_date_comment)
     compiler.compile()
-    return compiler.compiled_code.replace('\r', '')
+    output_code = compiler.compiled_code
+    if remove_preprocessor_vars and optimize == False:
+        output_code = output_code.split('\n')
+        del output_code[1:6] # Remove pre-processor variables
+        output_code = '\n'.join(output_code)
+
+    output_code = output_code.replace('\r', '')
+    return output_code
 
 class Callbacks(unittest.TestCase):
 
@@ -39,13 +50,16 @@ class Callbacks(unittest.TestCase):
                     end on
                 end macro'''
             expected_output = '''on init
-declare ui_button $b
+    declare ui_button $b
 end on
 on ui_control($b)
-message(5)
+    message(5)
 end on'''
-            output = do_compile(code)
-            self.assertTrue(expected_output in output)
+
+            output = do_compile(code, remove_preprocessor_vars=True)
+            output = [l.strip() for l in output.split('\n') if l]
+            expected_output = [l.strip() for l in expected_output.split('\n') if l]
+            self.assertEqual(output, expected_output)
 
     def testUIControlCallbackWithinOnInitNestedMacros(self):
             code = '''
@@ -70,8 +84,10 @@ end on
 on ui_control($b)
 message($b)
 end on'''
-            output = do_compile(code)
-            self.assertTrue(expected_output in output)
+            output = do_compile(code, remove_preprocessor_vars=True)
+            output = [l.strip() for l in output.split('\n') if l]
+            expected_output = [l.strip() for l in expected_output.split('\n') if l]
+            self.assertEqual(output, expected_output)
 
 class Precedence(unittest.TestCase):
     def testBinaryPrecedence1(self):
@@ -89,8 +105,10 @@ declare $z
 message(($x .or. $y) .and. $z)
 end on
 '''
-        output = do_compile(code)
-        self.assertEqual(expected_output, output)
+        output = do_compile(code, remove_preprocessor_vars=True)
+        output = [l.strip() for l in output.split('\n') if l]
+        expected_output = [l.strip() for l in expected_output.split('\n') if l]
+        self.assertEqual(output, expected_output)
 
 #     def testBinaryPrecedence2(self):
 #         code = '''
@@ -107,8 +125,8 @@ end on
 # message($x .or. ($y .and. $z))
 # end on
 # '''
-        output = do_compile(code)
-        self.assertEqual(expected_output, output)
+        #output = do_compile(code)
+        #self.assertEqual(expected_output, output)
 
 class VariableNotDeclared(unittest.TestCase):
     def testUndeclaredVariableInOnInit(self):
@@ -265,8 +283,10 @@ message($i)
 inc($i)
 end while
 end on'''
-        output = do_compile(code)
-        self.assertTrue(expected_output in output)
+        output = do_compile(code, remove_preprocessor_vars=True)
+        output = [l.strip() for l in output.split('\n') if l]
+        expected_output = [l.strip() for l in expected_output.split('\n') if l]
+        self.assertEqual(output, expected_output)
 
     def testForLoopBasicDown(self):
         code = '''
@@ -284,8 +304,10 @@ message($i)
 dec($i)
 end while
 end on'''
-        output = do_compile(code)
-        self.assertTrue(expected_output in output)
+        output = do_compile(code, remove_preprocessor_vars=True)
+        output = [l.strip() for l in output.split('\n') if l]
+        expected_output = [l.strip() for l in expected_output.split('\n') if l]
+        self.assertEqual(output, expected_output)
 
     def testForLoopStep(self):
         code = '''
@@ -303,7 +325,7 @@ message($i)
 $i := $i+2
 end while
 end on'''
-        output = do_compile(code)
+        output = do_compile(code, remove_preprocessor_vars=True)
         self.assertTrue(expected_output in output)
 
     def testOptimizationWhenLastValueContainsMinusOne(self):
@@ -320,8 +342,10 @@ while ($i<$NUM_GROUPS)
 inc($i)
 end while
 end on'''
-        output = do_compile(code)
-        self.assertTrue(expected_output in output)
+        output = do_compile(code, remove_preprocessor_vars=True)
+        output = [l.strip() for l in output.split('\n') if l]
+        expected_output = [l.strip() for l in expected_output.split('\n') if l]
+        self.assertEqual(output, expected_output)
 
 class IfElse(unittest.TestCase):
     def testIfElse(self):
@@ -344,9 +368,12 @@ message("quite few groups")
 else
 message("lots of groups")
 end if
-end if'''
-        output = do_compile(code)
-        self.assertTrue(expected_output in output)
+end if
+end on'''
+        output = do_compile(code, remove_preprocessor_vars=True)
+        output = [l.strip() for l in output.split('\n') if l]
+        expected_output = [l.strip() for l in expected_output.split('\n') if l]
+        self.assertEqual(output, expected_output)
 
 class CompactOutput(unittest.TestCase):
     def testCompactOutput(self):
@@ -416,8 +443,10 @@ message(2)
 message(4)
 end on'''
         output = do_compile(code, optimize=True)
+        output = [l.strip() for l in output.split('\n') if l]
+        expected_output = [l.strip() for l in expected_output.split('\n') if l]
         # make sure that each local variable is separate from other with the same name in other functions
-        self.assertTrue(expected_output in output)
+        self.assertEqual(output, expected_output)
 
     def testLocalVariableDeclaration3(self):
         code = '''
@@ -520,7 +549,7 @@ class AutomaticVariablePrefixing(unittest.TestCase):
         self.assertRaises(ParseException, do_compile, code)
 
 class HexNumberCheck(unittest.TestCase):
-    def testExtendedSyntax(self):
+    def testExtendedSyntax(self): #0x12f
         code = '''
             on init
               message(0x12f)
@@ -531,7 +560,7 @@ class HexNumberCheck(unittest.TestCase):
     def testStandardSyntax(self):
         code = '''
             on init
-              message(12fh)
+              message(012fh)
             end on'''
         output = do_compile(code)
         self.assertTrue('message(303)' in output)
@@ -618,7 +647,7 @@ class TypeChecks(unittest.TestCase):
                 declare x
                 message(num_elements(x))
             end on'''
-        self.assertRaises(ParseException, do_compile, code)
+        self.assertRaises(ParseException, do_compile, code) 
 
     def testParametersWithDifferentTypesToMessage(self):
         code = '''
@@ -648,7 +677,7 @@ class MacroInlining(unittest.TestCase):
             on init
                 foo(10+1)
             end on'''
-        output = do_compile(code)
+        output = do_compile(code, remove_preprocessor_vars=False)
         self.assertTrue('message(10+1*5)' in output or
                         'message(10+(1*5))' in output)    # parenthesis is not added around the 10+1 like it would have been if foo had been a function
 
@@ -674,7 +703,7 @@ class MacroInlining(unittest.TestCase):
                 declare y := 5
                 show_value(y)
             end on'''
-        output = do_compile(code)
+        output = do_compile(code, remove_preprocessor_vars=False)
         self.assertTrue('''message("the value of y is: " & $y)''' in output)
 
     def testInfiniteMacroRecursion(self):
@@ -1010,6 +1039,7 @@ class NamespacePrefixing(unittest.TestCase):
                 declare y := 5
                 mymodule.sort_ascendingly(x, y)
             end on'''
+
         output = do_compile(code, optimize=True, read_file_func=default_read_file_func)
         self.assertTrue('_mymodule__tmp' in output)
 
@@ -1073,7 +1103,7 @@ class PragmaTests(unittest.TestCase):
                 declare Z
                 mymodule.declare_variables
             end on'''
-        output = do_compile(code, compactVars=True, read_file_func=default_read_file_func)
+        output = do_compile(code, remove_preprocessor_vars=True, compactVars=True, read_file_func=default_read_file_func)
         self.assertTrue('declare $mymodule__K' in output)
         self.assertTrue('declare $X' in output)
         self.assertTrue('declare $Y' in output)
@@ -1577,8 +1607,10 @@ class TestTaskfunc(unittest.TestCase):
         expected_output = '''
             on init
             declare %p[32768]
-            declare $sp := 268
-            declare $fp := 268
+            declare $sp
+            $sp := 268
+            declare $fp
+            $fp := 268
             declare $tx
             declare %tstate__id[326] := (0)
             declare %tstate__fs[326]
@@ -1614,11 +1646,13 @@ class TestTaskfunc(unittest.TestCase):
             %p[$sp-2] := 88
             call randomize
             $x := %p[$sp-1]
-            end on
-        '''
-        expected_output = '\n'.join(x.strip() for x in expected_output.strip().split('\n')) # remove indent
+            end on'''
+        #expected_output = '\n'.join(x.strip() for x in expected_output.strip().split('\n')) # remove indent
         output = do_compile(code, optimize=True)
-        self.assertTrue(expected_output in output)
+        output = [l.strip() for l in output.split('\n') if l]
+        expected_output = [l.strip() for l in expected_output.split('\n') if l]
+        self.assertEqual(output, expected_output)
+        #self.assertTrue(expected_output in output)
 
     def testTaskfuncWithTWaitAndOutParam(self):
         code = '''
@@ -1641,8 +1675,10 @@ class TestTaskfunc(unittest.TestCase):
         expected_output = '''
             on init
             declare %p[32768]
-            declare $sp := 268
-            declare $fp := 268
+            declare $sp
+            $sp := 268
+            declare $fp
+            $fp := 268
             declare $tx
             declare %tstate__id[326] := (0)
             declare %tstate__sp[326]
@@ -1697,11 +1733,13 @@ class TestTaskfunc(unittest.TestCase):
             %p[$sp-2] := 88
             call randomize
             $x := %p[$sp-1]
-            end on
-        '''
-        expected_output = '\n'.join(x.strip() for x in expected_output.strip().split('\n')) # remove indent
+            end on'''
+        #expected_output = '\n'.join(x.strip() for x in expected_output.strip().split('\n')) # remove indent
         output = do_compile(code, optimize=True)
-        self.assertTrue(expected_output in output)
+        output = [l.strip() for l in output.split('\n') if l]
+        expected_output = [l.strip() for l in expected_output.split('\n') if l]
+        self.assertEqual(output, expected_output)
+        #self.assertTrue(expected_output in output)
 
     def testInliningTaskfuncForbidden(self):
         code = '''
@@ -1772,7 +1810,7 @@ class TestTaskfunc(unittest.TestCase):
         '''
         self.assertRaises(ParseException, do_compile, code, optimize=True)
 
-class K6Features(unittest.TestCase):
+class K5_6Features(unittest.TestCase):
 
     def testDeclaration(self):
             code = '''on init
@@ -1781,12 +1819,12 @@ class K6Features(unittest.TestCase):
                 y[5] := 3.3
             end on'''
             expected_output = '''on init
-declare ~x := 1.0e6
+declare ~x := 1000000.0
 declare ?y[10]
 ?y[5] := 3.3
 end on
 '''
-            output = do_compile(code)
+            output = do_compile(code, remove_preprocessor_vars=True)
             self.assertEqual(expected_output, output)
 
     def testRealArithmetics(self):
@@ -1794,10 +1832,11 @@ end on
                 declare ~x := 1.1 * 2.2 * NI_MATH_PI
             end on'''
             expected_output = '''on init
-declare ~x := 1.1*2.2*~NI_MATH_PI
+declare ~x
+~x := 1.1*2.2*~NI_MATH_PI
 end on
 '''
-            output = do_compile(code)
+            output = do_compile(code, remove_preprocessor_vars=True)
             self.assertEqual(expected_output, output)
 
     def testNegativeReal(self):
@@ -1810,7 +1849,7 @@ declare ~x := -0.001
 message(~x)
 end on
 '''
-        output = do_compile(code, optimize=True)
+        output = do_compile(code, remove_preprocessor_vars=True, optimize=True)
         self.assertEqual(expected_output, output)
 
     def testAssignRealToString(self):
@@ -1825,7 +1864,7 @@ declare @y
 @y := ~x
 end on
 '''
-            output = do_compile(code)
+            output = do_compile(code, remove_preprocessor_vars=True)
             self.assertEqual(expected_output, output)
 
     def testIncorrectlyMixedRealAndInteger(self):
@@ -1847,7 +1886,7 @@ message(abs(-4.1))
 message(abs(-4))
 end on
 '''
-            output = do_compile(code)
+            output = do_compile(code, remove_preprocessor_vars=True)
             self.assertEqual(expected_output, output)
 
     def testRealArithmeticsOptimization1(self):
@@ -1889,3 +1928,5 @@ end on
             self.assertEqual(expected_output, output)
 
 
+if __name__ == '__main__':
+    unittest.main()
