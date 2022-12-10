@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.3","3.8"]
+        python-version: ["3.8"]
 
     steps:
       - uses: actions/checkout@v3
@@ -21,4 +21,4 @@ jobs:
       - name: Test with Unittest
         run: |
           cd ksp_compiler3
-          python -m unittest discover
+          python -m unittest "tests.py"
