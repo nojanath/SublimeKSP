@@ -676,6 +676,27 @@ class TypeChecks(unittest.TestCase):
             end on'''
         self.assertRaises(ParseException, do_compile, code)
 
+class MacroDefineChecks(unittest.TestCase):
+    def testBasicMacroDefine(self):
+        code = '''
+        define TEST := 5
+        on init
+            message(TEST)
+        end on
+        '''
+        output = do_compile(code)
+        self.assertTrue('message(5)' in output)
+
+    def testMacroDefineInString(self):
+        code = '''
+        define MYDEFINE := 5
+        on init
+            message("MYDEFINE")
+        end on
+        '''
+        output = do_compile(code)
+        self.assertTrue('message("MYDEFINE")' in output)
+
 class MacroInlining(unittest.TestCase):
     def testBasicMacroInlining(self):
         code = '''
@@ -686,7 +707,7 @@ class MacroInlining(unittest.TestCase):
             on init
                 foo(10+1)
             end on'''
-        output = do_compile(code, remove_preprocessor_vars=False)
+        output = do_compile(code)
         self.assertTrue('message(10+1*5)' in output or
                         'message(10+(1*5))' in output)    # parenthesis is not added around the 10+1 like it would have been if foo had been a function
 
@@ -712,7 +733,7 @@ class MacroInlining(unittest.TestCase):
                 declare y := 5
                 show_value(y)
             end on'''
-        output = do_compile(code, remove_preprocessor_vars=False)
+        output = do_compile(code)
         self.assertTrue('''message("the value of y is: " & $y)''' in output)
 
     def testInfiniteMacroRecursion(self):
