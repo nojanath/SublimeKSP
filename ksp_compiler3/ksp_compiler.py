@@ -1745,7 +1745,7 @@ class KSPCompiler(object):
     # Run stored macros on the code
     def expand_macros(self):
         # Initial Expansion
-        normal_lines, callback_lines = expand_macros(self.lines, self.macros, 0, True)
+        normal_lines, callback_lines = expand_macros(self.lines, self.macros, 0, False)
         self.lines = normal_lines + callback_lines
 
         # Nested Expansion, supports now using macros to further specify define constants used for iterate and literate macros
