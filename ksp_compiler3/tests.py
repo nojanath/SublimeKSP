@@ -395,6 +395,15 @@ class CompactOutput(unittest.TestCase):
         do_compile(code, compactVars=True)
         # if the variables have different prefixes they shouldn't create a clash after compaction
 
+class VariableDeclaration(unittest.TestCase):
+    def testVariableDeclaration(self):
+        code = '''
+        on note
+            declare a := x
+        end on
+        '''
+        self.assertRaises(ParseException, do_compile, code)
+
 class LocalVariableCheck(unittest.TestCase):
     def testLocalVariableDeclaration(self):
         code = '''
