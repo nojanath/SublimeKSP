@@ -61,6 +61,8 @@ def handle_set_par(control, parameter, value):
         return FunctionCall(control.lexinfo, ID(control.lexinfo, func_name),
                             parameters=[control, event_par, value], is_procedure=True)
 
+    raise Exception("%s is not a valid control_par/event_par" % parameter.identifier)
+
 def handle_get_par(control, parameter):
     if type(parameter) == Integer:
         parameter = ID(parameter.lexinfo, str(parameter))
