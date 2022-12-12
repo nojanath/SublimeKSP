@@ -38,6 +38,10 @@ def flatten(L):
     return list(flatten_iter(L))
 
 def handle_set_par(control, parameter, value):
+    # for converting integers to IDs. e.g e -> 4 := x
+    if type(parameter) == Integer:
+        parameter = ID(parameter.lexinfo, str(parameter))
+
     remap = {'X': 'POS_X', 'Y': 'POS_Y', 'MAX': 'MAX_VALUE', 'MIN': 'MIN_VALUE', 'DEFAULT': 'DEFAULT_VALUE'}
     cp = parameter.identifier.upper()
     cp = '$CONTROL_PAR_%s' % remap.get(cp, cp)
@@ -49,6 +53,7 @@ def handle_set_par(control, parameter, value):
             func_name = 'set_control_par'
         return FunctionCall(control.lexinfo, ID(control.lexinfo, func_name),
                             parameters=[control, control_par, value], is_procedure=True)
+
     event_p = '$EVENT_PAR_%s' % parameter.identifier.upper()
     if event_p in event_parameters:
         event_par = VarRef(parameter.lexinfo, ID(parameter.lexinfo, event_p))
@@ -57,6 +62,9 @@ def handle_set_par(control, parameter, value):
                             parameters=[control, event_par, value], is_procedure=True)
 
 def handle_get_par(control, parameter):
+    if type(parameter) == Integer:
+        parameter = ID(parameter.lexinfo, str(parameter))
+
     remap = {'X': 'POS_X', 'Y': 'POS_Y', 'MAX': 'MAX_VALUE', 'MIN': 'MIN_VALUE', 'DEFAULT': 'DEFAULT_VALUE'}
     cp = parameter.identifier.upper()
     cp = '$CONTROL_PAR_%s' % remap.get(cp, cp)
@@ -68,12 +76,15 @@ def handle_get_par(control, parameter):
             func_name = 'get_control_par'
         return FunctionCall(control.lexinfo, ID(control.lexinfo, func_name),
                             parameters=[control, control_par], is_procedure=False)
+
     event_p = '$EVENT_PAR_%s' % parameter.identifier.upper()
     if event_p in event_parameters:
         event_par = VarRef(parameter.lexinfo, ID(parameter.lexinfo, event_p))
         func_name = 'get_event_par'
         return FunctionCall(control.lexinfo, ID(control.lexinfo, func_name),
                             parameters=[control, event_par], is_procedure=False)
+
+    raise Exception("%s is not a valid control_par/event_par" % parameter.identifier)
 
 class VariableNotDeclaredException(ParseException):
     pass
