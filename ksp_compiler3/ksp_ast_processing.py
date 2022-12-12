@@ -37,7 +37,7 @@ def flatten(L):
         return L
     return list(flatten_iter(L))
 
-def handle_set_control_par(control, parameter, value):
+def handle_set_par(control, parameter, value):
     remap = {'X': 'POS_X', 'Y': 'POS_Y', 'MAX': 'MAX_VALUE', 'MIN': 'MIN_VALUE', 'DEFAULT': 'DEFAULT_VALUE'}
     cp = parameter.identifier.upper()
     cp = '$CONTROL_PAR_%s' % remap.get(cp, cp)
@@ -56,7 +56,7 @@ def handle_set_control_par(control, parameter, value):
         return FunctionCall(control.lexinfo, ID(control.lexinfo, func_name),
                             parameters=[control, event_par, value], is_procedure=True)
 
-def handle_get_control_par(control, parameter):
+def handle_get_par(control, parameter):
     remap = {'X': 'POS_X', 'Y': 'POS_Y', 'MAX': 'MAX_VALUE', 'MIN': 'MIN_VALUE', 'DEFAULT': 'DEFAULT_VALUE'}
     cp = parameter.identifier.upper()
     cp = '$CONTROL_PAR_%s' % remap.get(cp, cp)
