@@ -223,7 +223,8 @@ class CompileKspThread(threading.Thread):
 
 # **********************************************************************************************
 
-from ksp_compiler3.ksp_builtins import keywords, variables, functions, function_signatures
+from ksp_compiler3.ksp_builtins import keywords, variables, functions, function_signatures, functions_with_forced_parentheses
+
 all_builtins = set(functions.keys()) | set([v[1:] for v in variables]) | variables | keywords
 functions, variables = set(functions), set(variables)
 
@@ -235,7 +236,14 @@ builtin_compl_funcs = []
 for f in functions:
     args = [a.replace('number variable or text','').replace('-', '_') for a in function_signatures[f][0]]
     args = ['${%d:%s}' % (i+1, a) for i, a in enumerate(args)]
-    args_str = '(%s)' % ', '.join(args) if args else ''
+
+    if args:
+        args_str = '(%s)' % ', '.join(args)
+    elif f in functions_with_forced_parentheses:
+        args_str = '()'
+    else:
+        args_str = ''
+
     builtin_compl_funcs.append(("%s\tfunction" % (f), "%s%s" % (f,args_str)))
 builtin_compl_funcs.sort()
 
@@ -292,8 +300,11 @@ class KSPCompletions(sublime_plugin.EventListener):
                 compl.extend(bc)
         compl = self.unique(compl)
 
-        return (compl, sublime.INHIBIT_WORD_COMPLETIONS |
-                sublime.INHIBIT_EXPLICIT_COMPLETIONS)
+        if int(sublime.version()) >= 4000:
+            sublime.CompletionList(compl,sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETIONS)
+        else:
+            return (compl, sublime.INHIBIT_WORD_COMPLETIONS |
+                    sublime.INHIBIT_EXPLICIT_COMPLETIONS)
 
 
 class NumericSequenceCommand(sublime_plugin.TextCommand):
