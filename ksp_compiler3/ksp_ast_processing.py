@@ -54,7 +54,9 @@ def handle_set_par(control, parameter, value):
         return FunctionCall(control.lexinfo, ID(control.lexinfo, func_name),
                             parameters=[control, control_par, value], is_procedure=True)
 
-    event_p = '$EVENT_PAR_%s' % parameter.identifier.upper()
+    remap = {'PAR_0': '0', 'PAR_1': '1', 'PAR_2': '2', 'PAR_3': '3'}
+    event_p = parameter.identifier.upper()
+    event_p = '$EVENT_PAR_%s' % remap.get(event_p, event_p)
     if event_p in event_parameters:
         event_par = VarRef(parameter.lexinfo, ID(parameter.lexinfo, event_p))
         func_name = 'set_event_par'
@@ -79,7 +81,9 @@ def handle_get_par(control, parameter):
         return FunctionCall(control.lexinfo, ID(control.lexinfo, func_name),
                             parameters=[control, control_par], is_procedure=False)
 
-    event_p = '$EVENT_PAR_%s' % parameter.identifier.upper()
+    remap = {'PAR_0': '0', 'PAR_1': '1', 'PAR_2': '2', 'PAR_3': '3'}
+    event_p = parameter.identifier.upper()
+    event_p = '$EVENT_PAR_%s' % remap.get(event_p, event_p)
     if event_p in event_parameters:
         event_par = VarRef(parameter.lexinfo, ID(parameter.lexinfo, event_p))
         func_name = 'get_event_par'
