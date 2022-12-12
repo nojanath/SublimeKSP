@@ -244,7 +244,8 @@ class ASTVisitorDetermineExpressionTypes(ASTVisitor):
                         # depending on what param type it's given
                         node.type = passed_param.type
                     elif 'any-array-variable' in param_descriptor:
-                        pass
+                        if not passed_param.type in ('integer array', 'real array', 'string array'):
+                            assert_type(passed_param, 'integer, real or string array')
                     elif 'array-or-string-array-variable' in param_descriptor:
                         if not passed_param.type in ('integer array', 'string array'):
                             assert_type(passed_param, 'integer or string array')
@@ -509,10 +510,10 @@ class ASTVisitorCheckDeclarations(ASTVisitor):
             size = 1
 
         initial_value = None
-        if 'const' in node.modifiers and not (isinstance(node.initial_value, Integer) or isinstance(node.initial_value, Real)):
+        if 'const' in node.modifiers:
             # First need to check if the initial value is an NI constant
             init_expr = node.initial_value
-            if not (isinstance(init_expr, VarRef) and (str(init_expr.identifier).upper() in ksp_builtins.variables) or (str(node.initial_value.function_name) in ksp_builtins.functions_with_constant_return)):
+            if not (isinstance(init_expr, VarRef) and (str(init_expr.identifier).upper() in ksp_builtins.variables) or ("function_name" in init_expr.__dict__ and str(init_expr.function_name) in ksp_builtins.functions_with_constant_return)):
                 if not node.initial_value:
                     raise ParseException(node.variable, 'A constant value has to be assigned to the constant')
                 try:

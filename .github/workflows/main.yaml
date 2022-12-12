@@ -1,11 +1,6 @@
 name: Test compiler with tests.py on ubuntu
 
-on: 
-  push:
-    branches: [master]
-  pull_request:
-    branches:
-      - main
+on: [push, pull_request]
 
 jobs:
   build:
