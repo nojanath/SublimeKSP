@@ -123,7 +123,7 @@ def split_args(arg_string, line):
 
     for idx, ch in enumerate(arg_string + ','):    # extra ',' to include the last argument
         # square brackets are also checked as there may be commas in them (for properties/2D arrays)
-        if ch is '\"' and (idx == 0 or arg_string[idx - 1] is not '\\'):
+        if ch == '\"' and (idx == 0 or arg_string[idx - 1] != '\\'):
             double_quote_on = not double_quote_on
         elif ch in ['(', '[']:
             unmatched_left_paren += 1
@@ -132,7 +132,7 @@ def split_args(arg_string, line):
         if ch == ',' and unmatched_left_paren == 0 and not double_quote_on:
             cur_arg = cur_arg.strip()
             if not cur_arg:
-                raise ParseException(line, 'Syntax error - empty argument in function call: %s' % arg_string)
+                raise ParseException(line, 'Syntax error: empty argument in function call %s!' % arg_string)
             args.append(cur_arg)
             cur_arg = ''
         else:
@@ -1688,7 +1688,7 @@ class KSPCompiler(object):
                     pccb_start = i
                     break
 
-            if pccb_start is not -1:
+            if pccb_start != -1:
                 pccb_end = -1
                 for i in range(pccb_start, len(self.lines)):
                     content = self.lines[i].command
