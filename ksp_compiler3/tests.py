@@ -396,6 +396,66 @@ class CompactOutput(unittest.TestCase):
         # if the variables have different prefixes they shouldn't create a clash after compaction
 
 class VariableDeclarationCheck(unittest.TestCase):
+    def testVariableIntDeclaration(self):
+        code = '''on init
+            declare x := 5
+        end on
+        '''
+        output = do_compile(code)
+        self.assertTrue('declare $x := 5' in output)
+
+    def testVariableRealDeclaration(self):
+        code = '''on init
+            declare ~x := 5.0
+        end on
+        '''
+        output = do_compile(code)
+        self.assertTrue('declare ~x := 5.0' in output)
+
+    def testVariableStringDeclaration(self):
+        code = '''on init
+            declare @s := "test"
+        end on
+        '''
+        output = do_compile(code)
+        self.assertTrue('declare @s' in output)
+        self.assertTrue('@s := "test"' in output)
+
+    def testVariableIntArrayDeclaration(self):
+        code = '''on init
+            declare int_array[10] := (0)
+        end on
+        '''
+        output = do_compile(code)
+        self.assertTrue('declare %int_array[10] := (0)' in output)
+
+    def testVariableRealArrayDeclaration(self):
+        code = '''on init
+            declare ?real_array[10] := (0.0)
+        end on
+        '''
+        output = do_compile(code)
+        self.assertTrue('declare ?real_array[10] := (0.0)' in output)
+
+    def testVariableStringArrayDeclaration(self):
+        code = '''on init
+            declare !string_array[5] := ("a", "b", "c", "d", "e")
+        end on
+        '''
+        output = do_compile(code)
+        expected_output = '''on init
+        declare !string_array[5]
+        !string_array[0] := "a"
+        !string_array[1] := "b"
+        !string_array[2] := "c"
+        !string_array[3] := "d"
+        !string_array[4] := "e"
+        end on'''
+        output = do_compile(code, remove_preprocessor_vars=True)
+        output = [l.strip() for l in output.split('\n') if l]
+        expected_output = [l.strip() for l in expected_output.split('\n') if l]
+        self.assertEqual(output, expected_output)
+
     def testVariableDeclaredOutsideInit(self):
         code = '''on note
             declare x := 5
