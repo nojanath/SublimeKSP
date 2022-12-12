@@ -542,6 +542,9 @@ class ASTVisitorCheckDeclarations(ASTVisitor):
         else:
             control_type = None
 
+        if type(parent) == Callback and parent.name != 'init':
+            raise ParseException(node, 'Variables may only be declared inside an init callback')
+
         is_constant = ('const' in node.modifiers and initial_value is not None)
         is_polyphonic = 'polyphonic' in node.modifiers
         symbol_table[name.lower()] = Variable(node.variable, size, params, control_type, is_constant, is_polyphonic, initial_value)
