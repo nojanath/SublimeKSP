@@ -1,14 +1,14 @@
 [
 	{
-		"caption": "KSP (Kontakt Script Processor): Compile",
+		"caption": "SublimeKSP: Compile",
 		"command": "compile_ksp"
 	},
 	{
-		"caption": "KSP (Kontakt Script Processor): Re-Compile",
+		"caption": "SublimeKSP: Recompile",
 		"command": "ksp_recompile"
 	},
 	{
-		"caption": "Preferences: KSP (Kontakt Script Processor)",
+		"caption": "Preferences: SublimeKSP",
 		"command": "edit_settings",
 		"args":
 		{
