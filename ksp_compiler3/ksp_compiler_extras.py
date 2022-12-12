@@ -102,12 +102,15 @@ def evaluate_expression(expr):
             elif op == '*':
                 return normalize_numeric(a * b)
             elif op == '/':
-                if type(a) is int and type(b) is int:
-                    # division with truncation
-                    # a // b yields the wrong result in case of negative numbers, eg. -10/9
-                    return int(math.copysign(abs(a) // abs(b), a / b))
+                if b == 0:
+                    return normalize_numeric(b)
                 else:
-                    return a / b
+                    if type(a) is int and type(b) is int:
+                        # division with truncation
+                        # a // b yields the wrong result in case of negative numbers, eg. -10/9
+                        return int(math.copysign(abs(a) // abs(b), a / b))
+                    else:
+                        return a / b
             elif op == '=':
                 return a == b
             elif op == '<':
@@ -244,7 +247,8 @@ class ASTVisitorDetermineExpressionTypes(ASTVisitor):
                         # special case: the abs function returns an integer or real depending on what param type it's given
                         node.type = passed_param.type
                     elif 'any-array-variable' in param_descriptor:
-                        pass
+                        if not passed_param.type in ('integer array', 'real array', 'string array'):
+                            assert_type(passed_param, 'integer, real or string array')
                     elif 'array-or-string-array-variable' in param_descriptor:
                         if not passed_param.type in ('integer array', 'string array'):
                             assert_type(passed_param, 'integer or string array')
@@ -513,7 +517,7 @@ class ASTVisitorCheckDeclarations(ASTVisitor):
         if 'const' in node.modifiers:
             # First need to check if the initial value is an NI constant
             init_expr = node.initial_value
-            if not (isinstance(init_expr, VarRef) and str(init_expr.identifier).upper() in ksp_builtins.variables):
+            if not (isinstance(init_expr, VarRef) and (str(init_expr.identifier).upper() in ksp_builtins.variables) or ("function_name" in init_expr.__dict__ and str(init_expr.function_name) in ksp_builtins.functions_with_constant_return)):
                 if not node.initial_value:
                     raise ParseException(node.variable, 'A constant value has to be assigned to the constant!')
                 try:
@@ -524,7 +528,6 @@ class ASTVisitorCheckDeclarations(ASTVisitor):
                         initial_value = test
                 except ValueUndefinedException:
                     raise ParseException(node.initial_value, 'Expression uses non-constant values or undefined constant variables!')
-
         try:
             params = []
             for param in node.parameters:
