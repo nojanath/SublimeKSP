@@ -244,7 +244,8 @@ class ASTVisitorDetermineExpressionTypes(ASTVisitor):
                         # depending on what param type it's given
                         node.type = passed_param.type
                     elif 'any-array-variable' in param_descriptor:
-                        pass
+                        if not passed_param.type in ('integer array', 'real array', 'string array'):
+                            assert_type(passed_param, 'integer, real or string array')
                     elif 'array-or-string-array-variable' in param_descriptor:
                         if not passed_param.type in ('integer array', 'string array'):
                             assert_type(passed_param, 'integer or string array')
