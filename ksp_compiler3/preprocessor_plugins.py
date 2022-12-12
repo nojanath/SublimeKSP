@@ -85,7 +85,7 @@ def post_macro_functions(lines):
 	handleMultidimensionalArrays(lines)
 	handleListBlocks(lines)
 	handleOpenSizeArrays(lines)
-	#handlePersistence(lines)
+	handlePersistence(lines)
 	handleLists(lines)
 	handleUIFunctions(lines)
 	handleStringArrayInitialisation(lines)
@@ -1065,7 +1065,6 @@ def handleStringArrayInitialisation(lines):
 	replaceLines(lines, newLines)
 
 #=================================================================================================
-'''Note: Persistence handling now evaluated in the AST
 def handlePersistence(lines):
 	""" Simple adds make_persistent() or read_perisitent_var() lines when the pers or read keywords are found. """
 	newLines = collections.deque()
@@ -1098,7 +1097,7 @@ def handlePersistence(lines):
 		newLines.append(lines[i])
 
 	replaceLines(lines, newLines)
-'''
+
 #=================================================================================================
 class IterateMacro(object):
 	def __init__(self, macroName, minVal, maxVal, step, direction, line):

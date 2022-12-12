@@ -25,7 +25,7 @@ import os.path
 
 reserved = (
     'FUNCTION', 'TASKFUNC', 'AND', 'OR', 'NOT', 'IF', 'TO', 'DOWNTO', 'ELSE', 'FOR', 'WHILE', 'DECLARE',
-    'SELECT', 'CASE', 'CONST', 'POLYPHONIC', 'END', 'LOCAL', 'GLOBAL', 'PERS', 'INSTPERS', 'READ', 'FAMILY', 'IMPORT', 'AS', 'PROPERTY',
+    'SELECT', 'CASE', 'CONST', 'POLYPHONIC', 'END', 'LOCAL', 'GLOBAL', 'FAMILY', 'IMPORT', 'AS', 'PROPERTY',
     'UI_LABEL', 'UI_BUTTON', 'UI_SWITCH', 'UI_SLIDER', 'UI_MENU', 'UI_VALUE_EDIT', 'UI_WAVEFORM', 'UI_WAVETABLE', 'UI_KNOB', 'UI_TABLE', 'UI_XY', 'CALL', 'STEP',
     'UI_TEXT_EDIT', 'UI_LEVEL_METER', 'UI_FILE_SELECTOR', 'UI_PANEL', 'UI_MOUSE_AREA', 'OVERRIDE',
 )
@@ -512,12 +512,12 @@ def p_functiondefs2(p):
         p[0] = [p[1]] + p[3]
 
 def p_declaration1(p):
-    'declaration           : DECLARE global-modifier-opt persistences-opt decl-modifier-opt ident args-opt initial-value-opt'
-    p[0] = DeclareStmt(p, variable=p[5], modifiers=p[2] + p[4], persistence=p[3], size=None, parameters=p[6], initial_value=p[7])
+    'declaration           : DECLARE global-modifier-opt decl-modifier-opt ident args-opt initial-value-opt'
+    p[0] = DeclareStmt(p, variable=p[4], modifiers=p[2] + p[3], size=None, parameters=p[5], initial_value=p[6])
 
 def p_declaration2(p):
-    'declaration           : DECLARE global-modifier-opt persistences-opt decl-modifier-opt ident array-size args-opt initial-array-opt'
-    p[0] = DeclareStmt(p, variable=p[5], modifiers=p[2] + p[4], persistence=p[3], size=p[6], parameters=p[7], initial_value=p[8])
+    'declaration           : DECLARE global-modifier-opt decl-modifier-opt ident array-size args-opt initial-array-opt'
+    p[0] = DeclareStmt(p, variable=p[4], modifiers=p[2] + p[3], size=p[5], parameters=p[6], initial_value=p[7])
 
 def p_family_declaration(p):
     'family-declaration    : FAMILY ident NEWLINE stmts-opt END FAMILY'
@@ -535,38 +535,6 @@ def p_global_modifier_opt(p):
 def p_global_modifier_opt_empty(p):
     'global-modifier-opt   : empty'
     p[0] = []
-
-def p_persistences_opt(p):
-    'persistences-opt      : persistences'
-    p[0] = p[1]
-
-def p_pers_opt_empty(p):
-    'persistences-opt      : empty'
-    p[0] = []
-
-def p_persistences(p):
-    'persistences          : persistence'
-    if p[1] is None:
-        p[0] = []
-    else:
-        p[0] = [p[1]]
-
-def p_persistences_more(p):
-    'persistences          : persistence persistences'
-    if p[1] is None:
-        p[0] = p[2]
-    else:
-        p[0] = [p[1]] + p[2]
-
-def p_persistence(p):
-    '''persistence         : PERS
-                           | INSTPERS
-                           | READ'''
-    p[0] = p[1]
-
-def p_persistence_empty(p):
-    'persistence           : dummy'
-    p[0] = None
 
 def p_decl_modifier_opt(p):
     '''decl-modifier-opt     : CONST

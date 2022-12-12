@@ -297,11 +297,10 @@ class PropertyDef(Stmt):
 
 class DeclareStmt(Stmt):
 
-    def __init__(self, lexinfo, variable, modifiers, persistence, size=None, parameters=None, initial_value=None):
+    def __init__(self, lexinfo, variable, modifiers, size=None, parameters=None, initial_value=None):
         Stmt.__init__(self, lexinfo)
         self.variable = variable
         self.modifiers = modifiers
-        self.persistence = persistence
         self.size = size
         self.parameters = parameters or []
         self.initial_value = initial_value
@@ -340,11 +339,6 @@ class DeclareStmt(Stmt):
                 out.write(')')
             else:
                 out.write(str(initial_value))
-        if self.persistence:
-            for value in self.persistence:
-                out.write('\n' + str({  'pers'    :'make_persistent(', 
-                                        'instpers':'make_instr_persistent(',
-                                        'read'    :'read_persistent_var('}.get(value)) + '%s)' % self.variable)
         out.writeln()
 
     def get_childnodes(self):
