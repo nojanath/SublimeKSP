@@ -34,7 +34,7 @@ data = {'variables': variables,
         'string_typed_control_parameters': string_typed_control_parameters,
         'engine_parameters': engine_parameters,
         'event_parameters' : event_parameters,
-        'functions_with_forced_parenthesis': functions_with_forced_parenthesis}
+        'functions_with_forced_parentheses': functions_with_forced_parentheses,
         'functions_with_constant_return': functions_with_constant_return
         }
 
