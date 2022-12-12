@@ -186,7 +186,7 @@ class CompileKspThread(threading.Thread):
                 last_compiler = self.compiler
                 code = self.compiler.compiled_code
                 code = code.replace('\r', '')
-                print("final_compile_time: ", time.perf_counter() - init_compile_time)
+                #print("final_compile_time: ", time.perf_counter() - init_compile_time)
                 if self.compiler.output_file:
                     if not os.path.isabs(self.compiler.output_file):
                         self.compiler.output_file = os.path.join(self.base_path, self.compiler.output_file)
