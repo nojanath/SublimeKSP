@@ -292,14 +292,11 @@ class KSPCompletions(sublime_plugin.EventListener):
                 compl.extend(bc)
         compl = self.unique(compl)
 
-        if int(sublime.version()) > 4000:
+        if int(sublime.version()) >= 4000:
             sublime.CompletionList(compl,sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETIONS)
         else:
             return (compl, sublime.INHIBIT_WORD_COMPLETIONS |
                     sublime.INHIBIT_EXPLICIT_COMPLETIONS)
-
-        #return (compl, sublime.INHIBIT_WORD_COMPLETIONS |
-        #        sublime.INHIBIT_EXPLICIT_COMPLETIONS)
 
 
 class NumericSequenceCommand(sublime_plugin.TextCommand):
