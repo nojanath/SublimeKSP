@@ -366,7 +366,7 @@ def handleIncrementer(lines):
 			try:
 				iterObjs.pop()
 			except:
-				raise ksp_compiler.ParseException(lines[i], "Did not find a corresponding 'START_INC!'")
+				raise ksp_compiler.ParseException(lines[i], "Did not find a corresponding 'START_INC'!")
 		# If there are any iterators active, scan the line and replace occurances of the name with it's value.
 		elif iterObjs:
 			for iterationObj in iterObjs:
