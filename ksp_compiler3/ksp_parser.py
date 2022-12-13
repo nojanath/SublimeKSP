@@ -290,7 +290,7 @@ def p_stmt(p):
                            | while-stmt NEWLINE
                            | for-stmt NEWLINE
                            | select-stmt NEWLINE
-                           | set-ui-par-stmt NEWLINE'''
+                           | set-par-stmt NEWLINE'''
     p[0] = p[1]
 
 def p_stmt_empty(p):
@@ -583,13 +583,15 @@ def p_array_size(p):
     'array-size            : LBRACK expression RBRACK'
     p[0] = p[2]
 
-def p_set_ui_par_stmt(p):
-    'set-ui-par-stmt       : varref RIGHTARROW ident ASSIGN expression'
-    p[0] = handle_set_control_par(p[1], p[3], p[5])
+def p_set_par_stmt(p):
+    '''set-par-stmt        : varref RIGHTARROW ident ASSIGN expression
+                           | varref RIGHTARROW literal ASSIGN expression'''
+    p[0] = handle_set_par(p[1], p[3], p[5])
 
-def p_get_ui_par_expr(p):
-    'get-ui-par-expr       : varref RIGHTARROW ident'
-    p[0] = handle_get_control_par(p[1], p[3])
+def p_get_par_expr(p):
+    '''get-par-expr        : varref RIGHTARROW ident
+                           | varref RIGHTARROW literal'''
+    p[0] = handle_get_par(p[1], p[3])
 
 def p_subscripts(p):
     'subscripts            : LBRACK expression more-subscripts-opt RBRACK'
@@ -684,7 +686,7 @@ def p_expression_other(p):
     '''expression        : literal
                          | varref
                          | function-call
-                         | get-ui-par-expr'''
+                         | get-par-expr'''
     p[0] = p[1]
 
 def p_ident(p):

@@ -13,7 +13,7 @@
 # GNU General Public License for more details.
 
 from ksp_ast import *
-from ksp_builtins import string_typed_control_parameters
+from ksp_builtins import string_typed_control_parameters, control_parameters, event_parameters
 #import io
 
 def stripNone(L):
@@ -37,29 +37,60 @@ def flatten(L):
         return L
     return list(flatten_iter(L))
 
-def handle_set_control_par(control, parameter, value):
-    remap = {'X': 'POS_X', 'Y': 'POS_Y', 'MAX': 'MAX_VALUE', 'MIN': 'MIN_VALUE', 'DEFAULT': 'DEFAULT_VALUE'}
-    cp = parameter.identifier.upper()
-    cp = '$CONTROL_PAR_%s' % remap.get(cp, cp)
-    control_par = VarRef(parameter.lexinfo, ID(parameter.lexinfo, cp))
-    if cp in string_typed_control_parameters:
-        func_name = 'set_control_par_str'
-    else:
-        func_name = 'set_control_par'
-    return FunctionCall(control.lexinfo, ID(control.lexinfo, func_name),
-                        parameters=[control, control_par, value], is_procedure=True)
+def handle_set_par(control, parameter, value):
+    # for converting integers to IDs. e.g e -> 4 := x
+    if type(parameter) == Integer:
+        parameter = ID(parameter.lexinfo, str(parameter))
 
-def handle_get_control_par(control, parameter):
     remap = {'X': 'POS_X', 'Y': 'POS_Y', 'MAX': 'MAX_VALUE', 'MIN': 'MIN_VALUE', 'DEFAULT': 'DEFAULT_VALUE'}
     cp = parameter.identifier.upper()
     cp = '$CONTROL_PAR_%s' % remap.get(cp, cp)
-    control_par = VarRef(parameter.lexinfo, ID(parameter.lexinfo, cp))
-    if cp in string_typed_control_parameters:
-        func_name = 'get_control_par_str'
-    else:
-        func_name = 'get_control_par'
-    return FunctionCall(control.lexinfo, ID(control.lexinfo, func_name),
-                        parameters=[control, control_par], is_procedure=False)
+    if cp in control_parameters:
+        control_par = VarRef(parameter.lexinfo, ID(parameter.lexinfo, cp))
+        if cp in string_typed_control_parameters:
+            func_name = 'set_control_par_str'
+        else:
+            func_name = 'set_control_par'
+        return FunctionCall(control.lexinfo, ID(control.lexinfo, func_name),
+                            parameters=[control, control_par, value], is_procedure=True)
+
+    remap = {'PAR_0': '0', 'PAR_1': '1', 'PAR_2': '2', 'PAR_3': '3'}
+    event_p = parameter.identifier.upper()
+    event_p = '$EVENT_PAR_%s' % remap.get(event_p, event_p)
+    if event_p in event_parameters:
+        event_par = VarRef(parameter.lexinfo, ID(parameter.lexinfo, event_p))
+        func_name = 'set_event_par'
+        return FunctionCall(control.lexinfo, ID(control.lexinfo, func_name),
+                            parameters=[control, event_par, value], is_procedure=True)
+
+    raise Exception("%s is not a valid control_par/event_par" % parameter.identifier)
+
+def handle_get_par(control, parameter):
+    if type(parameter) == Integer:
+        parameter = ID(parameter.lexinfo, str(parameter))
+
+    remap = {'X': 'POS_X', 'Y': 'POS_Y', 'MAX': 'MAX_VALUE', 'MIN': 'MIN_VALUE', 'DEFAULT': 'DEFAULT_VALUE'}
+    cp = parameter.identifier.upper()
+    cp = '$CONTROL_PAR_%s' % remap.get(cp, cp)
+    if cp in control_parameters:
+        control_par = VarRef(parameter.lexinfo, ID(parameter.lexinfo, cp))
+        if cp in string_typed_control_parameters:
+            func_name = 'get_control_par_str'
+        else:
+            func_name = 'get_control_par'
+        return FunctionCall(control.lexinfo, ID(control.lexinfo, func_name),
+                            parameters=[control, control_par], is_procedure=False)
+
+    remap = {'PAR_0': '0', 'PAR_1': '1', 'PAR_2': '2', 'PAR_3': '3'}
+    event_p = parameter.identifier.upper()
+    event_p = '$EVENT_PAR_%s' % remap.get(event_p, event_p)
+    if event_p in event_parameters:
+        event_par = VarRef(parameter.lexinfo, ID(parameter.lexinfo, event_p))
+        func_name = 'get_event_par'
+        return FunctionCall(control.lexinfo, ID(control.lexinfo, func_name),
+                            parameters=[control, event_par], is_procedure=False)
+
+    raise Exception("%s is not a valid control_par/event_par" % parameter.identifier)
 
 class VariableNotDeclaredException(ParseException):
     pass
