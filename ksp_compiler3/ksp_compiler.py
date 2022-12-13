@@ -545,6 +545,37 @@ class ASTModifierBase(ksp_ast_processing.ASTModifier):
         else:
             return node
 
+class ASTModifierCombineCallbacks(ASTModifierBase):
+    '''Combines callbacks by generating a dictionary of used CBs and extending existing ones with lines in the duplicate CB'''
+    def __init__(self, ast):
+        ASTModifierBase.__init__(self, modify_expressions=True)
+        self.traverse(ast, parent_funciton=None, function_params=[], parent_families=[])
+    
+    def modifyModule(self, node, *args, **kwargs):
+        callbacks = {}
+        for b in node.blocks:
+            if isinstance(b,ksp_ast.Callback):
+                ui_name = ""
+                if b.variable:  # ui_controls have a variable which is stored as a child component
+                    if b.lexinfo[3]: # If the ui_control has been imported with a namespace
+                        ui_name = "".join(b.lexinfo[2])
+                    ui_name += str(b.variable)
+
+                cb_key = b.name + ui_name
+
+                if cb_key in callbacks:
+                    children = b.get_childnodes()
+                    if b.name == 'init':
+                        children = children[4:] # Removes preprocessor variables (concat_it, string_it etc.) from duplicate init CBs
+                    if b.variable:
+                        children = children[1:] # Removes ui_name from children to prevent duplicate CBs
+                    callbacks[cb_key].lines.extend(children) # Extend the existing CB with lines from the duplicate
+                    b.lines = [] # Delete lines of duplicate CBs
+                else:
+                    callbacks[cb_key] = b
+
+        node.blocks = [b for b in node.blocks if b.lines != []] # Removes the CBs with no lines from node.blocks
+
 class ASTModifierFixReferencesAndFamilies(ASTModifierBase):
     def __init__(self, ast, line_map):
         ASTModifierBase.__init__(self, modify_expressions=True)
@@ -1790,7 +1821,7 @@ class KSPCompiler(object):
         return code
 
     def parse_code(self):
-        self.module = parse(self.code)
+        self.module = parse(self.code, self.lines)
 
     def sort_functions_and_insert_local_variables_into_on_init(self):
         # make sure that used function that uses others set the used flag of those secondary ones as well
@@ -1898,6 +1929,7 @@ class KSPCompiler(object):
                  # NOTE(Sam): Convert the lines to a block in a separate function
                  ('convert lines to code block', lambda: self.convert_lines_to_code(),                                              True,             1),
                  ('parse code',                  lambda: self.parse_code(),                                                         True,             1),
+                 ('combining callbacks',         lambda: ASTModifierCombineCallbacks(self.module),                                  True,             1),
                  ('various tasks',               lambda: ASTModifierFixReferencesAndFamilies(self.module, self.lines),              True,             1),
                  ('add variable name prefixes',  lambda: ASTModifierFixPrefixesIncludingLocalVars(self.module),                     True,             1),
                  ('inline functions',            lambda: ASTModifierFunctionExpander(self.module),                                  True,             1),
