@@ -358,7 +358,7 @@ def handleIncrementer(lines):
 				lines[i].command = ""
 				iterObjs.append(Incrementer(mm.group(1), tryStringEval(mm.group(4), lines[i], "start"), tryStringEval(mm.group(5), lines[i], "step"), lines[i]))
 			else:
-				raise ksp_compiler.ParseException(lines[i], "Incorrect parameters. Expected: START_INC(<name>, <start-num>, <step-num>)\n")
+				raise ksp_compiler.ParseException(lines[i], "Incorrect parameters! Expected: START_INC(<name>, <start-num>, <step-num>)\n")
 		# If any incremeter has ended, pop the last object off the array.
 		elif line == "END_INC":
 			found_end = True
@@ -366,7 +366,7 @@ def handleIncrementer(lines):
 			try:
 				iterObjs.pop()
 			except:
-				raise ksp_compiler.ParseException(lines[i], "Did not find a corresponding 'START_INC'")
+				raise ksp_compiler.ParseException(lines[i], "Did not find a corresponding 'START_INC!'")
 		# If there are any iterators active, scan the line and replace occurances of the name with it's value.
 		elif iterObjs:
 			for iterationObj in iterObjs:
@@ -375,7 +375,7 @@ def handleIncrementer(lines):
 					lines[i].command = re.sub(r"\b%s\b" % iterationObj.name, str(iterationObj.iterationVal), lines[i].command)
 					iterationObj.increaseVal()
 	if iterObjs:
-		raise ksp_compiler.ParseException(iterObjs[0].line, "Did not find a corresponding 'END_INC'.")
+		raise ksp_compiler.ParseException(iterObjs[0].line, "Did not find a corresponding 'END_INC'!")
 
 #=================================================================================================
 class ArrayConcat(object):
