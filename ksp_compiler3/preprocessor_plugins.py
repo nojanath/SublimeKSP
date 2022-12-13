@@ -335,29 +335,38 @@ def removeActivateLoggerPrint(lines):
 
 #=================================================================================================
 class Incrementer(object):
-	def __init__(self, name, start, step):
+	def __init__(self, name, start, step, line):
 		self.name = name
 		self.iterationVal = start
 		self.step = step
+		self.line = line
 	def increaseVal(self):
 		self.iterationVal += self.step
 
 def handleIncrementer(lines):
 	iterObjs = []
+	found_end = True
 	for i in range(len(lines)):
 		line = lines[i].command.strip()
 		# Check for START_INC and add the object to the array.
 		if line.startswith("START_INC"):
 			mm = re.search(r"^%s\s*\(\s*%s\s*\,\s*(.+)s*\,\s*(.+)\s*\)" % ("START_INC", variableNameUnRe), line)
+			if found_end:
+				found_end = False
+
 			if mm:
 				lines[i].command = ""
-				iterObjs.append(Incrementer(mm.group(1), tryStringEval(mm.group(4), lines[i], "start"), tryStringEval(mm.group(5), lines[i], "step")))
+				iterObjs.append(Incrementer(mm.group(1), tryStringEval(mm.group(4), lines[i], "start"), tryStringEval(mm.group(5), lines[i], "step"), lines[i]))
 			else:
-				raise ksp_compiler.ParseException(lines[i], "Incorrect parameters! Expected: START_INC(<name>, <start-num>, <step-num>)\n")
+				raise ksp_compiler.ParseException(lines[i], "Incorrect parameters for START_INC! Expected: START_INC(<name>, <start-num>, <step-num>)\n")
 		# If any incremeter has ended, pop the last object off the array.
 		elif line == "END_INC":
+			found_end = True
 			lines[i].command = ""
-			iterObjs.pop()
+			try:
+				iterObjs.pop()
+			except:
+				raise ksp_compiler.ParseException(lines[i], "Did not find a corresponding 'START_INC'!")
 		# If there are any iterators active, scan the line and replace occurances of the name with it's value.
 		elif iterObjs:
 			for iterationObj in iterObjs:
@@ -365,6 +374,8 @@ def handleIncrementer(lines):
 				if mm:
 					lines[i].command = re.sub(r"\b%s\b" % iterationObj.name, str(iterationObj.iterationVal), lines[i].command)
 					iterationObj.increaseVal()
+	if iterObjs:
+		raise ksp_compiler.ParseException(iterObjs[0].line, "Did not find a corresponding 'END_INC'!")
 
 #=================================================================================================
 class ArrayConcat(object):
