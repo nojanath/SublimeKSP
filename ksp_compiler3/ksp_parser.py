@@ -719,8 +719,9 @@ def init(outputdir=None):
 
 parser = init()
 
-def parse(script_code):
+def parse(script_code, lines):
     lex.lexer.lineno = 0
+    lex.lexer.lines = lines
     lex.lexer.filename = 'current file'
     data = script_code.replace('\r', '')
     result = parser.parse(data, tracking=True)
