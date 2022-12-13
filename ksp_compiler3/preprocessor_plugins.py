@@ -358,7 +358,7 @@ def handleIncrementer(lines):
 				lines[i].command = ""
 				iterObjs.append(Incrementer(mm.group(1), tryStringEval(mm.group(4), lines[i], "start"), tryStringEval(mm.group(5), lines[i], "step"), lines[i]))
 			else:
-				raise ksp_compiler.ParseException(lines[i], "Incorrect parameters! Expected: START_INC(<name>, <start-num>, <step-num>)\n")
+				raise ksp_compiler.ParseException(lines[i], "Incorrect parameters for START_INC! Expected: START_INC(<name>, <start-num>, <step-num>)\n")
 		# If any incremeter has ended, pop the last object off the array.
 		elif line == "END_INC":
 			found_end = True
