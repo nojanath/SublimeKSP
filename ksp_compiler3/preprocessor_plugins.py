@@ -353,8 +353,8 @@ def handleIncrementer(lines):
 			mm = re.search(r"^%s\s*\(\s*%s\s*\,\s*(.+)s*\,\s*(.+)\s*\)" % ("START_INC", variableNameUnRe), line)
 			if found_end:
 				found_end = False
-			else:
-				raise ksp_compiler.ParseException(lines[i], "Incrementer may not be nested (maybe you forgot an 'END_INC' line earlier).")
+			#else:
+				#raise ksp_compiler.ParseException(lines[i], "Incrementer may not be nested (maybe you forgot an 'END_INC' line earlier).")
 
 			if mm:
 				lines[i].command = ""
