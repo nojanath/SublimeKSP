@@ -23,17 +23,18 @@ precedence = {  '&' :  0,
                 'and': 2,
                 'not': 3,
                 '=': 4, '<': 4, '>': 4, '<=': 4, '>=': 4, '#': 4,
-                '.or.': 5,   # Note: earlier .or. and .and. precedence was incorrectly reversed
-                '.and.': 6,  # Note: earlier .or. and .and. precedence was incorrectly reversed
-                '.not.': 7,
-                '+': 8, '-': 8,
-                '*': 9, '/': 9, 'mod': 9,
-                'unary-': 10,
+                '.xor.': 5,
+                '.or.': 6,
+                '.and.': 7,
+                '.not.': 8,
+                '+': 9, '-': 9,
+                '*': 10, '/': 10, 'mod': 10,
+                'unary-': 11,
                 }
 
 def toint(i, bits=32):
     ' converts to a signed integer with <bits> bits '
-    i &= (1 << bits) - 1  # get last "bits" bits, as unsigned
+    i &= (1 << bits) - 1       # get last "bits" bits, as unsigned
     if i & (1 << (bits - 1)):  # if negative in N-bit 2's comp
         i -= 1 << bits         # ... make it negative
     return int(i)
@@ -113,9 +114,10 @@ class ASTNode:
             if type(lexinfo) is tuple:
                 self.lexinfo = lexinfo
             else:
-                self.lexinfo = (lexinfo.lexer.filename, lexinfo.lineno(1), [])   # the last element is a list of function nodes related to inlining of functions
+                # the last element is a list of function nodes related to inlining of functions
+                self.lexinfo = (lexinfo.lexer.filename, lexinfo.lineno(1), [])
         else:
-            raise Exception('Missing lexinfo')
+            raise Exception('Missing lexinfo!')
 
     @property
     def lineno(self):
@@ -169,9 +171,6 @@ class TopLevelBlock(ASTNode):
         else:
             self.lines = lines[:]
 
-##    def copy(self):
-##        return TopLevelBlock(lexinfo, name.copy(), [l.copy() for l in lines])
-
     def get_childnodes(self):
         return self.lines # NOTE: name?
 
@@ -212,13 +211,9 @@ class FunctionDef(TopLevelBlock):
         self.is_taskfunc = is_taskfunc
         self.override = override
 
-##    def copy(self):
-##        return FunctionDef(lexinfo, name.copy(), [l.copy() for l in self.lines])
-
     def get_childnodes(self):
         children = []
         children.append(self.name)
-        #children.extend(self.parameters)
         children.extend(self.lines)
         return children
 
@@ -256,11 +251,6 @@ class Stmt(ASTNode):
     def __init__(self, lexinfo):
         ASTNode.__init__(self, lexinfo)
 
-    #def __repr__(self):
-        #raise ParseException(self, "fel" + self.__class__.__name__)
-        #raise Exception("fel" + self.__class__.__name__)
-    #    return ''
-
     def map_expr(self, func):
         pass
 
@@ -272,13 +262,17 @@ class PropertyDef(Stmt):
         if alias_varref is not None:
             # if there is an alias varref automatically add get/set functions and use the indices as parameters
             functions = []
-            functions.append(FunctionDef(lexinfo, ID(lexinfo, 'get'), parameters=indices, return_value=ID(lexinfo, 'result'),
-                                         lines=[AssignStmt(lexinfo, VarRef(lexinfo, ID(lexinfo, 'result')), alias_varref)]))       # result := alias_varref
+
+            # result := alias_varref
+            functions.append(FunctionDef(lexinfo, ID(lexinfo, 'get'),parameters=indices, return_value=ID(lexinfo, 'result'),
+                                         lines=[AssignStmt(lexinfo, VarRef(lexinfo, ID(lexinfo, 'result')), alias_varref)]))
+            # alias_varref := value_to_set
             functions.append(FunctionDef(lexinfo, ID(lexinfo, 'set'), parameters=indices + [ID(lexinfo, 'value_to_set')], return_value=None,
-                                         lines=[AssignStmt(lexinfo, alias_varref, VarRef(lexinfo, ID(lexinfo, 'value_to_set')))])) # alias_varref := value_to_set
+                                         lines=[AssignStmt(lexinfo, alias_varref, VarRef(lexinfo, ID(lexinfo, 'value_to_set')))]))
         self.get_func_def = None
         self.set_func_def = None
         self.functiondefs = {}
+
         for func in functions:
             function_name = str(func.name)
             self.functiondefs[function_name] = func
@@ -320,13 +314,14 @@ class DeclareStmt(Stmt):
             else:
                 initial_value = self.initial_value
             if type(initial_value) is list:
-                #out.write('(%s)' % ', '.join((unicode(v) for v in initial_value)))
                 out.write('(')
+
                 for i, value in enumerate(initial_value):
                     out.write(str(value))
                     if i != len(initial_value) - 1:  # unless last element
                         # emit comma or newline+comma
                         values_per_line = 40
+
                         if i % values_per_line == 0 and i > 0:
                             out.write(', ...\n')
                         else:
@@ -368,7 +363,6 @@ class AssignStmt(Stmt):
         out.write(self.varref)
         out.write(' := ')
         out.writeln(self.expression)
-        #out.writeln('%s := %s' % (self.varref, self.expression))
 
     def map_expr(self, func):
         self.varref = func(self.varref)
@@ -495,7 +489,9 @@ class FamilyStmt(CompoundStmt):
 class IfStmt(CompoundStmt):
     def __init__(self, lexinfo, condition_stmts_tuples):
         CompoundStmt.__init__(self, lexinfo)
-        self.condition_stmts_tuples = condition_stmts_tuples  # list of (condition, statement-list)-tuples. In the case of just "else" the condition will be None.
+
+        # list of (condition, statement-list) tuples. In the case of just "else", the condition will be None.
+        self.condition_stmts_tuples = condition_stmts_tuples
 
     def emit(self, out):
         num_ends = 0
@@ -505,7 +501,6 @@ class IfStmt(CompoundStmt):
                 num_ends += 1
             elif condition:
                 out.writeln('else if (', condition, ')')
-                #num_ends += 1
             else:
                 out.writeln('else')
             out.write(stmts, indented=True)
@@ -527,7 +522,9 @@ class SelectStmt(CompoundStmt):
     def __init__(self, lexinfo, expression, range_stmts_tuples):
         CompoundStmt.__init__(self, lexinfo)
         self.expression = expression
-        self.range_stmts_tuples = range_stmts_tuples  # list of ((min-value, max-value), statement-list) tuples. Please note that max-value may be None.
+
+        # list of ((min-value, max-value), statement-list) tuples. Please note that max-value may be None.
+        self.range_stmts_tuples = range_stmts_tuples
 
     def emit(self, out):
         out.writeln('select (', self.expression, ')')
@@ -571,15 +568,12 @@ class BinOp(Expr):
     def __str__(self):
         l = str(self.left)
         r = str(self.right)
+
         if isinstance(self.left, BinOp) and precedence[self.op] > precedence[self.left.op]:
             l = '(%s)' % l
-        if isinstance(self.right, BinOp) and not (self.right.op == self.op and self.op in '+&'): # and (precedence[self.op] > precedence[self.right.op] or precedence[self.op] == precedence['*']):
+        if isinstance(self.right, BinOp) and not (self.right.op == self.op and self.op in '+&'):
             r = '(%s)' % r
-        #ops = ['*', '/', 'mod']
-        #if isinstance(self.left, BinOp) and ((self.op in ops) != (self.left.op in ops):
-        #    l = '(%s)' % l
-        #if isinstance(self.right, BinOp) and (self.op in ops) != (self.right.op in ops):
-        #    r = '(%s)' % r
+
         if self.op in '+-*/ = < > >= <=':
             return '%s%s%s' % (l, self.op, r)
         else:
@@ -595,18 +589,20 @@ class UnaryOp(Expr):
         self.op = op
 
     def __str__(self):
-
         # special case since this number can only be represented in hex due to a Kontakt bug
         if self.op == '-' and isinstance(self.right, Integer) and self.right.value == -2147483648:
             return '080000000h'
 
         r = str(self.right)
+
         if self.op == '-':
             op_prefix = '-'
         else:
             op_prefix = self.op + ' '
-        if isinstance(self.right, BinOp):# and precedence[op] > precedence[self.right.op]:
+
+        if isinstance(self.right, BinOp):
             r = '(%s)' % r
+
         return op_prefix + r
 
     def get_childnodes(self):
@@ -618,7 +614,8 @@ class Integer(Expr):
         self.value = toint(value)
 
     def __str__(self):
-        if self.value == -2147483648:   # special case since this number can only be represented in hex due to a Kontakt bug
+        # special case since this number can only be represented in hex due to a Kontakt bug
+        if self.value == -2147483648:
             return '080000000h'
         else:
             return str(self.value)
@@ -635,16 +632,20 @@ class Real(Expr):
         # borrowed from "Karin" on Stack Overflow, a Duolingo software engineer
         f = float(self.value)
         float_string = repr(f)
-        if 'e' in float_string:  # detect scientific notation
+
+        # detect scientific notation
+        if 'e' in float_string:
             digits, exp = float_string.split('e')
             digits = digits.replace('.', '').replace('-', '')
             exp = int(exp)
-            zero_padding = '0' * (abs(int(exp)) - 1)  # minus 1 for decimal point in the sci notation
+            zero_padding = '0' * (abs(int(exp)) - 1)  # - 1 for decimal point in the sci notation
             sign = '-' if f < 0 else ''
+
             if exp > 0:
                 float_string = '{}{}{}.0'.format(sign, digits, zero_padding)
             else:
                 float_string = '{}0.{}{}'.format(sign, zero_padding, digits)
+
         return float_string
 
     def get_childnodes(self):
@@ -662,8 +663,7 @@ class String(Expr):
         return str(self.value)
 
 # NOTE:
-# KSP doesn't support booleans, but this node type is used as an intermediary
-# in the optimization phase
+# KSP doesn't support booleans, but this node type is used as an intermediary in the optimization phase
 class Boolean(Expr):
     def __init__(self, lexinfo, value):
         Expr.__init__(self, lexinfo)
@@ -694,6 +694,7 @@ class ID(Expr):
     def set_identifier(self, identifier):
         self._identifier = str(identifier)
         sys.intern(self._identifier)
+
         # identifier_first_part represents the part of the name in front of the first dot (if any), eg. for myfamily.myvar it would represent myfamily
         if '.' in identifier:
             self.identifier_first_part = identifier[:identifier.index('.')]
@@ -708,8 +709,7 @@ class ID(Expr):
             id = ID(self.lexinfo, self.prefix + self.identifier)
         else:
             id = ID(self.lexinfo, different_name)
-        #id.lineno = self.lineno
-        #id.filename = self.filename
+
         return id
 
     def __hash__(self):

@@ -1,4 +1,3 @@
-
 # Edited for SublimeKSP:
 # The default divide function now uses a safe_div() function to do an interger
 # divide that Kontakt will understand. This means there are no floating point
@@ -134,7 +133,7 @@ PYTHON3 = sys.version_info[0] == 3
 #             attr, expression)
 #         self.attr = attr
 #         self.expression = expression
- 
+
 
 ########################################
 # Default simple functions to include:
@@ -153,7 +152,7 @@ def kontakt_divide(a, b):
 DEFAULT_OPERATORS = {ast.Add: op.add, ast.Sub: op.sub, ast.Mult: op.mul,
                      ast.Div: kontakt_divide, ast.Mod: op.mod,
                      # ast.Eq: op.eq, ast.NotEq: op.ne, ast.Gt: op.gt, ast.Lt: op.lt,
-                     # ast.GtE: op.ge, ast.LtE: op.le, 
+                     # ast.GtE: op.ge, ast.LtE: op.le,
                      ast.USub: op.neg,
                      ast.UAdd: op.pos}
 
@@ -261,7 +260,7 @@ class SimpleEval(object): # pylint: disable=too-few-public-methods
             #                             ' when no "names" defined for'
             #                             ' evaluator'.format(node.id))
 
-            # except KeyError:              
+            # except KeyError:
                 # raise NameNotDefined(node.id, self.expr)
 
         elif isinstance(node, ast.Subscript): # b[1]

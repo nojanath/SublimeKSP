@@ -33,15 +33,11 @@ data = {'variables': variables,
         }
 
 section = None
-#try:
-#    builtins_data = pkgutil.get_data('ksp_compiler', 'builtins.txt')
-#    if builtins_data is None:
-#        builtins_data = open('ksp_builtins.txt', 'r').read()
-#except:
+
 from ksp_builtins_data import builtins_data
 
 lines = builtins_data.replace('\r\n', '\n').split('\n')
-##lines = open('builtins.txt', 'r').read().replace('\r\n', '\n').split('\n')
+
 for line in lines:
     line = line.strip()
     if line.startswith('['):
