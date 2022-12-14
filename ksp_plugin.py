@@ -161,7 +161,6 @@ class CompileKspThread(threading.Thread):
         compactVars = settings.get('ksp_compact_variables', False)
         check = settings.get('ksp_extra_checks', True)
         optimize = settings.get('ksp_optimize_code', False)
-        check_empty_compound_statements = settings.get('ksp_signal_empty_ifcase', True)
         add_compiled_date_comment = settings.get('ksp_add_compiled_date', True)
         should_play_sound = settings.get('ksp_play_sound', False)
 
@@ -178,7 +177,6 @@ class CompileKspThread(threading.Thread):
                                                      read_file_func=self.read_file_function,
                                                      extra_syntax_checks=check,
                                                      optimize=optimize and check,
-                                                     check_empty_compound_statements=check_empty_compound_statements,
                                                      add_compiled_date_comment=add_compiled_date_comment)
             if self.compiler.compile(callback=self.compile_on_progress):
                 last_compiler = self.compiler
@@ -332,7 +330,6 @@ class KspGlobalSettingToggleCommand(sublime_plugin.ApplicationCommand):
             "ksp_compact_variables" : "Compact Variables",
             "ksp_extra_checks" : "Extra Syntax Checks",
             "ksp_optimize_code" : "Optimize Compiled Code",
-            "ksp_signal_empty_ifcase" : "Raise Error on Empty 'if' or 'case' Statements",
             "ksp_add_compiled_date" : "Add Compilation Date/Time Comment",
             "ksp_comment_inline_functions" : "Insert Comments When Expanding Functions",
             "ksp_play_sound" : "Play Sound When Compilation Finishes"
@@ -355,12 +352,9 @@ class KspGlobalSettingToggleCommand(sublime_plugin.ApplicationCommand):
     def is_enabled(self, setting, default):
         extra_checks = bool(sublime.load_settings("KSP.sublime-settings").get("ksp_extra_checks", default))
         optim_code = bool(sublime.load_settings("KSP.sublime-settings").get("ksp_optimize_code", default))
-        signal_empty = not (extra_checks and optim_code)
 
         if setting == "ksp_optimize_code":
             return extra_checks
-        elif setting == "ksp_signal_empty_ifcase":
-            return signal_empty
         else:
             return True
 

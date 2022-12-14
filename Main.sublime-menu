@@ -86,13 +86,6 @@
 					},
 					{
 						"command": "ksp_global_setting_toggle",
-						"args": {"setting": "ksp_signal_empty_ifcase", "default": true},
-						"caption": "Raise Error on Empty 'if' or 'case' Statements",
-						"mnemonic": "R",
-						"id": "signal_empty_ifcase"
-					},
-					{
-						"command": "ksp_global_setting_toggle",
 						"args": {"setting": "ksp_play_sound", "default": false},
 						"caption": "Play Sound When Compilation Finishes",
 						"mnemonic": "S",
