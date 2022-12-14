@@ -550,7 +550,7 @@ class ASTModifierCombineCallbacks(ASTModifierBase):
     def __init__(self, ast):
         ASTModifierBase.__init__(self, modify_expressions=True)
         self.traverse(ast, parent_funciton=None, function_params=[], parent_families=[])
-    
+
     def modifyModule(self, node, *args, **kwargs):
         callbacks = {}
         for b in node.blocks:
@@ -1628,14 +1628,13 @@ def strip_import_nckp_function_from_source(lines):
             line_obj.command = re.sub(r'[^\r\n]', '', ls_line)
 
 class KSPCompiler(object):
-    def __init__(self, source, basedir, compact=True, compactVars=False, read_file_func=default_read_file_func, extra_syntax_checks=False, optimize=False, check_empty_compound_statements=False, add_compiled_date_comment=False):
+    def __init__(self, source, basedir, compact=True, compactVars=False, read_file_func=default_read_file_func, extra_syntax_checks=False, optimize=False, add_compiled_date_comment=False):
         self.source = source
         self.basedir = basedir
         self.compact = compact
         self.compactVars = compactVars
         self.read_file_func = read_file_func
         self.optimize = optimize
-        self.check_empty_compound_statements = check_empty_compound_statements
         self.add_compiled_date_comment = add_compiled_date_comment
         self.extra_syntax_checks = extra_syntax_checks or optimize
         self.abort_requested = False
@@ -1913,7 +1912,6 @@ class KSPCompiler(object):
 
             do_extra = self.extra_syntax_checks
             do_optim = do_extra and self.optimize
-            do_emptycheck = self.check_empty_compound_statements and not do_optim
             #      description                   function                                                                           condition     time-weight
             tasks = [
                  ('scanning and importing code', lambda: self.do_imports_and_convert_to_line_objects(),                             True,             1),
@@ -1947,7 +1945,6 @@ class KSPCompiler(object):
                  ('removing unused functions',   lambda: comp_extras.ASTModifierRemoveUnusedFunctions(self.module, used_functions), do_optim,         1),
                  ('removing unused variables',   lambda: comp_extras.ASTVisitorFindUsedVariables(self.module, used_variables),      do_optim,         1),
                  ('removing unused variables',   lambda: comp_extras.ASTModifierRemoveUnusedVariables(self.module, used_variables), do_optim,         1),
-                 ('checking empty if-stmts',     lambda: comp_extras.ASTVisitorCheckNoEmptyIfCaseStatements(self.module),           do_emptycheck,    1),
                  ('compact variable names',      self.compact_names,                                                                self.compactVars, 1),
                  ('generate code',               self.generate_compiled_code,                                                       True,             1),
             ]
@@ -2061,7 +2058,6 @@ if __name__ == "__main__":
         read_file_func=read_file_func,
         extra_syntax_checks=args.extra_syntax_checks,
         optimize=args.optimize,
-        check_empty_compound_statements=False,
         add_compiled_date_comment=(not args.nocompiledate))
     compiler.compile()
 
