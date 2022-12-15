@@ -34,6 +34,11 @@ class KspRecompile(sublime_plugin.ApplicationCommand):
     def run(self, *args):
         sublime.active_window().run_command('compile_ksp', {'recompile': True})
 
+class Compile_all_openCommand(sublime_plugin.ApplicationCommand):
+    def run(self, *args):
+        print("TRUEEEE")
+        sublime.active_window().run_command('compile_ksp', {'compile_all_open': True})
+
 class CompileKspCommand(sublime_plugin.ApplicationCommand):
     def __init__(self):
         sublime_plugin.ApplicationCommand.__init__(self)
@@ -55,12 +60,13 @@ class CompileKspCommand(sublime_plugin.ApplicationCommand):
 
         # find the view containing the code to compile
         view = None
+        compile_all_open = False
         if kwargs.get('recompile', None) and self.last_filename:
             view = CompileKspThread.find_view_by_filename(self.last_filename)
         if view is None:
             view = sublime.active_window().active_view()
 
-        self.thread = CompileKspThread(view)
+        self.thread = CompileKspThread(view, *args, **kwargs)
         self.thread.start()
         self.last_filename = view.file_name()
 
@@ -86,11 +92,13 @@ class CompilerSounds:
                 call(["aplay", sound_path])
 
 class CompileKspThread(threading.Thread):
-    def __init__(self, view):
+    def __init__(self, view, *args, **kwargs):
         threading.Thread.__init__(self)
         self.base_path = None
         self.compiler = None
         self.view = view
+        self.compile_all_open = kwargs.get('compile_all_open', False)
+        print("compile all open", self.compile_all_open)
 
     def stop(self):
         if self.compiler:
@@ -144,7 +152,7 @@ class CompileKspThread(threading.Thread):
         else:
             return view.substr(sublime.Region(0, view.size()))
 
-    def run(self, *args):
+    def run(self, *args, **kwargs):
         global last_compiler
 
         view = self.view
@@ -164,6 +172,13 @@ class CompileKspThread(threading.Thread):
         check_empty_compound_statements = settings.get('ksp_signal_empty_ifcase', True)
         add_compiled_date_comment = settings.get('ksp_add_compiled_date', True)
         should_play_sound = settings.get('ksp_play_sound', False)
+
+        # Ensure syntax is KSP
+        if self.compile_all_open:
+            open_views = [view for view in open_views if re.search(r'source\.ksp',view.scope_name(0)) and '.ksp' in view.file_name() if view.file_name is not None]
+            for view in open_views:
+                if re.search(r'source\.ksp',view.scope_name(0)):
+                    view.assign_syntax('Packages/KSP (Kontakt Script Processor)/KSP.sublime-syntax')
 
         error_msg = None
         error_lineno = None

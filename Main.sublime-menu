@@ -25,6 +25,18 @@
 						"id": "compile"
 					},
 					{
+						"command": "compile_all_open",
+						"context":
+						[{
+							"key": "selector",
+							"operator": "equal",
+							"operand": "source.ksp"
+						}],
+						"caption": "Compile All Open Scripts (Must Include Output Path)",
+						"mnemonic": "p",
+						"id": "compile_all_open"
+					},
+					{
 						"command": "ksp_recompile",
 						"context":
 						[{
@@ -45,7 +57,6 @@
 					},
 
 					{"caption": "-"}, //separator
-
 					{
 						"command": "ksp_global_setting_toggle",
 						"args": {"setting": "ksp_compact_output", "default": false},
