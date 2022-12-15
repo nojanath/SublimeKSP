@@ -396,6 +396,13 @@ class CompactOutput(unittest.TestCase):
         # if the variables have different prefixes they shouldn't create a clash after compaction
 
 class VariableDeclarationCheck(unittest.TestCase):
+    def testVariableDeclaredOutsideInit(self):
+        code = '''on note
+            declare x := 5
+        end on
+        '''
+        self.assertRaises(ParseException, do_compile, code)
+
     def testVariableIntDeclaration(self):
         code = '''on init
             declare x := 5
