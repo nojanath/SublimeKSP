@@ -101,7 +101,7 @@ def t_RIGHTARROW(t):
     return t
 
 def t_REAL(t):
-    r'(\d*\.\d+)([eE]-?\d+)?'
+    r'(\d*\.\d*)([eE]-?\d+)?'
     return t
 
 def t_ID(t):
