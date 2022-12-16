@@ -181,7 +181,7 @@ class CompileKspThread(threading.Thread):
             error_filename = filepath # path to main script
 
             sound_utility = CompilerSounds()
-           
+
             pragma_compiled_source_re = re.compile(r'\{\s*\#pragma\s+save_compiled_source\s+(.*)\}')
             if self.compile_all_open and not pragma_compiled_source_re.search(code):
                 if filepath == None:
@@ -252,11 +252,11 @@ from ksp_compiler3.ksp_builtins import keywords, variables, functions, function_
 all_builtins = set(functions.keys()) | set([v[1:] for v in variables]) | variables | keywords
 functions, variables = set(functions), set(variables)
 
+builtin_compl_funcs = []
 builtin_compl_vars = []
 builtin_compl_vars.extend(('%s\tvariable' % v[1:], v[1:]) for v in variables)
 builtin_compl_vars.sort()
 
-builtin_compl_funcs = []
 for f in functions:
     args = [a.replace('number variable or text','').replace('-', '_') for a in function_signatures[f][0]]
     args = ['${%d:%s}' % (i+1, a) for i, a in enumerate(args)]
@@ -269,17 +269,26 @@ for f in functions:
         args_str = ''
 
     builtin_compl_funcs.append(("%s\tfunction" % (f), "%s%s" % (f,args_str)))
+
 builtin_compl_funcs.sort()
 
-# control par references that can be used as control->x, or control->value
-magic_control_pars = []
+# control par references that can be used as control -> x, or control -> value
+magic_control_and_event_pars = []
 remap_control_pars = {'POS_X': 'x', 'POS_Y': 'y', 'MAX_VALUE': 'MAX', 'MIN_VALUE': 'MIN', 'DEFAULT_VALUE': 'DEFAULT'}
+
 for v in variables:
     if v.startswith('$CONTROL_PAR_'):
         v = v.replace('$CONTROL_PAR_', '')
         v = remap_control_pars.get(v, v).lower()
-        magic_control_pars.append(('%s\tui param' % v, v))
-magic_control_pars.sort()
+        magic_control_and_event_pars.append(('%s\tui param' % v, v))
+    if re.search(r'^\$EVENT_PAR_[0|1|2|3]', v):
+        v = v.replace('$EVENT_', '').lower()
+        magic_control_and_event_pars.append(('%s\tevent param' % v, v))
+    elif v.startswith('$EVENT_PAR_'):
+        v = v.replace('$EVENT_PAR_', '').lower()
+        magic_control_and_event_pars.append(('%s\tevent param' % v, v))
+
+magic_control_and_event_pars.sort()
 
 
 class KSPCompletions(sublime_plugin.EventListener):
@@ -295,6 +304,7 @@ class KSPCompletions(sublime_plugin.EventListener):
 
     def unique(self, seq):
         seen = set()
+
         for item in seq:
             if item not in seen:
                 seen.add(item)
@@ -302,17 +312,19 @@ class KSPCompletions(sublime_plugin.EventListener):
 
     def on_query_completions(self, view, prefix, locations):
         # parts of the code inspired by: https://github.com/agibsonsw/AndyPython/blob/master/PythonCompletions.py
-        global builtin_compl_vars, builtin_compl_funcs, magic_control_pars
+        global builtin_compl_vars, builtin_compl_funcs, magic_control_and_event_pars
+
         if not view.match_selector(locations[0], 'source.ksp -string -comment -constant'):
             return []
+
         pt = locations[0] # - len(prefix) - 1
         line_start_pos = view.line(sublime.Region(pt, pt)).begin()
         line = view.substr(sublime.Region(line_start_pos, pt))    # the character before the trigger
 
         if re.match(r' *declare .*', line) and ':=' not in line:
             compl = []
-        elif re.match(r'.*-> ?[a-zA-Z_]*$', line): # if the line ends with something like '->' or '->valu'
-            compl = magic_control_pars
+        elif re.match(r'.*-> ?[a-zA-Z_]*$', line): # if the line ends with something like '->' or '-> value'
+            compl = magic_control_and_event_pars
         else:
             compl = self._extract_completions(view, prefix, pt)
             compl = [(item + "\tdefault", item.replace('$', '\\$', 1)) for item in compl
@@ -322,13 +334,13 @@ class KSPCompletions(sublime_plugin.EventListener):
                 bc.extend(builtin_compl_vars)
                 bc.extend(builtin_compl_funcs)
                 compl.extend(bc)
+
         compl = self.unique(compl)
 
         if int(sublime.version()) >= 4000:
-            sublime.CompletionList(compl,sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETIONS)
+            sublime.CompletionList(compl, sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETIONS)
         else:
-            return (compl, sublime.INHIBIT_WORD_COMPLETIONS |
-                    sublime.INHIBIT_EXPLICIT_COMPLETIONS)
+            return (compl, sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETIONS)
 
 
 class NumericSequenceCommand(sublime_plugin.TextCommand):
