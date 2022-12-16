@@ -34,6 +34,10 @@ class KspRecompile(sublime_plugin.ApplicationCommand):
     def run(self, *args):
         sublime.active_window().run_command('compile_ksp', {'recompile': True})
 
+class Compile_all_openCommand(sublime_plugin.ApplicationCommand):
+    def run(self, *args):
+        sublime.active_window().run_command('compile_ksp', {'compile_all_open': True})
+
 class CompileKspCommand(sublime_plugin.ApplicationCommand):
     def __init__(self):
         sublime_plugin.ApplicationCommand.__init__(self)
@@ -50,19 +54,22 @@ class CompileKspCommand(sublime_plugin.ApplicationCommand):
         # wait until any previous thread is finished
         if self.thread and self.thread.is_alive():
             sublime.status_message('Waiting for earlier compilation to finish...')
-            self.thread.stop()
             self.thread.join()
 
         # find the view containing the code to compile
-        view = None
+        view = sublime.active_window().active_view()
+        open_views = [view]
         if kwargs.get('recompile', None) and self.last_filename:
             view = CompileKspThread.find_view_by_filename(self.last_filename)
-        if view is None:
-            view = sublime.active_window().active_view()
+        if kwargs.get('compile_all_open', None):
+            open_views = view.window().views()
+            open_views = [view for view in open_views if re.search(r'source\.ksp',view.scope_name(0))]
+            for view in open_views:
+                if re.search(r'source\.ksp',view.scope_name(0)):
+                    view.assign_syntax('Packages/KSP (Kontakt Script Processor)/KSP.sublime-syntax')
 
-        self.thread = CompileKspThread(view)
+        self.thread = CompileKspThread(open_views)
         self.thread.start()
-        self.last_filename = view.file_name()
 
 class CompilerSounds:
     dir = None
@@ -86,11 +93,15 @@ class CompilerSounds:
                 call(["aplay", sound_path])
 
 class CompileKspThread(threading.Thread):
-    def __init__(self, view):
+    def __init__(self, open_views):
         threading.Thread.__init__(self)
         self.base_path = None
         self.compiler = None
-        self.view = view
+        self.open_views = open_views
+        self.current_view = None
+        self.compile_all_open = False
+        if len(open_views) > 1:
+            self.compile_all_open = True
 
     def stop(self):
         if self.compiler:
@@ -144,81 +155,92 @@ class CompileKspThread(threading.Thread):
         else:
             return view.substr(sublime.Region(0, view.size()))
 
-    def run(self, *args):
+    def run(self):
         global last_compiler
 
-        view = self.view
-        code = view.substr(sublime.Region(0, view.size()))
-        filepath = view.file_name()
-        if filepath:
-            self.base_path = os.path.dirname(filepath)
-        else:
-            self.base_path = None
-
-        settings = sublime.load_settings("KSP.sublime-settings")
-
-        compact = settings.get('ksp_compact_output', False)
-        compact_variables = settings.get('ksp_compact_variables', False)
-        check = settings.get('ksp_extra_checks', True)
-        optimize = settings.get('ksp_optimize_code', False)
-        combine_callbacks = settings.get('ksp_combine_callbacks', False)
-        add_compiled_date_comment = settings.get('ksp_add_compiled_date', True)
-        should_play_sound = settings.get('ksp_play_sound', False)
-
-        error_msg = None
-        error_lineno = None
-        error_filename = filepath # path to main script
-
-        sound_utility = CompilerSounds()
-
-        try:
-            sublime.status_message('Compiling...')
-
-            self.compiler = ksp_compiler.KSPCompiler(code, self.base_path, 
-                                                     compact = compact,
-                                                     combine_callbacks=combine_callbacks,
-                                                     compact_variables=compact_variables,
-                                                     read_file_func=self.read_file_function,
-                                                     extra_syntax_checks=check,
-                                                     optimize=optimize and check,
-                                                     add_compiled_date_comment=add_compiled_date_comment)
-            if self.compiler.compile(callback=self.compile_on_progress):
-                last_compiler = self.compiler
-                code = self.compiler.compiled_code
-                code = code.replace('\r', '')
-                if self.compiler.output_file:
-                    if not os.path.isabs(self.compiler.output_file):
-                        self.compiler.output_file = os.path.join(self.base_path, self.compiler.output_file)
-                    codecs.open(self.compiler.output_file, 'w', 'latin-1').write(code)
-                    sublime.status_message("Successfully compiled (compiled code saved to %s)." % self.compiler.output_file)
-                else:
-                    sublime.status_message("Successfully compiled (the code is now on the clipboard ready to be pasted into Kontakt).")
-                    sublime.set_clipboard(code)
+        for view in self.open_views:
+            self.current_view = view
+            code = view.substr(sublime.Region(0, view.size()))
+            filepath = view.file_name()
+            if filepath:
+                self.base_path = os.path.dirname(filepath)
             else:
-                sublime.status_message('Compilation aborted.')
-        except ksp_ast.ParseException as e:
-            error_msg = unicode(e)
-            line_object = self.compiler.lines[e.lineno]
-            if line_object:
-                error_lineno = line_object.lineno-1
-                error_filename = line_object.filename
-            if line_object:
-                error_msg = re.sub(r'line (\d+)', 'line %s' % line_object.lineno, error_msg)
-        except ksp_compiler.ParseException as e:
-            error_lineno = e.line.lineno-1
-            error_filename = e.line.filename
-            error_msg = e.message
-        except Exception as e:
-            error_msg = str(e)
-            error_msg = ''.join(traceback.format_exception(*sys.exc_info()))
+                self.base_path = None
 
-        if error_msg:
-            self.compile_handle_error(error_msg, error_lineno, error_filename)
-            if should_play_sound:
-                sound_utility.play(command="error")
-        else:
-            if should_play_sound:
-                sound_utility.play(command="finished")
+            settings = sublime.load_settings("KSP.sublime-settings")
+
+            compact = settings.get('ksp_compact_output', False)
+            compact_variables = settings.get('ksp_compact_variables', False)
+            check = settings.get('ksp_extra_checks', True)
+            optimize = settings.get('ksp_optimize_code', False)
+            add_compiled_date_comment = settings.get('ksp_add_compiled_date', True)
+            should_play_sound = settings.get('ksp_play_sound', False)
+
+            error_msg = None
+            error_lineno = None
+            error_filename = filepath # path to main script
+
+            sound_utility = CompilerSounds()
+           
+            pragma_compiled_source_re = re.compile(r'\{\s*\#pragma\s+save_compiled_source\s+(.*)\}')
+            if self.compile_all_open and not pragma_compiled_source_re.search(code):
+                if filepath == None:
+                    filepath = 'main script'
+                sublime.error_message("Error: No output path was specified for script '%s' - compilation aborted!" % filepath)
+                sublime.status_message("Error: No output path was specified for script '%s' - compilation aborted!" % filepath)
+                sublime.active_window().focus_view(view)
+                if should_play_sound:
+                    sound_utility.play(command="error")
+                break
+
+            try:
+                if self.compile_all_open:
+                    sublime.status_message('Compiling %s, script %s/%s...' % (filepath, self.open_views.index(view)+1, len(self.open_views)))
+                else:
+                    sublime.status_message('Compiling...')
+
+                self.compiler = ksp_compiler.KSPCompiler(code, self.base_path, compact, compact_variables,
+                                                         read_file_func=self.read_file_function,
+                                                         extra_syntax_checks=check,
+                                                         optimize=optimize and check,
+                                                         add_compiled_date_comment=add_compiled_date_comment)
+                if self.compiler.compile(callback=self.compile_on_progress):
+                    last_compiler = self.compiler
+                    code = self.compiler.compiled_code
+                    code = code.replace('\r', '')
+                    if self.compiler.output_file:
+                        if not os.path.isabs(self.compiler.output_file):
+                            self.compiler.output_file = os.path.join(self.base_path, self.compiler.output_file)
+                        codecs.open(self.compiler.output_file, 'w', 'latin-1').write(code)
+                        sublime.status_message("Successfully compiled (compiled code saved to %s)!" % self.compiler.output_file)
+                    else:
+                        sublime.status_message("Successfully compiled (the code is now on the clipboard ready to be pasted into Kontakt)!")
+                        sublime.set_clipboard(code)
+                else:
+                    sublime.status_message('Compilation aborted!')
+            except ksp_ast.ParseException as e:
+                error_msg = unicode(e)
+                line_object = self.compiler.lines[e.lineno]
+                if line_object:
+                    error_lineno = line_object.lineno-1
+                    error_filename = line_object.filename
+                if line_object:
+                    error_msg = re.sub(r'line (\d+)', 'line %s' % line_object.lineno, error_msg)
+            except ksp_compiler.ParseException as e:
+                error_lineno = e.line.lineno-1
+                error_filename = e.line.filename
+                error_msg = e.message
+            except Exception as e:
+                error_msg = str(e)
+                error_msg = ''.join(traceback.format_exception(*sys.exc_info()))
+
+            if error_msg:
+                self.compile_handle_error(error_msg, error_lineno, error_filename)
+                if should_play_sound:
+                    sound_utility.play(command="error")
+            else:
+                if should_play_sound:
+                    sound_utility.play(command="finished")
 
     def description(self, *args):
         return 'Compiled KSP'
@@ -333,7 +355,6 @@ class KspGlobalSettingToggleCommand(sublime_plugin.ApplicationCommand):
             "ksp_compact_output" : "Remove Indents and Empty Lines",
             "ksp_compact_variables" : "Compact Variables",
             "ksp_extra_checks" : "Extra Syntax Checks",
-            "ksp_combine_callbacks" : "Combine Duplicate Callbacks",
             "ksp_optimize_code" : "Optimize Compiled Code",
             "ksp_add_compiled_date" : "Add Compilation Date/Time Comment",
             "ksp_comment_inline_functions" : "Insert Comments When Expanding Functions",
