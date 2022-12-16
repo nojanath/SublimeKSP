@@ -10,6 +10,11 @@
              "context": [{ "key": "selector", "operator": "equal", "operand": "source.ksp" }]
         },
         {
+            "keys": ["super+alt+k"],
+            "command": "compile_all_open",
+            "context": [{ "key": "selector", "operator": "equal", "operand": "source.ksp" }]
+        },
+        {
             "keys": ["super+alt+c"],
             "command": "numeric_sequence",
             "context": [{ "key": "selector", "operator": "equal", "operand": "source.ksp" }]

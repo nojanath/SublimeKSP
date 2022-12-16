@@ -8,6 +8,10 @@
 		"command": "ksp_recompile"
 	},
 	{
+		"caption": "SublimeKSP: Compile All Open Scripts (Scripts Must Include An Output Path)",
+		"command": "compile_all_open"
+	},
+	{
 		"caption": "Preferences: SublimeKSP",
 		"command": "edit_settings",
 		"args":
