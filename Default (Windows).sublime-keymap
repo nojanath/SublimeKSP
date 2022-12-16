@@ -10,7 +10,7 @@
              "context": [{ "key": "selector", "operator": "equal", "operand": "source.ksp" }]
         },
         {
-            "keys": ["ctrl+shift+f5"],
+            "keys": ["shift+f5"],
              "command" : "compile_all_open",
              "context": [{ "key": "selector", "operator": "equal", "operand": "source.ksp" }]
         },
