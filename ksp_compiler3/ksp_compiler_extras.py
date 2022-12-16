@@ -346,21 +346,6 @@ class ASTVisitorDetermineExpressionTypes(ASTVisitor):
             expr.type = expr.identifier.type
         return False
 
-class ASTVisitorCheckNoEmptyIfCaseStatements(ASTVisitor):
-    def __init__(self, ast):
-        ASTVisitor.__init__(self, visit_expressions=False)
-        self.traverse(ast)
-
-    def visitIfStmt(self, parent, node, *args):
-        (condition, stmts) = node.condition_stmts_tuples[0]
-        if len(stmts) == 0:
-            raise ParseException(node, "Warning: due to a KSP bug, an empty 'if' statement is equivalent to invoking the exit function! Please make sure the body of your 'if' statement is not empty!")
-
-    def visitSelectStmt(self, parent, node, *args):
-        for ((start, stop), stmts) in node.range_stmts_tuples:
-            if len(stmts) == 0:
-                raise ParseException(start, "Warning: due to a KSP bug, an empty 'case' statement is equivalent to invoking the exit function. Please make sure the body of your 'case' statement is not empty!")
-
 class ASTVisitorCheckStatementExprTypes(ASTVisitor):
     def __init__(self, ast):
         ASTVisitor.__init__(self, visit_expressions=False)
@@ -544,6 +529,9 @@ class ASTVisitorCheckDeclarations(ASTVisitor):
             control_type = is_ui_control[0]
         else:
             control_type = None
+
+        if type(parent) == Callback and parent.name != 'init':
+            raise ParseException(node, 'Variables may only be declared inside the "on init" callback!')
 
         is_constant = ('const' in node.modifiers and initial_value is not None)
         is_polyphonic = 'polyphonic' in node.modifiers
@@ -860,9 +848,5 @@ def check_code(module, optimize=False, check_empty_compound_statements=False, ca
 
         yield ('progress', 'optimizing - removing unused variables', 95)
         ASTModifierRemoveUnusedVariables(module, used_variables)
-
-    if check_empty_compound_statements:
-        yield ('progress', 'checking existance of empty compound statements', 98)
-        ASTVisitorCheckNoEmptyIfCaseStatements(module)
 
     yield ('completed', module)

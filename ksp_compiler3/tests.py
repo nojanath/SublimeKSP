@@ -22,9 +22,9 @@ import unittest
 def default_read_file_func(filepath):
     return open(filepath, 'r').read()
 
-def do_compile(code, remove_preprocessor_vars=False, compact=True, compactVars=False, comments_on_expansion=True, read_file_func=default_read_file_func, extra_syntax_checks=True, optimize=False, check_empty_compound_statements=False, add_compiled_date_comment=False):
+def do_compile(code, remove_preprocessor_vars=False, compact=True, compactVars=False, comments_on_expansion=True, read_file_func=default_read_file_func, extra_syntax_checks=True, optimize=False, add_compiled_date_comment=False):
     #line_map = {}
-    compiler = KSPCompiler(code, None,compact=compact,compactVars=compactVars, read_file_func=read_file_func, extra_syntax_checks=extra_syntax_checks, optimize=optimize, check_empty_compound_statements=check_empty_compound_statements, add_compiled_date_comment=add_compiled_date_comment)
+    compiler = KSPCompiler(code, None,compact=compact,compactVars=compactVars, read_file_func=read_file_func, extra_syntax_checks=extra_syntax_checks, optimize=optimize, add_compiled_date_comment=add_compiled_date_comment)
     compiler.compile()
     output_code = compiler.compiled_code
     if remove_preprocessor_vars and optimize == False:
@@ -396,6 +396,13 @@ class CompactOutput(unittest.TestCase):
         # if the variables have different prefixes they shouldn't create a clash after compaction
 
 class VariableDeclarationCheck(unittest.TestCase):
+    def testVariableDeclaredOutsideInit(self):
+        code = '''on note
+            declare x := 5
+        end on
+        '''
+        self.assertRaises(ParseException, do_compile, code)
+
     def testVariableIntDeclaration(self):
         code = '''on init
             declare x := 5
@@ -708,7 +715,7 @@ class TypeChecks(unittest.TestCase):
                 declare x
                 message(num_elements(x))
             end on'''
-        self.assertRaises(ParseException, do_compile, code) 
+        self.assertRaises(ParseException, do_compile, code)
 
     def testParametersWithDifferentTypesToMessage(self):
         code = '''
