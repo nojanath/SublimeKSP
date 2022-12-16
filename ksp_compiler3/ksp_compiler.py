@@ -1628,13 +1628,14 @@ def strip_import_nckp_function_from_source(lines):
             line_obj.command = re.sub(r'[^\r\n]', '', ls_line)
 
 class KSPCompiler(object):
-    def __init__(self, source, basedir, compact=True, compactVars=False, read_file_func=default_read_file_func, extra_syntax_checks=False, optimize=False, add_compiled_date_comment=False):
+    def __init__(self, source, basedir, compact=True, compact_variables=False, combine_callbacks=False, read_file_func=default_read_file_func, extra_syntax_checks=False, optimize=False, add_compiled_date_comment=False):
         self.source = source
         self.basedir = basedir
         self.compact = compact
-        self.compactVars = compactVars
+        self.compact_variables = compact_variables
         self.read_file_func = read_file_func
         self.optimize = optimize
+        self.combine_callbacks = combine_callbacks
         self.add_compiled_date_comment = add_compiled_date_comment
         self.extra_syntax_checks = extra_syntax_checks or optimize
         self.abort_requested = False
@@ -1912,41 +1913,41 @@ class KSPCompiler(object):
 
             do_extra = self.extra_syntax_checks
             do_optim = do_extra and self.optimize
-            #      description                   function                                                                           condition     time-weight
+            #      description                   function                                                                           condition               time-weight
             tasks = [
-                 ('scanning and importing code', lambda: self.do_imports_and_convert_to_line_objects(),                             True,             1),
-                 ('extensions (w/ macros)',      lambda: self.extensions_with_macros(),                                             True,             1),
+                 ('scanning and importing code', lambda: self.do_imports_and_convert_to_line_objects(),                             True,                   1),
+                 ('extensions (w/ macros)',      lambda: self.extensions_with_macros(),                                             True,                   1),
                  # NOTE(Sam): Call the pre-macro section of the preprocessor
-                 ('pre-macro processes',         lambda: self.pre_macro_functions(),                                                True,             1),
-                 ('parsing macros',              lambda: self.extract_macros(),                                                     True,             1),
-                 ('expanding macros',            lambda: self.expand_macros(),                                                      True,             1),
+                 ('pre-macro processes',         lambda: self.pre_macro_functions(),                                                True,                   1),
+                 ('parsing macros',              lambda: self.extract_macros(),                                                     True,                   1),
+                 ('expanding macros',            lambda: self.expand_macros(),                                                      True,                   1),
                  # NOTE(Sam): Call the post-macro section of the preprocessor
-                 ('post-macro processes',        lambda: post_macro_functions(self.lines),                                          True,             1),
-                 ('replace string placeholders', lambda: self.replace_string_placeholders(),                                        True,             1),
-                 ('search for nckp import',      lambda: self.search_for_nckp(),                                                    True,             1),
+                 ('post-macro processes',        lambda: post_macro_functions(self.lines),                                          True,                   1),
+                 ('replace string placeholders', lambda: self.replace_string_placeholders(),                                        True,                   1),
+                 ('search for nckp import',      lambda: self.search_for_nckp(),                                                    True,                   1),
                  # NOTE(Sam): Convert the lines to a block in a separate function
-                 ('convert lines to code block', lambda: self.convert_lines_to_code(),                                              True,             1),
-                 ('parse code',                  lambda: self.parse_code(),                                                         True,             1),
-                 ('combining callbacks',         lambda: ASTModifierCombineCallbacks(self.module),                                  True,             1),
-                 ('various tasks',               lambda: ASTModifierFixReferencesAndFamilies(self.module, self.lines),              True,             1),
-                 ('add variable name prefixes',  lambda: ASTModifierFixPrefixesIncludingLocalVars(self.module),                     True,             1),
-                 ('inline functions',            lambda: ASTModifierFunctionExpander(self.module),                                  True,             1),
-                 ('handle taskfunc',             lambda: ASTModifierTaskfuncFunctionHandler(self.module),                           True,             1),
-                 ('handle local variables',      lambda: self.sort_functions_and_insert_local_variables_into_on_init(),             True,             1),
-                 ('add variable name prefixes',  lambda: ASTModifierFixPrefixesAndFixControlPars(self.module),                      True,             1),
-                 ('convert dots to underscore',  lambda: self.convert_dots_to_double_underscore(),                                  True,             1),
-                 ('init extra syntax checks',    lambda: self.init_extra_syntax_checks(),                                           do_extra,         1),
-                 ('check types',                 lambda: comp_extras.ASTVisitorDetermineExpressionTypes(self.module),               do_extra,         1),
-                 ('check types',                 lambda: comp_extras.ASTVisitorCheckStatementExprTypes(self.module),                do_extra,         1),
-                 ('check declarations',          lambda: comp_extras.ASTVisitorCheckDeclarations(self.module),                      do_extra,         1),
-                 ('simplying expressions',       lambda: comp_extras.ASTModifierSimplifyExpressions(self.module, True),             do_optim,         1),
-                 ('removing unused branches',    lambda: comp_extras.ASTModifierRemoveUnusedBranches(self.module),                  do_optim,         1),
-                 ('removing unused functions',   lambda: comp_extras.ASTVisitorFindUsedFunctions(self.module, used_functions),      do_optim,         1),
-                 ('removing unused functions',   lambda: comp_extras.ASTModifierRemoveUnusedFunctions(self.module, used_functions), do_optim,         1),
-                 ('removing unused variables',   lambda: comp_extras.ASTVisitorFindUsedVariables(self.module, used_variables),      do_optim,         1),
-                 ('removing unused variables',   lambda: comp_extras.ASTModifierRemoveUnusedVariables(self.module, used_variables), do_optim,         1),
-                 ('compact variable names',      self.compact_names,                                                                self.compactVars, 1),
-                 ('generate code',               self.generate_compiled_code,                                                       True,             1),
+                 ('convert lines to code block', lambda: self.convert_lines_to_code(),                                              True,                   1),
+                 ('parse code',                  lambda: self.parse_code(),                                                         True,                   1),
+                 ('combining callbacks',         lambda: ASTModifierCombineCallbacks(self.module),                                  self.combine_callbacks, 1),
+                 ('various tasks',               lambda: ASTModifierFixReferencesAndFamilies(self.module, self.lines),              True,                   1),
+                 ('add variable name prefixes',  lambda: ASTModifierFixPrefixesIncludingLocalVars(self.module),                     True,                   1),
+                 ('inline functions',            lambda: ASTModifierFunctionExpander(self.module),                                  True,                   1),
+                 ('handle taskfunc',             lambda: ASTModifierTaskfuncFunctionHandler(self.module),                           True,                   1),
+                 ('handle local variables',      lambda: self.sort_functions_and_insert_local_variables_into_on_init(),             True,                   1),
+                 ('add variable name prefixes',  lambda: ASTModifierFixPrefixesAndFixControlPars(self.module),                      True,                   1),
+                 ('convert dots to underscore',  lambda: self.convert_dots_to_double_underscore(),                                  True,                   1),
+                 ('init extra syntax checks',    lambda: self.init_extra_syntax_checks(),                                           do_extra,               1),
+                 ('check types',                 lambda: comp_extras.ASTVisitorDetermineExpressionTypes(self.module),               do_extra,               1),
+                 ('check types',                 lambda: comp_extras.ASTVisitorCheckStatementExprTypes(self.module),                do_extra,               1),
+                 ('check declarations',          lambda: comp_extras.ASTVisitorCheckDeclarations(self.module),                      do_extra,               1),
+                 ('simplying expressions',       lambda: comp_extras.ASTModifierSimplifyExpressions(self.module, True),             do_optim,               1),
+                 ('removing unused branches',    lambda: comp_extras.ASTModifierRemoveUnusedBranches(self.module),                  do_optim,               1),
+                 ('removing unused functions',   lambda: comp_extras.ASTVisitorFindUsedFunctions(self.module, used_functions),      do_optim,               1),
+                 ('removing unused functions',   lambda: comp_extras.ASTModifierRemoveUnusedFunctions(self.module, used_functions), do_optim,               1),
+                 ('removing unused variables',   lambda: comp_extras.ASTVisitorFindUsedVariables(self.module, used_variables),      do_optim,               1),
+                 ('removing unused variables',   lambda: comp_extras.ASTModifierRemoveUnusedVariables(self.module, used_variables), do_optim,               1),
+                 ('compact variable names',      self.compact_names,                                                                self.compact_variables, 1),
+                 ('generate code',               self.generate_compiled_code,                                                       True,                   1),
             ]
 
             # keep only tasks where the execution-condition is true
@@ -2025,6 +2026,7 @@ if __name__ == "__main__":
     arg_parser.add_argument('--extra_syntax_checks', dest='extra_syntax_checks', action='store_true', default='false', help='Additional syntax checks')
     arg_parser.add_argument('--optimize', dest='optimize', action='store_true', default='false', help='Optimize the generated code')
     arg_parser.add_argument('--nocompiledate', dest='add_compiled_date_comment', action='store_true', default='true', help='Remove the compiler date argument')
+    arg_parser.add_argument('--combine_callbacks', dest='combine_callbacks', action='store_true', default='true', help='Combines callbacks (not including functions or macros)')
     arg_parser.add_argument('source_file', type=FileType('r', encoding='latin-1'))
     arg_parser.add_argument('output_file', type=FileType('w', encoding='latin-1'), nargs='?')
     args = arg_parser.parse_args()
@@ -2054,7 +2056,8 @@ if __name__ == "__main__":
         code,
         basedir,
         compact=args.compact,
-        compactVars=args.compact_variables,
+        combine_callbacks=args.combine_callbacks,
+        compact_variables=args.compact_variables,
         read_file_func=read_file_func,
         extra_syntax_checks=args.extra_syntax_checks,
         optimize=args.optimize,

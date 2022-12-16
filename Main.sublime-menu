@@ -87,6 +87,13 @@
 						"mnemonic": "o",
 						"id": "optimize_compiled"
 					},
+					{
+						"command": "ksp_global_setting_toggle",
+						"args": {"setting": "ksp_combine_callbacks", "default": false},
+						"caption": "Combine Duplicate Callbacks",
+						"mnemonic": "B",
+						"id": "combine_callbacks"
+					},
 					{"caption": "-"}, //separator
 					{
 						"command": "ksp_global_setting_toggle",
