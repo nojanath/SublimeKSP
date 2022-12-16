@@ -32,7 +32,7 @@
 							"operator": "equal",
 							"operand": "source.ksp"
 						}],
-						"caption": "Compile All Open Scripts (Scripts Must Include An Output Path)",
+						"caption": "Compile All Open Scripts With Defined Output Path",
 						"mnemonic": "p",
 						"id": "compile_all_open"
 					},

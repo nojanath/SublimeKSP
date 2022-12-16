@@ -63,7 +63,7 @@ class CompileKspCommand(sublime_plugin.ApplicationCommand):
             view = CompileKspThread.find_view_by_filename(self.last_filename)
         if kwargs.get('compile_all_open', None):
             open_views = view.window().views()
-            open_views = [view for view in open_views if re.search(r'source\.ksp',view.scope_name(0))]#view for view in open_views and re.search(r'source\.ksp',view.scope_name(0)) and '.ksp' in view.file_name() if view.file_name is not None]
+            open_views = [view for view in open_views if re.search(r'source\.ksp',view.scope_name(0))]
             for view in open_views:
                 if re.search(r'source\.ksp',view.scope_name(0)):
                     view.assign_syntax('Packages/KSP (Kontakt Script Processor)/KSP.sublime-syntax')
@@ -186,8 +186,8 @@ class CompileKspThread(threading.Thread):
             if self.compile_all_open and not pragma_compiled_source_re.search(code):
                 if filepath == None:
                     filepath = 'main script'
-                sublime.error_message('Attempted to compile multiple scripts, but no output path specified!\n\n' + '<'+filepath+'>')
-                sublime.status_message('Error no output path specified - compilation aborted!')
+                sublime.error_message("Error: No output path was specified for script '%s' - compilation aborted!" % filepath)
+                sublime.status_message("Error: No output path was specified for script '%s' - compilation aborted!" % filepath)
                 sublime.active_window().focus_view(view)
                 if should_play_sound:
                     sound_utility.play(command="error")
@@ -195,7 +195,7 @@ class CompileKspThread(threading.Thread):
 
             try:
                 if self.compile_all_open:
-                    sublime.status_message('Compiling %s, Script %s/%s...' % (filepath, self.open_views.index(view)+1, len(self.open_views)))
+                    sublime.status_message('Compiling %s, script %s/%s...' % (filepath, self.open_views.index(view)+1, len(self.open_views)))
                 else:
                     sublime.status_message('Compiling...')
 
@@ -212,12 +212,12 @@ class CompileKspThread(threading.Thread):
                         if not os.path.isabs(self.compiler.output_file):
                             self.compiler.output_file = os.path.join(self.base_path, self.compiler.output_file)
                         codecs.open(self.compiler.output_file, 'w', 'latin-1').write(code)
-                        sublime.status_message("Successfully compiled (compiled code saved to %s)." % self.compiler.output_file)
+                        sublime.status_message("Successfully compiled (compiled code saved to %s)!" % self.compiler.output_file)
                     else:
-                        sublime.status_message("Successfully compiled (the code is now on the clipboard ready to be pasted into Kontakt).")
+                        sublime.status_message("Successfully compiled (the code is now on the clipboard ready to be pasted into Kontakt)!")
                         sublime.set_clipboard(code)
                 else:
-                    sublime.status_message('Compilation aborted.')
+                    sublime.status_message('Compilation aborted!')
             except ksp_ast.ParseException as e:
                 error_msg = unicode(e)
                 line_object = self.compiler.lines[e.lineno]
