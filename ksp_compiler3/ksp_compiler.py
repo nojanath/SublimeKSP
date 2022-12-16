@@ -1628,11 +1628,11 @@ def strip_import_nckp_function_from_source(lines):
             line_obj.command = re.sub(r'[^\r\n]', '', ls_line)
 
 class KSPCompiler(object):
-    def __init__(self, source, basedir, compact=True, compactVars=False, combine_callbacks=False, read_file_func=default_read_file_func, extra_syntax_checks=False, optimize=False, add_compiled_date_comment=False):
+    def __init__(self, source, basedir, compact=True, compact_variables=False, combine_callbacks=False, read_file_func=default_read_file_func, extra_syntax_checks=False, optimize=False, add_compiled_date_comment=False):
         self.source = source
         self.basedir = basedir
         self.compact = compact
-        self.compactVars = compactVars
+        self.compact_variables = compact_variables
         self.read_file_func = read_file_func
         self.optimize = optimize
         self.combine_callbacks = combine_callbacks
@@ -1946,7 +1946,7 @@ class KSPCompiler(object):
                  ('removing unused functions',   lambda: comp_extras.ASTModifierRemoveUnusedFunctions(self.module, used_functions), do_optim,               1),
                  ('removing unused variables',   lambda: comp_extras.ASTVisitorFindUsedVariables(self.module, used_variables),      do_optim,               1),
                  ('removing unused variables',   lambda: comp_extras.ASTModifierRemoveUnusedVariables(self.module, used_variables), do_optim,               1),
-                 ('compact variable names',      self.compact_names,                                                                self.compactVars,       1),
+                 ('compact variable names',      self.compact_names,                                                                self.compact_variables, 1),
                  ('generate code',               self.generate_compiled_code,                                                       True,                   1),
             ]
 
@@ -2056,8 +2056,8 @@ if __name__ == "__main__":
         code,
         basedir,
         compact=args.compact,
-        compactVars=args.compact_variables,
         combine_callbacks=args.combine_callbacks,
+        compact_variables=args.compact_variables,
         read_file_func=read_file_func,
         extra_syntax_checks=args.extra_syntax_checks,
         optimize=args.optimize,

@@ -22,9 +22,9 @@ import unittest
 def default_read_file_func(filepath):
     return open(filepath, 'r').read()
 
-def do_compile(code, remove_preprocessor_vars=False, compact=True, compactVars=False, combine_callbacks=True, comments_on_expansion=True, read_file_func=default_read_file_func, extra_syntax_checks=True, optimize=False, add_compiled_date_comment=False):
+def do_compile(code, remove_preprocessor_vars=False, compact=True, compact_variables=False, combine_callbacks=True, comments_on_expansion=True, read_file_func=default_read_file_func, extra_syntax_checks=True, optimize=False, add_compiled_date_comment=False):
     #line_map = {}
-    compiler = KSPCompiler(code, None,compact=compact,compactVars=compactVars, combine_callbacks=combine_callbacks, read_file_func=read_file_func, extra_syntax_checks=extra_syntax_checks, optimize=optimize, add_compiled_date_comment=add_compiled_date_comment)
+    compiler = KSPCompiler(code, None,compact=compact,compact_variables=compact_variables, combine_callbacks=combine_callbacks, read_file_func=read_file_func, extra_syntax_checks=extra_syntax_checks, optimize=optimize, add_compiled_date_comment=add_compiled_date_comment)
     compiler.compile()
     output_code = compiler.compiled_code
     if remove_preprocessor_vars and optimize == False:
@@ -261,7 +261,7 @@ class VariableNotDeclared(unittest.TestCase):
                     pgs_set_str_key_val(PG, pgs_get_str_key_val(PG))
                 end if
             end on'''
-        do_compile(code, compactVars=True)
+        do_compile(code, compact_variables=True)
 
     def testFirstParamOfConditionNotSeenAsUndeclared(self):
         code = '''
@@ -269,7 +269,7 @@ class VariableNotDeclared(unittest.TestCase):
                 SET_CONDITION(my_condition)
                 RESET_CONDITION(my_condition)
             end on'''
-        do_compile(code, compactVars=True)
+        do_compile(code, compact_variables=True)
 
     def testFirstParamOfUseCodeIfNotSeenAsUndeclared(self):
         code = '''
@@ -290,7 +290,7 @@ class VariableNotDeclared(unittest.TestCase):
                     message(8)
                 END_USE_CODE
             end on'''
-        output = do_compile(code, compactVars=True)
+        output = do_compile(code, compact_variables=True)
         self.assertTrue('5' in output)
         self.assertTrue('6' not in output)
         self.assertTrue('7' not in output)
@@ -480,7 +480,7 @@ class CompactOutput(unittest.TestCase):
                 declare myVar
                 message(myVar)
             end on'''
-        output = do_compile(code, compactVars=True)
+        output = do_compile(code, compact_variables=True)
         self.assertTrue('declare $najav' in output)
         self.assertTrue('message($najav)' in output)
 
@@ -490,7 +490,7 @@ class CompactOutput(unittest.TestCase):
                 declare $var
                 declare %var[10]
             end on'''
-        do_compile(code, compactVars=True)
+        do_compile(code, compact_variables=True)
         # if the variables have different prefixes they shouldn't create a clash after compaction
 
 class VariableDeclarationCheck(unittest.TestCase):
@@ -1290,7 +1290,7 @@ class PragmaTests(unittest.TestCase):
                 declare Z
                 mymodule.declare_variables
             end on'''
-        output = do_compile(code, remove_preprocessor_vars=True, compactVars=True, read_file_func=default_read_file_func)
+        output = do_compile(code, remove_preprocessor_vars=True, compact_variables=True, read_file_func=default_read_file_func)
         self.assertTrue('declare $mymodule__K' in output)
         self.assertTrue('declare $X' in output)
         self.assertTrue('declare $Y' in output)
