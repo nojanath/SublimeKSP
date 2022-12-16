@@ -174,7 +174,10 @@ class CompileKspThread(threading.Thread):
         try:
             sublime.status_message('Compiling...')
 
-            self.compiler = ksp_compiler.KSPCompiler(code, self.base_path, compact, combine_callbacks, compact_variables,
+            self.compiler = ksp_compiler.KSPCompiler(code, self.base_path, 
+                                                     compact = compact,
+                                                     combine_callbacks=combine_callbacks,
+                                                     compact_variables=compact_variables,
                                                      read_file_func=self.read_file_function,
                                                      extra_syntax_checks=check,
                                                      optimize=optimize and check,
@@ -330,6 +333,7 @@ class KspGlobalSettingToggleCommand(sublime_plugin.ApplicationCommand):
             "ksp_compact_output" : "Remove Indents and Empty Lines",
             "ksp_compact_variables" : "Compact Variables",
             "ksp_extra_checks" : "Extra Syntax Checks",
+            "ksp_combine_callbacks" : "Combine Duplicate Callbacks",
             "ksp_optimize_code" : "Optimize Compiled Code",
             "ksp_add_compiled_date" : "Add Compilation Date/Time Comment",
             "ksp_comment_inline_functions" : "Insert Comments When Expanding Functions",
