@@ -59,25 +59,25 @@ def substituteDefines(lines, define_cache = None):
 	return cache
 
 def pre_macro_functions(lines):
-	""" This function is called before the macros have been expanded.
+	''' This function is called before the macros have been expanded.
 		Returns the resulting define objects as a cache to be re-used.
-		lines is a deque of Line objects - see ksp_compiler.py."""
+		lines is a deque of Line objects - see ksp_compiler.py.'''
 	createBuiltinDefines(lines)
 	removeActivateLoggerPrint(lines)
 
 	return substituteDefines(lines)
 
 def macro_iter_functions(lines):
-	""" Will process macro iteration and return true if any were found """
+	''' Will process macro iteration and return true if any were found '''
 	return (handleIterateMacro(lines) or handleLiterateMacro(lines))
 
 def post_macro_iter_functions(lines):
-	""" Will process macro iteration and return true if any were found """
+	''' Will process macro iteration and return true if any were found '''
 	return (handleIteratePostMacro(lines)) or (handleLiteratePostMacro(lines))
 
 def post_macro_functions(lines):
-	""" This function is called after the regular macros have been expanded.
-		lines is a deque of Line objects - see ksp_compiler.py. """
+	''' This function is called after the regular macros have been expanded.
+		lines is a deque of Line objects - see ksp_compiler.py. '''
 	handleIncrementer(lines)
 	handleConstBlock(lines)
 	handleStructs(lines)
@@ -94,8 +94,8 @@ def post_macro_functions(lines):
 
 #=================================================================================================
 def simplfyAdditionString(string):
-	""" Evaluates a string of add operations, any add pairs that cannot be evalutated are left.
-	e.g. "2 + 2 + 3 + 4 + x + y + 2" => "11 + x + y + 2 """
+	''' Evaluates a string of add operations, any add pairs that cannot be evalutated are left.
+	e.g. "2 + 2 + 3 + 4 + x + y + 2" => "11 + x + y + 2 '''
 	parts = string.split("+")
 	count = 0
 	while count < len(parts) - 1:
@@ -109,7 +109,7 @@ def simplfyAdditionString(string):
 	return("+".join(parts))
 
 def tryStringEval(expression, line, name):
-	""" Evaluates a maths expression in the same way Kontakt would (only integers). """
+	''' Evaluates a maths expression in the same way Kontakt would (only integers). '''
 	try:
 		final = stringEvaluator.eval(str(expression).strip())
 	except:
@@ -122,7 +122,7 @@ def replaceLines(original, new):
 	original.extend(new)
 
 def countFamily(lineText, famCount):
-	""" Checks the line for family start or end and returns the current family depth """
+	''' Checks the line for family start or end and returns the current family depth '''
 	if lineText.startswith("family ") or lineText.startswith("family	"):
 		famCount += 1
 	elif famCount != 0:
@@ -131,7 +131,7 @@ def countFamily(lineText, famCount):
 	return(famCount)
 
 def inspectFamilyState(lines, textLineno):
-	""" If the given line is in at least 1 family, return the family prefixes. """
+	''' If the given line is in at least 1 family, return the family prefixes. '''
 	currentFamilyNames = []
 	for i in range(len(lines)):
 		if i == textLineno:
@@ -158,8 +158,8 @@ class StructMember(object):
 		self.numElements = None
 
 	def makeMemberAnArray(self, numElements):
-		""" Make the command of this member into an array. numElements is a string of any amount of numbers seperated by commas.
-		Structs exploit the fact the you can put the square brackets of an array after any 'subname' of a dot seperated name. """
+		''' Make the command of this member into an array. numElements is a string of any amount of numbers seperated by commas.
+		Structs exploit the fact the you can put the square brackets of an array after any 'subname' of a dot seperated name. '''
 		cmd = self.command
 		if "[" in self.command:
 			bracketLocation = cmd.find("[")
@@ -173,7 +173,7 @@ class StructMember(object):
 			self.prefix = "!"
 
 	def addNamePrefix(self, namePrefix):
-		""" Add the prefix to the member with a dot operator. """
+		''' Add the prefix to the member with a dot operator. '''
 		self.command = re.sub(r"\b%s\b" % self.name, "%s%s.%s" % (self.prefix, namePrefix, self.name), self.command)
 
 class Struct(object):
@@ -193,7 +193,7 @@ def handleStructs(lines):
 	structs = []
 
 	def findStructs():
-		""" Find all the struct blocks and build struct objects of them. """
+		''' Find all the struct blocks and build struct objects of them. '''
 		isCurrentlyInAStructBlock = False
 		for lineIdx in range(len(lines)):
 			line = lines[lineIdx].command.strip()
@@ -239,7 +239,7 @@ def handleStructs(lines):
 		structNames = [structs[i].name for i in range(len(structs))]
 
 		def resolveStructsWithinStructs():
-			""" Where structs have been declared as members of another struct, flatten them. """
+			''' Where structs have been declared as members of another struct, flatten them. '''
 			for i in range(len(structs)):
 				j = 0
 				counter = 0
@@ -281,7 +281,7 @@ def handleStructs(lines):
 		resolveStructsWithinStructs()
 
 		def findAndHandleStructInstanceDeclarations():
-			""" Find all places where an instance of a struct has been declared and build the lines necesary. """
+			''' Find all places where an instance of a struct has been declared and build the lines necesary. '''
 			newLines = collections.deque()
 			for i in range(len(lines)):
 				line = lines[i].command.strip()
@@ -388,14 +388,14 @@ class ArrayConcat(object):
 		self.arraysToConcat = arraysToConcat.split(",")
 
 	def checkArraySize(self, origLineIdx, lines):
-		""" If the concat function is used on a declared empty size array, the size of the array needs to be calculated. """
+		''' If the concat function is used on a declared empty size array, the size of the array needs to be calculated. '''
 		if self.declare:
 			if not self.brackets:
 				raise ksp_compiler.ParseException(self.line, "No array size given. Leave brackets [] empty to have the size auto generated.\n")
 			elif not self.size:
 				def findArrays():
-					""" Scan through the lines up to this point to find all the the arrays that have been chosen to be concatenated,
-					and from these add their number of elements to determine the total size needed. """
+					''' Scan through the lines up to this point to find all the the arrays that have been chosen to be concatenated,
+						and from these add their number of elements to determine the total size needed. '''
 					sizes = []
 					arrayNameList = list(self.arraysToConcat)
 					for i in range(origLineIdx):
@@ -416,11 +416,11 @@ class ArrayConcat(object):
 				self.size = findArrays()
 
 	def getRawArrayDeclaration(self):
-		""" Return the command that should replace line that triggered the concat. """
+		''' Return the command that should replace line that triggered the concat. '''
 		return("declare %s[%s]" % (self.arrayToFill, str(self.size)))
 
 	def buildLines(self):
-		""" Return all the lines needed to perfrom the concat. """
+		''' Return all the lines needed to perfrom the concat. '''
 		newLines = collections.deque()
 		numArgs = len(self.arraysToConcat)
 
@@ -580,7 +580,7 @@ class UIPropertyFunction:
 		self.uiId = args[0]
 
 	def buildUiPropertyLines(self, line):
-		""" Return the set ui property commands, e.g. name -> par := val """
+		''' Return the set ui property commands, e.g. name -> par := val '''
 		newLines = collections.deque()
 		for argNum in range(len(self.args)):
 			newLines.append(line.copy("%s -> %s := %s" % (self.uiId, self.functionType.args[argNum], self.args[argNum])))
@@ -631,8 +631,8 @@ def handleUIFunctions(lines):
 
 #=================================================================================================
 def handleSameLineDeclaration(lines):
-	""" When a variable is declared and initialised on the same line, check to see if the value needs to be
-	moved over to the next line. """
+	''' When a variable is declared and initialised on the same line, check to see if the value needs to be
+		moved over to the next line. '''
 	newLines = collections.deque()
 	famCount = 0
 	for lineIdx in range(len(lines)):
@@ -671,7 +671,7 @@ class ConstBlock(object):
 		self.previousVal = "-1"
 
 	def addMember(self, name, value):
-		""" Add a constant number """
+		''' Add a constant number '''
 		self.memberNames.append(name)
 		newVal = value
 		if not value:
@@ -681,7 +681,7 @@ class ConstBlock(object):
 		self.previousVal = newVal
 
 	def buildLines(self, line):
-		""" Return the the commands for the whole const block. """
+		''' Return the the commands for the whole const block. '''
 		newLines = collections.deque()
 		newLines.append(line.copy("declare %s[%s] := (%s)" % (self.name, len(self.memberNames), ", ".join(self.memberValues))))
 		newLines.append(line.copy("declare const %s.SIZE := %s" % (self.name, len(self.memberNames))))
@@ -735,7 +735,7 @@ class ListBlock(object):
 		self.members.append(command)
 
 	def buildLines(self, line):
-		""" The list block just builds lines ready for the list function later on to interpret them. """
+		''' The list block just builds lines ready for the list function later on to interpret them. '''
 		newLines = collections.deque()
 		newLines.append(line.copy("declare list %s[%s]" % (self.name, self.size)))
 		for memNum in range(len(self.members)):
@@ -788,8 +788,8 @@ class List(object):
 		self.sizeList = [] # If this is a matrix, the sizes of each element are stored.
 
 	def getListDeclaration(self, line):
-		""" This function returns the lines for a list declaration. Because the size of the list caluated based on how
-		many list_add() functions have been use, this function must be called after all list_add() are resolved. """
+		''' This function returns the lines for a list declaration. Because the size of the list caluated based on how
+			many list_add() functions have been use, this function must be called after all list_add() are resolved. '''
 		newLines = collections.deque()
 		if not self.isMatrix:
 			newLines.append(line.copy("declare %s %s%s[%s]" % (self.persistence, self.prefix, self.name, self.inc)))
@@ -828,13 +828,13 @@ class List(object):
 		self.sizeList.append(str(value))
 
 	def getListAddLine(self, value, line):
-		""" Return the line for single list add command. """
+		''' Return the line for single list add command. '''
 		string = "%s[%s] := %s" % (self.familyPrefix + self.name, self.inc, value)
 		self.increaseInc(1)
 		return(line.copy(string))
 
 	def getArrayListAddLines(self, value, line, arrayName, arraySize):
-		""" This is called when an array is being added to a list with list_add. The lines necessary are returned. """
+		''' This is called when an array is being added to a list with list_add. The lines necessary are returned. '''
 		newLines = collections.deque()
 		addArrayToListTemplate = [
 		"for list_it := 0 to #size# - 1",
@@ -852,7 +852,7 @@ class List(object):
 
 def handleLists(lines):
 	def findAllArrays(lines):
-		""" Scan the all the lines and store arrays and their sizes. """
+		''' Scan the all the lines and store arrays and their sizes. '''
 		arrayNames = []
 		arraySizes = []
 		initFlag = False
@@ -911,7 +911,7 @@ def handleLists(lines):
 					continue
 
 			def findLoop(lineText, loopCount):
-				""" Check for any for, while or if statements. This is laid out like this for speed reasons. """
+				''' Check for any for, while or if statements. This is laid out like this for speed reasons. '''
 				startVal = loopCount
 				if lineText.startswith("for"):
 					if re.search(forRe, lineText):
@@ -991,8 +991,8 @@ def handleLists(lines):
 
 #=================================================================================================
 def handleOpenSizeArrays(lines):
-	""" When an array size is left with an open number of elements, use the list of initialisers to provide the array size.
-	Const variables are also generated for the array size. """
+	''' When an array size is left with an open number of elements, use the list of initialisers to provide the array size.
+		Const variables are also generated for the array size. '''
 	openArrayRe = r"^\s*declare\s+%s%s\s*\[\s*\]\s*:=\s*\(" % (persistenceRe, variableNameRe)
 	newLines = collections.deque()
 	for lineIdx in range(len(lines)):
@@ -1010,7 +1010,7 @@ def handleOpenSizeArrays(lines):
 
 #=================================================================================================
 def handleStringArrayInitialisation(lines):
-	""" Convert the single-line list of strings to one string per line for Kontakt to understand. """
+	''' Convert the single-line list of strings to one string per line for Kontakt to understand. '''
 	stringArrayRe = r"^declare\s+%s\s*\[(?P<arraysize>[^\]]+)\]\s*:=\s*\((?P<initlist>.+)\)$" % variableNameRe
 	stringListRe = r"\s*%s(\s*,\s*%s)*\s*" % (stringOrPlaceholderRe, stringOrPlaceholderRe)
 	newLines = collections.deque()
@@ -1060,7 +1060,7 @@ def handleStringArrayInitialisation(lines):
 
 #=================================================================================================
 def handlePersistence(lines):
-	""" Simple adds make_persistent() or read_perisitent_var() lines when the pers or read keywords are found. """
+	''' Simple adds make_persistent() or read_perisitent_var() lines when the pers or read keywords are found. '''
 	newLines = collections.deque()
 	famCount = 0
 	for i in range(len(lines)):
@@ -1184,6 +1184,7 @@ class DefineConstant(object):
 		self.value = val
 
 	def evaluateValue(self):
+		'''Attempt to evaluate value as maths expression'''
 		# Try to evaluate the value of the define constant as a maths expression.
 		# But don't do it if the define value is a string (starting with ")!
 		newVal = self.value
@@ -1198,7 +1199,7 @@ class DefineConstant(object):
 		self.setValue(newVal)
 
 	def substituteValue(self, command, listOfOtherDefines, line=None):
-		""" Replace all occurances of the define constant in the given command with its value. """
+		''' Replace all occurances of the define constant in the given command with its value. '''
 		newCommand = command
 		if self.name in command:
 			if not self.args:
@@ -1332,11 +1333,11 @@ class UIArray(object):
 		self.tableSize = tableSize
 
 	def getRawArrayDeclaration(self):
-		""" Get the command string for declaring the raw ID array. """
+		''' Get the command string for declaring the raw ID array. '''
 		return("declare %s[%s]" % (self.name, self.dimensionsString))
 
 	def buildLines(self, line):
-		""" Return the deque of lines for the ui declaration (just a load of declare ui and get_ui_id()). """
+		''' Return the deque of lines for the ui declaration (just a load of declare ui and get_ui_id()). '''
 		newLines = collections.deque()
 		for i in range(self.numElements):
 			uiName = self.underscore + self.name
@@ -1380,7 +1381,7 @@ def handleUIArrays(lines):
 
 #=================================================================================================
 def handleDefineLiterals(lines):
-	""" Finds all define literals, and just replaces their occurances with the list of literals. """
+	''' Finds all define literals, and just replaces their occurances with the list of literals. '''
 	defineTitles = []
 	defineValues = []
 	defineLinePos = []

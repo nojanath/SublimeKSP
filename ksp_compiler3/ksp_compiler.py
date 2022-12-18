@@ -72,8 +72,10 @@ def init_globals():
     called_functions.clear()
     call_graph.clear()
 
-# simple class to work around the problem that cStringIO cannot handle certain Unicode input
+# 
 class StringIO:
+    '''Simple class to work around the problem that cStringIO cannot handle certain Unicode input'''
+
     def __init__(self):
         self.parts = []
     def write(self, s):
@@ -82,6 +84,8 @@ class StringIO:
         return ''.join(self.parts)
 
 def prefix_with_ns(name, namespaces, function_parameter_names=None, force_prefixing=False):
+    '''Returns prefixed name'''
+
     if not namespaces:
         return name
     function_parameter_names = function_parameter_names or []
@@ -111,7 +115,7 @@ def prefix_ID_with_ns(id, namespaces, function_parameter_names=None, force_prefi
         return id
 
 def split_args(arg_string, line):
-    # converts eg. "x, y*(1+z), z" into a list ['x', 'y*(1+z)', 'z']
+    '''converts eg. "x, y*(1+z), z" into a list ['x', 'y*(1+z)', 'z']'''
     if arg_string.strip() == '':
         return []
     args = []
@@ -151,6 +155,8 @@ class ExceptionWithMessage(Exception):
     message = property(_get_message, _set_message)
 
 class ParseException(ExceptionWithMessage):
+    '''Parse Exceptions for parse errors raised before AST lex/yacc parsing'''
+
     def __init__(self, line, message):
         assert(isinstance(line, Line))
         msg = "%s\n%s\n\n%s" % (message, str(line).strip(), line.get_locations_string())
@@ -159,10 +165,12 @@ class ParseException(ExceptionWithMessage):
         self.message = msg
 
 class Line:
+    '''Line object used for handling lines before AST lex/yacc parsing'''
+
     def __init__(self, s, locations=None, namespaces=None):
         # locations should be a list of (filename, lineno) tuples
-        self.command = s
-        self.locations = locations or [(None, -1)]
+        self.command = s # current line returned as string
+        self.locations = locations or [(None, -1)] # filename and line number
         self.namespaces = namespaces or []   # a list of the namespaces (each import appends the as-name onto the stack)
 
     def get_lineno(self):
@@ -178,9 +186,9 @@ class Line:
             ('%s%s:%d \r\n' % (' ' * (i * 4), filename or '<main script>', lineno)) for (i, (filename, lineno)) in enumerate(reversed(self.locations)))
 
     def copy(self, new_command=None, add_location=None):
-        """ returns a copy of the line.
-            If the new_command parameter is specified that will be the command of the new line
-            and it will get the same indentation as the old line. """
+        ''' Returns a copy of the line. \n
+            If the new_command parameter is specified, that will be the command of the new line
+            and it will get the same indentation as the old line. '''
         line = Line(self.command, self.locations, self.namespaces)
         if add_location:
             line.locations = line.locations + [add_location]
@@ -189,6 +197,7 @@ class Line:
         return line
 
     def substitute_names(self, name_subst_dict):
+        '''Return copy of line with a line.command substitution specified in name_subst_dict'''
         if not name_subst_dict:
             return self
 
@@ -218,6 +227,7 @@ class Line:
         return self.command
 
 class Macro:
+    '''Macro object used for handling macros before Ply lex/yacc parser'''
     def __init__(self, lines):
         self.lines = lines
         self.name, self.parameters = self.get_macro_name_and_parameters()
@@ -226,7 +236,7 @@ class Macro:
         return prefix_with_ns(self.name, self.lines[0].namespaces)
 
     def get_macro_name_and_parameters(self):
-        # returns the function name, parameter list, and result variable (or None) as a tuple
+        '''Returns the function name, parameter list, and result variable (or None) as a tuple'''
         param = white_space + r'([$%@!?~]?[\w\.]+|#[\w\.]+#)' + white_space
         params = r'%s(,%s)*' % (param, param)
         m = re.match(r'^\s*macro\s+(?P<name>[a-zA-Z0-9_]+(\.[a-zA-Z_0-9.]+)*)\s*(?P<params>\(%s\))?' % params, self.lines[0].command)
@@ -246,7 +256,7 @@ class Macro:
         return Macro([l.copy(add_location=add_location) for l in lines])
 
     def substitute_names(self, replace_string_placeholders, name_subst_dict):
-        # returns a copy of the block with the specified name substitutions made
+        '''Returns a copy of the block with the specified name substitutions made'''
         new_macro = self.copy(lines=[line.substitute_names(name_subst_dict) for line in self.lines])
 
         if replace_string_placeholders:
@@ -262,11 +272,12 @@ class Macro:
         return new_macro
 
 def merge_lines(lines):
-    # converts a list of Line objects to a source code string
+    '''Converts a list of Line objects to a source code string.  \n
+       This will remove any context information such as locations or namespaces'''
     return '\n'.join([line.command for line in lines])
 
 def parse_lines(s, filename=None, namespaces=None):
-    # converts a source code string to a list of Line objects
+    '''converts a source code string to a list of Line objects'''
 
     if namespaces is None:
         namespaces = []
@@ -312,7 +323,7 @@ def parse_lines(s, filename=None, namespaces=None):
     return collections.deque(lines)
 
 def parse_lines_and_handle_imports(code, filename=None, namespaces=None, read_file_function=None, preprocessor_func=None):
-    # reads one block from the lines deque
+    '''parses lines into Line objects and imports all files. preprocessor_func does not mean preprocessor_plugins'''
 
     if preprocessor_func:
         code = preprocessor_func(code, namespaces)
@@ -339,7 +350,7 @@ def parse_lines_and_handle_imports(code, filename=None, namespaces=None, read_fi
             try:
                 code = read_file_function(filename)
             except IOError:
-                raise ParseException(line, "File does not exist or could not be read: '%s' \nTry saving the files before compiling in order to make relative paths work." % filename)
+                raise ParseException(line, "File does not exist or could not be read! '%s' \nTry saving the files before compiling in order to make relative paths work." % filename)
 
             # parse code and add an extra namespace if applicable
             namespaces = line.namespaces
@@ -357,7 +368,7 @@ def parse_lines_and_handle_imports(code, filename=None, namespaces=None, read_fi
     return new_lines
 
 def handle_conditional_lines(lines):
-    # handle SET_CONDITION, RESET_CONDITION, USE_CODE_IF and USE_CODE_IF_NOT
+    '''handle SET_CONDITION, RESET_CONDITION, USE_CODE_IF and USE_CODE_IF_NOT'''
     use_code_conds = []
     false_index = -1
 
@@ -410,7 +421,7 @@ def handle_conditional_lines(lines):
             line_obj.command = re.sub(r'[^\r\n]', '', line)
 
 def extract_macros(lines_deque):
-    # returns (cleaned_lines, macros)
+    '''returns (cleaned_lines, macros)'''
     macros = []
     lines = lines_deque
     cleaned_lines = []
@@ -438,7 +449,7 @@ def extract_macros(lines_deque):
     return (cleaned_lines, macros)
 
 def extract_callback_lines(lines):
-    # returns (normal_lines, callback_lines)
+    '''returns (normal_lines, callback_lines)'''
     normal_lines = []
     callback_lines = []
     inside_callback = False
@@ -459,8 +470,8 @@ def extract_callback_lines(lines):
 
 
 def expand_macros(lines, macros, level=0, replace_raw=True):
-    # inline macro invocations by the body of the macro definition (with parameters properly replaced)
-    # returns tuple (normal_lines, callback_lines) where the latter are callbacks
+    '''Inline macro invocations by the body of the macro definition (with parameters properly replaced)
+        returns tuple (normal_lines, callback_lines) where the latter are callbacks'''
     macro_call_re = re.compile(r'^\s*([\w_.]+)\s*(\(.*\))?%s$' % white_space)
     name2macro = {}
 
@@ -523,11 +534,12 @@ def expand_macros(lines, macros, level=0, replace_raw=True):
         return (new_lines, new_callback_lines)
 
 class ASTModifierBase(ksp_ast_processing.ASTModifier):
+    '''Class for accessing AST nodes for modification'''
     def __init__(self, modify_expressions=False):
         ksp_ast_processing.ASTModifier.__init__(self, modify_expressions=modify_expressions)
 
     def modifyFunctionCall(self, node, *args, **kwargs):
-        # there are some functions/preprocessor directives for which the first parameter should always be left as is
+        '''there are some functions/preprocessor directives for which the first parameter should always be left as is'''
         if node.function_name.identifier in ['SET_CONDITION', 'RESET_CONDITION', 'USE_CODE_IF', 'USE_CODE_IF_NOT',
                                              '_pgs_create_key', '_pgs_key_exists', '_pgs_set_key_val', '_pgs_get_key_val',
                                              'pgs_create_key', 'pgs_key_exists', 'pgs_set_key_val', 'pgs_get_key_val',
@@ -577,13 +589,14 @@ class ASTModifierCombineCallbacks(ASTModifierBase):
         node.blocks = [b for b in node.blocks if b.lines != []] # Removes the CBs with no lines from node.blocks
 
 class ASTModifierFixReferencesAndFamilies(ASTModifierBase):
+    '''Travel through AST and modify nodes to native KSP'''
     def __init__(self, ast, line_map):
         ASTModifierBase.__init__(self, modify_expressions=True)
         self.line_map = line_map
         self.traverse(ast, parent_function=None, function_params=[], parent_families=[])
 
     def modifyModule(self, node, *args, **kwargs):
-        # find and extract 'on init' block
+        '''find and extract 'on init' block'''
         on_init_block = None
         for b in node.blocks:
             if isinstance(b, ksp_ast.Callback) and b.name == 'init':
@@ -607,7 +620,7 @@ class ASTModifierFixReferencesAndFamilies(ASTModifierBase):
         return node
 
     def modifyForStmt(self, node, *args, **kwargs):
-        # Convert for-loops into while loops
+        '''Convert for-loops into while loops'''
 
         if node.downto:
             op = '>='
@@ -638,7 +651,7 @@ class ASTModifierFixReferencesAndFamilies(ASTModifierBase):
         return flatten([self.modify(stmt, *args, **kwargs) for stmt in statements])
 
     def modifyIfStmt(self, node, *args, **kwargs):
-        # Convert if > else if > else statements into just if-else statements by nesting them inside each other
+        '''Convert if > else if > else statements into just if-else statements by nesting them inside each other'''
 
         # modify the if condition and the statements in the if-body
         if_condition, stmts = node.condition_stmts_tuples[0]
@@ -664,6 +677,8 @@ class ASTModifierFixReferencesAndFamilies(ASTModifierBase):
         return [node]
 
     def modifyPropertyDef(self, node, *args, **kwargs):
+        '''Check properties, prefix names and modify node as a getter or setter object'''
+
         # check syntax
         for func_name in list(node.functiondefs.keys()):
             if func_name not in ['get', 'set']:
@@ -730,7 +745,7 @@ class ASTModifierFixReferencesAndFamilies(ASTModifierBase):
         return node
 
     def modifyFamilyStmt(self, node, parent_function=None, function_params=None, parent_families=None):
-        # First make sure the name of the family is prefixed with the right namespace, then pass this name as context to the further handling of the family body
+        '''First make sure the name of the family is prefixed with the right namespace, then pass this name as context to the further handling of the family body'''
 
         if parent_families is None:
             parent_families = []
@@ -750,6 +765,7 @@ class ASTModifierFixReferencesAndFamilies(ASTModifierBase):
         return [node.statements]
 
     def add_global_var(self, global_varname, modifiers):
+        '''Add global variables to variable set'''
         is_ui_declaration = any([m for m in modifiers if m.startswith('ui_')])
 
         # add variable to list of variables
@@ -866,11 +882,10 @@ class ASTModifierFixReferencesAndFamilies(ASTModifierBase):
             return [node]
 
     def modifyVarRef(self, node, parent_function=None, function_params=None, parent_families=None, is_name_in_declaration=False):
-        # Translate any references to local variables to their real name
-
-        # Note 1: previously this could all be handled in modifyID, but since the taskfunc system introduced VarRef objects with subscripts
-        #         we now need to handle it here since if you replace eg. x by %p[$sp + 1] the subscript need to be included in the resulting node.
-        # Note 2: not all identifiers have a parent VarRef so some replacements are also taken care of in the modifyID routine (see below).
+        '''Translate any references to local variables to their real name
+           Note 1: previously this could all be handled in modifyID, but since the taskfunc system introduced VarRef objects with subscripts
+                   we now need to handle it here since if you replace eg. x by %p[$sp + 1] the subscript need to be included in the resulting node.
+           Note 2: not all identifiers have a parent VarRef so some replacements are also taken care of in the modifyID routine (see below).'''
 
         if parent_function and node.identifier.identifier in parent_function.locals_name_subst_dict:
             new_node = parent_function.locals_name_subst_dict[node.identifier.identifier]
@@ -882,9 +897,9 @@ class ASTModifierFixReferencesAndFamilies(ASTModifierBase):
         return super(ASTModifierFixReferencesAndFamilies, self).modifyVarRef(node, parent_function, function_params, parent_families, is_name_in_declaration)
 
     def modifyID(self, node, parent_function=None, function_params=None, parent_families=None, is_name_in_declaration=False):
-        # Add namespace prefix and translate references to local variables to their globally unique counterpart as determined by the translation table of the function
-
-        # look up the line object from the first macro preprocessor phase in order to extract information about the namespace
+        '''Add namespace prefix and translate references to local variables to their globally unique counterpart as determined by the translation table of the function.\n
+           Look up the line object from the first macro preprocessor phase in order to extract information about the namespace'''
+        
         namespaces = self.line_map[node.lineno].namespaces
 
         # make sure to not add namespace twice
@@ -904,6 +919,8 @@ class ASTModifierFixReferencesAndFamilies(ASTModifierBase):
         return id
 
 class ASTModifierFixPrefixes(ASTModifierBase):
+    '''Traverse AST and add prefixs to variables'''
+
     def __init__(self, ast):
         ASTModifierBase.__init__(self, modify_expressions=True)
         self.traverse(ast)
@@ -915,7 +932,7 @@ class ASTModifierFixPrefixes(ASTModifierBase):
         return ASTModifierBase.modifyVarRef(self, node, parent_function=parent_function, parent_varref=node) # pass along a reference to what varref we're currently inside
 
     def modifyID(self, node, parent_function=None, parent_varref=None):
-        # Add a variable prefix (one of $, %, @, !, ? and ~) to each variable based on the list of variables previously built
+        '''Add a variable prefix (one of $, %, @, !, ? and ~) to each variable based on the list of variables previously built'''
         name = node.prefix + node.identifier
         first_part = name.split('.')[0]
 
@@ -947,6 +964,8 @@ class ASTModifierFixPrefixes(ASTModifierBase):
             return node
 
 class ASTModifierFixPrefixesIncludingLocalVars(ASTModifierFixPrefixes):
+    '''Assign variables with local/global modifiers a prefix'''
+
     def __init__(self, ast):
         ASTModifierFixPrefixes.__init__(self, ast)
 
@@ -997,7 +1016,7 @@ class ASTModifierVarRefSubstituter(ASTModifierBase):
         ASTModifierBase.__init__(self, modify_expressions=True)
 
     def modify(self, node, *args, **kwargs):
-        # if a reference to a parent function that is being inlined should be added, then add it to the result (each statement of the result in case it's a list)
+        '''if a reference to a parent function that is being inlined should be added, then add it to the result (each statement of the result in case it's a list)'''
         result = ASTModifierBase.modify(self, node, *args, **kwargs)
         if not (self.inlining_function_node is None):
             if result is None:
@@ -1010,6 +1029,7 @@ class ASTModifierVarRefSubstituter(ASTModifierBase):
         return result
 
     def modifyVarRef(self, node, *args, **kwargs):
+        '''Added relevant identifier and subscripts to variables'''
         if node.identifier.identifier_first_part in self.name_subst_dict:
             new_expr = self.name_subst_dict[node.identifier.identifier_first_part]
 
@@ -1036,13 +1056,13 @@ class ASTModifierVarRefSubstituter(ASTModifierBase):
             return ASTModifierBase.modifyVarRef(self, node, *args, **kwargs)
 
     def modifyFunctionDef(self, node, *args, **kwargs):
-        # don't modify the function name ID (replacing it with an expression is not the right thing to do...)
-        # modify everything else (the lines in the body)
+        '''don't modify the function name ID (replacing it with an expression is not the right thing to do...)
+           modify everything else (the lines in the body)'''
         node.lines = flatten([self.modify(l, *args, **kwargs) for l in node.lines])
         return node
 
     def modifyFunctionCall(self, node, *args, **kwargs):
-        # Check if the function name in a function call is a parameter and substitute its name if that's the case
+        '''Check if the function name in a function call is a parameter and substitute its name if that's the case'''
         func_call = node
 
         if node.function_name.identifier_first_part in self.name_subst_dict:
@@ -1058,7 +1078,7 @@ class ASTModifierVarRefSubstituter(ASTModifierBase):
         return ASTModifierBase.modifyFunctionCall(self, func_call, *args, **kwargs)
 
     def modifyID(self, node, *args, **kwargs):
-        # Translate identifiers according to the translation table (used for inlining functions, see ASTModifierFunctionExpander)
+        '''Translate identifiers according to the translation table (used for inlining functions, see ASTModifierFunctionExpander)'''
         if node.identifier_first_part in self.name_subst_dict:
             raise Exception('Although we expected this not to be the case, we have ID = %s, %s!' % (node.identifier, self.name_subst_dict))
             new_expr = self.name_subst_dict[node.identifier]
@@ -1071,12 +1091,13 @@ class ASTModifierVarRefSubstituter(ASTModifierBase):
             return node
 
 class ASTModifierNameFixer(ASTModifierBase):
+    '''Replace '.' in IDs with '__' '''
     def __init__(self, ast):
         ASTModifierBase.__init__(self, modify_expressions=True)
         self.traverse(ast)
 
     def replace_dots_in_name(self, name):
-        # Replaces . with __ in name
+        '''Replaces . with __ in name'''
         return name.replace('.', '__')
 
     def modifyID(self, node, *args, **kwargs):
@@ -1088,13 +1109,13 @@ class ASTModifierNameFixer(ASTModifierBase):
 
 
 class ASTModifierFunctionExpander(ASTModifierBase):
+    '''Handle function usage'''
     def __init__(self, ast):
         ASTModifierBase.__init__(self, modify_expressions=True)
         self.traverse(ast, parent_toplevel=None, function_stack=[])
 
     def modifyModule(self, node, *args, **kwargs):
-        # Add init callback if it is not already available and move it to the top (before all other functions and callbacks)
-
+        '''Add init callback if it is not already available and move it to the top (before all other functions and callbacks)'''
         # find and extract 'on init' block
         on_init_block = None
         for b in node.blocks:
@@ -1123,11 +1144,11 @@ class ASTModifierFunctionExpander(ASTModifierBase):
             return ASTModifierBase.modifyFunctionDef(self, node, parent_toplevel=node, function_stack=function_stack)
 
     def modifyCallback(self, node, parent_toplevel=None, function_stack=None):
-        # Add to context info about which function/callback we are currently inside
+        '''Add to context info about which function/callback we are currently inside'''
         return ASTModifierBase.modifyCallback(self, node, parent_toplevel=node, function_stack=function_stack)
 
     def convert_property_access_to_function_call(self, node):
-        # Convert a property reference like myprop to a function call like myprop.get()
+        '''Convert a property reference like myprop to a function call like myprop.get()'''
         assert(isinstance(node, ksp_ast.VarRef))
         func_name = '%s.get' % node.identifier.identifier
         if func_name not in functions:
@@ -1140,7 +1161,7 @@ class ASTModifierFunctionExpander(ASTModifierBase):
         return ksp_ast.FunctionCall(node.lexinfo, get_function.name, parameters, is_procedure=False)
 
     def modifyVarRef(self, node, *args, **kwargs):
-        # If the VarRef is a property, then convert it to a call to the get-function of the property
+        '''If the VarRef is a property, then convert it to a call to the get-function of the property'''
         if node.identifier.identifier in properties:
             return self.modifyFunctionCall(self.convert_property_access_to_function_call(node),
                                            *args, **kwargs)
@@ -1225,7 +1246,7 @@ class ASTModifierFunctionExpander(ASTModifierBase):
                 raise ksp_ast.ParseException(node, 'A taskfunc cannot be invoked using the "call" keyword!')
 
     def updateCallGraph(self, node, parent_toplevel=None, function_stack=None):
-        # This function takes a function call as parameter node and updates the call graph accordingly
+        '''This function takes a function call as parameter node and updates the call graph accordingly'''
 
         if isinstance(parent_toplevel, ksp_ast.FunctionDef):
             parent_function_name = parent_toplevel.name.identifier
@@ -1242,7 +1263,8 @@ class ASTModifierFunctionExpander(ASTModifierBase):
                 called_functions.add(function_name)
 
     def getTaskFuncCallPrologueAndEpilogue(self, node, func, assign_stmt_lhs):
-        # if the function call is of the format "x := myfunc(...)" then treat it like myfunc(..., x), i.e. insert the left hand side of the assignment as the last parameter
+        '''if the function call is of the format "x := myfunc(...)" then treat it like myfunc(..., x), i.e. insert the left hand side of the assignment as the last parameter'''
+    
         if assign_stmt_lhs:
             parameters = node.parameters + [assign_stmt_lhs]
         else:
@@ -1336,6 +1358,8 @@ class ASTModifierFunctionExpander(ASTModifierBase):
         return result
 
 class ASTModifierTaskfuncFunctionHandler(ASTModifierBase):
+    '''Handle Taskfunc Nodes'''
+
     def __init__(self, ast):
         ASTModifierBase.__init__(self, modify_expressions=False)
         self.traverse(ast, parent_taskfunc_function=None)
@@ -1399,11 +1423,13 @@ class ASTModifierTaskfuncFunctionHandler(ASTModifierBase):
         return func
 
 class ASTModifierFixPrefixesAndFixControlPars(ASTModifierFixPrefixes):
+    '''Checks prefixs and control_pars. Add get_ui_id() to control_pars'''
+
     def __init__(self, ast):
         ASTModifierFixPrefixes.__init__(self, ast)
 
     def modifyVarRef(self, node, *args, **kwargs):
-        # Check that there is not more than one subscript
+        '''Check that there is not more than one subscript'''
         if len(node.subscripts) > 1:
             raise ksp_ast.ParseException(node.subscripts[0], 'Too many variable subscripts: %s! A normal array variable can have at most one.' % str(node))
         return ASTModifierFixPrefixes.modifyVarRef(self, node, *args, **kwargs)
@@ -1435,6 +1461,7 @@ class ASTModifierFixPrefixesAndFixControlPars(ASTModifierFixPrefixes):
 def mark_used_functions_using_depth_first_traversal(call_graph, start_node=None, visited=None):
     ''' Make a depth-first traversal of call graph and set the used attribute of functions invoked directly or indirectly from some callback.
         The graph is represented by a dictionary where graph[f1] == f1 means that the function with name f1 calls the function with name f2 (the names are strings).'''
+
     if visited is None:
         visited = set()
 
@@ -1664,6 +1691,7 @@ class KSPCompiler(object):
     # TO PRESERVE LINE PROPERTIES, SELF.LINES CAN NOT BE REMERGED INTO SOURCE
 
     def extensions_with_macros(self):
+        '''Replaces lines with relevant preprocessor plugin code. Like logger'''
         check_lines = [copy.copy(l) for l in self.lines]
         for line in check_lines:
             line.replace_placeholders()
@@ -1732,6 +1760,7 @@ class KSPCompiler(object):
                 replace_lines = collections.deque([])
                 for i in range(0, len(self.lines)):
                     if i == pccb_end:
+
                         replace_lines.append(insert_function_line_obj[0])
                     replace_lines.append(self.lines[i])
 
@@ -1749,7 +1778,7 @@ class KSPCompiler(object):
         handle_conditional_lines(self.lines)
 
     def search_for_nckp(self):
-        # Import nckp if import_nckp() found
+        '''Import nckp if import_nckp() found'''
         if open_nckp(self.lines, self.basedir):
             strip_import_nckp_function_from_source(self.lines)
 
@@ -1765,14 +1794,16 @@ class KSPCompiler(object):
         self.code = merge_lines(self.lines)
 
     def pre_macro_functions(self):
+        '''Create define cache and run pre_macro_functions from `preprocessor_plugins.py`'''
         self.define_cache = pre_macro_functions(self.lines)
 
-    # Isolate macros into objects, removing from code
     def extract_macros(self):
+        '''Isolate macros into objects, removing from code'''
         self.lines, self.macros = extract_macros(self.lines)
 
-    # Run stored macros on the code
     def expand_macros(self):
+        '''Expands macros in this order: 1. initial macro expansion | 2. nested expansions | 3. post_iterate expansions'''
+ 
         # initial expansion
         normal_lines, callback_lines = expand_macros(self.lines, self.macros, 0, False)
         self.lines = normal_lines + callback_lines
@@ -1791,7 +1822,8 @@ class KSPCompiler(object):
 
 
     def examine_pragmas(self, code, namespaces):
-        # find info about output file
+        '''Examine pragmas within code'''
+
         pragma_re = re.compile(r'\{\s*\#pragma\s+save_compiled_source\s+(.*)\}')
         m = pragma_re.search(code)
         if m:
@@ -1821,9 +1853,14 @@ class KSPCompiler(object):
         return code
 
     def parse_code(self):
+        '''Parse code with ply lex/yacc'''
         self.module = parse(self.code, self.lines)
 
     def sort_functions_and_insert_local_variables_into_on_init(self):
+        '''Ensures no recusion with functions invoked with 'call'\n
+           Do a topological sort for functions. \n
+           Move local variables to on init if not already inserted '''
+        
         # make sure that used function that uses others set the used flag of those secondary ones as well
         used_functions = set()
 
@@ -1852,10 +1889,11 @@ class KSPCompiler(object):
                 f.local_declaration_statements = []
 
     def convert_dots_to_double_underscore(self):
+        '''Convert all dots into '__' (and update the list of variables accordingly)
+           Note: for historical reasons the ksp_compiler_extras functions assume
+           pure KSP as input and therefore cannot handle '.' in names.'''
+        
         global variables
-        # convert all dots into '__' (and update the list of variables accordingly)
-        # Note: for historical reasons the ksp_compiler_extras functions assume
-        # pure KSP as input and therefore cannot handle '.' in names.
 
         # update the AST
         name_fixer = ASTModifierNameFixer(self.module)
@@ -1885,6 +1923,8 @@ class KSPCompiler(object):
         self.used_variables = set()
 
     def generate_compiled_code(self):
+        '''Generate compiled code from AST'''
+
         buffer = StringIO()
         emitter = ksp_ast.Emitter(buffer, compact=self.compact)
         self.module.emit(emitter)
@@ -1979,6 +2019,7 @@ class KSPCompiler(object):
         self.abort_requested = True
 
 if __name__ == "__main__":
+    '''Using the compiler as command line tool'''
     import sys
     import os
     import os.path
