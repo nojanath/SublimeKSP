@@ -1,0 +1,24 @@
+[
+  {
+    "class": "icon_file_type",
+    "layer0.tint": [0, 0, 0],
+    "layer0.opacity": 0.6,
+    "content_margin": [8, 8]
+  },
+
+  // Hovered
+
+  {
+    "class": "icon_file_type",
+    "parents": [{"class": "tree_row", "attributes": ["hover"]}],
+    "layer0.opacity": 0.75
+  },
+
+  // Selected
+
+  {
+    "class": "icon_file_type",
+    "parents": [{"class": "tree_row", "attributes": ["selected"]}],
+    "layer0.opacity": 1.0
+  }
+]
