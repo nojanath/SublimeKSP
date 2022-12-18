@@ -789,7 +789,7 @@ class List(object):
 
 	def getListDeclaration(self, line):
 		''' This function returns the lines for a list declaration. Because the size of the list caluated based on how
-			many list_add() functions have been use, this function must be called after all list_add() are resolved. '''
+			many list_add() functions have been used, this function must be called after all list_add() are resolved. '''
 		newLines = collections.deque()
 		if not self.isMatrix:
 			newLines.append(line.copy("declare %s %s%s[%s]" % (self.persistence, self.prefix, self.name, self.inc)))
@@ -1060,7 +1060,7 @@ def handleStringArrayInitialisation(lines):
 
 #=================================================================================================
 def handlePersistence(lines):
-	''' Simple adds make_persistent() or read_perisitent_var() lines when the pers or read keywords are found. '''
+	''' Simply adds make_persistent() or read_perisitent_var() lines when the pers or read keywords are found. '''
 	newLines = collections.deque()
 	famCount = 0
 	for i in range(len(lines)):

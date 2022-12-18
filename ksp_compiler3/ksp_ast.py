@@ -157,7 +157,7 @@ class ASTNode:
         return self.__class__.__name__
 
 class Module(ASTNode):
-    '''Parent Node for all nodes in sript'''
+    '''Parent Node for all nodes within script'''
 
     def __init__(self, lexinfo, blocks):
         ASTNode.__init__(self, lexinfo)
@@ -176,7 +176,7 @@ class Module(ASTNode):
         return self.blocks
 
 class TopLevelBlock(ASTNode):
-    '''Parent node for: Imports (depreciated), Functions & Callbacks'''
+    '''Parent node for: Imports (deprecated), Functions & Callbacks'''
 
     def __init__(self, lexinfo, name, lines=None):
         ASTNode.__init__(self, lexinfo)
@@ -190,7 +190,7 @@ class TopLevelBlock(ASTNode):
         return self.lines # NOTE: name?
 
 class Import(TopLevelBlock):
-    '''(Depreciated) Imports are now evaluated before AST construction so this is now depreciated'''
+    '''(Deprecated) Imports are now evaluated before AST construction so this is now deprecated'''
 
     def __init__(self, lexinfo, filename, alias=None):
         TopLevelBlock.__init__(self, lexinfo, 'import', [])
@@ -269,7 +269,7 @@ class Callback(TopLevelBlock):
         out.writeln('end on')
 
 class Stmt(ASTNode):
-    '''Parent node for: PropertyDef, DeclareStmt, AssignStmt, PreprocessorCondition (depreciated), FunctionCall, CompoundStmt'''
+    '''Parent node for: PropertyDef, DeclareStmt, AssignStmt, PreprocessorCondition (deprecated), FunctionCall, CompoundStmt'''
 
     def __init__(self, lexinfo):
         ASTNode.__init__(self, lexinfo)
@@ -379,7 +379,7 @@ class DeclareStmt(Stmt):
         return '<DeclareStmt %s>' % (str(self.variable.identifier))
 
 class AssignStmt(Stmt):
-    '''Node for assign statments. Separate to DeclareStmt as ':=' can be used elsewhere'''
+    '''Node for assign statements. Separate to DeclareStmt as ':=' can be used elsewhere'''
 
     def __init__(self, lexinfo, varref, expression):
         Stmt.__init__(self, lexinfo)
@@ -399,7 +399,7 @@ class AssignStmt(Stmt):
         return (self.varref, self.expression)
 
 class PreprocessorCondition(Stmt):
-    '''(Depreciated) SET_CONDITION and RESET_CONDITION are now handled before AST lex/yacc parsing'''
+    '''(Deprecated) SET_CONDITION and RESET_CONDITION are now handled before AST lex/yacc parsing'''
 
     def __init__(self, lexinfo, set_or_reset_name, parameter):
         Stmt.__init__(self, lexinfo)
