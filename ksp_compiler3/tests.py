@@ -893,6 +893,18 @@ class MacroInlining(unittest.TestCase):
         output = do_compile(code, remove_preprocessor_vars=False)
         self.assertTrue('''message("the value of y is: " & $y)''' in output)
 
+    def testMacroExpansionWithDefineInExpandedString(self):
+        code = '''define MYDEFINE := 5
+            macro test(#string#)
+                message("#string#, keeping MYDEFINE unreplaced")
+            end macro
+            
+            on init
+                test(Hello)
+            end on'''
+        output = do_compile(code)
+        self.assertTrue('message("Hello, keeping MYDEFINE unreplaced")' in output)
+
     def testInfiniteMacroRecursion(self):
         code = '''
             macro foo(x)
