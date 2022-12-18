@@ -1,8 +1,8 @@
 [
   {
     "class": "icon_file_type",
-    "layer0.tint": [0, 0, 0],
-    "layer0.opacity": 0.45,
+    "layer0.tint": [255, 255, 255],
+    "layer0.opacity": 0.6,
     "content_margin": [8, 8]
   },
 
@@ -11,7 +11,7 @@
   {
     "class": "icon_file_type",
     "parents": [{"class": "tree_row", "attributes": ["hover"]}],
-    "layer0.opacity": 0.55
+    "layer0.opacity": 0.8
   },
 
   // Selected
@@ -19,6 +19,6 @@
   {
     "class": "icon_file_type",
     "parents": [{"class": "tree_row", "attributes": ["selected"]}],
-    "layer0.opacity": 0.8
+    "layer0.opacity": 1.0
   }
 ]
