@@ -40,6 +40,8 @@ def toint(i, bits=32):
     return int(i)
 
 class Emitter:
+    '''Class for converting Nodes to native KSP'''
+
     def __init__(self, out=sys.stdout, compact=False):
         self.out = out
         self.indent_num = 0
@@ -92,6 +94,8 @@ class Emitter:
         self.write('\n')
 
 class ParseException(SyntaxError):
+    '''Parse Exceptions for parse errors after AST lex/yacc parsing'''
+
     def __init__(self, node, msg=None):
         if msg is None:
             msg = 'Syntax Error'
@@ -107,6 +111,8 @@ class ParseException(SyntaxError):
         SyntaxError.__init__(self, msg)
 
 class ASTNode:
+    '''The very base node comprised in all AST objects'''
+
     def __init__(self, lexinfo):
         self.lexinfo = None
         self.env = None
@@ -151,6 +157,8 @@ class ASTNode:
         return self.__class__.__name__
 
 class Module(ASTNode):
+    '''Parent Node for all nodes within script'''
+
     def __init__(self, lexinfo, blocks):
         ASTNode.__init__(self, lexinfo)
         self.blocks = blocks
@@ -168,6 +176,8 @@ class Module(ASTNode):
         return self.blocks
 
 class TopLevelBlock(ASTNode):
+    '''Parent node for: Imports (deprecated), Functions & Callbacks'''
+
     def __init__(self, lexinfo, name, lines=None):
         ASTNode.__init__(self, lexinfo)
         self.name = name
@@ -180,6 +190,8 @@ class TopLevelBlock(ASTNode):
         return self.lines # NOTE: name?
 
 class Import(TopLevelBlock):
+    '''(Deprecated) Imports are now evaluated before AST construction so this is now deprecated'''
+
     def __init__(self, lexinfo, filename, alias=None):
         TopLevelBlock.__init__(self, lexinfo, 'import', [])
         self.filename = filename
@@ -195,6 +207,8 @@ class Import(TopLevelBlock):
         return []
 
 class FunctionDef(TopLevelBlock):
+    '''Node for Functions and Taskfuncs'''
+
     def __init__(self, lexinfo, name, parameters, return_value, lines, is_taskfunc=False, override=False):
         TopLevelBlock.__init__(self, lexinfo, name, lines)
         self.name = name
@@ -231,6 +245,8 @@ class FunctionDef(TopLevelBlock):
         out.writeln('end function')
 
 class Callback(TopLevelBlock):
+    '''Node for Callbacks (including UI)'''
+
     def __init__(self, lexinfo, name, lines=None, variable=None):
         TopLevelBlock.__init__(self, lexinfo, name, lines)
         self.variable = None
@@ -253,6 +269,8 @@ class Callback(TopLevelBlock):
         out.writeln('end on')
 
 class Stmt(ASTNode):
+    '''Parent node for: PropertyDef, DeclareStmt, AssignStmt, PreprocessorCondition (deprecated), FunctionCall, CompoundStmt'''
+
     def __init__(self, lexinfo):
         ASTNode.__init__(self, lexinfo)
 
@@ -260,6 +278,7 @@ class Stmt(ASTNode):
         pass
 
 class PropertyDef(Stmt):
+    '''Node for property statments'''
 
     def __init__(self, lexinfo, name, indices=None, functions=None, alias_varref=None):
         Stmt.__init__(self, lexinfo)
@@ -290,6 +309,7 @@ class PropertyDef(Stmt):
         return []
 
 class DeclareStmt(Stmt):
+    '''Node for variable declarations (including UI)'''
 
     def __init__(self, lexinfo, variable, modifiers, size=None, parameters=None, initial_value=None):
         Stmt.__init__(self, lexinfo)
@@ -359,6 +379,8 @@ class DeclareStmt(Stmt):
         return '<DeclareStmt %s>' % (str(self.variable.identifier))
 
 class AssignStmt(Stmt):
+    '''Node for assign statements. Separate to DeclareStmt as ':=' can be used elsewhere'''
+
     def __init__(self, lexinfo, varref, expression):
         Stmt.__init__(self, lexinfo)
         self.varref = varref
@@ -377,6 +399,8 @@ class AssignStmt(Stmt):
         return (self.varref, self.expression)
 
 class PreprocessorCondition(Stmt):
+    '''(Deprecated) SET_CONDITION and RESET_CONDITION are now handled before AST lex/yacc parsing'''
+
     def __init__(self, lexinfo, set_or_reset_name, parameter):
         Stmt.__init__(self, lexinfo)
         self.set_or_reset_name = set_or_reset_name
@@ -392,6 +416,8 @@ class PreprocessorCondition(Stmt):
         return []
 
 class FunctionCall(Stmt):
+    '''Node for called functions'''
+
     def __init__(self, lexinfo, function_name, parameters, is_procedure=False, using_call_keyword=False):
         Stmt.__init__(self, lexinfo)
         self.function_name = function_name
@@ -422,9 +448,12 @@ class FunctionCall(Stmt):
         return children
 
 class CompoundStmt(Stmt):
+    '''Parent Node for: WhileStmt, ForStmt, FamilyStmt, IfStmt, SelectStmt'''
     pass
 
 class WhileStmt(CompoundStmt):
+    '''Node for while loops'''
+
     def __init__(self, lexinfo, condition, statements):
         CompoundStmt.__init__(self, lexinfo)
         self.condition = condition
@@ -442,6 +471,8 @@ class WhileStmt(CompoundStmt):
         return (self.condition,) + tuple(self.statements)
 
 class ForStmt(CompoundStmt):
+    '''Node for for loops '''
+
     def __init__(self, lexinfo, loopvar, start, end, statements, step=None, downto=False):
         CompoundStmt.__init__(self, lexinfo)
         self.loopvar = loopvar
@@ -478,6 +509,8 @@ class ForStmt(CompoundStmt):
         return children
 
 class FamilyStmt(CompoundStmt):
+    '''Node for families'''
+
     def __init__(self, lexinfo, name, statements):
         CompoundStmt.__init__(self, lexinfo)
         self.name = name
@@ -492,6 +525,8 @@ class FamilyStmt(CompoundStmt):
         return tuple(self.statements)
 
 class IfStmt(CompoundStmt):
+    '''Node for if statments'''
+
     def __init__(self, lexinfo, condition_stmts_tuples):
         CompoundStmt.__init__(self, lexinfo)
 
@@ -524,6 +559,8 @@ class IfStmt(CompoundStmt):
         self.condition_stmts_tuples = [(func(condition), stmts) for (condition, stmts) in self.condition_stmts_tuples]
 
 class SelectStmt(CompoundStmt):
+    '''Node for select statements'''
+
     def __init__(self, lexinfo, expression, range_stmts_tuples):
         CompoundStmt.__init__(self, lexinfo)
         self.expression = expression
@@ -560,10 +597,14 @@ class SelectStmt(CompoundStmt):
         self.range_stmts_tuples = [((func(start), func(stop)), stmts) for ((start, stop), stmts) in self.range_stmts_tuples]
 
 class Expr(ASTNode):
+    '''Parent node for: BinOP, UnaryOp, Integer, Real, String, Boolean, ID, VarRef, RawArrayInitializer'''
+
     def __init__(self, lexinfo):
         ASTNode.__init__(self, lexinfo)
 
 class BinOp(Expr):
+    '''Node for binary operators e.g 4 < 5'''
+
     def __init__(self, lexinfo, left, op, right):
         Expr.__init__(self, lexinfo)
         self.left = left
@@ -588,6 +629,8 @@ class BinOp(Expr):
         return (self.left, self.right)
 
 class UnaryOp(Expr):
+    '''Node for Unary operators e.g not'''
+
     def __init__(self, lexinfo, op, right):
         Expr.__init__(self, lexinfo)
         self.right = right
@@ -614,6 +657,8 @@ class UnaryOp(Expr):
         return (self.right,)
 
 class Integer(Expr):
+    '''Node for integers'''
+
     def __init__(self, lexinfo, value):
         Expr.__init__(self, lexinfo)
         self.value = toint(value)
@@ -629,6 +674,8 @@ class Integer(Expr):
         return ()
 
 class Real(Expr):
+    '''Node for real numbers'''
+
     def __init__(self, lexinfo, value):
         Expr.__init__(self, lexinfo)
         self.value = Decimal(value)
@@ -657,6 +704,8 @@ class Real(Expr):
         return ()
 
 class String(Expr):
+    '''Node for strings'''
+
     def __init__(self, lexinfo, value):
         Expr.__init__(self, lexinfo)
         self.value = value
@@ -667,9 +716,11 @@ class String(Expr):
     def __str__(self):
         return str(self.value)
 
-# NOTE:
-# KSP doesn't support booleans, but this node type is used as an intermediary in the optimization phase
 class Boolean(Expr):
+    '''Node for boolean operators  \n
+       Note: KSP doesn't support booleans, but this node type is used as an intermediary in the optimization phase
+    '''
+
     def __init__(self, lexinfo, value):
         Expr.__init__(self, lexinfo)
         self.value = bool(value)
@@ -751,6 +802,8 @@ class VarRef(Expr):
         return children
 
 class RawArrayInitializer(Expr):
+    '''Node for raw array initialization'''
+
     def __init__(self, lexinfo, raw_text):
         Expr.__init__(self, lexinfo)
         self.raw_text = raw_text

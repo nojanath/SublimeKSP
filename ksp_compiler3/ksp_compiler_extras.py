@@ -42,6 +42,8 @@ class ValueUndefinedException(ParseException):
         ParseException.__init__(self, node, msg)
 
 class Variable:
+    '''Class for variables (used in symbol table)'''
+
     def __init__(self, name, size=1, params=None, control_type=None, is_constant=False, is_polyphonic=False, value=None):
         self.name = name
         self.size = size
@@ -223,6 +225,7 @@ def highest_precision(type1, type2):
         return 'integer'
 
 class ASTVisitorDetermineExpressionTypes(ASTVisitor):
+
     def __init__(self, ast):
         ASTVisitor.__init__(self)
         self.traverse(ast)
@@ -347,6 +350,7 @@ class ASTVisitorDetermineExpressionTypes(ASTVisitor):
         return False
 
 class ASTVisitorCheckStatementExprTypes(ASTVisitor):
+
     def __init__(self, ast):
         ASTVisitor.__init__(self, visit_expressions=False)
         self.traverse(ast)
@@ -387,6 +391,8 @@ class ASTVisitorCheckStatementExprTypes(ASTVisitor):
                 assert_type(stop, 'integer')
 
 class ASTVisitorFindUsedVariables(ASTVisitor):
+    '''Find used variables by traversing AST and store in set, used_variables'''
+
     def __init__(self, ast, used_variables_set):
         ASTVisitor.__init__(self)
         self.used_variables = used_variables_set
@@ -403,6 +409,8 @@ class ASTVisitorFindUsedVariables(ASTVisitor):
         return False
 
 class ASTVisitorFindUsedFunctions(ASTVisitor):
+    '''Find used functions by traversing AST and store in dictionary, call_graph'''
+
     def __init__(self, ast, used_functions):
         ASTVisitor.__init__(self, visit_expressions=False)
         self.call_graph = {}
@@ -661,6 +669,8 @@ class ASTModifierSimplifyExpressions(ASTModifier):
             return [node]
 
 class ASTModifierRemoveUnusedBranches(ASTModifier):
+    '''Remove unused branches (such as if, select, while). Used if optimize mode is selected'''
+
     def __init__(self, module_ast):
         ASTModifier.__init__(self)
         self.traverse(module_ast)
@@ -737,6 +747,8 @@ class ASTModifierRemoveUnusedBranches(ASTModifier):
             return flatten([self.modify(stmt) for stmt in statements])
 
 class ASTModifierRemoveUnusedFunctions(ASTModifier):
+    '''Remove unused functions. Used if optimize mode is selected'''
+
     def __init__(self, module_ast, used_functions):
         ASTModifier.__init__(self, modify_expressions=False)
         self.used_functions = used_functions
@@ -747,6 +759,8 @@ class ASTModifierRemoveUnusedFunctions(ASTModifier):
         node.blocks = [b for b in node.blocks if isinstance(b, Callback) or b.name.identifier in self.used_functions]
 
 class ASTModifierRemoveUnusedVariables(ASTModifier):
+    '''Remove unused variables. Used if optimize mode is selected'''
+
     def __init__(self, module_ast, used_variables):
         ASTModifier.__init__(self)
         self.used_variables = used_variables

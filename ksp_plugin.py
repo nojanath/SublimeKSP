@@ -25,6 +25,8 @@ except Exception:
 last_compiler = None
 
 class KspRecompile(sublime_plugin.ApplicationCommand):
+    '''Recompile most recently compiled file'''
+
     def is_enabled(self):
         # only show the command when a file with KSP syntax highlighting is visible
         view = sublime.active_window().active_view()
@@ -35,10 +37,13 @@ class KspRecompile(sublime_plugin.ApplicationCommand):
         sublime.active_window().run_command('compile_ksp', {'recompile': True})
 
 class Compile_all_openCommand(sublime_plugin.ApplicationCommand):
+    '''Compile all scripts open in the current sublime window'''
+
     def run(self, *args):
         sublime.active_window().run_command('compile_ksp', {'compile_all_open': True})
 
 class CompileKspCommand(sublime_plugin.ApplicationCommand):
+
     def __init__(self):
         sublime_plugin.ApplicationCommand.__init__(self)
         self.thread = None
@@ -292,6 +297,8 @@ magic_control_and_event_pars.sort()
 
 
 class KSPCompletions(sublime_plugin.EventListener):
+    '''Handles KSP autocompletions'''
+
     def _extract_completions(self, view, prefix, point):
         # the sublime view.extract_completions implementation doesn't seem to allow for
         # the . character to be included in the prefix irrespectively of the "word_separators" setting
@@ -344,6 +351,8 @@ class KSPCompletions(sublime_plugin.EventListener):
 
 
 class NumericSequenceCommand(sublime_plugin.TextCommand):
+    '''Tool for incrementing selected text'''
+
     def run(self, edit):
         if len(self.view.sel()) < 2:
             return
@@ -362,6 +371,8 @@ class ReplaceTextWithCommand(sublime_plugin.TextCommand):
 
 
 class KspGlobalSettingToggleCommand(sublime_plugin.ApplicationCommand):
+    '''Handles toggeled sublime settings'''
+
     def run(self, setting, default):
         sksp_options_dict = {
             "ksp_compact_output" : "Remove Indents and Empty Lines",

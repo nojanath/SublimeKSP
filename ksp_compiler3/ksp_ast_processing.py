@@ -38,6 +38,8 @@ def flatten(L):
     return list(flatten_iter(L))
 
 def handle_set_par(control, parameter, value):
+    '''Returns `set_control_par` or `set_event_par` as a new FunctionCall object'''
+
     # for converting integers to IDs. e.g e -> 4 := x
     if type(parameter) == Integer:
         parameter = ID(parameter.lexinfo, str(parameter))
@@ -66,6 +68,8 @@ def handle_set_par(control, parameter, value):
     raise Exception("%s is not a valid control_par/event_par" % parameter.identifier)
 
 def handle_get_par(control, parameter):
+    '''Returns `get_control_par` or `get_event_par` as a new FunctionCall object'''
+
     if type(parameter) == Integer:
         parameter = ID(parameter.lexinfo, str(parameter))
 
@@ -96,6 +100,8 @@ class VariableNotDeclaredException(ParseException):
     pass
 
 class ASTVisitor(object):
+    '''Object to traverse and read AST nodes'''
+
     def __init__(self, visit_expressions=True):
         self.node = None
         self._visit_expressions = visit_expressions
@@ -141,6 +147,8 @@ class ASTVisitor(object):
 
 
 class ASTModifier(object):
+    '''Object to traverse and modify AST nodes'''
+
     def __init__(self, modify_expressions=True):
         self.node = None
         self._modify_expressions = modify_expressions
