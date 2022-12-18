@@ -271,16 +271,6 @@ def parse_lines(s, filename=None, namespaces=None):
     if namespaces is None:
         namespaces = []
 
-    def replace_func(match):
-        # replace the match with a placeholder (eg. "{8}") and store the replaced string
-        i = len(placeholders)
-        s = match.group(0)
-        s = placeholder_re.sub('', s)   # strip encoded line numbers (for multiline comments)
-        if s and s[0] == "'":           # convert single quotes (') to double quotes (")
-            s = '"%s"' % s[1:-1].replace(r"\'", "'")
-        placeholders[i] = s
-        return '{%d}' % i
-
     lines = s.replace('\r\n', '\n').replace('\r', '\n').split('\n')
     # encode lines numbers as '[[[lineno]]]' at the beginning of each line
     lines = ['[[[%.5d]]]%s' % (lineno+1, x) for (lineno, x) in enumerate(lines)]
@@ -300,16 +290,30 @@ def parse_lines(s, filename=None, namespaces=None):
 
     s = line_continuation_re.sub('', s)
 
-    # substitute strings with placeholders
-    s = string_re.sub(replace_func, s)
-
     # construct Line objects by extracting the line number and line parts
     lines = []
     for line in s.split('\n'):
         lineno, line = int(line[3:3+5]), line[3+5+3:]
         line = placeholder_re.sub('', line)
         lines.append(Line(line, [(filename, lineno)], namespaces))
+
+    convert_strings_to_placeholders(lines)
     return collections.deque(lines)
+
+def convert_strings_to_placeholders(lines):
+    '''Converts all strings to placeholders, appending string to placeholder dictionary'''
+    def replace_func(match):
+        i=len(placeholders)
+        # replace the match with a placeholder (eg. "{8}") and store the replaced string
+        s = match.group(0)
+        if s and s[0] == "'":           # convert single quotes (') to double quotes (")
+            s = '"%s"' % s[1:-1].replace(r"\'", "'")
+        placeholders[i] = s
+        return '{%d}' % i
+
+    # substitute strings with placeholders
+    for l in lines:
+        l.command = string_re.sub(replace_func, l.command)
 
 def parse_lines_and_handle_imports(code, filename=None, namespaces=None, read_file_function=None, preprocessor_func=None):
     # reads one block from the lines deque
@@ -1773,9 +1777,12 @@ class KSPCompiler(object):
 
     # Run stored macros on the code
     def expand_macros(self):
-        # initial expansion
-        normal_lines, callback_lines = expand_macros(self.lines, self.macros, 0, False)
+        # initial expansion. Macro strings are expanded
+        normal_lines, callback_lines = expand_macros(self.lines, self.macros, 0, True)
         self.lines = normal_lines + callback_lines
+
+        # convert any strings from the macro expansion back into placeholders to prevent defines with identical names within strings being replaced
+        convert_strings_to_placeholders(self.lines)
 
         # nested expansion, supports now using macros to further specify define constants used for iterate and literate macros
         while macro_iter_functions(self.lines):
