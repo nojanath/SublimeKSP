@@ -22,6 +22,14 @@ This fork is based on [Nils Liberg's official SublimeKSP plugin, v1.11](http://n
   * Hit <kbd>Enter</kbd> to install
   * Restart Sublime Text 3
 
+### Manual Installation
+
+ * To use features of SublimeKSP before official package releases, clone this repo into your `Sublime Text 3/Packages/KSP (Kontakt Script Processor)`  
+ * This directory can be located in Sublime Text by selecting `Preferences > Browse Packages`  
+ * Ensure that the root directory is `KSP (Kontakt Script Processor)`
+ * After pulling the latest changes reload Sublime Text
+ * If you wish to pull features without restarting Sublime Text, I recommend installing [Automatic​Package​Reloader](https://packagecontrol.io/packages/AutomaticPackageReloader)
+
 ### Documentation
 See the [Wiki](https://github.com/nojanath/SublimeKSP/wiki) on Github.
 
