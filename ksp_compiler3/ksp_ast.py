@@ -597,7 +597,7 @@ class SelectStmt(CompoundStmt):
         self.range_stmts_tuples = [((func(start), func(stop)), stmts) for ((start, stop), stmts) in self.range_stmts_tuples]
 
 class Expr(ASTNode):
-    '''Parent node for: BinOP, UnaryOp, Integer, Real, String, Boolean, ID, VarRef, RawArrayInitializer'''
+    '''Parent node for: BinOp, UnaryOp, Integer, Real, String, Boolean, ID, VarRef, RawArrayInitializer'''
 
     def __init__(self, lexinfo):
         ASTNode.__init__(self, lexinfo)

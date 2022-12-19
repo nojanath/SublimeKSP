@@ -14,11 +14,14 @@ With SublimeKSP 1.10.0 comes a few improvements to the compilation process as we
 If you would like to roll back a version of SublimeKSP for time critical work prevented by a new bug:
 
 First, remove SublimeKSP from Sublime Package Control:
-1. Use the shortcut `Ctrl + Shift + P` on Windows/Linux or `Cmd + Shift + P` on Mac.
+1. Press `Ctrl + Shift + P` on Windows and Linux, or `Cmd + Shift + P` on Mac.
 2. Type "Remove Package" and select it, then select the "KSP (Kontakt Script Processor)" entry.
 
-Next, download the version you'd like here: https://github.com/nojanath/SublimeKSP/releases
-With your SublimeKSP package downloaded, you can install it as a user package in Sublime following these instructions:
-1. Open the Preferences menu in Sublime and click Browse Packages. A folder will open up.
-2. Extract the `SublimeKSP` folder out of the zip file and place it into this folder.
-3. Restart Sublime completely. Make sure it is not running in your OS task manager (or, restart the computer to be thorough!)
+Next, download the version you'd like [here](https://github.com/nojanath/SublimeKSP/releases).
+
+After the download, you can install it as a user package in Sublime following these instructions:
+
+1. Open the Preferences menu in Sublime Text and click Browse Packages. A folder will open up.
+2. Extract the ZIP archive you have downloaded and place it into this folder.
+3. IMPORTANT: Rename the unpacked folder to `SublimeKSP`!
+4. Restart Sublime Text. Alternatively, make sure you have [Automatic​Package​Reloader](https://packagecontrol.io/packages/AutomaticPackageReloader) package installed
