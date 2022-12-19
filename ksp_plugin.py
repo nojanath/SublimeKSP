@@ -375,13 +375,14 @@ class KspGlobalSettingToggleCommand(sublime_plugin.ApplicationCommand):
 
     def run(self, setting, default):
         sksp_options_dict = {
-            "ksp_compact_output" : "Remove Indents and Empty Lines",
-            "ksp_compact_variables" : "Compact Variables",
-            "ksp_extra_checks" : "Extra Syntax Checks",
-            "ksp_optimize_code" : "Optimize Compiled Code",
-            "ksp_add_compiled_date" : "Add Compilation Date/Time Comment",
-            "ksp_comment_inline_functions" : "Insert Comments When Expanding Functions",
-            "ksp_play_sound" : "Play Sound When Compilation Finishes"
+            "ksp_compact_output"            : "Remove Indents and Empty Lines",
+            "ksp_compact_variables"         : "Compact Variables",
+            "ksp_extra_checks"              : "Extra Syntax Checks",
+            "ksp_optimize_code"             : "Optimize Compiled Code",
+            "ksp_combine_callbacks"         : "Combine Duplicate Callbacks",
+            "ksp_add_compiled_date"         : "Add Compilation Date/Time Comment",
+            "ksp_comment_inline_functions"  : "Insert Comments When Expanding Functions",
+            "ksp_play_sound"                : "Play Sound When Compilation Finishes"
         }
 
         s = sublime.load_settings("KSP.sublime-settings")
