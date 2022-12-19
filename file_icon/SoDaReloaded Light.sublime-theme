@@ -11,7 +11,7 @@
   {
     "class": "icon_file_type",
     "parents": [{"class": "tree_row", "attributes": ["hover"]}],
-    "layer0.opacity": 0.9
+    "layer0.opacity": 0.75
   },
 
   // Selected
