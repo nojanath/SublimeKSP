@@ -91,7 +91,7 @@
 						"command": "ksp_global_setting_toggle",
 						"args": {"setting": "ksp_combine_callbacks", "default": false},
 						"caption": "Combine Duplicate Callbacks",
-						"mnemonic": "B",
+						"mnemonic": "b",
 						"id": "combine_callbacks"
 					},
 					{"caption": "-"}, //separator
