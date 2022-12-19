@@ -1,6 +1,6 @@
 # SublimeKSP
 
-A Sublime Text plugin for working with and compiling KSP (Kontakt Script Processor) code.
+A Sublime Text plugin for working with and compiling KSP (Kontakt Script Processor) code. Works with Sublime Text versions 3 and 4.
 
 ### Changes
 This fork is based on [Nils Liberg's official SublimeKSP plugin, v1.11](http://nilsliberg.se/ksp/), and supports Kontakt versions 5.6 and up. However, there are a number of additions and changes:
@@ -9,7 +9,7 @@ This fork is based on [Nils Liberg's official SublimeKSP plugin, v1.11](http://n
 * Available in Package Control, which supports automatic updates
 * Updates to the syntax highlighting
 * Support for Creator Tools GUI Designer
-* default_syntax.py has been removed, since this can be set elsewhere
+* `default_syntax.py` has since been removed, since this can be set elsewhere
 * See the [Added Features](https://github.com/nojanath/SublimeKSP/wiki/Added-Features) section of the [Wiki](https://github.com/nojanath/SublimeKSP/wiki) for more information
 
 ### Installation
