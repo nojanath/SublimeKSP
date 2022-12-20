@@ -24,6 +24,10 @@ except Exception:
 
 last_compiler = None
 
+def log_message(msg):
+    print("SublimeKSP: " + msg)
+    sublime.status_message("SublimeKSP: " + msg)
+
 class KspRecompile(sublime_plugin.ApplicationCommand):
     '''Recompile most recently compiled file'''
 
@@ -58,7 +62,7 @@ class CompileKspCommand(sublime_plugin.ApplicationCommand):
     def run(self, *args, **kwargs):
         # wait until any previous thread is finished
         if self.thread and self.thread.is_alive():
-            sublime.status_message('Waiting for earlier compilation to finish...')
+            log_message('Waiting for earlier compilation to finish...')
             self.thread.join()
 
         # find the view containing the code to compile
@@ -69,9 +73,6 @@ class CompileKspCommand(sublime_plugin.ApplicationCommand):
         if kwargs.get('compile_all_open', None):
             open_views = view.window().views()
             open_views = [view for view in open_views if re.search(r'source\.ksp',view.scope_name(0))]
-            for view in open_views:
-                if re.search(r'source\.ksp',view.scope_name(0)):
-                    view.assign_syntax('Packages/KSP (Kontakt Script Processor)/KSP.sublime-syntax')
 
         self.thread = CompileKspThread(open_views)
         self.thread.start()
@@ -113,8 +114,7 @@ class CompileKspThread(threading.Thread):
             self.compiler.abort_compilation()
 
     def compile_on_progress(self, text, percent_complete):
-        sublime.status_message('Compiling (%d%%) - %s...' %
-                              (percent_complete, text))
+        log_message('Compiling (%d%%) - %s...' % (percent_complete, text))
 
     @classmethod
     def find_view_by_filename(cls, filename, base_path=None):
@@ -140,7 +140,7 @@ class CompileKspThread(threading.Thread):
                 view.show(line_region)
                 selection.clear()
                 selection.add(line_region)
-        sublime.status_message('Error - compilation aborted!')
+        log_message('Error - compilation aborted!')
         sublime.error_message(error_msg)
         sublime.status_message('')
 
@@ -167,6 +167,7 @@ class CompileKspThread(threading.Thread):
             self.current_view = view
             code = view.substr(sublime.Region(0, view.size()))
             filepath = view.file_name()
+
             if filepath:
                 self.base_path = os.path.dirname(filepath)
             else:
@@ -188,21 +189,20 @@ class CompileKspThread(threading.Thread):
             sound_utility = CompilerSounds()
 
             pragma_compiled_source_re = re.compile(r'\{\s*\#pragma\s+save_compiled_source\s+(.*)\}')
+
             if self.compile_all_open and not pragma_compiled_source_re.search(code):
                 if filepath == None:
-                    filepath = 'main script'
-                sublime.error_message("Error: No output path was specified for script '%s' - compilation aborted!" % filepath)
-                sublime.status_message("Error: No output path was specified for script '%s' - compilation aborted!" % filepath)
-                sublime.active_window().focus_view(view)
-                if should_play_sound:
-                    sound_utility.play(command="error")
-                break
+                    filepath = 'untitled'
+
+                log_message("Error: No output path was specified for '%s' - skipping compilation for this script!" % filepath)
+
+                continue
 
             try:
                 if self.compile_all_open:
-                    sublime.status_message('Compiling %s, script %s/%s...' % (filepath, self.open_views.index(view)+1, len(self.open_views)))
+                    log_message('Compiling %s, script %s of %s...' % (filepath, self.open_views.index(view) + 1, len(self.open_views)))
                 else:
-                    sublime.status_message('Compiling...')
+                    log_message('Compiling...')
 
                 self.compiler = ksp_compiler.KSPCompiler(code, self.base_path, compact, compact_variables,
                                                          read_file_func=self.read_file_function,
@@ -217,12 +217,12 @@ class CompileKspThread(threading.Thread):
                         if not os.path.isabs(self.compiler.output_file):
                             self.compiler.output_file = os.path.join(self.base_path, self.compiler.output_file)
                         codecs.open(self.compiler.output_file, 'w', 'latin-1').write(code)
-                        sublime.status_message("Successfully compiled (compiled code saved to %s)!" % self.compiler.output_file)
+                        log_message("Successfully compiled (compiled code saved to %s)!" % self.compiler.output_file)
                     else:
-                        sublime.status_message("Successfully compiled (the code is now on the clipboard ready to be pasted into Kontakt)!")
+                        log_message("Successfully compiled (the code is now on the clipboard ready to be pasted into Kontakt)!")
                         sublime.set_clipboard(code)
                 else:
-                    sublime.status_message('Compilation aborted!')
+                    log_message('Compilation aborted!')
             except ksp_ast.ParseException as e:
                 error_msg = unicode(e)
                 line_object = self.compiler.lines[e.lineno]
@@ -394,7 +394,7 @@ class KspGlobalSettingToggleCommand(sublime_plugin.ApplicationCommand):
         else:
             option_toggle = "disabled!"
 
-        sublime.status_message('SublimeKSP option %s is %s' % (sksp_options_dict[setting], option_toggle))
+        log_message('SublimeKSP option %s is %s' % (sksp_options_dict[setting], option_toggle))
 
     def is_checked(self, setting, default):
         return bool(sublime.load_settings("KSP.sublime-settings").get(setting, default))
@@ -540,5 +540,5 @@ class KspFixLineEndings(sublime_plugin.EventListener):
                 if changes:
                     s = '\n'.join(x.rstrip() for x in s.split('\n')) # strip trailing white-space too while we're at it
                     view.run_command('replace_text_with', {'new_text': s})
-                    sublime.set_timeout(lambda: sublime.status_message('EOL characters automatically fixed. Please save to keep the changes.'), 100)
+                    sublime.set_timeout(lambda: log_message('EOL characters automatically fixed. Please save to keep the changes.'), 100)
             self.set_ksp_syntax(view)
