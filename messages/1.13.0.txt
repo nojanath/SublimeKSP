@@ -1,0 +1,67 @@
+Version 1.13.0
+---------------------------------------------------
+
+This release is quite a lot more sizable than previous ones! Here's what's new:
+
+- A LOT of new KSP commands were added with Kontakt 7.1.3, so SublimeKSP now supports them all!
+
+- SublimeKSP should now work without issues in Sublime Text 4 (autocompletion and snippets etc.)
+
+- Basic SublimeKSP commands (Compile, Recompile, Preferences) are now available through Sublime Text's command palette
+
+- Added a new option to compile all open scripts that have save_compiled_source pragma directive set up successively in one go (press `Shift+F5`)!
+
+- Added a new option to combine any duplicate callbacks found into one
+
+- Fix for issue #222 (certain const related code works in Kontakt but doesn't compile in SublimeKSP)
+
+- Fix for issue #220 (macro expansion within strings was not working properly since version 1.12.2)
+
+- Fix for issue #257 (caused by addition of new K7.1.3 commands like log2() that clashed with Koala implementation that used namespaces)
+
+- Implemented issue #42 (compiler will now warn if built-in incrementer is not properly closed with END_INC)
+
+- Added more functions with forced parentheses, which helps with their proper autocompletion to also include those parentheses
+
+- Event parameters ($EVENT_PAR_0, $EVENT_PAR_VELOCITY) etc. can now use the same -> shorthand syntax as control parameters, i.e. `e -> volume := -1000`
+
+- Compiler will now not throw an error when attempting to evaluate a division by zero (it will inline 0 instead)
+
+- Compiler will now throw a parse error if any variables are declared outside of init callback
+
+- Added a snippet for const array
+
+- const/struct/list blocks are now added to the symbols list in Sublime Text
+
+- Reverted commit 0cdc9a9 that forced real number syntax to contain a number after decimal point
+
+- Removed the "Raise error on empty 'if' or 'case' statements" option, since it's been fixed for ages now - does anyone still develop code for Kontakt versions older than 4.2?
+
+- Files with .ksp extension will now have a Kontakt logo icon in Sublime Text's folder view
+
+- Infrastructure-wise, any pull request committed to the SublimeKSP repository will now be ran against a battery of unit tests.
+  This will hopefully help in preventing issues like #220 happening again). More tests are always welcome in form of pull requests, to increase coverage of use cases (see issue #266)!
+
+
+Major props and huge thanks to Jack Williams from Fracture Sounds for committing most of these features and fixes in!
+
+
+Have fun!
+
+
+---------------------------------------------------
+
+If you would like to roll back a version of SublimeKSP for time critical work prevented by a new bug:
+
+First, remove SublimeKSP from Sublime Package Control:
+1. Press `Ctrl + Shift + P` on Windows and Linux, or `Cmd + Shift + P` on Mac.
+2. Type "Remove Package" and select it, then select the "KSP (Kontakt Script Processor)" entry.
+
+Next, download the version you'd like [here](https://github.com/nojanath/SublimeKSP/releases).
+
+After the download, you can install it as a user package in Sublime following these instructions:
+
+1. Open the Preferences menu in Sublime Text and click Browse Packages. A folder will open up.
+2. Extract the ZIP archive you have downloaded and place it into this folder.
+3. IMPORTANT: Rename the unpacked folder to `SublimeKSP`!
+4. Restart Sublime Text. Alternatively, make sure you have [Automatic​Package​Reloader](https://packagecontrol.io/packages/AutomaticPackageReloader) package installed
