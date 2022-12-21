@@ -50,7 +50,7 @@ contexts:
       comment: Literate On
       captures:
         1: keyword.other.source.ksp
-    - match: '(\s+-|(?<=[=,{}()])-)?((0x)[0-9a-fA-F]*|[0-9][0-9a-fA-F]*[hH]|b[0-9.]+|[0-9.]+b|(\d*\.?\d+)([eE]-?\d+)?)\b'
+    - match: '(\s+-|(?<=[=,{}()])-)?((0x)[0-9a-fA-F]*|[0-9][0-9a-fA-F]*[hH]|b[0-9.]+|[0-9.]+b|(\d*\.?\d*)([eE]-?\d+)?)\b\.*'
       comment: Numerical constant
       scope: constant.numeric.source.ksp
     - match: "[,.()\\[\\]]"
