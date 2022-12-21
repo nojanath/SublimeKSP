@@ -206,13 +206,13 @@ class CompileKspThread(threading.Thread):
                     log_message('Compiling...')
 
                 self.compiler = ksp_compiler.KSPCompiler(code, self.base_path, 
-                                                        compact             = compact,
-                                                        compact_variables   = compact_variables,
-                                                        extra_syntax_checks = check,
-                                                        combine_callbacks   = combine_callbacks,
-                                                        read_file_func=self.read_file_function,
-                                                        optimize=optimize and check,
-                                                        add_compiled_date_comment=add_compiled_date_comment)
+                                                         compact                   = compact,
+                                                         compact_variables         = compact_variables,
+                                                         extra_syntax_checks       = check,
+                                                         combine_callbacks         = combine_callbacks,
+                                                         read_file_func            = self.read_file_function,
+                                                         optimize                  = optimize and check,
+                                                         add_compiled_date_comment = add_compiled_date_comment)
                 if self.compiler.compile(callback=self.compile_on_progress):
                     last_compiler = self.compiler
                     code = self.compiler.compiled_code
