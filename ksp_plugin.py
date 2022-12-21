@@ -179,6 +179,7 @@ class CompileKspThread(threading.Thread):
             compact_variables = settings.get('ksp_compact_variables', False)
             check = settings.get('ksp_extra_checks', True)
             optimize = settings.get('ksp_optimize_code', False)
+            combine_callbacks = settings.get('ksp_combine_callbacks', False)
             add_compiled_date_comment = settings.get('ksp_add_compiled_date', True)
             should_play_sound = settings.get('ksp_play_sound', False)
 
@@ -204,11 +205,14 @@ class CompileKspThread(threading.Thread):
                 else:
                     log_message('Compiling...')
 
-                self.compiler = ksp_compiler.KSPCompiler(code, self.base_path, compact, compact_variables,
-                                                         read_file_func=self.read_file_function,
-                                                         extra_syntax_checks=check,
-                                                         optimize=optimize and check,
-                                                         add_compiled_date_comment=add_compiled_date_comment)
+                self.compiler = ksp_compiler.KSPCompiler(code, self.base_path, 
+                                                         compact                   = compact,
+                                                         compact_variables         = compact_variables,
+                                                         extra_syntax_checks       = check,
+                                                         combine_callbacks         = combine_callbacks,
+                                                         read_file_func            = self.read_file_function,
+                                                         optimize                  = optimize and check,
+                                                         add_compiled_date_comment = add_compiled_date_comment)
                 if self.compiler.compile(callback=self.compile_on_progress):
                     last_compiler = self.compiler
                     code = self.compiler.compiled_code
