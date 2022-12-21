@@ -49,21 +49,23 @@ macro_start_re = re.compile(r'^\s*macro(?=\W)')
 macro_end_re = re.compile(r'^\s*end\s+macro')
 line_continuation_re = re.compile(r'\.\.\.\s*\n', re.MULTILINE)
 
-placeholders = {}           # mapping from placeholder number to contents (placeholders used for comments, strings and ...)
-functions = OrderedDict()   # maps from function name to AST node corresponding to the function definition
-variables = set()           # a set of the names of the declared variables (prefixed with $, %, !, ? or @)
-ui_variables = set()        # a set of the names of the declared variables of UI type, like ui_knob, ui_value_edit, etc. (prefixed with $, %, !, ? or @)
-families = set()            # a set of the family names (prefixed with namespaces)
-properties = set()
-functions_invoking_wait = set()
-true_conditions = set()     # the conditions set using SET_CONDITION
-called_functions = set()    # functions that are somewhere in the script invoked using the Kontakt 4.1 "call" keyword
+placeholders            = {}            # mapping from placeholder number to contents (placeholders used for comments, strings and ...)
+functions               = OrderedDict() # maps from function names (prefixed with namespaces) to AST node corresponding to the function definition
+functions_before_prefix = OrderedDict() # maps from function names to AST node corresponding to the function definition
+variables               = set()         # a set of the names of the declared variables (prefixed with $, %, !, ? or @)
+ui_variables            = set()         # a set of the names of the declared variables of UI type, like ui_knob, ui_value_edit, etc. (prefixed with $, %, !, ? or @)
+families                = set()         # a set of the family names (prefixed with namespaces)
+properties              = set()         # a set of the property names 
+functions_invoking_wait = set()         # a set functions containing the wait function
+true_conditions         = set()         # the conditions set using SET_CONDITION
+called_functions        = set()         # functions that are somewhere in the script invoked using the Kontakt 4.1 "call" keyword
 call_graph = collections.defaultdict(list)  # an item (a, b) is included if function a invokes function b using the "call" keyword
 
 def init_globals():
     variables.clear()
     ui_variables.clear()
     functions.clear()
+    functions_before_prefix.clear()
     placeholders.clear()
     families.clear()
     properties.clear()
@@ -100,7 +102,7 @@ def prefix_with_ns(name, namespaces, function_parameter_names=None, force_prefix
 
     # if built-in name or function parameter
     if (unprefixed_name in ksp_builtins.variables_unprefixed or
-          name in ksp_builtins.functions or
+          name in ksp_builtins.functions and not name in functions_before_prefix or
           name in ksp_builtins.keywords or
           first_name_part in function_parameter_names) and not force_prefixing:
         return name   # don't add prefix
@@ -729,6 +731,10 @@ class ASTModifierFixReferencesAndFamilies(ASTModifierBase):
         params = function_params + node.parameters
         if node.return_value:
             params.append(node.return_value.identifier)
+
+        # allows def prefix_with_ns to compare current functions against builtins before prefixing namespaces
+        if not node.name.identifier in functions_before_prefix:
+            functions_before_prefix[node.name.identifier] = node        
 
         # modify name first (add namespace prefix)
         if add_name_prefix:
