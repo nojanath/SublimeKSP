@@ -12,9 +12,17 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
+from sublime import error_message
 from ksp_ast import *
 from ksp_builtins import string_typed_control_parameters, control_parameters, event_parameters
 #import io
+
+class ast_processing_error(BaseException):
+    '''Parse Exceptions for parse errors after AST lex/yacc parsing'''
+    def __init__(self, msg=None):
+        if msg is None:
+            msg = 'Syntax Error'
+        error_message(msg)
 
 def stripNone(L):
     return [x for x in L if x is not None]
@@ -37,7 +45,7 @@ def flatten(L):
         return L
     return list(flatten_iter(L))
 
-def handle_set_par(control, parameter, value):
+def handle_set_par(control, parameter, value, p_lineno):
     '''Returns `set_control_par` or `set_event_par` as a new FunctionCall object'''
 
     # for converting integers to IDs. e.g e -> 4 := x
@@ -65,9 +73,9 @@ def handle_set_par(control, parameter, value):
         return FunctionCall(control.lexinfo, ID(control.lexinfo, func_name),
                             parameters=[control, event_par, value], is_procedure=True)
 
-    raise Exception("%s is not a valid control_par/event_par" % parameter.identifier)
+    raise ast_processing_error("'%s' is not a valid control_par/event_par! (line: %s)" % (parameter.identifier, p_lineno-4)) # -4 because of preprocessor vars (although this number will most likely be incorrect after macro expansions) 
 
-def handle_get_par(control, parameter):
+def handle_get_par(control, parameter, p_lineno):
     '''Returns `get_control_par` or `get_event_par` as a new FunctionCall object'''
 
     if type(parameter) == Integer:
@@ -94,7 +102,7 @@ def handle_get_par(control, parameter):
         return FunctionCall(control.lexinfo, ID(control.lexinfo, func_name),
                             parameters=[control, event_par], is_procedure=False)
 
-    raise Exception("%s is not a valid control_par/event_par" % parameter.identifier)
+    raise ast_processing_error("'%s' is not a valid control_par/event_par! (line: %s)" % (parameter.identifier, p_lineno-4)) # -4 because of preprocessor vars (although this number will most likely be incorrect after macro expansions) 
 
 class VariableNotDeclaredException(ParseException):
     pass

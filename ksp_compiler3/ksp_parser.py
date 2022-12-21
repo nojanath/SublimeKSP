@@ -586,12 +586,12 @@ def p_array_size(p):
 def p_set_par_stmt(p):
     '''set-par-stmt        : varref RIGHTARROW ident ASSIGN expression
                            | varref RIGHTARROW literal ASSIGN expression'''
-    p[0] = handle_set_par(p[1], p[3], p[5])
+    p[0] = handle_set_par(p[1], p[3], p[5], p.lineno(1))
 
 def p_get_par_expr(p):
     '''get-par-expr        : varref RIGHTARROW ident
                            | varref RIGHTARROW literal'''
-    p[0] = handle_get_par(p[1], p[3])
+    p[0] = handle_get_par(p[1], p[3], p.lineno(1))
 
 def p_subscripts(p):
     'subscripts            : LBRACK expression more-subscripts-opt RBRACK'
