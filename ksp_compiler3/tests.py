@@ -1567,6 +1567,34 @@ class PropertyTests(unittest.TestCase):
         self.assertTrue('$_data := 1' in output)
         self.assertTrue('message($_data*$_data)' in output)
 
+    def testPropertyUsingMacro2(self):
+        code = '''
+        macro add_engine_par(#prop#, engine_par)
+            property group.slot.generic.#prop#
+                function get(group, slot, generic) -> result
+                    result := get_engine_par(engine_par, group, slot, generic)
+                end function
+
+                function set(group, slot, generic, value)
+                    set_engine_par(engine_par, value, group, slot, generic)
+                end function
+            end property
+
+            property group.slot.generic.#prop#.disp
+                function get(group, slot, generic) -> result
+                    result := get_engine_par_disp(engine_par, group, slot, generic)
+                end function
+            end property
+        end macro
+
+        on init
+            add_engine_par(volume, ENGINE_PAR_VOLUME)
+            declare ui_slider Vol (0, 1000000)
+            Vol := group[-1].slot[-1].generic[-1].volume
+        end on'''
+        output = do_compile(code)
+        self.assertTrue('$Vol := get_engine_par($ENGINE_PAR_VOLUME,-1,-1,-1)' in output)
+
     def testPropertyWithinFamily(self):
         code = '''
 
