@@ -1821,8 +1821,11 @@ class KSPCompiler(object):
 
         # nested expansion, supports now using macros to further specify define constants used for iterate and literate macros
         while macro_iter_functions(self.lines):
-            normal_lines, callback_lines = expand_macros(self.lines, self.macros, 0, False)
+            normal_lines, callback_lines = expand_macros(self.lines, self.macros, 0, True)
             self.lines = normal_lines + callback_lines
+
+        # convert any strings from the macro expansion back into placeholders to allow iter_macros to substitute strings
+        convert_strings_to_placeholders(self.lines)        
 
         # run define subs a second time, catch returned cache just as a formality
         self.define_cache = substituteDefines(self.lines, self.define_cache)
