@@ -946,6 +946,81 @@ class MacroInlining(unittest.TestCase):
             end on'''
         self.assertRaises(ParseException, do_compile, code)
 
+class MacroIterChecks(unittest.TestCase):
+
+    def testMacrosIterate(self):
+        code = '''
+            on init
+                iterate_macro(foo) := 0 to 3
+            end on
+
+            macro foo(#n#)
+                declare var_#n# := #n#
+            end macro
+        '''
+        output = do_compile(code)
+        self.assertTrue('declare $var_0' in output)
+        self.assertTrue('declare $var_1' in output)
+        self.assertTrue('declare $var_2' in output)
+        self.assertTrue('declare $var_3' in output)
+
+    def testMacrosLiterate(self):
+        code = '''
+        on init
+            literate_macro(foo) on banana, pineapple, kiwi
+            end on
+
+        macro foo(#g#)
+            declare #g#
+        end macro'''
+        output = do_compile(code)
+        self.assertTrue('declare $banana' in output)
+        self.assertTrue('declare $pineapple' in output)
+        self.assertTrue('declare $kiwi' in output)
+
+    def testPostIterateMacro(self):
+        code = '''
+        on init
+            iterate_post_macro(declare ui_button mySwitch_#n#) := 0 to 3
+        end on'''
+        output = do_compile(code)
+        self.assertTrue('declare ui_button $mySwitch_0' in output)
+        self.assertTrue('declare ui_button $mySwitch_1' in output)
+        self.assertTrue('declare ui_button $mySwitch_2' in output)
+        self.assertTrue('declare ui_button $mySwitch_3' in output)
+
+    def testDefinesInIterateMacros(self):
+        code = '''
+        on init
+            define NUM_MENUS := 3
+            declare ui_menu menus[NUM_MENUS]
+            iterate_macro(add_menu_item(menus#n#, "Item", 0)) := 0 to NUM_MENUS - 1
+        end on'''
+        expected_output = '''
+        on init
+          declare $concat_it
+          declare $concat_offset
+          declare $string_it
+          declare $list_it
+          declare $preproc_i
+          declare %menus[3]
+          declare ui_menu $menus0
+          declare ui_menu $menus1
+          declare ui_menu $menus2
+          $preproc_i := 0
+          while ($preproc_i<=2)
+            %menus[$preproc_i] := get_ui_id($menus0)+$preproc_i
+            inc($preproc_i)
+          end while
+          add_menu_item($menus0,"Item",0)
+          add_menu_item($menus1,"Item",0)
+          add_menu_item($menus2,"Item",0)
+        end on'''
+        output = do_compile(code)
+        output = [l.strip() for l in output.split('\n') if l]
+        expected_output = [l.strip() for l in expected_output.split('\n') if l]
+        self.assertEqual(output, expected_output)
+
 class LineContinuation(unittest.TestCase):
     def testMacrosInvokingEachOtherNotSupported(self):
         code = '''
