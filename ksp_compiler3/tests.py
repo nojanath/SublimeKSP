@@ -310,6 +310,44 @@ class VariableRedeclaration(unittest.TestCase):
             end on'''
         self.assertRaises(ParseException, do_compile, code)
 
+class VariableModifiersTest(unittest.TestCase):
+
+    def testPersistenceModifier(self):
+        code = '''
+            on init
+                declare pers foo := 4
+            end on'''
+        output = do_compile(code)
+        self.assertTrue('declare $foo := 4'     in output)
+        self.assertTrue('make_persistent($foo)' in output)
+
+    def testReadPersistenceModifier(self):
+        code = '''
+            on init
+                declare read ui_button bar
+            end on'''
+        output = do_compile(code)
+        self.assertTrue('declare ui_button $bar'    in output)
+        self.assertTrue('make_persistent($bar)'     in output)
+        self.assertTrue('read_persistent_var($bar)' in output)
+
+class ConstBlockTests(unittest.TestCase):
+
+    def testConstBlock(self):
+        code = '''
+            on init
+                const VARS
+                    foo := 0
+                    bar := 1
+                end const
+            end on
+        '''
+        output = do_compile(code)
+        self.assertTrue('declare %VARS[2] := (0, 1)'     in output)
+        self.assertTrue('declare const $VARS__SIZE := 2' in output)
+        self.assertTrue('declare const $VARS__foo := 0'  in output)
+        self.assertTrue('declare const $VARS__bar := 1'  in output)
+
 class Family(unittest.TestCase):
     def testFamily(self):
         code = '''
@@ -647,6 +685,35 @@ end on'''
             '''
         output = do_compile(code)
         self.assertTrue('message(%_x[$_n])' in output)
+
+class UIArrayCheck(unittest.TestCase):
+
+    def testUIArrayDeclaration(self):
+        code = '''
+            on init
+                declare ui_slider volumeSliders[3] (0, 100)
+            end on'''
+        expected_output = '''
+            on init
+              declare $concat_it
+              declare $concat_offset
+              declare $string_it
+              declare $list_it
+              declare $preproc_i
+              declare %volumeSliders[3]
+              declare ui_slider $volumeSliders0(0,100)
+              declare ui_slider $volumeSliders1(0,100)
+              declare ui_slider $volumeSliders2(0,100)
+              $preproc_i := 0
+              while ($preproc_i<=2)
+                %volumeSliders[$preproc_i] := get_ui_id($volumeSliders0)+$preproc_i
+                inc($preproc_i)
+              end while
+            end on'''
+        output = do_compile(code)
+        output = [l.strip() for l in output.split('\n') if l]
+        expected_output = [l.strip() for l in expected_output.split('\n') if l]
+        self.assertEqual(output, expected_output)
 
 class GlobalVariableCheck(unittest.TestCase):
     def testGlobalVariableDeclaration(self):
