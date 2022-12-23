@@ -1,0 +1,38 @@
+Version 1.13.1
+---------------------------------------------------
+
+This is a hotfix update resolving a couple of issues from 1.13.0.
+
+- Macro argument expansion within strings still didn't work with literate/iterate macros
+
+- Certain scripts wouldn't compile properly due to lacking regular expression for parsing real numbers. This is now much improved
+
+- Binary numbers would be colorized as valid numbers even if they contained digits other than 0 and 1!
+
+- Negative numbers wouldn't have their minus sign syntax colorized if they were right next to brackets []
+
+- Added a few more tests to cover above cases
+
+
+Thanks again to Jack Williams from Fracture Sounds for doing most of the heavy lifting!
+
+
+Have fun!
+
+
+---------------------------------------------------
+
+If you would like to roll back a version of SublimeKSP for time critical work prevented by a new bug:
+
+First, remove SublimeKSP from Sublime Package Control:
+1. Press `Ctrl + Shift + P` on Windows and Linux, or `Cmd + Shift + P` on Mac.
+2. Type "Remove Package" and select it, then select the "KSP (Kontakt Script Processor)" entry.
+
+Next, download the version you'd like [here](https://github.com/nojanath/SublimeKSP/releases).
+
+After the download, you can install it as a user package in Sublime following these instructions:
+
+1. Open the Preferences menu in Sublime Text and click Browse Packages. A folder will open up.
+2. Extract the ZIP archive you have downloaded and place it into this folder.
+3. IMPORTANT: Rename the unpacked folder to `SublimeKSP`!
+4. Restart Sublime Text. Alternatively, make sure you have [Automatic​Package​Reloader](https://packagecontrol.io/packages/AutomaticPackageReloader) package installed
