@@ -55,7 +55,7 @@ functions_before_prefix = OrderedDict() # maps from function names to AST node c
 variables               = set()         # a set of the names of the declared variables (prefixed with $, %, !, ? or @)
 ui_variables            = set()         # a set of the names of the declared variables of UI type, like ui_knob, ui_value_edit, etc. (prefixed with $, %, !, ? or @)
 families                = set()         # a set of the family names (prefixed with namespaces)
-properties              = set()         # a set of the property names 
+properties              = set()         # a set of the property names
 functions_invoking_wait = set()         # a set functions containing the wait function
 true_conditions         = set()         # the conditions set using SET_CONDITION
 called_functions        = set()         # functions that are somewhere in the script invoked using the Kontakt 4.1 "call" keyword
@@ -74,7 +74,7 @@ def init_globals():
     called_functions.clear()
     call_graph.clear()
 
-# 
+#
 class StringIO:
     '''Simple class to work around the problem that cStringIO cannot handle certain Unicode input'''
 
@@ -567,7 +567,7 @@ class ASTModifierCombineCallbacks(ASTModifierBase):
     '''Combines callbacks by generating a dictionary of used CBs and extending existing ones with lines in the duplicate CB'''
     def __init__(self, ast):
         ASTModifierBase.__init__(self, modify_expressions=True)
-        self.traverse(ast, parent_funciton=None, function_params=[], parent_families=[])
+        self.traverse(ast, parent_function=None, function_params=[], parent_families=[])
 
     def modifyModule(self, node, *args, **kwargs):
         callbacks = {}
@@ -734,7 +734,7 @@ class ASTModifierFixReferencesAndFamilies(ASTModifierBase):
 
         # allows def prefix_with_ns to compare current functions against builtins before prefixing namespaces
         if not node.name.identifier in functions_before_prefix:
-            functions_before_prefix[node.name.identifier] = node        
+            functions_before_prefix[node.name.identifier] = node
 
         # modify name first (add namespace prefix)
         if add_name_prefix:
@@ -909,7 +909,7 @@ class ASTModifierFixReferencesAndFamilies(ASTModifierBase):
     def modifyID(self, node, parent_function=None, function_params=None, parent_families=None, is_name_in_declaration=False):
         '''Add namespace prefix and translate references to local variables to their globally unique counterpart as determined by the translation table of the function.\n
            Look up the line object from the first macro preprocessor phase in order to extract information about the namespace'''
-        
+
         namespaces = self.line_map[node.lineno].namespaces
 
         # make sure to not add namespace twice
@@ -1274,7 +1274,7 @@ class ASTModifierFunctionExpander(ASTModifierBase):
 
     def getTaskFuncCallPrologueAndEpilogue(self, node, func, assign_stmt_lhs):
         '''if the function call is of the format "x := myfunc(...)" then treat it like myfunc(..., x), i.e. insert the left hand side of the assignment as the last parameter'''
-    
+
         if assign_stmt_lhs:
             parameters = node.parameters + [assign_stmt_lhs]
         else:
@@ -1825,7 +1825,7 @@ class KSPCompiler(object):
             self.lines = normal_lines + callback_lines
 
         # convert any strings from the macro expansion back into placeholders to allow iter_macros to substitute strings
-        convert_strings_to_placeholders(self.lines)        
+        convert_strings_to_placeholders(self.lines)
 
         # run define subs a second time, catch returned cache just as a formality
         self.define_cache = substituteDefines(self.lines, self.define_cache)
@@ -1874,7 +1874,7 @@ class KSPCompiler(object):
         '''Ensures no recusion with functions invoked with 'call'\n
            Do a topological sort for functions. \n
            Move local variables to on init if not already inserted '''
-        
+
         # make sure that used function that uses others set the used flag of those secondary ones as well
         used_functions = set()
 
@@ -1906,7 +1906,7 @@ class KSPCompiler(object):
         '''Convert all dots into '__' (and update the list of variables accordingly)
            Note: for historical reasons the ksp_compiler_extras functions assume
            pure KSP as input and therefore cannot handle '.' in names.'''
-        
+
         global variables
 
         # update the AST
