@@ -392,11 +392,11 @@ class KSPCompletions(sublime_plugin.EventListener):
                 bc.extend(builtin_compl_funcs)
                 compl.extend(bc)
 
-            compl.extend(builtin_snippets)
-        #compl = self.unique(compl)
-
         if sublime_version >= 4000:
+            compl.extend(builtin_snippets)
             sublime.CompletionList(compl, sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETIONS)
+        else:
+            compl = self.unique(compl)
 
         return (compl, sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETIONS)
 
