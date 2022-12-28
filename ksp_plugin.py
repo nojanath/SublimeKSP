@@ -4,10 +4,13 @@ import sublime_plugin
 import codecs
 import traceback
 import os.path
+from   os import listdir
 import sys
 import re
 import threading
 import webbrowser
+
+import xml.etree.ElementTree as ET
 
 sys.path.append(os.path.dirname(__file__))
 sys.path.append(os.path.join(os.path.dirname(__file__), 'ksp_compiler3'))
@@ -299,6 +302,20 @@ for v in variables:
 
 magic_control_and_event_pars.sort()
 
+snippets_path = os.path.dirname(__file__) + '/snippets'
+builtin_snippets = []
+
+for filename in listdir(snippets_path):
+    snippet     = os.path.join(snippets_path, filename)
+    tree        = ET.parse(snippet)
+    name        = tree.findtext('description')
+    tabTrigger  = tree.findtext('tabTrigger')
+    content     = tree.findtext('content')
+    content     = content.replace('\n','', 1)
+
+    builtin_snippets.append(("%s\t%s" % (tabTrigger, name), content))
+
+builtin_snippets.sort()
 
 class KSPCompletions(sublime_plugin.EventListener):
     '''Handles KSP autocompletions'''
@@ -323,7 +340,7 @@ class KSPCompletions(sublime_plugin.EventListener):
 
     def on_query_completions(self, view, prefix, locations):
         # parts of the code inspired by: https://github.com/agibsonsw/AndyPython/blob/master/PythonCompletions.py
-        global builtin_compl_vars, builtin_compl_funcs, magic_control_and_event_pars
+        global builtin_compl_vars, builtin_compl_funcs, magic_control_and_event_pars, builtin_snippets
 
         if not view.match_selector(locations[0], 'source.ksp -string -comment -constant'):
             return []
@@ -346,12 +363,13 @@ class KSPCompletions(sublime_plugin.EventListener):
                 bc.extend(builtin_compl_funcs)
                 compl.extend(bc)
 
+            compl.extend(builtin_snippets)
         compl = self.unique(compl)
 
         if int(sublime.version()) >= 4000:
             sublime.CompletionList(compl, sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETIONS)
-        else:
-            return (compl, sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETIONS)
+
+        return (compl, sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETIONS)
 
 
 class NumericSequenceCommand(sublime_plugin.TextCommand):
