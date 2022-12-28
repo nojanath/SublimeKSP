@@ -4,10 +4,13 @@ import sublime_plugin
 import codecs
 import traceback
 import os.path
+from   os import listdir
 import sys
 import re
 import threading
 import webbrowser
+
+import xml.etree.ElementTree as ET
 
 sys.path.append(os.path.dirname(__file__))
 sys.path.append(os.path.join(os.path.dirname(__file__), 'ksp_compiler3'))
@@ -23,6 +26,8 @@ except Exception:
     pass
 
 last_compiler = None
+
+sublime_version = int(sublime.version())
 
 def log_message(msg):
     print("SublimeKSP: " + msg)
@@ -263,8 +268,13 @@ functions, variables = set(functions), set(variables)
 
 builtin_compl_funcs = []
 builtin_compl_vars = []
-builtin_compl_vars.extend(('%s\tvariable' % v[1:], v[1:]) for v in variables)
-builtin_compl_vars.sort()
+
+if sublime_version >= 4000:
+    builtin_compl_vars.extend(sublime.CompletionItem(trigger=v[1:], annotation='variable', completion=v[1:], kind=sublime.KIND_VARIABLE) for v in variables)
+else:
+    builtin_compl_vars.extend(('%s\tvariable' % v[1:], v[1:]) for v in variables)
+    builtin_compl_vars.sort()
+
 
 for f in functions:
     args = [a.replace('number variable or text','').replace('-', '_') for a in function_signatures[f][0]]
@@ -277,27 +287,63 @@ for f in functions:
     else:
         args_str = ''
 
-    builtin_compl_funcs.append(("%s\tfunction" % (f), "%s%s" % (f,args_str)))
+    function_details = "<b>Args</b>: %s  |  <b>Returns</b>: [%s]" % ((function_signatures[f][0]), function_signatures[f][1])
 
-builtin_compl_funcs.sort()
+    completion = ["%s\tfunction" % (f), "%s%s" % (f,args_str)]
+
+    if sublime_version >= 4000:
+        builtin_compl_funcs.append(sublime.CompletionItem(trigger=f, annotation='function', completion=f+args_str, details=function_details, completion_format= sublime.COMPLETION_FORMAT_SNIPPET, kind=sublime.KIND_FUNCTION))
+    else:
+        builtin_compl_funcs.append(tuple(completion))
+        builtin_compl_funcs.sort()
+
 
 # control par references that can be used as control -> x, or control -> value
 magic_control_and_event_pars = []
 remap_control_pars = {'POS_X': 'x', 'POS_Y': 'y', 'MAX_VALUE': 'MAX', 'MIN_VALUE': 'MIN', 'DEFAULT_VALUE': 'DEFAULT'}
 
 for v in variables:
+    completion = []
+    name = None
     if v.startswith('$CONTROL_PAR_'):
         v = v.replace('$CONTROL_PAR_', '')
         v = remap_control_pars.get(v, v).lower()
-        magic_control_and_event_pars.append(('%s\tui param' % v, v))
+        completion.append(('%s\tui param' % v, v))
+        name = 'ui param'
     if re.search(r'^\$EVENT_PAR_[0|1|2|3]', v):
         v = v.replace('$EVENT_', '').lower()
-        magic_control_and_event_pars.append(('%s\tevent param' % v, v))
+        completion.append(('%s\tevent param' % v, v))
+        name = 'event param'
     elif v.startswith('$EVENT_PAR_'):
         v = v.replace('$EVENT_PAR_', '').lower()
-        magic_control_and_event_pars.append(('%s\tevent param' % v, v))
+        completion.append(('%s\tevent param' % v, v))
+        name = 'event param'
 
-magic_control_and_event_pars.sort()
+    if sublime_version >= 4000:
+        magic_control_and_event_pars.append(sublime.CompletionItem(trigger=v, annotation=name, completion=v, kind=sublime.KIND_VARIABLE))
+    else:
+        magic_control_and_event_pars.append(tuple(completion))
+        magic_control_and_event_pars.sort()
+
+
+snippets_path = os.path.dirname(__file__) + '/snippets'
+builtin_snippets = []
+
+for filename in listdir(snippets_path):
+    snippet     = os.path.join(snippets_path, filename)
+    tree        = ET.parse(snippet)
+    name        = tree.findtext('description')
+    tabTrigger  = tree.findtext('tabTrigger')
+    content     = tree.findtext('content')
+    content     = content.replace('\n','', 1)
+
+    completion = ["%s\t%s" % (tabTrigger, name), content]
+
+    if sublime_version >= 4000:
+        builtin_snippets.append(sublime.CompletionItem.snippet_completion(trigger=tabTrigger, snippet=content, annotation=name))
+    else:
+        builtin_snippets.append(tuple(completion))
+        builtin_snippets.sort()
 
 
 class KSPCompletions(sublime_plugin.EventListener):
@@ -323,7 +369,7 @@ class KSPCompletions(sublime_plugin.EventListener):
 
     def on_query_completions(self, view, prefix, locations):
         # parts of the code inspired by: https://github.com/agibsonsw/AndyPython/blob/master/PythonCompletions.py
-        global builtin_compl_vars, builtin_compl_funcs, magic_control_and_event_pars
+        global builtin_compl_vars, builtin_compl_funcs, magic_control_and_event_pars, builtin_snippets
 
         if not view.match_selector(locations[0], 'source.ksp -string -comment -constant'):
             return []
@@ -346,12 +392,13 @@ class KSPCompletions(sublime_plugin.EventListener):
                 bc.extend(builtin_compl_funcs)
                 compl.extend(bc)
 
-        compl = self.unique(compl)
-
-        if int(sublime.version()) >= 4000:
+        if sublime_version >= 4000:
+            compl.extend(builtin_snippets)
             sublime.CompletionList(compl, sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETIONS)
         else:
-            return (compl, sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETIONS)
+            compl = self.unique(compl)
+
+        return (compl, sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETIONS)
 
 
 class NumericSequenceCommand(sublime_plugin.TextCommand):
