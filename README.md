@@ -30,11 +30,10 @@ This fork is based on [Nils Liberg's official SublimeKSP plugin, v1.11](http://n
  * After pulling the latest changes, reload Sublime Text
  * If you wish to pull features without restarting Sublime Text, we recommend installing [Automatic​Package​Reloader](https://packagecontrol.io/packages/AutomaticPackageReloader)
 
-### Documentation
-See the [Wiki](https://github.com/nojanath/SublimeKSP/wiki) on Github.
-
 ### Updates
 * Updates to the plugin will be automatically installed via Package Control.
 * Pull requests are welcome for bugfixes/updates/changes. If you aren't familiar
 with pull requests, just open an issue [here](https://github.com/nojanath/SublimeKSP/issues).
 
+### Documentation
+See the [Wiki](https://github.com/nojanath/SublimeKSP/wiki) on GitHub.
