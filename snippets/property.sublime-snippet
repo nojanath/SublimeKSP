@@ -1,12 +1,12 @@
 <snippet>
 	<content><![CDATA[
-property ${1}
+property ${1:name}
 	function get -> result
-		result := ${2:_${1}}
+		result := ${2:expression}
 	end function
 
 	function set(value)
-		${3:_${1}} := value
+		${3:expression} := value
 	end function
 end property
 ]]></content>

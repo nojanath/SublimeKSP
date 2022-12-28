@@ -1,6 +1,6 @@
 <snippet>
     <content><![CDATA[
-family ${1:myfam}
+family ${1:name}
 	${0}
 end family
 ]]></content>
