@@ -287,10 +287,12 @@ for f in functions:
     else:
         args_str = ''
 
+    function_details = "<b>Args</b>: %s  |  <b>Returns</b>: [%s]" % ((function_signatures[f][0]), function_signatures[f][1])
+
     completion = ["%s\tfunction" % (f), "%s%s" % (f,args_str)]
 
     if sublime_version >= 4000:
-        builtin_compl_funcs.append(sublime.CompletionItem(trigger=f, annotation='function', completion=f+args_str, completion_format= sublime.COMPLETION_FORMAT_SNIPPET, kind=sublime.KIND_FUNCTION))
+        builtin_compl_funcs.append(sublime.CompletionItem(trigger=f, annotation='function', completion=f+args_str, details=function_details, completion_format= sublime.COMPLETION_FORMAT_SNIPPET, kind=sublime.KIND_FUNCTION))
     else:
         builtin_compl_funcs.append(tuple(completion))
         builtin_compl_funcs.sort()
