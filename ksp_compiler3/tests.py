@@ -965,7 +965,7 @@ class MacroInlining(unittest.TestCase):
             macro test(#string#)
                 message("#string#, keeping MYDEFINE unreplaced")
             end macro
-            
+
             on init
                 test(Hello)
             end on'''
@@ -1981,7 +1981,7 @@ class TestTaskfunc(unittest.TestCase):
             declare $fp
             $fp := 268
             declare $tx
-            declare %tstate__id[326] := (0)
+            declare %tstate__id[326]
             declare %tstate__fs[326]
             $tx := 0
             while ($tx<326)
@@ -2049,7 +2049,7 @@ class TestTaskfunc(unittest.TestCase):
             declare $fp
             $fp := 268
             declare $tx
-            declare %tstate__id[326] := (0)
+            declare %tstate__id[326]
             declare %tstate__sp[326]
             declare %tstate__fp[326]
             declare %tstate__fs[326]
