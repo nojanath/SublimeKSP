@@ -33,20 +33,20 @@ taskfunc_code = '''
 macro tcm.init(stack_depth)
     // memory subsystem size
     USE_CODE_IF_NOT(TCM_LARGE)
-        define MEM_SIZE := 32768
+        declare const MEM_SIZE := 32768
     END_USE_CODE
     USE_CODE_IF(TCM_LARGE)
-        define MEM_SIZE := 1000000
+        declare const MEM_SIZE := 1000000
     END_USE_CODE
 
-    define STACK_SIZE := stack_depth                     // maximum stack depth allocated by user
-    define MAX_TASKS := MEM_SIZE / STACK_SIZE - 1        // max tasks supported
-    define TASK_0 := MEM_SIZE - STACK_SIZE * MAX_TASKS   // address of task 0
+    declare const STACK_SIZE := stack_depth                     // maximum stack depth allocated by user
+    declare const MAX_TASKS := MEM_SIZE / STACK_SIZE - 1        // max tasks supported
+    declare const TASK_0 := MEM_SIZE - STACK_SIZE * MAX_TASKS   // address of task 0
 
     // exception condition codes
-    define TOO_MANY_TASKS := 1
-    define STACK_OVERFLOW := 2
-    define STACK_UNDERFLOW := 3
+    declare const TOO_MANY_TASKS := 1
+    declare const STACK_OVERFLOW := 2
+    declare const STACK_UNDERFLOW := 3
 
     declare p[MEM_SIZE]                 // allocate the task stacks
     declare sp := TASK_0 + STACK_SIZE   // stack pointer
