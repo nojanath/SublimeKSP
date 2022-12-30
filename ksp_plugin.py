@@ -324,7 +324,7 @@ for v in variables:
         if sublime_version >= 4000:
             magic_control_and_event_pars.append(sublime.CompletionItem(trigger=v, annotation=name, completion=v, details=original_variable , completion_format=sublime.COMPLETION_FORMAT_SNIPPET, kind=sublime.KIND_VARIABLE))
         else:
-            magic_control_and_event_pars.append(tuple(completion))
+            magic_control_and_event_pars.append(tuple(completion[0]))
             magic_control_and_event_pars.sort()
 
 
