@@ -292,7 +292,7 @@ for f in functions:
     completion = ["%s\tfunction" % (f), "%s%s" % (f,args_str)]
 
     if sublime_version >= 4000:
-        builtin_compl_funcs.append(sublime.CompletionItem(trigger=f, annotation='function', completion=f+args_str, details=function_details, completion_format= sublime.COMPLETION_FORMAT_SNIPPET, kind=sublime.KIND_FUNCTION))
+        builtin_compl_funcs.append(sublime.CompletionItem(trigger=f, annotation='function', completion=f+args_str, details=function_details, completion_format=sublime.COMPLETION_FORMAT_SNIPPET, kind=sublime.KIND_FUNCTION))
     else:
         builtin_compl_funcs.append(tuple(completion))
         builtin_compl_funcs.sort()
@@ -305,6 +305,7 @@ remap_control_pars = {'POS_X': 'x', 'POS_Y': 'y', 'MAX_VALUE': 'MAX', 'MIN_VALUE
 for v in variables:
     completion = []
     name = None
+    original_variable = v
     if v.startswith('$CONTROL_PAR_'):
         v = v.replace('$CONTROL_PAR_', '')
         v = remap_control_pars.get(v, v).lower()
@@ -319,11 +320,12 @@ for v in variables:
         completion.append(('%s\tevent param' % v, v))
         name = 'event param'
 
-    if sublime_version >= 4000:
-        magic_control_and_event_pars.append(sublime.CompletionItem(trigger=v, annotation=name, completion=v, kind=sublime.KIND_VARIABLE))
-    else:
-        magic_control_and_event_pars.append(tuple(completion))
-        magic_control_and_event_pars.sort()
+    if completion:
+        if sublime_version >= 4000:
+            magic_control_and_event_pars.append(sublime.CompletionItem(trigger=v, annotation=name, completion=v, details=original_variable , completion_format=sublime.COMPLETION_FORMAT_SNIPPET, kind=sublime.KIND_VARIABLE))
+        else:
+            magic_control_and_event_pars.append(tuple(completion))
+            magic_control_and_event_pars.sort()
 
 
 snippets_path = os.path.dirname(__file__) + '/snippets'
@@ -378,9 +380,12 @@ class KSPCompletions(sublime_plugin.EventListener):
         line_start_pos = view.line(sublime.Region(pt, pt)).begin()
         line = view.substr(sublime.Region(line_start_pos, pt))    # the character before the trigger
 
+        compl = self._extract_completions(view, prefix, pt)
+
         if re.match(r' *declare .*', line) and ':=' not in line:
             compl = []
         elif re.match(r'.*-> ?[a-zA-Z_]*$', line): # if the line ends with something like '->' or '-> value'
+            compl.clear
             compl = magic_control_and_event_pars
         else:
             compl = self._extract_completions(view, prefix, pt)
@@ -392,8 +397,10 @@ class KSPCompletions(sublime_plugin.EventListener):
                 bc.extend(builtin_compl_funcs)
                 compl.extend(bc)
 
+            if sublime_version >= 4000:
+                compl.extend(builtin_snippets)
+
         if sublime_version >= 4000:
-            compl.extend(builtin_snippets)
             sublime.CompletionList(compl, sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETIONS)
         else:
             compl = self.unique(compl)
