@@ -70,7 +70,8 @@
 						"args": {"setting": "ksp_compact_variables", "default": false},
 						"caption": "Compact Variables",
 						"mnemonic": "V",
-						"id": "compact_variables"
+						"id": "compact_variables",
+						"checkbox": true
 					},
 					{"caption": "-"}, //separator
 					{
@@ -78,21 +79,24 @@
 						"args": {"setting": "ksp_extra_checks", "default": true},
 						"caption": "Extra Syntax Checks",
 						"mnemonic": "E",
-						"id": "extra_syntax_checks"
+						"id": "extra_syntax_checks",
+						"checkbox": true
 					},
 					{
 						"command": "ksp_global_setting_toggle",
 						"args": {"setting": "ksp_optimize_code", "default": false},
 						"caption": "Optimize Compiled Code",
 						"mnemonic": "o",
-						"id": "optimize_compiled"
+						"id": "optimize_compiled",
+						"checkbox": true
 					},
 					{
 						"command": "ksp_global_setting_toggle",
 						"args": {"setting": "ksp_combine_callbacks", "default": false},
 						"caption": "Combine Duplicate Callbacks",
 						"mnemonic": "b",
-						"id": "combine_callbacks"
+						"id": "combine_callbacks",
+						"checkbox": true
 					},
 					{"caption": "-"}, //separator
 					{
@@ -100,14 +104,16 @@
 						"args": {"setting": "ksp_add_compiled_date", "default": true},
 						"caption": "Add Compilation Date/Time Comment",
 						"mnemonic": "D",
-						"id": "signal_empty_ifcase"
+						"id": "signal_empty_ifcase",
+						"checkbox": true
 					},
 					{
 						"command": "ksp_global_setting_toggle",
 						"args": {"setting": "ksp_play_sound", "default": false},
 						"caption": "Play Sound When Compilation Finishes",
 						"mnemonic": "S",
-						"id": "play_sound"
+						"id": "play_sound",
+						"checkbox": true
 					},
 
 					{"caption":"-"}, //separator
