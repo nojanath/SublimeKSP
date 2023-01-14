@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
     <key>name</key>
-    <string>Miscellaneous</string>
+    <string>KSP Symbols (Local)</string>
     <key>scope</key>
     <string>entity.name.type.source.ksp, meta.function.source.ksp, meta.constblock.source.ksp, meta.family.source.ksp, meta.list.source.ksp, meta.struct.source.ksp, entity.name.callback.source.ksp</string>
     <key>settings</key>
@@ -11,19 +11,12 @@
         <key>showInSymbolList</key>
         <string>1</string>
         <key>symbolTransformation</key>
-        <string>s/const +(.*)/    const \1/g;
+        <string>
+                s/const +(.*)/    const \1/g;
                 s/family +(.*)/    family \1/g;
                 s/list +(.*)/    list \1/g;
-                s/struct +(.*)/    struct \1/g</string>
-        <key>showInIndexedSymbolList</key>
-        <string>1</string>
-        <key>symbolIndexTransformation</key>
-        <string>s/const +(.*)/    const \1/g;
-                s/family +(.*)/    family \1/g;
-                s/list +(.*)/    list \1/g;
-                s/struct +(.*)/    struct \1/g</string>
+                s/struct +(.*)/    struct \1/g
+        </string>
     </dict>
-    <key>uuid</key>
-    <string>ca302302-e4c4-471c-a4f4-95b21d3483b8</string>
 </dict>
 </plist>
