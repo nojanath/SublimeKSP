@@ -24,13 +24,14 @@
 			</array>
 		</array>
 		<key>increaseIndentPattern</key>
-		<string>\s*(on [a-z_]+|if|else|for|select|family|macro|function|while|taskfunc|case).*?$</string>
+		<string>\s*(on [a-z_]+|if|else|for|select|family|macro|function|while|taskfunc).*?$</string>
 		<key>decreaseIndentPattern</key>
-		<string>\s*end (on|if|else|for|select|family|macro|function|while|taskfunc|case).*?$</string>
+		<string>\s*(end (on|if|for|select|family|macro|function|while|taskfunc)|else).*?$</string>
 		<key>shellVariables</key>
 		<array>
-			<!-- New double-forwardslash comment type to be used as the default in sublime. 
-			Sublime hotkey ctrl+/ now uses this comment type. Hotskey ctrl+shift+/ uses the default {} comment type. -->
+			<!-- New // comment type to be used as the default in Sublime.
+			Hotkey Ctrl+/ now uses this comment type.
+			Hotkey Ctrl+Shift+/ uses the vanilla KSP {} comment type. -->
 			<dict>
 				<key>name</key>
 				<string>TM_COMMENT_START</string>
