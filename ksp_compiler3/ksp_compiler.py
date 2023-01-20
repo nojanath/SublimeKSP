@@ -2054,12 +2054,12 @@ if __name__ == "__main__":
 
     # parse command line arguments
     arg_parser = argparse.ArgumentParser()
-    arg_parser.add_argument('--compact', dest='compact', action='store_true', default=False, help='Remove indents and empty lines in compiled code')
-    arg_parser.add_argument('--compact_variables', dest='compact_variables', action='store_true', default=False, help='Shorten and obfuscate variable names in compiled code')
-    arg_parser.add_argument('--extra_syntax_checks', dest='extra_syntax_checks', action='store_true', default=True, help='Additional syntax checks during compilation')
-    arg_parser.add_argument('--optimize', dest='optimize', action='store_true', default=False, help='Optimize the compiled code')
-    arg_parser.add_argument('--add_compile_date', dest='add_compile_date', action='store_true', default=True, help='Adds the date and time comment atop the compiled code')
-    arg_parser.add_argument('--combine_callbacks', dest='combine_callbacks', action='store_true', default=False, help='Combines duplicate callbacks (not functions or macros)')
+    arg_parser.add_argument('-c', '--compact', dest='compact', action='store_true', default=False, help='remove indents and empty lines in compiled code')
+    arg_parser.add_argument('-v', '--compact_variables', dest='compact_variables', action='store_true', default=False, help='shorten and obfuscate variable names in compiled code')
+    arg_parser.add_argument('-e', '--extra_syntax_checks', dest='extra_syntax_checks', action='store_true', default=False, help='additional syntax checks during compilation')
+    arg_parser.add_argument('-o', '--optimize', dest='optimize', action='store_true', default=False, help='optimize the compiled code')
+    arg_parser.add_argument('-t', '--add_compile_date', dest='add_compile_date', action='store_true', default=False, help='adds the date and time comment atop the compiled code')
+    arg_parser.add_argument('-d', '--combine_callbacks', dest='combine_callbacks', action='store_true', default=False, help='combines duplicate callbacks - but not functions or macros')
     arg_parser.add_argument('source_file', type=FileType('r', encoding='latin-1'))
     arg_parser.add_argument('output_file', type=FileType('w', encoding='latin-1'), nargs='?')
     args = arg_parser.parse_args()
