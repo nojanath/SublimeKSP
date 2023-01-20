@@ -12,7 +12,6 @@
 # IDEAS:
 # 	+= -= operators
 #	UI functions to receive arguments in any order: set_bounds(slider, width := 50, x := 20)
-#	get_ui_id() shorthand such as variable -> id
 #	Multidimensional PGS keys
 #	Single line if statements
 #	A psuedo callback for UI arrays that automatically creates all the callbacks
@@ -21,8 +20,8 @@ import copy
 import re
 import math
 import collections
+import utils
 from simple_eval import SimpleEval
-import time
 from time import strftime, localtime
 
 varPrefixRe = r"[?~%!@$]"
@@ -300,7 +299,7 @@ def handleStructs(lines):
 						for j in range(len(newMembers)):
 							newMembers[j].makeMemberAnArray(arrayNumElements)
 						if "," in arrayNumElements:
-							arrayNumElements = ksp_compiler.split_args(arrayNumElements, lines[i])
+							arrayNumElements = utils.split_args(arrayNumElements, lines[i])
 							for dimIdx in range(len(arrayNumElements)):
 								newLines.append(lines[i].copy("declare const %s.SIZE_D%d := %s" % (declaredName, dimIdx + 1, arrayNumElements[dimIdx])))
 						else:
@@ -474,7 +473,7 @@ class MultiDimensionalArray(object):
 		self.name = name
 		self.prefix = prefix or ""
 		self.assignment = assignment or ""
-		self.dimensions = ksp_compiler.split_args(dimensionsString, line)
+		self.dimensions = utils.split_args(dimensionsString, line)
 		self.persistence = persistence or ""
 		self.rawArrayName = familyPrefix + "_" + self.name
 
@@ -619,7 +618,7 @@ def handleUIFunctions(lines):
 				if re.search(r"^%s\b" % func.name, line):
 					foundProp = True
 					paramString = line[line.find("(") + 1 : len(line) - 1].strip()
-					paramList = ksp_compiler.split_args(paramString, lines[lineIdx])
+					paramList = utils.split_args(paramString, lines[lineIdx])
 					uiPropertyObj = UIPropertyFunction(func, paramList, lines[lineIdx])
 					newLines.extend(uiPropertyObj.buildUiPropertyLines(lines[lineIdx]))
 					break
@@ -741,7 +740,7 @@ class ListBlock(object):
 			memberName = self.members[memNum]
 			# If the member is a comma separated list, then we first need to assign the list to an array in kontakt.
 			if self.isMultiDim:
-				stringList = ksp_compiler.split_args(memberName, line)
+				stringList = utils.split_args(memberName, line)
 				if len(stringList) != 1:
 					memberName = self.name + str(memNum)
 					newLines.append(line.copy("declare %s[] := (%s)" % (memberName, self.members[memNum])))
@@ -998,7 +997,7 @@ def handleOpenSizeArrays(lines):
 		line = lines[lineIdx].command.strip()
 		m = re.search(openArrayRe, line)
 		if m:
-			stringList = ksp_compiler.split_args(line[line.find("(") + 1 : len(line) - 1], line)
+			stringList = utils.split_args(line[line.find("(") + 1 : len(line) - 1], line)
 			numElements = len(stringList)
 			name = m.group("name")
 			newLines.append(lines[lineIdx].copy(line[: line.find("[") + 1] + str(numElements) + line[line.find("[") + 1 :]))
@@ -1009,6 +1008,8 @@ def handleOpenSizeArrays(lines):
 
 #=================================================================================================
 def handleStringArrayInitialisation(lines):
+	from ksp_compiler import placeholders as placeholders
+
 	''' Convert the single-line list of strings to one string per line for Kontakt to understand. '''
 	stringArrayRe = r"^declare\s+%s\s*\[(?P<arraysize>[^\]]+)\]\s*:=\s*\((?P<initlist>.+)\)$" % variableNameRe
 	stringListRe = r"\s*%s(\s*,\s*%s)*\s*" % (stringOrPlaceholderRe, stringOrPlaceholderRe)
@@ -1028,7 +1029,7 @@ def handleStringArrayInitialisation(lines):
 				if m.group("prefix") == "!":
 					if not re.search(stringListRe, m.group("initlist")):
 						raise ksp_compiler.ParseException(lines[i], "Expected integers, got strings!\n")
-					stringList = ksp_compiler.split_args(m.group("initlist"), lines[i])
+					stringList = utils.split_args(m.group("initlist"), lines[i])
 					name = m.group("name")
 					if famCount != 0:
 						name = inspectFamilyState(lines, i) + name
@@ -1044,7 +1045,7 @@ def handleStringArrayInitialisation(lines):
 							# including any possible prefix/postfix non-placeholders
 							# (i.e. string defines concatenated with regular strings)
 							if check:
-								strVal = str(check.group(1)) + ksp_compiler.placeholders[int(check.group(2)[1:-1])] + str(check.group(3))
+								strVal = str(check.group(1)) + placeholders[int(check.group(2)[1:-1])] + str(check.group(3))
 
 							# if it's an empty string don't add it to new lines
 							if strVal != '\"\"':
@@ -1170,7 +1171,7 @@ class DefineConstant(object):
 			self.value = self.value[1 : len(self.value) - 1]
 		self.args = []
 		if argString:
-			self.args = ksp_compiler.split_args(argString, line)
+			self.args = utils.split_args(argString, line)
 		self.line = line
 		if re.search(r"\b%s\b" % self.name, self.value):
 			raise ksp_compiler.ParseException(self.line, "Define constant cannot call itself!")
@@ -1233,13 +1234,13 @@ class DefineConstant(object):
 						raise ksp_compiler.ParseException(lineObj, "No arguments found for define macro: %s!" % foundString)
 
 					argsString = foundString[openBracketPos + 1 : len(foundString) - 1]
-					foundArgs = ksp_compiler.split_args(argsString, lineObj)
+					foundArgs = utils.split_args(argsString, lineObj)
 					if len(foundArgs) != len(self.args):
 						# The number of args could be incorrect because there are other defines in the arg list, therefore first evaluate
 						# all other defines in the args. If still incorrect, raise an exception.
 						for defineObj in listOfOtherDefines:
 							argsString = defineObj.substituteValue(argsString, listOfOtherDefines)
-						foundArgs = ksp_compiler.split_args(argsString, lineObj)
+						foundArgs = utils.split_args(argsString, lineObj)
 						if len(foundArgs) != len(self.args):
 							raise ksp_compiler.ParseException(lineObj, "Incorrect number of arguments in define macro: %s! Expected %d, got %d.\n" % (foundString, len(self.args), len(foundArgs)))
 
@@ -1434,7 +1435,7 @@ def handleLiterateMacro(lines):
 			m = re.search(r"^literate_macro\s*\((?P<macro>.+)\)\s+on\s+(?P<target>.+)$", line)
 			if m:
 				name = m.group("macro")
-				targets = ksp_compiler.split_args(m.group("target"), lines[lineIdx])
+				targets = utils.split_args(m.group("target"), lines[lineIdx])
 				if not "#l#" in name:
 					for text in targets:
 						newLines.append(lines[lineIdx].copy("%s(%s)" % (name, text)))
@@ -1459,7 +1460,7 @@ def handleLiteratePostMacro(lines):
 			m = re.search(r"^literate_post_macro\s*\((?P<macro>.+)\)\s+on\s+(?P<target>.+)$", line)
 			if m:
 				name = m.group("macro")
-				targets = ksp_compiler.split_args(m.group("target"), lines[lineIdx])
+				targets = utils.split_args(m.group("target"), lines[lineIdx])
 				if not "#l#" in name:
 					for text in targets:
 						newLines.append(lines[lineIdx].copy("%s(%s)" % (name, text)))
