@@ -2082,12 +2082,12 @@ if __name__ == "__main__":
 
     # parse command line arguments
     arg_parser = argparse.ArgumentParser()
-    arg_parser.add_argument('--compact', dest='compact', action='store_true', default='false', help='Minimize whitespace in compiled code')
-    arg_parser.add_argument('--compact_variables', dest='compact_variables', action='store_true', default='false', help='Shorten and obfuscate variable names')
-    arg_parser.add_argument('--extra_syntax_checks', dest='extra_syntax_checks', action='store_true', default='false', help='Additional syntax checks')
-    arg_parser.add_argument('--optimize', dest='optimize', action='store_true', default='false', help='Optimize the generated code')
-    arg_parser.add_argument('--nocompiledate', dest='add_compiled_date_comment', action='store_true', default='true', help='Remove the compiler date argument')
-    arg_parser.add_argument('--combine_callbacks', dest='combine_callbacks', action='store_true', default='true', help='Combines callbacks (not including functions or macros)')
+    arg_parser.add_argument('--compact', dest='compact', action='store_true', default=False, help='Remove indents and empty lines in compiled code')
+    arg_parser.add_argument('--compact_variables', dest='compact_variables', action='store_true', default=False, help='Shorten and obfuscate variable names in compiled code')
+    arg_parser.add_argument('--extra_syntax_checks', dest='extra_syntax_checks', action='store_true', default=True, help='Additional syntax checks during compilation')
+    arg_parser.add_argument('--optimize', dest='optimize', action='store_true', default=False, help='Optimize the compiled code')
+    arg_parser.add_argument('--add_compile_date', dest='add_compile_date', action='store_true', default=True, help='Adds the date and time comment atop the compiled code')
+    arg_parser.add_argument('--combine_callbacks', dest='combine_callbacks', action='store_true', default=False, help='Combines duplicate callbacks (not functions or macros)')
     arg_parser.add_argument('source_file', type=FileType('r', encoding='latin-1'))
     arg_parser.add_argument('output_file', type=FileType('w', encoding='latin-1'), nargs='?')
     args = arg_parser.parse_args()
@@ -2122,7 +2122,7 @@ if __name__ == "__main__":
         read_file_func=read_file_func,
         extra_syntax_checks=args.extra_syntax_checks,
         optimize=args.optimize,
-        add_compiled_date_comment=(not args.nocompiledate))
+        add_compiled_date_comment=(args.add_compile_date))
     compiler.compile()
 
     # write the compiled code to output

@@ -21,7 +21,6 @@ import copy
 import re
 import math
 import collections
-import ksp_compiler
 from simple_eval import SimpleEval
 import time
 from time import strftime, localtime
