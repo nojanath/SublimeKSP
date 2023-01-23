@@ -61,7 +61,7 @@ optional arguments:
   -d, --combine_callbacks      combines duplicate callbacks - but not functions or macros
 
 
-> python ksp_compiler.py -c -e -o "<source-file-path>" "<target-file-path"
+> python ksp_compiler.py -c -e -o "<source-file-path>" "<target-file-path>"
 ```
 
 ### Updates
