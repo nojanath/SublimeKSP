@@ -1440,6 +1440,22 @@ class ASTModifierFixPrefixesAndFixControlPars(ASTModifierFixPrefixes):
         else:
             return node
 
+class ASTModifierSanitizeExitCommand(ASTModifierBase):
+    '''Adds a dummy no-op statement before every exit function call'''
+
+    def __init__(self, ast):
+        ASTModifierBase.__init__(self, modify_expressions=True)
+        self.traverse(ast)
+
+    def modifyFunctionCall(self, node, *args, **kwargs):
+        function_name = node.function_name.identifier  # shorter name alias
+
+        if function_name in ksp_builtins.functions and function_name == 'exit':
+            node = ksp_ast.FunctionCall(node.lexinfo, node.function_name, node.parameters, node.is_procedure, node.using_call_keyword, sanitize_exit=True)
+
+        return node
+
+
 def mark_used_functions_using_depth_first_traversal(call_graph, start_node=None, visited=None):
     ''' Make a depth-first traversal of call graph and set the used attribute of functions invoked directly or indirectly from some callback.
         The graph is represented by a dictionary where graph[f1] == f1 means that the function with name f1 calls the function with name f2 (the names are strings).'''
@@ -1637,13 +1653,25 @@ def strip_import_nckp_function_from_source(lines):
             line_obj.command = re.sub(r'[^\r\n]', '', ls_line)
 
 class KSPCompiler(object):
-    def __init__(self, source, basedir, compact=True, compact_variables=False, combine_callbacks=False, read_file_func=default_read_file_func, extra_syntax_checks=False, optimize=False, add_compiled_date_comment=False):
+    def __init__(self,
+                 source,
+                 basedir,
+                 compact = True,
+                 compact_variables = False,
+                 combine_callbacks = False,
+                 read_file_func = default_read_file_func,
+                 extra_syntax_checks = False,
+                 optimize = False,
+                 sanitize_exit_command = False,
+                 add_compiled_date_comment = False):
+
         self.source = source
         self.basedir = basedir
         self.compact = compact
         self.compact_variables = compact_variables
         self.read_file_func = read_file_func
         self.optimize = optimize
+        self.sanitize_exit_command = sanitize_exit_command
         self.combine_callbacks = combine_callbacks
         self.add_compiled_date_comment = add_compiled_date_comment
         self.extra_syntax_checks = extra_syntax_checks or optimize
@@ -1659,6 +1687,14 @@ class KSPCompiler(object):
 
         self.output_file = None
         self.variable_names_to_preserve = set()
+
+    def add_sksp_dummy_var(self):
+        for index, l in enumerate(self.lines):
+            line = l.command
+            if line.startswith("on"):
+                if re.search(r"^on\s+init$", line):
+                    l.command = l.command + "\ndeclare sksp_dummy\n"
+                    break
 
     def do_imports_and_convert_to_line_objects(self):
         # Import files
@@ -1945,7 +1981,9 @@ class KSPCompiler(object):
 
             do_extra = self.extra_syntax_checks
             do_optim = do_extra and self.optimize
-            #      description                   function                                                                           condition               time-weight
+            do_sanitize_exit = self.sanitize_exit_command
+
+            #      description                   function                                                                         condition        time-weight
             tasks = [
                  ('scanning and importing code', lambda: self.do_imports_and_convert_to_line_objects(),                             True,                   1),
                  ('extensions (w/ macros)',      lambda: self.extensions_with_macros(),                                             True,                   1),
@@ -1958,8 +1996,10 @@ class KSPCompiler(object):
                  ('replace string placeholders', lambda: self.replace_string_placeholders(),                                        True,                   1),
                  ('search for nckp import',      lambda: self.search_for_nckp(),                                                    True,                   1),
                  # NOTE(Sam): Convert the lines to a block in a separate function
+                 ('add dummy var declaration',   lambda: self.add_sksp_dummy_var(),                                                 do_sanitize_exit,       1),
                  ('convert lines to code block', lambda: self.convert_lines_to_code(),                                              True,                   1),
                  ('parse code',                  lambda: self.parse_code(),                                                         True,                   1),
+                 ('sanitize exit command',       lambda: ASTModifierSanitizeExitCommand(self.module),                               do_sanitize_exit,       1),
                  ('combining callbacks',         lambda: ASTModifierCombineCallbacks(self.module),                                  self.combine_callbacks, 1),
                  ('various tasks',               lambda: ASTModifierFixReferencesAndFamilies(self.module, self.lines),              True,                   1),
                  ('add variable name prefixes',  lambda: ASTModifierFixPrefixesIncludingLocalVars(self.module),                     True,                   1),
@@ -2060,6 +2100,7 @@ if __name__ == "__main__":
     arg_parser.add_argument('-o', '--optimize', dest='optimize', action='store_true', default=False, help='optimize the compiled code')
     arg_parser.add_argument('-t', '--add_compile_date', dest='add_compile_date', action='store_true', default=False, help='adds the date and time comment atop the compiled code')
     arg_parser.add_argument('-d', '--combine_callbacks', dest='combine_callbacks', action='store_true', default=False, help='combines duplicate callbacks - but not functions or macros')
+    arg_parser.add_argument('-x', '--sanitize_exit_command', dest='sanitize_exit_command', action='store_true', default=False, help='adds a dummy no-op command before every exit function call')
     arg_parser.add_argument('source_file', type=FileType('r', encoding='latin-1'))
     arg_parser.add_argument('output_file', type=FileType('w', encoding='latin-1'), nargs='?')
     args = arg_parser.parse_args()
@@ -2094,6 +2135,7 @@ if __name__ == "__main__":
         read_file_func=read_file_func,
         extra_syntax_checks=args.extra_syntax_checks,
         optimize=args.optimize,
+        sanitize_exit_command=args.sanitize_exit_command,
         add_compiled_date_comment=(args.add_compile_date))
     compiler.compile()
 

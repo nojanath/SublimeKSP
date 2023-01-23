@@ -185,6 +185,7 @@ class CompileKspThread(threading.Thread):
             check = settings.get('ksp_extra_checks', True)
             optimize = settings.get('ksp_optimize_code', False)
             combine_callbacks = settings.get('ksp_combine_callbacks', False)
+            sanitize_exit_command = settings.get('ksp_sanitize_exit_command', True)
             add_compiled_date_comment = settings.get('ksp_add_compiled_date', True)
             should_play_sound = settings.get('ksp_play_sound', False)
 
@@ -210,14 +211,16 @@ class CompileKspThread(threading.Thread):
                 else:
                     log_message('Compiling...')
 
-                self.compiler = ksp_compiler.KSPCompiler(code, self.base_path, 
+                self.compiler = ksp_compiler.KSPCompiler(code, self.base_path,
                                                          compact                   = compact,
                                                          compact_variables         = compact_variables,
                                                          extra_syntax_checks       = check,
                                                          combine_callbacks         = combine_callbacks,
                                                          read_file_func            = self.read_file_function,
                                                          optimize                  = optimize and check,
+                                                         sanitize_exit_command     = sanitize_exit_command,
                                                          add_compiled_date_comment = add_compiled_date_comment)
+
                 if self.compiler.compile(callback=self.compile_on_progress):
                     last_compiler = self.compiler
                     code = self.compiler.compiled_code
@@ -439,6 +442,7 @@ class KspGlobalSettingToggleCommand(sublime_plugin.ApplicationCommand):
             "ksp_optimize_code"             : "Optimize Compiled Code",
             "ksp_combine_callbacks"         : "Combine Duplicate Callbacks",
             "ksp_add_compiled_date"         : "Add Compilation Date/Time Comment",
+            "ksp_sanitize_exit_command"     : "Sanitize Behavior of 'exit' Command",
             "ksp_comment_inline_functions"  : "Insert Comments When Expanding Functions",
             "ksp_play_sound"                : "Play Sound When Compilation Finishes"
         }
