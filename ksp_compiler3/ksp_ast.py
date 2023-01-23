@@ -418,13 +418,12 @@ class PreprocessorCondition(Stmt):
 class FunctionCall(Stmt):
     '''Node for called functions'''
 
-    def __init__(self, lexinfo, function_name, parameters, is_procedure=False, using_call_keyword=False, sanitize_exit=False):
+    def __init__(self, lexinfo, function_name, parameters, is_procedure=False, using_call_keyword=False):
         Stmt.__init__(self, lexinfo)
         self.function_name = function_name
         self.parameters = parameters
         self.is_procedure = is_procedure
         self.using_call_keyword = using_call_keyword
-        self.sanitize_exit = sanitize_exit
 
     def __str__(self):
         s = str(self.function_name)
@@ -437,8 +436,6 @@ class FunctionCall(Stmt):
     def emit(self, out):
         if self.using_call_keyword:
             out.write('call ')
-        if self.sanitize_exit:
-            out.write('sksp_dummy := sksp_dummy\n')
         out.write(str(self))
 
     def map_expr(self, func):

@@ -91,7 +91,7 @@ def post_macro_functions(lines):
 	handleArrayConcat(lines)
 
 #=================================================================================================
-def simplfyAdditionString(string):
+def simplifyAdditionString(string):
 	''' Evaluates a string of add operations, any add pairs that cannot be evalutated are left.
 	e.g. "2 + 2 + 3 + 4 + x + y + 2" => "11 + x + y + 2 '''
 	parts = string.split("+")
@@ -410,7 +410,7 @@ class ArrayConcat(object):
 									raise ksp_compiler.ParseException(lines[i], "Syntax error!\n")
 					if arrayNameList:  # If everything was found, then the list will be empty.
 						raise ksp_compiler.ParseException(self.line, "Undeclared array(s) in %s function: %s!\n" % (concatSyntax, ', '.join(arrayNameList).strip()))
-					return(simplfyAdditionString(re.sub(r"[\[\]]", "", '+'.join(sizes))))
+					return(simplifyAdditionString(re.sub(r"[\[\]]", "", '+'.join(sizes))))
 				self.size = findArrays()
 
 	def getRawArrayDeclaration(self):
@@ -674,7 +674,7 @@ class ConstBlock(object):
 		newVal = value
 		if not value:
 			newVal = self.previousVal + "+1"
-		newVal = simplfyAdditionString(newVal)
+		newVal = simplifyAdditionString(newVal)
 		self.memberValues.append(newVal)
 		self.previousVal = newVal
 
@@ -811,7 +811,7 @@ class List(object):
 			sizeCounter = "0"
 			posList = ["0"]
 			for i in range(len(self.sizeList) - 1):
-				sizeCounter = simplfyAdditionString("%s+%s" % (sizeCounter, self.sizeList[i]))
+				sizeCounter = simplifyAdditionString("%s+%s" % (sizeCounter, self.sizeList[i]))
 				posList.append(sizeCounter)
 			for text in listMatrixTemplate:
 				replacedText = text.replace("#list#", self.noUnderscoreName)\
@@ -822,7 +822,7 @@ class List(object):
 		return(newLines)
 
 	def increaseInc(self, value):
-		self.inc = simplfyAdditionString("%s+%s" % (self.inc, str(value)))
+		self.inc = simplifyAdditionString("%s+%s" % (self.inc, str(value)))
 		self.sizeList.append(str(value))
 
 	def getListAddLine(self, value, line):
@@ -1007,10 +1007,30 @@ def handleOpenSizeArrays(lines):
 	replaceLines(lines, newLines)
 
 #=================================================================================================
+def handleSanitizeExitCommand(lines):
+	newLines = collections.deque()
+
+	for i in range(len(lines)):
+		line = lines[i].command.strip()
+
+		if line.startswith("on"):
+			if re.search(initRe, line):
+				newLines.append(lines[i])
+				newLines.append(lines[i].copy("declare sksp_dummy"))
+				continue
+
+		if line == "exit":
+			newLines.append(lines[i].copy("sksp_dummy := sksp_dummy"))
+
+		newLines.append(lines[i])
+
+	replaceLines(lines, newLines)
+
+#=================================================================================================
 def handleStringArrayInitialisation(lines):
+	''' Convert the single-line list of strings to one string per line for Kontakt to understand. '''
 	from ksp_compiler import placeholders as placeholders
 
-	''' Convert the single-line list of strings to one string per line for Kontakt to understand. '''
 	stringArrayRe = r"^declare\s+%s\s*\[(?P<arraysize>[^\]]+)\]\s*:=\s*\((?P<initlist>.+)\)$" % variableNameRe
 	stringListRe = r"\s*%s(\s*,\s*%s)*\s*" % (stringOrPlaceholderRe, stringOrPlaceholderRe)
 	newLines = collections.deque()

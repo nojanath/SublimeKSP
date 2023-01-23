@@ -205,7 +205,7 @@ def evaluate_expression(expr):
                 return toint(parameters[0] | 0x80000000)
             elif name in ['int_to_real', 'real']:
                 return Decimal(toint(parameters[0]))
-            elif name in ['real_to_int', 'real']:
+            elif name in ['real_to_int', 'int']:
                 return toint(int(parameters[0]))
         raise ValueUndefinedException(expr, 'Constant value expected!')
 

@@ -29,7 +29,7 @@ import hashlib
 import ply.lex as lex
 from logger import logger_code
 import time
-from preprocessor_plugins import pre_macro_functions, macro_iter_functions, substituteDefines, post_macro_iter_functions, post_macro_functions
+from preprocessor_plugins import pre_macro_functions, macro_iter_functions, substituteDefines, post_macro_iter_functions, post_macro_functions, handleSanitizeExitCommand
 import json
 import copy
 import utils
@@ -1440,22 +1440,6 @@ class ASTModifierFixPrefixesAndFixControlPars(ASTModifierFixPrefixes):
         else:
             return node
 
-class ASTModifierSanitizeExitCommand(ASTModifierBase):
-    '''Adds a dummy no-op statement before every exit function call'''
-
-    def __init__(self, ast):
-        ASTModifierBase.__init__(self, modify_expressions=True)
-        self.traverse(ast)
-
-    def modifyFunctionCall(self, node, *args, **kwargs):
-        function_name = node.function_name.identifier  # shorter name alias
-
-        if function_name in ksp_builtins.functions and function_name == 'exit':
-            node = ksp_ast.FunctionCall(node.lexinfo, node.function_name, node.parameters, node.is_procedure, node.using_call_keyword, sanitize_exit=True)
-
-        return node
-
-
 def mark_used_functions_using_depth_first_traversal(call_graph, start_node=None, visited=None):
     ''' Make a depth-first traversal of call graph and set the used attribute of functions invoked directly or indirectly from some callback.
         The graph is represented by a dictionary where graph[f1] == f1 means that the function with name f1 calls the function with name f2 (the names are strings).'''
@@ -1687,14 +1671,6 @@ class KSPCompiler(object):
 
         self.output_file = None
         self.variable_names_to_preserve = set()
-
-    def add_sksp_dummy_var(self):
-        for index, l in enumerate(self.lines):
-            line = l.command
-            if line.startswith("on"):
-                if re.search(r"^on\s+init$", line):
-                    l.command = l.command + "\ndeclare sksp_dummy\n"
-                    break
 
     def do_imports_and_convert_to_line_objects(self):
         # Import files
@@ -1993,13 +1969,12 @@ class KSPCompiler(object):
                  ('expanding macros',            lambda: self.expand_macros(),                                                      True,                   1),
                  # NOTE(Sam): Call the post-macro section of the preprocessor
                  ('post-macro processes',        lambda: post_macro_functions(self.lines),                                          True,                   1),
+                 ('sanitize exit command',       lambda: handleSanitizeExitCommand(self.lines),                                     do_sanitize_exit,       1),
                  ('replace string placeholders', lambda: self.replace_string_placeholders(),                                        True,                   1),
                  ('search for nckp import',      lambda: self.search_for_nckp(),                                                    True,                   1),
                  # NOTE(Sam): Convert the lines to a block in a separate function
-                 ('add dummy var declaration',   lambda: self.add_sksp_dummy_var(),                                                 do_sanitize_exit,       1),
                  ('convert lines to code block', lambda: self.convert_lines_to_code(),                                              True,                   1),
                  ('parse code',                  lambda: self.parse_code(),                                                         True,                   1),
-                 ('sanitize exit command',       lambda: ASTModifierSanitizeExitCommand(self.module),                               do_sanitize_exit,       1),
                  ('combining callbacks',         lambda: ASTModifierCombineCallbacks(self.module),                                  self.combine_callbacks, 1),
                  ('various tasks',               lambda: ASTModifierFixReferencesAndFamilies(self.module, self.lines),              True,                   1),
                  ('add variable name prefixes',  lambda: ASTModifierFixPrefixesIncludingLocalVars(self.module),                     True,                   1),
@@ -2009,8 +1984,8 @@ class KSPCompiler(object):
                  ('add variable name prefixes',  lambda: ASTModifierFixPrefixesAndFixControlPars(self.module),                      True,                   1),
                  ('convert dots to underscore',  lambda: self.convert_dots_to_double_underscore(),                                  True,                   1),
                  ('init extra syntax checks',    lambda: self.init_extra_syntax_checks(),                                           do_extra,               1),
-                 ('check types',                 lambda: comp_extras.ASTVisitorDetermineExpressionTypes(self.module),               do_extra,               1),
-                 ('check types',                 lambda: comp_extras.ASTVisitorCheckStatementExprTypes(self.module),                do_extra,               1),
+                 ('check expression types',      lambda: comp_extras.ASTVisitorDetermineExpressionTypes(self.module),               do_extra,               1),
+                 ('check statement types',       lambda: comp_extras.ASTVisitorCheckStatementExprTypes(self.module),                do_extra,               1),
                  ('check declarations',          lambda: comp_extras.ASTVisitorCheckDeclarations(self.module),                      do_extra,               1),
                  ('simplying expressions',       lambda: comp_extras.ASTModifierSimplifyExpressions(self.module, True),             do_optim,               1),
                  ('removing unused branches',    lambda: comp_extras.ASTModifierRemoveUnusedBranches(self.module),                  do_optim,               1),
@@ -2096,10 +2071,10 @@ if __name__ == "__main__":
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument('-c', '--compact', dest='compact', action='store_true', default=False, help='remove indents and empty lines in compiled code')
     arg_parser.add_argument('-v', '--compact_variables', dest='compact_variables', action='store_true', default=False, help='shorten and obfuscate variable names in compiled code')
+    arg_parser.add_argument('-d', '--combine_callbacks', dest='combine_callbacks', action='store_true', default=False, help='combines duplicate callbacks - but not functions or macros')
     arg_parser.add_argument('-e', '--extra_syntax_checks', dest='extra_syntax_checks', action='store_true', default=False, help='additional syntax checks during compilation')
     arg_parser.add_argument('-o', '--optimize', dest='optimize', action='store_true', default=False, help='optimize the compiled code')
     arg_parser.add_argument('-t', '--add_compile_date', dest='add_compile_date', action='store_true', default=False, help='adds the date and time comment atop the compiled code')
-    arg_parser.add_argument('-d', '--combine_callbacks', dest='combine_callbacks', action='store_true', default=False, help='combines duplicate callbacks - but not functions or macros')
     arg_parser.add_argument('-x', '--sanitize_exit_command', dest='sanitize_exit_command', action='store_true', default=False, help='adds a dummy no-op command before every exit function call')
     arg_parser.add_argument('source_file', type=FileType('r', encoding='latin-1'))
     arg_parser.add_argument('output_file', type=FileType('w', encoding='latin-1'), nargs='?')
