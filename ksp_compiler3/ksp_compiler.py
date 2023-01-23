@@ -32,6 +32,7 @@ import time
 from preprocessor_plugins import pre_macro_functions, macro_iter_functions, substituteDefines, post_macro_iter_functions, post_macro_functions
 import json
 import copy
+import utils
 
 variable_prefixes = '$%@!?~'
 
@@ -115,35 +116,6 @@ def prefix_ID_with_ns(id, namespaces, function_parameter_names=None, force_prefi
         return ksp_ast.ID(id.lexinfo, identifier=prefix_with_ns(str(id), namespaces, function_parameter_names, force_prefixing))
     else:
         return id
-
-def split_args(arg_string, line):
-    '''converts eg. "x, y*(1+z), z" into a list ['x', 'y*(1+z)', 'z']'''
-    if arg_string.strip() == '':
-        return []
-    args = []
-    cur_arg = ''
-    unmatched_left_paren = 0
-    double_quote_on = False
-
-    for idx, ch in enumerate(arg_string + ','):    # extra ',' to include the last argument
-        # square brackets are also checked as there may be commas in them (for properties/2D arrays)
-        if ch == '\"' and (idx == 0 or arg_string[idx - 1] != '\\'):
-            double_quote_on = not double_quote_on
-        elif ch in ['(', '[']:
-            unmatched_left_paren += 1
-        elif ch in [')', ']']:
-            unmatched_left_paren -= 1
-        if ch == ',' and unmatched_left_paren == 0 and not double_quote_on:
-            cur_arg = cur_arg.strip()
-            if not cur_arg:
-                raise ParseException(line, 'Syntax error: empty argument in function call %s!' % arg_string)
-            args.append(cur_arg)
-            cur_arg = ''
-        else:
-            cur_arg += ch
-    if unmatched_left_paren:
-        raise ParseException(line, 'Error: unmatched parenthesis in function call %s!' % arg_string)
-    return args
 
 class ExceptionWithMessage(Exception):
     _message = None
@@ -504,7 +476,7 @@ def expand_macros(lines, macros, level=0, replace_raw=True):
 
                 macro = name2macro[macro_name]
                 if args:
-                    args = split_args(args[1:-1], line)
+                    args = utils.split_args(args[1:-1], line)
                 else:
                     args = []
 
@@ -2082,12 +2054,12 @@ if __name__ == "__main__":
 
     # parse command line arguments
     arg_parser = argparse.ArgumentParser()
-    arg_parser.add_argument('--compact', dest='compact', action='store_true', default='false', help='Minimize whitespace in compiled code')
-    arg_parser.add_argument('--compact_variables', dest='compact_variables', action='store_true', default='false', help='Shorten and obfuscate variable names')
-    arg_parser.add_argument('--extra_syntax_checks', dest='extra_syntax_checks', action='store_true', default='false', help='Additional syntax checks')
-    arg_parser.add_argument('--optimize', dest='optimize', action='store_true', default='false', help='Optimize the generated code')
-    arg_parser.add_argument('--nocompiledate', dest='add_compiled_date_comment', action='store_true', default='true', help='Remove the compiler date argument')
-    arg_parser.add_argument('--combine_callbacks', dest='combine_callbacks', action='store_true', default='true', help='Combines callbacks (not including functions or macros)')
+    arg_parser.add_argument('-c', '--compact', dest='compact', action='store_true', default=False, help='remove indents and empty lines in compiled code')
+    arg_parser.add_argument('-v', '--compact_variables', dest='compact_variables', action='store_true', default=False, help='shorten and obfuscate variable names in compiled code')
+    arg_parser.add_argument('-e', '--extra_syntax_checks', dest='extra_syntax_checks', action='store_true', default=False, help='additional syntax checks during compilation')
+    arg_parser.add_argument('-o', '--optimize', dest='optimize', action='store_true', default=False, help='optimize the compiled code')
+    arg_parser.add_argument('-t', '--add_compile_date', dest='add_compile_date', action='store_true', default=False, help='adds the date and time comment atop the compiled code')
+    arg_parser.add_argument('-d', '--combine_callbacks', dest='combine_callbacks', action='store_true', default=False, help='combines duplicate callbacks - but not functions or macros')
     arg_parser.add_argument('source_file', type=FileType('r', encoding='latin-1'))
     arg_parser.add_argument('output_file', type=FileType('w', encoding='latin-1'), nargs='?')
     args = arg_parser.parse_args()
@@ -2122,7 +2094,7 @@ if __name__ == "__main__":
         read_file_func=read_file_func,
         extra_syntax_checks=args.extra_syntax_checks,
         optimize=args.optimize,
-        add_compiled_date_comment=(not args.nocompiledate))
+        add_compiled_date_comment=(args.add_compile_date))
     compiler.compile()
 
     # write the compiled code to output
