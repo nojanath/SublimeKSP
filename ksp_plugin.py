@@ -18,20 +18,23 @@ sys.path.append(os.path.join(os.path.dirname(__file__), 'ksp_compiler3'))
 import ksp_compiler
 import ksp_ast
 
+from time import strftime, localtime
+
 import urllib, tarfile, json, shutil
 from subprocess import call
+
 try:
     import winsound
 except Exception:
     pass
 
 last_compiler = None
-
 sublime_version = int(sublime.version())
 
 def log_message(msg):
-    print("SublimeKSP: " + msg)
-    sublime.status_message("SublimeKSP: " + msg)
+    txt = "[SublimeKSP] {0}: {1}".format(strftime('%X', localtime()), msg)
+    print(txt)
+    sublime.status_message(txt)
 
 class KspRecompile(sublime_plugin.ApplicationCommand):
     '''Recompile most recently compiled file'''
