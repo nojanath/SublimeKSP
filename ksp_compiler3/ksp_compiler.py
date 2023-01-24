@@ -29,7 +29,7 @@ import hashlib
 import ply.lex as lex
 from logger import logger_code
 import time
-from preprocessor_plugins import pre_macro_functions, macro_iter_functions, substituteDefines, post_macro_iter_functions, post_macro_functions
+from preprocessor_plugins import pre_macro_functions, macro_iter_functions, substituteDefines, post_macro_iter_functions, post_macro_functions, handleSanitizeExitCommand
 import json
 import copy
 import utils
@@ -1637,13 +1637,25 @@ def strip_import_nckp_function_from_source(lines):
             line_obj.command = re.sub(r'[^\r\n]', '', ls_line)
 
 class KSPCompiler(object):
-    def __init__(self, source, basedir, compact=True, compact_variables=False, combine_callbacks=False, read_file_func=default_read_file_func, extra_syntax_checks=False, optimize=False, add_compiled_date_comment=False):
+    def __init__(self,
+                 source,
+                 basedir,
+                 compact = True,
+                 compact_variables = False,
+                 combine_callbacks = False,
+                 read_file_func = default_read_file_func,
+                 extra_syntax_checks = False,
+                 optimize = False,
+                 sanitize_exit_command = False,
+                 add_compiled_date_comment = False):
+
         self.source = source
         self.basedir = basedir
         self.compact = compact
         self.compact_variables = compact_variables
         self.read_file_func = read_file_func
         self.optimize = optimize
+        self.sanitize_exit_command = sanitize_exit_command
         self.combine_callbacks = combine_callbacks
         self.add_compiled_date_comment = add_compiled_date_comment
         self.extra_syntax_checks = extra_syntax_checks or optimize
@@ -1945,7 +1957,9 @@ class KSPCompiler(object):
 
             do_extra = self.extra_syntax_checks
             do_optim = do_extra and self.optimize
-            #      description                   function                                                                           condition               time-weight
+            do_sanitize_exit = self.sanitize_exit_command
+
+            #      description                   function                                                                         condition        time-weight
             tasks = [
                  ('scanning and importing code', lambda: self.do_imports_and_convert_to_line_objects(),                             True,                   1),
                  ('extensions (w/ macros)',      lambda: self.extensions_with_macros(),                                             True,                   1),
@@ -1955,6 +1969,7 @@ class KSPCompiler(object):
                  ('expanding macros',            lambda: self.expand_macros(),                                                      True,                   1),
                  # NOTE(Sam): Call the post-macro section of the preprocessor
                  ('post-macro processes',        lambda: post_macro_functions(self.lines),                                          True,                   1),
+                 ('sanitize exit command',       lambda: handleSanitizeExitCommand(self.lines),                                     do_sanitize_exit,       1),
                  ('replace string placeholders', lambda: self.replace_string_placeholders(),                                        True,                   1),
                  ('search for nckp import',      lambda: self.search_for_nckp(),                                                    True,                   1),
                  # NOTE(Sam): Convert the lines to a block in a separate function
@@ -1969,8 +1984,8 @@ class KSPCompiler(object):
                  ('add variable name prefixes',  lambda: ASTModifierFixPrefixesAndFixControlPars(self.module),                      True,                   1),
                  ('convert dots to underscore',  lambda: self.convert_dots_to_double_underscore(),                                  True,                   1),
                  ('init extra syntax checks',    lambda: self.init_extra_syntax_checks(),                                           do_extra,               1),
-                 ('check types',                 lambda: comp_extras.ASTVisitorDetermineExpressionTypes(self.module),               do_extra,               1),
-                 ('check types',                 lambda: comp_extras.ASTVisitorCheckStatementExprTypes(self.module),                do_extra,               1),
+                 ('check expression types',      lambda: comp_extras.ASTVisitorDetermineExpressionTypes(self.module),               do_extra,               1),
+                 ('check statement types',       lambda: comp_extras.ASTVisitorCheckStatementExprTypes(self.module),                do_extra,               1),
                  ('check declarations',          lambda: comp_extras.ASTVisitorCheckDeclarations(self.module),                      do_extra,               1),
                  ('simplying expressions',       lambda: comp_extras.ASTModifierSimplifyExpressions(self.module, True),             do_optim,               1),
                  ('removing unused branches',    lambda: comp_extras.ASTModifierRemoveUnusedBranches(self.module),                  do_optim,               1),
@@ -2056,10 +2071,11 @@ if __name__ == "__main__":
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument('-c', '--compact', dest='compact', action='store_true', default=False, help='remove indents and empty lines in compiled code')
     arg_parser.add_argument('-v', '--compact_variables', dest='compact_variables', action='store_true', default=False, help='shorten and obfuscate variable names in compiled code')
+    arg_parser.add_argument('-d', '--combine_callbacks', dest='combine_callbacks', action='store_true', default=False, help='combines duplicate callbacks - but not functions or macros')
     arg_parser.add_argument('-e', '--extra_syntax_checks', dest='extra_syntax_checks', action='store_true', default=False, help='additional syntax checks during compilation')
     arg_parser.add_argument('-o', '--optimize', dest='optimize', action='store_true', default=False, help='optimize the compiled code')
     arg_parser.add_argument('-t', '--add_compile_date', dest='add_compile_date', action='store_true', default=False, help='adds the date and time comment atop the compiled code')
-    arg_parser.add_argument('-d', '--combine_callbacks', dest='combine_callbacks', action='store_true', default=False, help='combines duplicate callbacks - but not functions or macros')
+    arg_parser.add_argument('-x', '--sanitize_exit_command', dest='sanitize_exit_command', action='store_true', default=False, help='adds a dummy no-op command before every exit function call')
     arg_parser.add_argument('source_file', type=FileType('r', encoding='latin-1'))
     arg_parser.add_argument('output_file', type=FileType('w', encoding='latin-1'), nargs='?')
     args = arg_parser.parse_args()
@@ -2094,6 +2110,7 @@ if __name__ == "__main__":
         read_file_func=read_file_func,
         extra_syntax_checks=args.extra_syntax_checks,
         optimize=args.optimize,
+        sanitize_exit_command=args.sanitize_exit_command,
         add_compiled_date_comment=(args.add_compile_date))
     compiler.compile()
 

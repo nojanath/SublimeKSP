@@ -104,7 +104,15 @@
 						"args": {"setting": "ksp_add_compiled_date", "default": true},
 						"caption": "Add Compilation Date/Time Comment",
 						"mnemonic": "D",
-						"id": "signal_empty_ifcase",
+						"id": "add_compiled_date_comment",
+						"checkbox": true
+					},
+					{
+						"command": "ksp_global_setting_toggle",
+						"args": {"setting": "ksp_sanitize_exit_command", "default": true},
+						"caption": "Sanitize Behavior of 'exit' Command",
+						"mnemonic": "x",
+						"id": "sanitize_exit_command",
 						"checkbox": true
 					},
 					{
