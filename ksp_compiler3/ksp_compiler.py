@@ -37,7 +37,8 @@ import utils
 variable_prefixes = '$%@!?~'
 
 # regular expressions:
-white_space = r'(?ms)(\s*(\{[^\n]*?\})?\s*)' # regexp for normal whitespace/comments
+white_space_re = r'(\s*(\{[^\n]*?\})?\s*)'
+white_space = r'(?ms)%s' % white_space_re
 comment_re = re.compile(r'(?<!["\'])\{.*?\}|\(\*.*?\*\)|/\*.*?\*/', re.DOTALL)   # if { is preceeded by ' or " don't treat it as a comment
 string_re = re.compile(r'".*?(?<!\\)"|' + r"'.*?(?<!\\)'")
 line_continuation_re = re.compile(r'\.\.\.\s*\n', re.MULTILINE)
@@ -45,7 +46,7 @@ placeholder_re = re.compile(r'\[\[\[\d+\]\]\]')
 varname_re = re.compile(r'((\b|[$%!@~?])[0-9]*[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_0-9]+)*)\b')
 varname_dot_re = re.compile(r'(?<![$%!@~?])\b[0-9]*[a-zA-Z_][a-zA-Z0-9_]*?\.')
 import_basic_re = re.compile(r'^\s*import ')
-import_re = re.compile(r'^\s*import\s+"(?P<filename>.+?)"(\s+as\s(?P<asname>[a-zA-Z_][a-zA-Z0-9_.]*))?%s$' % white_space)
+import_re = re.compile(r'(?ms)^\s*import\s+"(?P<filename>.+?)"(\s+as\s(?P<asname>[a-zA-Z_][a-zA-Z0-9_.]*))?%s$' % white_space_re)
 macro_start_re = re.compile(r'^\s*macro(?=\W)')
 macro_end_re = re.compile(r'^\s*end\s+macro')
 line_continuation_re = re.compile(r'\.\.\.\s*\n', re.MULTILINE)
@@ -211,9 +212,9 @@ class Macro:
 
     def get_macro_name_and_parameters(self):
         '''Returns the function name, parameter list, and result variable (or None) as a tuple'''
-        param = white_space + r'([$%@!?~]?[\w\.]+|#[\w\.]+#)' + white_space
+        param = white_space_re + r'([$%@!?~]?[\w\.]+|#[\w\.]+#)' + white_space_re
         params = r'%s(,%s)*' % (param, param)
-        m = re.match(r'^\s*macro\s+(?P<name>[a-zA-Z0-9_]+(\.[a-zA-Z_0-9.]+)*)\s*(?P<params>\(%s\))?' % params, self.lines[0].command)
+        m = re.match(r'(?ms)^\s*macro\s+(?P<name>[a-zA-Z0-9_]+(\.[a-zA-Z_0-9.]+)*)\s*(?P<params>\(%s\))?' % params, self.lines[0].command)
         if not m:
             raise ParseException(self.lines[0], "Syntax error in macro declaration!")
         name = m.group('name')
@@ -450,7 +451,7 @@ def extract_callback_lines(lines):
 def expand_macros(lines, macros, level=0, replace_raw=True):
     '''Inline macro invocations by the body of the macro definition (with parameters properly replaced)
         returns tuple (normal_lines, callback_lines) where the latter are callbacks'''
-    macro_call_re = re.compile(r'^\s*([\w_.]+)\s*(\(.*\))?%s$' % white_space)
+    macro_call_re = re.compile(r'(?ms)^\s*([\w_.]+)\s*(\(.*\))?%s$' % white_space_re)
     name2macro = {}
 
     for m in macros:
