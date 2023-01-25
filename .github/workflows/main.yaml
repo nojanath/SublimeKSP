@@ -23,5 +23,5 @@ jobs:
           python -m pip install ply
       - name: Test with Unittest
         run: |
-          cd ksp_compiler3
+          cd compiler
           python -m unittest "tests.py"

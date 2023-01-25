@@ -2127,9 +2127,6 @@ if __name__ == "__main__":
                 filepath = os.path.join(basedir, filepath)
         return codecs.open(filepath, 'r', 'latin-1').read()
 
-    def print_compile_progress(text, percent_complete):
-        print('[%s] Compiling (%d%%) - %s...' % (strftime('%X', localtime()), percent_complete, text))
-
     # make sure that extra syntax checks are enabled if --optimize argument is used
     if args.optimize == True and args.extra_syntax_checks == False:
         args.extra_syntax_checks = True
@@ -2148,7 +2145,7 @@ if __name__ == "__main__":
         sanitize_exit_command=args.sanitize_exit_command,
         add_compiled_date_comment=(args.add_compile_date))
 
-    compiler.compile(callback=print_compile_progress)
+    compiler.compile(callback=utils.compile_on_progress)
 
     # write the compiled code to output
     code = compiler.compiled_code.replace('\r', '')

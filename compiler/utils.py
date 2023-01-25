@@ -13,6 +13,13 @@
 # GNU General Public License for more details.
 
 import sys
+from time import strftime, localtime
+
+try:
+    from sublime import status_message
+    has_sublime_api = True
+except ImportError:
+    has_sublime_api = False
 
 def split_args(arg_string, line):
     '''converts eg. "x, y*(1+z), z" into a list ['x', 'y*(1+z)', 'z']'''
@@ -42,3 +49,16 @@ def split_args(arg_string, line):
     if unmatched_left_paren:
         raise ParseException(line, 'Error: unmatched parenthesis in function call %s!' % arg_string)
     return args
+
+def log_message(msg):
+    txt = "{0}: {1}".format(strftime('%X', localtime()), msg)
+
+    if has_sublime_api:
+        txt = "[SublimeKSP] " + txt
+        print(txt)
+        status_message(txt)
+    else:
+        print(txt)
+
+def compile_on_progress(text, percent_complete):
+    log_message('Compiling (%d%%) - %s...' % (percent_complete, text))
