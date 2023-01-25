@@ -64,7 +64,7 @@ class CompileKspCommand(sublime_plugin.ApplicationCommand):
     def run(self, *args, **kwargs):
         # wait until any previous thread is finished
         if self.thread and self.thread.is_alive():
-            log_message('Waiting for earlier compilation to finish...')
+            utils.log_message('Waiting for earlier compilation to finish...')
             self.thread.join()
 
         # find the view containing the code to compile
@@ -139,7 +139,7 @@ class CompileKspThread(threading.Thread):
                 view.show(line_region)
                 selection.clear()
                 selection.add(line_region)
-        log_message('Error - compilation aborted!')
+        utils.log_message('Error - compilation aborted!')
         sublime.error_message(error_msg)
         sublime.status_message('')
 
@@ -195,15 +195,15 @@ class CompileKspThread(threading.Thread):
                 if filepath == None:
                     filepath = 'untitled'
 
-                log_message("Error: No output path was specified for '%s' - skipping compilation for this script!" % filepath)
+                utils.log_message("Error: No output path was specified for '%s' - skipping compilation for this script!" % filepath)
 
                 continue
 
             try:
                 if self.compile_all_open:
-                    log_message('Compiling %s, script %s of %s...' % (filepath, self.open_views.index(view) + 1, len(self.open_views)))
+                    utils.log_message('Compiling %s, script %s of %s...' % (filepath, self.open_views.index(view) + 1, len(self.open_views)))
                 else:
-                    log_message('Compiling...')
+                    utils.log_message('Compiling...')
 
                 self.compiler = ksp_compiler.KSPCompiler(code, self.base_path,
                                                          compact                   = compact,
@@ -223,12 +223,12 @@ class CompileKspThread(threading.Thread):
                         if not os.path.isabs(self.compiler.output_file):
                             self.compiler.output_file = os.path.join(self.base_path, self.compiler.output_file)
                         codecs.open(self.compiler.output_file, 'w', 'latin-1').write(code)
-                        log_message("Successfully compiled (compiled code saved to %s)!" % self.compiler.output_file)
+                        utils.log_message("Successfully compiled (compiled code saved to %s)!" % self.compiler.output_file)
                     else:
-                        log_message("Successfully compiled (the code is now on the clipboard ready to be pasted into Kontakt)!")
+                        utils.log_message("Successfully compiled (the code is now on the clipboard ready to be pasted into Kontakt)!")
                         sublime.set_clipboard(code)
                 else:
-                    log_message('Compilation aborted!')
+                    utils.log_message('Compilation aborted!')
             except ksp_ast.ParseException as e:
                 error_msg = unicode(e)
                 line_object = self.compiler.lines[e.lineno]
@@ -450,7 +450,7 @@ class KspGlobalSettingToggleCommand(sublime_plugin.ApplicationCommand):
         else:
             option_toggle = "disabled!"
 
-        log_message('SublimeKSP option %s is %s' % (sksp_options_dict[setting], option_toggle))
+        utils.log_message('SublimeKSP option %s is %s' % (sksp_options_dict[setting], option_toggle))
 
     def is_checked(self, setting, default):
         return bool(sublime.load_settings("KSP.sublime-settings").get(setting, default))
@@ -596,5 +596,5 @@ class KspFixLineEndings(sublime_plugin.EventListener):
                 if changes:
                     s = '\n'.join(x.rstrip() for x in s.split('\n')) # strip trailing white-space too while we're at it
                     view.run_command('replace_text_with', {'new_text': s})
-                    sublime.set_timeout(lambda: log_message('EOL characters automatically fixed. Please save to keep the changes.'), 100)
+                    sublime.set_timeout(lambda: utils.log_message('EOL characters automatically fixed. Please save to keep the changes.'), 100)
             self.set_ksp_syntax(view)
