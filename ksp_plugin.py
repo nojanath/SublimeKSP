@@ -13,12 +13,11 @@ import webbrowser
 import xml.etree.ElementTree as ET
 
 sys.path.append(os.path.dirname(__file__))
-sys.path.append(os.path.join(os.path.dirname(__file__), 'ksp_compiler3'))
+sys.path.append(os.path.join(os.path.dirname(__file__), 'compiler'))
 
 import ksp_compiler
 import ksp_ast
-
-from time import strftime, localtime
+import utils
 
 import urllib, tarfile, json, shutil
 from subprocess import call
@@ -30,11 +29,6 @@ except Exception:
 
 last_compiler = None
 sublime_version = int(sublime.version())
-
-def log_message(msg):
-    txt = "[SublimeKSP] {0}: {1}".format(strftime('%X', localtime()), msg)
-    print(txt)
-    sublime.status_message(txt)
 
 class KspRecompile(sublime_plugin.ApplicationCommand):
     '''Recompile most recently compiled file'''
@@ -120,9 +114,6 @@ class CompileKspThread(threading.Thread):
     def stop(self):
         if self.compiler:
             self.compiler.abort_compilation()
-
-    def compile_on_progress(self, text, percent_complete):
-        log_message('Compiling (%d%%) - %s...' % (percent_complete, text))
 
     @classmethod
     def find_view_by_filename(cls, filename, base_path=None):
@@ -224,7 +215,7 @@ class CompileKspThread(threading.Thread):
                                                          sanitize_exit_command     = sanitize_exit_command,
                                                          add_compiled_date_comment = add_compiled_date_comment)
 
-                if self.compiler.compile(callback=self.compile_on_progress):
+                if self.compiler.compile(callback=utils.compile_on_progress):
                     last_compiler = self.compiler
                     code = self.compiler.compiled_code
                     code = code.replace('\r', '')
@@ -267,7 +258,7 @@ class CompileKspThread(threading.Thread):
 
 # **********************************************************************************************
 
-from ksp_compiler3.ksp_builtins import keywords, variables, functions, function_signatures, functions_with_forced_parentheses
+from compiler.ksp_builtins import keywords, variables, functions, function_signatures, functions_with_forced_parentheses
 
 all_builtins = set(functions.keys()) | set([v[1:] for v in variables]) | variables | keywords
 functions, variables = set(functions), set(variables)
