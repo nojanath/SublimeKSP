@@ -21,6 +21,7 @@ import re
 import math
 import collections
 import utils
+from ksp_compiler import ParseException
 from simple_eval import SimpleEval
 from time import strftime, localtime
 
@@ -87,8 +88,11 @@ def post_macro_functions(lines):
 	handlePersistence(lines)
 	handleLists(lines)
 	handleUIFunctions(lines)
-	handleStringArrayInitialisation(lines)
-	handleArrayConcat(lines)
+	''' continued in ksp_compiler.py, run_post_macro_functions()
+	    because KSPCompiler has to own running of handleStringArrayInitialisation method,
+	    so that string placeholders can be properly used there when compiling from command line
+	    (this fixed the circular import dependancy that was there before, which prevented compiling
+	     from command line properly)'''
 
 #=================================================================================================
 def simplifyAdditionString(string):
@@ -111,7 +115,7 @@ def tryStringEval(expression, line, name):
 	try:
 		final = stringEvaluator.eval(str(expression).strip())
 	except:
-		raise ksp_compiler.ParseException(line,
+		raise ParseException(line,
 			"Invalid syntax in %s value! This number must able to be evaluated to a single number at compile time. Please use only define constants, numbers or math operations here!\n" % name)
 	return (final)
 
@@ -202,7 +206,7 @@ def handleStructs(lines):
 				if m:
 					structObj = Struct(m.group("name"))
 					if isCurrentlyInAStructBlock:
-						raise ksp_compiler.ParseException(lines[lineIdx], "Struct definitions cannot be nested!\n")
+						raise ParseException(lines[lineIdx], "Struct definitions cannot be nested!\n")
 					isCurrentlyInAStructBlock = True
 					lines[lineIdx].command = ""
 
@@ -217,7 +221,7 @@ def handleStructs(lines):
 			elif isCurrentlyInAStructBlock:
 				if line:
 					if not line.startswith("declare ") and not line.startswith("declare	"):
-						raise ksp_compiler.ParseException(lines[lineIdx], "Structs can only consist of variable declarations!\n")
+						raise ParseException(lines[lineIdx], "Structs can only consist of variable declarations!\n")
 					m = re.search(nameInDeclareStmtRe, line)
 					if m:
 						variableName = m.group("whole")
@@ -252,7 +256,7 @@ def handleStructs(lines):
 						if m.group(1):
 							structVariable = m.group(1) + structVariable
 						if structNum == i:
-							raise ksp_compiler.ParseException(lines[0], "Declared struct cannot be the same as struct parent!\n")
+							raise ParseException(lines[0], "Declared struct cannot be the same as struct parent!\n")
 
 						insertLocation = j
 						for memberIdx in range(len(structs[structNum].members)):
@@ -274,7 +278,7 @@ def handleStructs(lines):
 						j = 0
 						counter += 1
 						if counter > 100000:
-							raise ksp_compiler.ParseException(lines[0], "Error: too many iterations while building structs!")
+							raise ParseException(lines[0], "Error: too many iterations while building structs!")
 							break
 		resolveStructsWithinStructs()
 
@@ -290,7 +294,7 @@ def handleStructs(lines):
 					try:
 						structIdx = structNames.index(structName)
 					except ValueError:
-						raise ksp_compiler.ParseException(lines[i], "Undeclared struct %s!\n" % structName)
+						raise ParseException(lines[i], "Undeclared struct %s!\n" % structName)
 
 					newMembers = copy.deepcopy(structs[structIdx].members)
 					# If necessary make the struct members into arrays.
@@ -356,7 +360,7 @@ def handleIncrementer(lines):
 				lines[i].command = ""
 				iterObjs.append(Incrementer(mm.group(1), tryStringEval(mm.group(4), lines[i], "start"), tryStringEval(mm.group(5), lines[i], "step"), lines[i]))
 			else:
-				raise ksp_compiler.ParseException(lines[i], "Incorrect parameters for START_INC! Expected: START_INC(<name>, <start-num>, <step-num>)\n")
+				raise ParseException(lines[i], "Incorrect parameters for START_INC! Expected: START_INC(<name>, <start-num>, <step-num>)\n")
 		# If any incremeter has ended, pop the last object off the array.
 		elif line == "END_INC":
 			found_end = True
@@ -364,7 +368,7 @@ def handleIncrementer(lines):
 			try:
 				iterObjs.pop()
 			except:
-				raise ksp_compiler.ParseException(lines[i], "Did not find a corresponding 'START_INC'!")
+				raise ParseException(lines[i], "Did not find a corresponding 'START_INC'!")
 		# If there are any iterators active, scan the line and replace occurances of the name with it's value.
 		elif iterObjs:
 			for iterationObj in iterObjs:
@@ -373,7 +377,7 @@ def handleIncrementer(lines):
 					lines[i].command = re.sub(r"\b%s\b" % iterationObj.name, str(iterationObj.iterationVal), lines[i].command)
 					iterationObj.increaseVal()
 	if iterObjs:
-		raise ksp_compiler.ParseException(iterObjs[0].line, "Did not find a corresponding 'END_INC'!")
+		raise ParseException(iterObjs[0].line, "Did not find a corresponding 'END_INC'!")
 
 #=================================================================================================
 class ArrayConcat(object):
@@ -389,7 +393,7 @@ class ArrayConcat(object):
 		''' If the concat function is used on a declared empty size array, the size of the array needs to be calculated. '''
 		if self.declare:
 			if not self.brackets:
-				raise ksp_compiler.ParseException(self.line, "No array size given. Leave brackets [] empty to have the size auto generated.\n")
+				raise ParseException(self.line, "No array size given. Leave brackets [] empty to have the size auto generated.\n")
 			elif not self.size:
 				def findArrays():
 					''' Scan through the lines up to this point to find all the the arrays that have been chosen to be concatenated,
@@ -407,9 +411,9 @@ class ArrayConcat(object):
 										arrayNameList.remove(arr)
 										break
 								except:
-									raise ksp_compiler.ParseException(lines[i], "Syntax error!\n")
+									raise ParseException(lines[i], "Syntax error!\n")
 					if arrayNameList:  # If everything was found, then the list will be empty.
-						raise ksp_compiler.ParseException(self.line, "Undeclared array(s) in %s function: %s!\n" % (concatSyntax, ', '.join(arrayNameList).strip()))
+						raise ParseException(self.line, "Undeclared array(s) in %s function: %s!\n" % (concatSyntax, ', '.join(arrayNameList).strip()))
 					return(simplifyAdditionString(re.sub(r"[\[\]]", "", '+'.join(sizes))))
 				self.size = findArrays()
 
@@ -572,9 +576,9 @@ class UIPropertyFunction:
 		self.functionType = functionType
 		self.args  = args[1:]
 		if len(self.args) > len(functionType.args):
-			raise ksp_compiler.ParseException(line, "Too many arguments! Maximum is %d, got %d.\n" % (len(functionType.args), len(self.args)))
+			raise ParseException(line, "Too many arguments! Maximum is %d, got %d.\n" % (len(functionType.args), len(self.args)))
 		elif len(self.args) == 0:
-			raise ksp_compiler.ParseException(line, "Function requires at least 2 arguments!\n")
+			raise ParseException(line, "Function requires at least 2 arguments!\n")
 		self.uiId = args[0]
 
 	def buildUiPropertyLines(self, line):
@@ -715,7 +719,7 @@ def handleConstBlock(lines):
 				constBlockObj.addMember(m.group("whole"), m.group("value"))
 				continue
 			elif not line.strip() == "":
-				raise ksp_compiler.ParseException(lines[lineIdx], "Syntax error: in a const block, list constant names and optionally assign them a constant value.")
+				raise ParseException(lines[lineIdx], "Syntax error: in a const block, list constant names and optionally assign them a constant value.")
 		newLines.append(lines[lineIdx])
 	replaceLines(lines, newLines)
 
@@ -894,7 +898,7 @@ def handleLists(lines):
 						addInitVar = True
 			if line.startswith("list_add"):
 				if re.search(listAddRe, line):
-					raise ksp_compiler.ParseException(lines[lineIdx], "list_add() can only be used in the init callback!\n")
+					raise ParseException(lines[lineIdx], "list_add() can only be used in the init callback!\n")
 			newLines.append(lines[lineIdx])
 			if addInitVar:
 				newLines.append(lines[lineIdx].copy("declare list_it"))
@@ -962,7 +966,7 @@ def handleLists(lines):
 					try:
 						listObj = lists[name]
 					except KeyError:
-						raise ksp_compiler.ParseException(lines[lineIdx], "Undeclared list: %s!\n" % name)
+						raise ParseException(lines[lineIdx], "Undeclared list: %s!\n" % name)
 					if listObj.isMatrix:
 						try:
 							arrayIdx = arrayNames.index(re.sub(varPrefixRe, "", value))
@@ -1027,14 +1031,13 @@ def handleSanitizeExitCommand(lines):
 	replaceLines(lines, newLines)
 
 #=================================================================================================
-def handleStringArrayInitialisation(lines):
+def handleStringArrayInitialisation(lines, placeholders):
 	''' Convert the single-line list of strings to one string per line for Kontakt to understand. '''
-	from ksp_compiler import placeholders as placeholders
-
 	stringArrayRe = r"^declare\s+%s\s*\[(?P<arraysize>[^\]]+)\]\s*:=\s*\((?P<initlist>.+)\)$" % variableNameRe
 	stringListRe = r"\s*%s(\s*,\s*%s)*\s*" % (stringOrPlaceholderRe, stringOrPlaceholderRe)
 	newLines = collections.deque()
 	famCount = 0
+
 	for i in range(len(lines)):
 		line = lines[i].command.strip()
 		famCount = countFamily(line, famCount)
@@ -1048,12 +1051,13 @@ def handleStringArrayInitialisation(lines):
 			if m:
 				if m.group("prefix") == "!":
 					if not re.search(stringListRe, m.group("initlist")):
-						raise ksp_compiler.ParseException(lines[i], "Expected integers, got strings!\n")
+						raise ParseException(lines[i], "Expected integers, got strings!\n")
 					stringList = utils.split_args(m.group("initlist"), lines[i])
 					name = m.group("name")
 					if famCount != 0:
 						name = inspectFamilyState(lines, i) + name
 					newLines.append(lines[i].copy(line[: line.find(":")]))
+
 					if len(stringList) != 1:
 						for ii in range(len(stringList)):
 							strVal = ""
@@ -1154,7 +1158,7 @@ def handleIterateMacro(lines):
 				iterateObj = IterateMacro(m.group("macro"), m.group("min"), m.group("max"), m.group("step"), m.group("direction"), l)
 				newLines.extend(iterateObj.buildLines())
 			else:
-				raise ksp_compiler.ParseException(l, "Syntax error in iterate_macro: incomplete or missing parameters!\n")
+				raise ParseException(l, "Syntax error in iterate_macro: incomplete or missing parameters!\n")
 		else:
 			newLines.append(l)
 	replaceLines(lines, newLines)
@@ -1194,7 +1198,7 @@ class DefineConstant(object):
 			self.args = utils.split_args(argString, line)
 		self.line = line
 		if re.search(r"\b%s\b" % self.name, self.value):
-			raise ksp_compiler.ParseException(self.line, "Define constant cannot call itself!")
+			raise ParseException(self.line, "Define constant cannot call itself!")
 
 	def getName(self):
 		return(self.name)
@@ -1251,7 +1255,7 @@ class DefineConstant(object):
 					# Check whether the args are valid
 					openBracketPos = foundString.find("(")
 					if openBracketPos == -1:
-						raise ksp_compiler.ParseException(lineObj, "No arguments found for define macro: %s!" % foundString)
+						raise ParseException(lineObj, "No arguments found for define macro: %s!" % foundString)
 
 					argsString = foundString[openBracketPos + 1 : len(foundString) - 1]
 					foundArgs = utils.split_args(argsString, lineObj)
@@ -1262,7 +1266,7 @@ class DefineConstant(object):
 							argsString = defineObj.substituteValue(argsString, listOfOtherDefines)
 						foundArgs = utils.split_args(argsString, lineObj)
 						if len(foundArgs) != len(self.args):
-							raise ksp_compiler.ParseException(lineObj, "Incorrect number of arguments in define macro: %s! Expected %d, got %d.\n" % (foundString, len(self.args), len(foundArgs)))
+							raise ParseException(lineObj, "Incorrect number of arguments in define macro: %s! Expected %d, got %d.\n" % (foundString, len(self.args), len(foundArgs)))
 
 					# Build the new value using the given args
 					newVal = self.value
@@ -1421,7 +1425,7 @@ def handleDefineLiterals(lines):
 					value = textWithoutDefine[colonBracketPos + 2 : ].strip()
 					m = re.search(r"^\((([a-zA-Z_][a-zA-Z0-9_.]*)?(\s*,\s*[a-zA-Z_][a-zA-Z0-9_.]*)*)\)$", value)
 					if not m:
-						raise ksp_compiler.ParseException(lines[index], "Syntax error in define literals: Comma-separated identifier list expected in parentheses.\n")
+						raise ParseException(lines[index], "Syntax error in define literals: Comma-separated identifier list expected in parentheses.\n")
 
 					value = m.group(1)
 					value = ",".join([val.strip() for val in value.split(",")]) # remove whitespace
@@ -1431,7 +1435,7 @@ def handleDefineLiterals(lines):
 					# remove the line
 					lines[index].command = re.sub(r'[^\r\n]', '', line)
 				else:
-					raise ksp_compiler.ParseException(lines[index], "Syntax error in define literals!\n")
+					raise ParseException(lines[index], "Syntax error in define literals!\n")
 
 	# if at least one define const exsists
 	if defineTitles:
@@ -1464,7 +1468,7 @@ def handleLiterateMacro(lines):
 						newLines.append(lines[lineIdx].copy(name.replace("#l#", text).replace("#n#", str(index))))
 				continue
 			else:
-				raise ksp_compiler.ParseException(lines[lineIdx], "Syntax error in literate_macro: incomplete or missing parameters!\n")
+				raise ParseException(lines[lineIdx], "Syntax error in literate_macro: incomplete or missing parameters!\n")
 		newLines.append(lines[lineIdx])
 	replaceLines(lines, newLines)
 	return scan

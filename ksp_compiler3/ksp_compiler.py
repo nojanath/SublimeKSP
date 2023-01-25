@@ -29,7 +29,6 @@ import hashlib
 import ply.lex as lex
 from logger import logger_code
 import time
-from preprocessor_plugins import pre_macro_functions, macro_iter_functions, substituteDefines, post_macro_iter_functions, post_macro_functions, handleSanitizeExitCommand
 import json
 import copy
 import utils
@@ -50,7 +49,7 @@ macro_start_re = re.compile(r'^\s*macro(?=\W)')
 macro_end_re = re.compile(r'^\s*end\s+macro')
 line_continuation_re = re.compile(r'\.\.\.\s*\n', re.MULTILINE)
 
-placeholders            = {}            # mapping from placeholder number to contents (placeholders used for comments, strings and ...)
+placeholders            = {}            # mapping from placeholder number to contents (placeholders used for comments, strings, etc.)
 functions               = OrderedDict() # maps from function names (prefixed with namespaces) to AST node corresponding to the function definition
 functions_before_prefix = OrderedDict() # maps from function names to AST node corresponding to the function definition
 variables               = set()         # a set of the names of the declared variables (prefixed with $, %, !, ? or @)
@@ -1787,21 +1786,40 @@ class KSPCompiler(object):
     def convert_lines_to_code(self):
         self.code = merge_lines(self.lines)
 
-    def pre_macro_functions(self):
+    def run_pre_macro_functions(self):
         '''Create define cache and run pre_macro_functions from `preprocessor_plugins.py`'''
+        from preprocessor_plugins import pre_macro_functions
+
         self.define_cache = pre_macro_functions(self.lines)
+
+    def run_post_macro_functions(self):
+        '''Run post_macro_functions from `preprocessor_plugins.py`'''
+        from preprocessor_plugins import post_macro_functions, handleStringArrayInitialisation, handleArrayConcat
+
+        post_macro_functions(self.lines)
+        handleStringArrayInitialisation(self.lines, placeholders)
+        handleArrayConcat(self.lines)
+
+    def run_sanitize_exit_command(self):
+        '''Run handleSanitizeExitCommand from `preprocessor_plugins.py`'''
+        from preprocessor_plugins import handleSanitizeExitCommand
+
+        handleSanitizeExitCommand(self.lines)
 
     def extract_macros(self):
         '''Isolate macros into objects, removing from code'''
         self.lines, self.macros = extract_macros(self.lines)
 
     def expand_macros(self):
+        from preprocessor_plugins import macro_iter_functions, post_macro_iter_functions, substituteDefines
+
         # initial expansion. Macro strings are expanded
         normal_lines, callback_lines = expand_macros(self.lines, self.macros, 0, True)
         self.lines = normal_lines + callback_lines
 
         # convert any strings from the macro expansion back into placeholders to prevent defines with identical names within strings being replaced
         convert_strings_to_placeholders(self.lines)
+
 
         # nested expansion, supports now using macros to further specify define constants used for iterate and literate macros
         while macro_iter_functions(self.lines):
@@ -1950,7 +1968,9 @@ class KSPCompiler(object):
 
     def compile(self, callback=None):
         global variables
+
         init_globals()
+
         try:
             used_functions = set()
             used_variables = set()
@@ -1962,17 +1982,17 @@ class KSPCompiler(object):
             #      description                   function                                                                         condition        time-weight
             tasks = [
                  ('scanning and importing code', lambda: self.do_imports_and_convert_to_line_objects(),                             True,                   1),
-                 ('extensions (w/ macros)',      lambda: self.extensions_with_macros(),                                             True,                   1),
-                 # NOTE(Sam): Call the pre-macro section of the preprocessor
-                 ('pre-macro processes',         lambda: self.pre_macro_functions(),                                                True,                   1),
+                 ('extensions (with macros)',    lambda: self.extensions_with_macros(),                                             True,                   1),
+
+                 ('pre-macro processes',         lambda: self.run_pre_macro_functions(),                                            True,                   1),
                  ('parsing macros',              lambda: self.extract_macros(),                                                     True,                   1),
                  ('expanding macros',            lambda: self.expand_macros(),                                                      True,                   1),
-                 # NOTE(Sam): Call the post-macro section of the preprocessor
-                 ('post-macro processes',        lambda: post_macro_functions(self.lines),                                          True,                   1),
-                 ('sanitize exit command',       lambda: handleSanitizeExitCommand(self.lines),                                     do_sanitize_exit,       1),
+
+                 ('post-macro processes',        lambda: self.run_post_macro_functions(),                                           True,                   1),
+                 ('sanitize exit command',       lambda: self.run_sanitize_exit_command(),                                          do_sanitize_exit,       1),
                  ('replace string placeholders', lambda: self.replace_string_placeholders(),                                        True,                   1),
                  ('search for nckp import',      lambda: self.search_for_nckp(),                                                    True,                   1),
-                 # NOTE(Sam): Convert the lines to a block in a separate function
+
                  ('convert lines to code block', lambda: self.convert_lines_to_code(),                                              True,                   1),
                  ('parse code',                  lambda: self.parse_code(),                                                         True,                   1),
                  ('combining callbacks',         lambda: ASTModifierCombineCallbacks(self.module),                                  self.combine_callbacks, 1),
@@ -1983,6 +2003,7 @@ class KSPCompiler(object):
                  ('handle local variables',      lambda: self.sort_functions_and_insert_local_variables_into_on_init(),             True,                   1),
                  ('add variable name prefixes',  lambda: ASTModifierFixPrefixesAndFixControlPars(self.module),                      True,                   1),
                  ('convert dots to underscore',  lambda: self.convert_dots_to_double_underscore(),                                  True,                   1),
+
                  ('init extra syntax checks',    lambda: self.init_extra_syntax_checks(),                                           do_extra,               1),
                  ('check expression types',      lambda: comp_extras.ASTVisitorDetermineExpressionTypes(self.module),               do_extra,               1),
                  ('check statement types',       lambda: comp_extras.ASTVisitorCheckStatementExprTypes(self.module),                do_extra,               1),
@@ -1993,6 +2014,7 @@ class KSPCompiler(object):
                  ('removing unused functions',   lambda: comp_extras.ASTModifierRemoveUnusedFunctions(self.module, used_functions), do_optim,               1),
                  ('removing unused variables',   lambda: comp_extras.ASTVisitorFindUsedVariables(self.module, used_variables),      do_optim,               1),
                  ('removing unused variables',   lambda: comp_extras.ASTModifierRemoveUnusedVariables(self.module, used_variables), do_optim,               1),
+
                  ('compact variable names',      self.compact_names,                                                                self.compact_variables, 1),
                  ('generate code',               self.generate_compiled_code,                                                       True,                   1),
             ]
@@ -2002,23 +2024,31 @@ class KSPCompiler(object):
 
             total_time = float(sum(t[-1] for t in tasks))
             time_so_far = 0
+
             for (desc, func, time) in tasks:
                 if callback:
-                    callback(desc, 100 * time_so_far/total_time) # parameters are: description, percent done
+                    callback(desc, 100 * time_so_far / total_time) # parameters are: description, percent done
                 func()
                 time_so_far += time
+
                 if self.abort_requested:
                     return False
+
             return True
+
         except ksp_ast.ParseException as e:
             messages = []
+
             if isinstance(e.node, lex.LexToken):
                 line_numbers = [e.node.lineno]
             else:
                 line_numbers = [e.node.lineno] + [n.lineno for n in e.node.lexinfo[2]]
+
             messages = ['%s' % str(e)]
+
             for indent, line_number in enumerate(line_numbers):
                 line = self.lines[line_number]
+
             message = '\n'.join(messages)
             raise ParseException(line, message)
 
@@ -2032,6 +2062,7 @@ if __name__ == "__main__":
     import os.path
     import codecs
     import argparse
+    from time import strftime, localtime
 
     # definition of argsparse.FileType in Python 3.4 (with support for encoding) - in case we're running Python 3.3
     class FileType(object):
@@ -2095,6 +2126,9 @@ if __name__ == "__main__":
                 filepath = os.path.join(basedir, filepath)
         return codecs.open(filepath, 'r', 'latin-1').read()
 
+    def print_compile_progress(text, percent_complete):
+        print('[%s] Compiling (%d%%) - %s...' % (strftime('%X', localtime()), percent_complete, text))
+
     # make sure that extra syntax checks are enabled if --optimize argument is used
     if args.optimize == True and args.extra_syntax_checks == False:
         args.extra_syntax_checks = True
@@ -2112,11 +2146,13 @@ if __name__ == "__main__":
         optimize=args.optimize,
         sanitize_exit_command=args.sanitize_exit_command,
         add_compiled_date_comment=(args.add_compile_date))
-    compiler.compile()
+
+    compiler.compile(callback=print_compile_progress)
 
     # write the compiled code to output
     code = compiler.compiled_code.replace('\r', '')
     output = args.output_file
+
     if output is None:
         output_path = compiler.output_file
         if not os.path.isabs(output_path):
