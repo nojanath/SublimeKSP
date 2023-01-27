@@ -23,10 +23,10 @@
 				<string>}</string>
 			</array>
 		</array>
-		<key>increaseIndentPattern</key>
-		<string>\s*(on [a-z_]+|if|else|for|select|family|macro|function|while|taskfunc).*?$</string>
+ 		<key>increaseIndentPattern</key>
+		<string>\s*(on|const|if|else|select|while|function|taskfunc|macro|for|family|struct|list|property|case)\b</string>
 		<key>decreaseIndentPattern</key>
-		<string>\s*(end (on|if|for|select|family|macro|function|while|taskfunc)|else).*?$</string>
+		<string>(?m)^\s*(end\s+(\w+)|case\b|else\b)</string>
 		<key>shellVariables</key>
 		<array>
 			<!-- New // comment type to be used as the default in Sublime.

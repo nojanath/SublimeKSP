@@ -477,7 +477,7 @@ class KspReindent(sublime_plugin.TextCommand):
         return line[:len(line) - len(line.lstrip())]
 
     def reindent(self, lines, indent):
-        increase_indent = re.compile(r'\s*(on|if|else|select|while|function|taskfunc|macro|for|family|property|case)\b')
+        increase_indent = re.compile(r'\s*(on|const|if|else|select|while|function|taskfunc|macro|for|family|struct|list|property|case)\b')
         decrease_indent = re.compile(r'(?m)^\s*(end\s+(\w+)|case\b|else\b)')
         result = []
 
