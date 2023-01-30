@@ -1197,6 +1197,7 @@ log10(<real-value>):real
 lsb(<variable>):integer
 make_instr_persistent(<variable>)
 make_perfview()
+expose_controls()
 make_persistent(<variable>)
 message(<variable-or-text>)
 mf_copy_export_area(<zone-id>)
