@@ -1120,6 +1120,7 @@ event_status(<event-id>):integer
 exit()
 exp(<real-value>):real
 exp2(<real-value>):real
+expose_controls()
 fade_in(<event-id>, <fade-time>)
 fade_out(<event-id>, <fade-time>, <stop-voice>)
 find_group(<group-name>):integer
