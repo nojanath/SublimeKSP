@@ -1120,6 +1120,7 @@ event_status(<event-id>):integer
 exit()
 exp(<real-value>):real
 exp2(<real-value>):real
+expose_controls()
 fade_in(<event-id>, <fade-time>)
 fade_out(<event-id>, <fade-time>, <stop-voice>)
 find_group(<group-name>):integer
@@ -1197,7 +1198,6 @@ log10(<real-value>):real
 lsb(<variable>):integer
 make_instr_persistent(<variable>)
 make_perfview()
-expose_controls()
 make_persistent(<variable>)
 message(<variable-or-text>)
 mf_copy_export_area(<zone-id>)
