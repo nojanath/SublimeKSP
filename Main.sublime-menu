@@ -55,8 +55,17 @@
 						"mnemonic": "U",
 						"id": "uncompress"
 					},
+					{
+						"command": "ksp_global_setting_toggle",
+						"args": {"setting": "ksp_play_sound", "default": false},
+						"caption": "Play Sound When Compilation Finishes",
+						"mnemonic": "S",
+						"id": "play_sound",
+						"checkbox": true
+					},
 
 					{"caption": "-"}, //separator
+
 					{
 						"command": "ksp_global_setting_toggle",
 						"args": {"setting": "ksp_compact_output", "default": false},
@@ -90,14 +99,6 @@
 						"id": "optimize_compiled",
 						"checkbox": true
 					},
-					{
-						"command": "ksp_global_setting_toggle",
-						"args": {"setting": "ksp_combine_callbacks", "default": false},
-						"caption": "Combine Duplicate Callbacks",
-						"mnemonic": "b",
-						"id": "combine_callbacks",
-						"checkbox": true
-					},
 					{"caption": "-"}, //separator
 					{
 						"command": "ksp_global_setting_toggle",
@@ -109,18 +110,18 @@
 					},
 					{
 						"command": "ksp_global_setting_toggle",
-						"args": {"setting": "ksp_sanitize_exit_command", "default": true},
-						"caption": "Sanitize Behavior of 'exit' Command",
-						"mnemonic": "x",
-						"id": "sanitize_exit_command",
+						"args": {"setting": "ksp_combine_callbacks", "default": false},
+						"caption": "Combine Duplicate Callbacks",
+						"mnemonic": "b",
+						"id": "combine_callbacks",
 						"checkbox": true
 					},
 					{
 						"command": "ksp_global_setting_toggle",
-						"args": {"setting": "ksp_play_sound", "default": false},
-						"caption": "Play Sound When Compilation Finishes",
-						"mnemonic": "S",
-						"id": "play_sound",
+						"args": {"setting": "ksp_sanitize_exit_command", "default": true},
+						"caption": "Sanitize Behavior of 'exit' Command",
+						"mnemonic": "x",
+						"id": "sanitize_exit_command",
 						"checkbox": true
 					},
 
