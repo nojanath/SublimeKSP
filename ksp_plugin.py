@@ -442,10 +442,10 @@ class KspGlobalSettingToggleCommand(sublime_plugin.ApplicationCommand):
         }
 
         s = sublime.load_settings("KSP.sublime-settings")
-        s.set(setting, not s.get(setting, False))
+        s.set(setting, not s.get(setting, default))
         sublime.save_settings("KSP.sublime-settings")
 
-        if s.get(setting, False):
+        if s.get(setting, default):
             option_toggle = "enabled!"
         else:
             option_toggle = "disabled!"
@@ -456,8 +456,8 @@ class KspGlobalSettingToggleCommand(sublime_plugin.ApplicationCommand):
         return bool(sublime.load_settings("KSP.sublime-settings").get(setting, default))
 
     def is_enabled(self, setting, default):
-        extra_checks = bool(sublime.load_settings("KSP.sublime-settings").get("ksp_extra_checks", default))
-        optim_code = bool(sublime.load_settings("KSP.sublime-settings").get("ksp_optimize_code", default))
+        extra_checks = bool(sublime.load_settings("KSP.sublime-settings").get("ksp_extra_checks", True))
+        optim_code = bool(sublime.load_settings("KSP.sublime-settings").get("ksp_optimize_code", False))
 
         if setting == "ksp_optimize_code":
             return extra_checks
