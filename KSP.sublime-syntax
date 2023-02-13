@@ -118,8 +118,8 @@ contexts:
       captures:
         1: keyword.other.source.ksp
         2: meta.function-call.source.ksp
-    - match: '(declare|define) +(literals|global|local|instpers|pers|read )?(ui_label|ui_button|ui_switch|ui_slider|ui_menu|ui_value_edit|ui_waveform|ui_wavetable|ui_knob|ui_table|call|step|ui_text_edit|ui_level_meter|ui_file_selector|ui_panel|ui_mouse_area) *([a-zA-Z0-9_.]+) *\('
-      comment: Declaration of UI variable
+    - match: '(declare|define)\s+(literals|global|local|instpers|pers|read)?\s*(ui_label|ui_button|ui_switch|ui_slider|ui_menu|ui_value_edit|ui_waveform|ui_wavetable|ui_knob|ui_table|call|step|ui_text_edit|ui_level_meter|ui_file_selector|ui_panel|ui_mouse_area)\s*([a-zA-Z0-9_.]+)\s*\('
+      comment: Variable declaration
       captures:
         1: keyword.other.source.ksp
         2: keyword.other.source.ksp
