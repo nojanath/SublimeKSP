@@ -1330,11 +1330,11 @@ set_waveform_properties(<waveform>, <bar-color>, <zero-line-color>, <bg-color>, 
 set_wavetable2d_properties(<wavetable>, <wt-zone>, <bg-color>, <bg-alpha>, <wave-color>, <wave-alpha>, <wave-end-color>, <wave-end-alpha>)
 set_wavetable3d_properties(<wavetable>, <wt-zone>, <bg-color>, <bg-alpha>, <wavetable-color>, <wavetable-alpha>, <wavetable-end-color>, <wavetable-end-alpha>, <parallax-x>, <parallax-y>)
 set_zone_par(<zone-id>, <parameter>, <value>):integer
-sgn(<real-value>):integer
+sgn(<variable>):integer
 sh_left(<expression>, <amount>):integer
 sh_right(<expression>, <amount>):integer
 show_library_tab()
-signbit(<real-value>):integer
+signbit(<variable>):integer
 sin(<real-value>):real
 slice_idx_loop_end(<group-idx>, <loop-idx>):integer
 slice_idx_loop_start(<group-idx>, <loop-idx>):integer
