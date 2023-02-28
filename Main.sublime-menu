@@ -25,7 +25,7 @@
 						"id": "compile"
 					},
 					{
-						"command": "compile_all_open",
+						"command": "compile_all_open_ksp",
 						"context":
 						[{
 							"key": "selector",
@@ -37,7 +37,7 @@
 						"id": "compile_all_open"
 					},
 					{
-						"command": "ksp_recompile",
+						"command": "recompile_ksp",
 						"context":
 						[{
 							"key": "selector",
