@@ -6,12 +6,12 @@
         },
         {
             "keys": ["ctrl+f5"],
-             "command" : "ksp_recompile",
+             "command" : "recompile_ksp",
              "context": [{ "key": "selector", "operator": "equal", "operand": "source.ksp" }]
         },
         {
             "keys": ["shift+f5"],
-             "command" : "compile_all_open",
+             "command" : "compile_all_open_ksp",
              "context": [{ "key": "selector", "operator": "equal", "operand": "source.ksp" }]
         },
         {

@@ -30,25 +30,9 @@ except Exception:
 last_compiler = None
 sublime_version = int(sublime.version())
 
-class KspRecompile(sublime_plugin.ApplicationCommand):
-    '''Recompile most recently compiled file'''
-
-    def is_enabled(self):
-        # only show the command when a file with KSP syntax highlighting is visible
-        view = sublime.active_window().active_view()
-        if view:
-            return 'KSP.sublime-syntax' in view.settings().get('syntax', '')
-
-    def run(self, *args):
-        sublime.active_window().run_command('compile_ksp', {'recompile': True})
-
-class Compile_all_openCommand(sublime_plugin.ApplicationCommand):
-    '''Compile all scripts open in the current sublime window'''
-
-    def run(self, *args):
-        sublime.active_window().run_command('compile_ksp', {'compile_all_open': True})
 
 class CompileKspCommand(sublime_plugin.ApplicationCommand):
+    '''Compile the KSP file or files'''
 
     def __init__(self):
         sublime_plugin.ApplicationCommand.__init__(self)
@@ -69,15 +53,40 @@ class CompileKspCommand(sublime_plugin.ApplicationCommand):
 
         # find the view containing the code to compile
         view = sublime.active_window().active_view()
-        open_views = [view]
+
         if kwargs.get('recompile', None) and self.last_filename:
             view = CompileKspThread.find_view_by_filename(self.last_filename)
+
+        open_views = [view]
+
         if kwargs.get('compile_all_open', None):
             open_views = view.window().views()
             open_views = [view for view in open_views if re.search(r'source\.ksp',view.scope_name(0))]
 
         self.thread = CompileKspThread(open_views)
         self.thread.start()
+        self.last_filename = view.file_name()
+
+
+class RecompileKsp(sublime_plugin.ApplicationCommand):
+    '''Recompile the most recently compiled file'''
+
+    def is_enabled(self):
+        # only show the command when a file with KSP syntax highlighting is visible
+        view = sublime.active_window().active_view()
+        if view:
+            return 'KSP.sublime-syntax' in view.settings().get('syntax', '')
+
+    def run(self, *args):
+        sublime.active_window().run_command('compile_ksp', {'recompile': True})
+
+
+class CompileAllOpenKspCommand(sublime_plugin.ApplicationCommand):
+    '''Compile all scripts open in the current Sublime Text window'''
+
+    def run(self, *args):
+        sublime.active_window().run_command('compile_ksp', {'compile_all_open': True})
+
 
 class CompilerSounds:
     dir = None
@@ -100,6 +109,7 @@ class CompilerSounds:
             if os.path.isfile(sound_path):
                 call(["aplay", sound_path])
 
+
 class CompileKspThread(threading.Thread):
     def __init__(self, open_views):
         threading.Thread.__init__(self)
@@ -119,6 +129,7 @@ class CompileKspThread(threading.Thread):
     def find_view_by_filename(cls, filename, base_path=None):
         if filename is None:
             return sublime.active_window().active_view()
+
         if not os.path.isabs(filename) and base_path:
             filename = os.path.join(base_path, filename)
 
@@ -126,6 +137,7 @@ class CompileKspThread(threading.Thread):
             for view in window.views():
                 if view.file_name() and view.file_name() == filename:
                     return view
+
         return None
 
     def compile_handle_error(self, error_msg, error_lineno, error_filename):
@@ -201,9 +213,12 @@ class CompileKspThread(threading.Thread):
 
             try:
                 if self.compile_all_open:
-                    utils.log_message('Compiling %s, script %s of %s...' % (filepath, self.open_views.index(view) + 1, len(self.open_views)))
+                    utils.log_message('Compiling \'%s\', script %s of %s...' % (filepath, self.open_views.index(view) + 1, len(self.open_views)))
                 else:
-                    utils.log_message('Compiling...')
+                    if filepath == None:
+                        filepath = 'untitled'
+
+                    utils.log_message('Compiling \'%s\'...' % filepath)
 
                 self.compiler = ksp_compiler.KSPCompiler(code, self.base_path,
                                                          compact                   = compact,
@@ -256,7 +271,9 @@ class CompileKspThread(threading.Thread):
     def description(self, *args):
         return 'Compiled KSP'
 
+
 # **********************************************************************************************
+
 
 from compiler.ksp_builtins import keywords, variables, functions, function_signatures, functions_with_forced_parentheses
 
@@ -463,6 +480,7 @@ class KspGlobalSettingToggleCommand(sublime_plugin.ApplicationCommand):
             return extra_checks
         else:
             return True
+
 
 class KspIndentListener(sublime_plugin.EventListener):
     def on_text_command(self, view, command_name, args):

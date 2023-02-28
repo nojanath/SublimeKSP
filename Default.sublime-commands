@@ -5,11 +5,11 @@
 	},
 	{
 		"caption": "SublimeKSP: Recompile",
-		"command": "ksp_recompile"
+		"command": "recompile_ksp"
 	},
 	{
 		"caption": "SublimeKSP: Compile All Open Scripts With Defined Output Path",
-		"command": "compile_all_open"
+		"command": "compile_all_open_ksp"
 	},
 	{
 		"caption": "Preferences: SublimeKSP",
