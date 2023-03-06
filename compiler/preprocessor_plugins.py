@@ -465,8 +465,9 @@ def handleArrayConcat(lines):
 		elif line.startswith("on"):
 			if re.search(initRe, line):
 				newLines.append(lines[lineIdx])
-				newLines.append(lines[lineIdx].copy("declare concat_it"))
-				newLines.append(lines[lineIdx].copy("declare concat_offset"))
+				if not (any(l.command == "declare concat_i" for l in newLines) or any(l.command == "declare concat_offset" for l in newLines)): # Only add preprocessor variable if not previously declared
+					newLines.append(lines[lineIdx].copy("declare concat_it"))
+					newLines.append(lines[lineIdx].copy("declare concat_offset"))
 				continue
 		newLines.append(lines[lineIdx])
 	replaceLines(lines, newLines)
@@ -901,7 +902,8 @@ def handleLists(lines):
 					raise ParseException(lines[lineIdx], "list_add() can only be used in the init callback!\n")
 			newLines.append(lines[lineIdx])
 			if addInitVar:
-				newLines.append(lines[lineIdx].copy("declare list_it"))
+				if not any(l.command == "declare list_it" for l in newLines): # Only add preprocessor variable if not previously declared
+					newLines.append(lines[lineIdx].copy("declare list_it"))
 				addInitVar = False
 			continue
 		else:
@@ -1020,7 +1022,8 @@ def handleSanitizeExitCommand(lines):
 		if line.startswith("on"):
 			if re.search(initRe, line):
 				newLines.append(lines[i])
-				newLines.append(lines[i].copy("declare sksp_dummy"))
+				if not any(l.command == "declare sksp_dummy" for l in newLines): # Only add preprocessor variable if not previously declared
+					newLines.append(lines[i].copy("declare sksp_dummy"))
 				continue
 
 		if line == "exit":
@@ -1044,7 +1047,8 @@ def handleStringArrayInitialisation(lines, placeholders):
 		if line.startswith("on"):
 			if re.search(initRe, line):
 				newLines.append(lines[i])
-				newLines.append(lines[i].copy("declare string_it"))
+				if not any(l.command == "declare string_it" for l in newLines): # Only add preprocessor variable if not previously declared
+					newLines.append(lines[i].copy("declare string_it"))
 				continue
 		if line.startswith("declare"):
 			m = re.search(stringArrayRe, line)
@@ -1386,7 +1390,8 @@ def handleUIArrays(lines):
 		if line.startswith("on"):
 			if re.search(initRe, line):
 				newLines.append(lines[lineNum])
-				newLines.append(lines[lineNum].copy("declare preproc_i"))
+				if not any(l.command == "declare preproc_i" for l in newLines): # Only add preprocessor variable if not previously declared
+					newLines.append(lines[lineNum].copy("declare preproc_i"))
 				continue
 		elif line.startswith("decl"):
 			m = re.search(uiArrayRe, line)

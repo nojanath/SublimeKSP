@@ -775,7 +775,7 @@ class ID(Expr):
         return '%s%s' % (self.prefix, self.identifier)
 
     def __repr__(self):
-        raise Exception('')
+        #raise Exception('')
         return '%s%s' % (self.prefix, self.identifier)
 
     def get_childnodes(self):
