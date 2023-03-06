@@ -27,6 +27,8 @@ function_signatures = {}
 functions_with_forced_parentheses = set()
 functions_with_constant_return = set() # Functions with return values that can be used for const variables
 
+sKSP_preprocessor_variables = ("sksp_dummy", "string_it", "list_it", "concat_it", "concat_offset", "preproc_i")
+
 data = {'variables': variables,
         'functions': functions,
         'keywords':  keywords,
@@ -35,7 +37,8 @@ data = {'variables': variables,
         'engine_parameters': engine_parameters,
         'event_parameters' : event_parameters,
         'functions_with_forced_parentheses': functions_with_forced_parentheses,
-        'functions_with_constant_return': functions_with_constant_return
+        'functions_with_constant_return': functions_with_constant_return,
+        'sKSP_variables' : sKSP_preprocessor_variables,
         }
 
 section = None

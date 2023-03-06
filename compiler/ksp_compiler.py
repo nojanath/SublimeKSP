@@ -105,7 +105,8 @@ def prefix_with_ns(name, namespaces, function_parameter_names=None, force_prefix
     if (unprefixed_name in ksp_builtins.variables_unprefixed or
           name in ksp_builtins.functions and not name in functions_before_prefix or
           name in ksp_builtins.keywords or
-          first_name_part in function_parameter_names) and not force_prefixing:
+          first_name_part in function_parameter_names or 
+          name in ksp_builtins.sKSP_preprocessor_variables) and not force_prefixing:
         return name   # don't add prefix
 
     # add namespace to name
