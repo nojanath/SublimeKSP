@@ -538,7 +538,8 @@ class ASTModifierBase(ksp_ast_processing.ASTModifier):
 
 class ASTModifierCombineCallbacks(ASTModifierBase):
     '''Combines callbacks by generating a dictionary of used CBs and extending existing ones with lines in the duplicate CB'''
-    def __init__(self, ast):
+    def __init__(self, ast, combine_callbacks):
+        self.combine_callbacks = combine_callbacks
         ASTModifierBase.__init__(self, modify_expressions=True)
         self.traverse(ast, parent_function=None, function_params=[], parent_families=[])
 
@@ -555,9 +556,9 @@ class ASTModifierCombineCallbacks(ASTModifierBase):
                 cb_key = b.name + ui_name
 
                 if cb_key in callbacks:
+                    if not self.combine_callbacks:
+                        raise ksp_ast.ParseException(b, "This callback has already been declared! Either remove the duplicate, or enable the Combine Duplicate Callbacks option.")
                     children = b.get_childnodes()
-                    if b.name == 'init':
-                        children = children[4:] # Removes preprocessor variables (concat_it, string_it etc.) from duplicate init CBs
                     if b.variable:
                         children = children[1:] # Removes ui_name from children to prevent duplicate CBs
                     callbacks[cb_key].lines.extend(children) # Extend the existing CB with lines from the duplicate
@@ -1997,7 +1998,7 @@ class KSPCompiler(object):
 
                  ('convert lines to code block', lambda: self.convert_lines_to_code(),                                              True,                   1),
                  ('parse code',                  lambda: self.parse_code(),                                                         True,                   1),
-                 ('combining callbacks',         lambda: ASTModifierCombineCallbacks(self.module),                                  self.combine_callbacks, 1),
+                 ('combining callbacks',         lambda: ASTModifierCombineCallbacks(self.module, self.combine_callbacks),          True,                   1),
                  ('various tasks',               lambda: ASTModifierFixReferencesAndFamilies(self.module, self.lines),              True,                   1),
                  ('add variable name prefixes',  lambda: ASTModifierFixPrefixesIncludingLocalVars(self.module),                     True,                   1),
                  ('inline functions',            lambda: ASTModifierFunctionExpander(self.module),                                  True,                   1),
