@@ -911,6 +911,7 @@ def handleLists(lines):
 			if line.startswith("end"):
 				if re.search(endOnRe, line):
 					isInInit = False
+					preInit = True # In case there are multiple on init CBs (Combine Duplicate Callbacks)
 					newLines.append(lines[lineIdx])
 					continue
 
