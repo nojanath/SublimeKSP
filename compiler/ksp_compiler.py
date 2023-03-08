@@ -38,17 +38,82 @@ variable_prefixes = '$%@!?~'
 # regular expressions:
 white_space_re = r'(\s*(\{[^\n]*?\})?\s*)'
 white_space = r'(?ms)%s' % white_space_re
-comment_re = re.compile(r'(?<!["\'])\{.*?\}|\(\*.*?\*\)|/\*.*?\*/', re.DOTALL)   # if { is preceeded by ' or " don't treat it as a comment
-string_re = re.compile(r'".*?(?<!\\)"|' + r"'.*?(?<!\\)'")
-line_continuation_re = re.compile(r'\.\.\.\s*\n', re.MULTILINE)
-placeholder_re = re.compile(r'\[\[\[\d+\]\]\]')
-varname_re = re.compile(r'((\b|[$%!@~?])[0-9]*[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_0-9]+)*)\b')
-varname_dot_re = re.compile(r'(?<![$%!@~?])\b[0-9]*[a-zA-Z_][a-zA-Z0-9_]*?\.')
+
+comment_singleline_re = re.compile(r'''
+            (?<!["\'])         # negative lookbehind to exclude comments inside strings
+            \/\/.*             # match single-line comment //
+            ''', re.VERBOSE)
+
+comment_re = re.compile(r'''
+    (?<!["'])   # negative lookbehind to make sure there is no quote before the pattern
+    \{.*?\}     # match {...}
+    |           # or
+    \(\*.*?\*\) # match (*...*)
+    |           # or
+    /\*.*?\*/   # match /*...*/
+''', re.DOTALL | re.VERBOSE)
+
+string_re = re.compile(r'''
+    "               # match a double quote
+    .*?             # match any character (non-greedy)
+    (?<!\\)"        # ensure the match is not preceded by a backslash
+    |               # or
+    '               # match a single quote
+    .*?             # match any character (non-greedy)
+    (?<!\\)'        # ensure the match is not preceded by a backslash
+''', re.DOTALL | re.VERBOSE)
+
+line_continuation_re = re.compile(r'''
+    \.\.\.          # match ellipsis
+    \s*             # match zero or more whitespace characters
+    \n              # match newline character
+''', re.MULTILINE | re.VERBOSE)  # End of regex pattern with flags
+
+placeholder_re = re.compile(r'''
+    \[\[\[    # match the opening sequence [[[
+    \d+       # match one or more digits
+    \]\]\]    # match the closing sequence ]]]
+''', re.VERBOSE)
+
+varname_re = re.compile(r'''
+    (
+        (\b|[$%!@~?])       # word boundary or special characters
+        [0-9]*              # zero or more digits
+        [a-zA-Z_]           # start with an alphabet or underscore
+        [a-zA-Z0-9_]*       # followed by alphanumeric or underscore
+        (\.[a-zA-Z_0-9]+)*  # zero or more occurrences of dot followed by alphanumeric or underscore
+    )
+    \b                      # word boundary
+''', re.VERBOSE)
+
+varname_dot_re = re.compile(r'''
+    (?<![$%!@~?])            # negative lookbehind assertion
+    \b                       # word boundary
+    [0-9]*                   # any number of digits
+    [a-zA-Z_][a-zA-Z0-9_]*?  # a word starting with a letter or underscore, followed by any number of letters, digits or underscores (lazy match)
+    \.                       # a literal dot
+''', re.VERBOSE)
+
+import_re = re.compile(r'''
+    ^\s*                                    # match start of line and any leading whitespace
+    import\s+                               # match 'import' keyword and one or more whitespace characters
+    "                                       # match opening double-quote character
+    (?P<filename>                           # start a named capturing group 'filename'
+        .+?                                 # match any character one or more times, non-greedily
+    )                                       # end named capturing group 'filename'
+    "                                       # match closing double-quote character
+    (                                       # start a non-named capturing group
+        \s+as\s+                            # match 'as' keyword surrounded with whitespace
+        (?P<asname>[a-zA-Z_][a-zA-Z0-9_.]*) # match valid identifier as a named capturing group 'asname'
+    )?                                      # end non-named capturing group and make it optional
+    \s*                                     # match any trailing whitespace after the statement
+    %s                                      # match any amount of whitespace and newlines after the statement
+    $                                       # match the end of the line
+''' % white_space_re, re.MULTILINE | re.DOTALL | re.VERBOSE)
+
 import_basic_re = re.compile(r'^\s*import ')
-import_re = re.compile(r'(?ms)^\s*import\s+"(?P<filename>.+?)"(\s+as\s(?P<asname>[a-zA-Z_][a-zA-Z0-9_.]*))?%s$' % white_space_re)
 macro_start_re = re.compile(r'^\s*macro(?=\W)')
 macro_end_re = re.compile(r'^\s*end\s+macro')
-line_continuation_re = re.compile(r'\.\.\.\s*\n', re.MULTILINE)
 
 placeholders            = {}            # mapping from placeholder number to contents (placeholders used for comments, strings, etc.)
 functions               = OrderedDict() # maps from function names (prefixed with namespaces) to AST node corresponding to the function definition
@@ -105,7 +170,7 @@ def prefix_with_ns(name, namespaces, function_parameter_names=None, force_prefix
     if (unprefixed_name in ksp_builtins.variables_unprefixed or
           name in ksp_builtins.functions and not name in functions_before_prefix or
           name in ksp_builtins.keywords or
-          first_name_part in function_parameter_names or 
+          first_name_part in function_parameter_names or
           name in ksp_builtins.sKSP_preprocessor_variables) and not force_prefixing:
         return name   # don't add prefix
 
@@ -1708,9 +1773,8 @@ class KSPCompiler(object):
             # Preparing a new source block to add called amended_logger_code
             amended_logger_code = logger_code
 
-            new_comment_re = r'(?<!["\'])\/\/.*' # this is a single line new comment type //
             activate_line = m.group(0).strip()
-            activate_line = re.sub(new_comment_re, '', activate_line)
+            activate_line = re.sub(comment_singleline_re, '', activate_line)
             filepath_m = re.search(r"(\"|\').*(\"|\')", str(activate_line))
             if not filepath_m:
                 raise ParseException(Line("", [(None, 1)], None), 'No filepath used in activate_logger()!\n')
