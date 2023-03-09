@@ -53,6 +53,7 @@ positional arguments:
 
 optional arguments:
   -h, --help                   show this help message and exit
+  -f, --force                  force all specified compiler options, overriding any compile_with pragma directives from the script
   -c, --compact                remove indents and empty lines in compiled code
   -v, --compact_variables      shorten and obfuscate variable names in compiled code
   -d, --combine_callbacks      combines duplicate callbacks - but not functions or macros
@@ -62,7 +63,7 @@ optional arguments:
   -x, --sanitize_exit_command  adds a dummy no-op command before every exit function call
 
 
-> python ksp_compiler.py -c -e -o "<source-file-path>" "<target-file-path>"
+> python ksp_compiler.py --force -c -e -o "<source-file-path>" "<target-file-path>"
 ```
 
 ### Updates
