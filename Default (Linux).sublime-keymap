@@ -20,6 +20,11 @@
             "context": [{ "key": "selector", "operator": "equal", "operand": "source.ksp" }]
         },
         {
+            "keys": ["alt+o"],
+            "command": "open_path_from_import_or_pragma",
+            "context": [{ "key": "selector", "operator": "equal", "operand": "source.ksp" }]
+        },
+        {
             "keys": ["enter"],
             "command": "ksp_on_enter",
             "context": [{ "key": "selector", "operator": "equal", "operand": "source.ksp", },

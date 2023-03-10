@@ -1951,8 +1951,6 @@ class KSPCompiler(object):
         # find path to where we will save the compiled code
         pragma_re = re.compile(r'\{\s*\#pragma\s+save_compiled_source\s+(.*)\}')
 
-        m = pragma_re.search(code)
-
         for m in pragma_re.finditer(code):
             dir_check = m.group(1).strip()
 
@@ -2206,7 +2204,6 @@ class KSPCompiler(object):
 if __name__ == "__main__":
     '''Using the compiler as command line tool'''
     import sys
-    import os
     import os.path
     import codecs
     import argparse
@@ -2228,19 +2225,19 @@ if __name__ == "__main__":
                 elif 'w' in self._mode:
                     return sys.stdout
                 else:
-                    msg = _('argument "-" with mode %r') % self._mode
+                    msg = _('Argument "-" with mode %r') % self._mode
                     raise ValueError(msg)
 
             # all other arguments are used as file names
             try:
                 return open(string, self._mode, self._bufsize, self._encoding, self._errors)
             except OSError as e:
-                message = _("can't open '%s': %s")
+                message = _("Cannot open '%s': %s")
                 raise ArgumentTypeError(message % (string, e))
 
         def __repr__(self):
             args = self._mode, self._bufsize
-            kwargs = [('encoding', self._encoding), ('errors', self._errors)]
+            kwargs = [('Encoding', self._encoding), ('Errors', self._errors)]
             args_str = ', '.join([repr(arg) for arg in args if arg != -1] +
                                  ['%s=%r' % (kw, arg) for kw, arg in kwargs
                                   if arg is not None])
