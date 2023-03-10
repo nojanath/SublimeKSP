@@ -30,6 +30,10 @@ except Exception:
 last_compiler = None
 sublime_version = int(sublime.version())
 
+pragma_save_src_re = r'\{\s*\#pragma\s+save_compiled_source\s+(.*)\}'
+import_path_re = r'\s*import\s+[\"\'](.*)[\"\']'
+save_src_compiled_re = re.compile(pragma_save_src_re)
+pragma_and_import_re = re.compile(r'%s|%s' % (pragma_save_src_re, import_path_re))
 
 class CompileKspCommand(sublime_plugin.ApplicationCommand):
     '''Compile the KSP file or files'''
@@ -41,7 +45,9 @@ class CompileKspCommand(sublime_plugin.ApplicationCommand):
 
     def is_enabled(self):
         # only show the command when a file with KSP syntax highlighting is visible
+
         view = sublime.active_window().active_view()
+
         if view:
             return 'KSP.sublime-syntax' in view.settings().get('syntax', '')
 
@@ -73,7 +79,9 @@ class RecompileKsp(sublime_plugin.ApplicationCommand):
 
     def is_enabled(self):
         # only show the command when a file with KSP syntax highlighting is visible
+
         view = sublime.active_window().active_view()
+
         if view:
             return 'KSP.sublime-syntax' in view.settings().get('syntax', '')
 
@@ -113,11 +121,13 @@ class CompilerSounds:
 class CompileKspThread(threading.Thread):
     def __init__(self, open_views):
         threading.Thread.__init__(self)
+
         self.base_path = None
         self.compiler = None
         self.open_views = open_views
         self.current_view = None
         self.compile_all_open = False
+
         if len(open_views) > 1:
             self.compile_all_open = True
 
@@ -142,8 +152,10 @@ class CompileKspThread(threading.Thread):
 
     def compile_handle_error(self, error_msg, error_lineno, error_filename):
         view = CompileKspThread.find_view_by_filename(error_filename, self.base_path)
+
         if view:
             sublime.active_window().focus_view(view)
+
             if error_lineno is not None:
                 pos = view.text_point(error_lineno, 0)
                 line_region = view.line(sublime.Region(pos, pos))
@@ -151,6 +163,7 @@ class CompileKspThread(threading.Thread):
                 view.show(line_region)
                 selection.clear()
                 selection.add(line_region)
+
         utils.log_message('Error - compilation aborted!')
         sublime.error_message(error_msg)
         sublime.status_message('')
@@ -158,13 +171,16 @@ class CompileKspThread(threading.Thread):
     def read_file_function(self, filepath):
         if filepath.startswith('http://'):
             from urllib.request import urlopen
+
             s = urlopen(filepath, timeout=5).read().decode('utf-8')
             return re.sub('\r+\n*', '\n', s)
 
         if self.base_path:
             filepath = os.path.join(self.base_path, filepath)
+
         filepath = os.path.abspath(filepath)
         view = CompileKspThread.find_view_by_filename(filepath, self.base_path)
+
         if view is None:
             s = codecs.open(filepath, 'r', 'utf-8').read()
             return re.sub('\r+\n*', '\n', s)
@@ -201,9 +217,7 @@ class CompileKspThread(threading.Thread):
 
             sound_utility = CompilerSounds()
 
-            pragma_compiled_source_re = re.compile(r'\{\s*\#pragma\s+save_compiled_source\s+(.*)\}')
-
-            if self.compile_all_open and not pragma_compiled_source_re.search(code):
+            if self.compile_all_open and not save_src_compiled_re.search(code):
                 if filepath == None:
                     filepath = 'untitled'
 
@@ -255,24 +269,30 @@ class CompileKspThread(threading.Thread):
                         sublime.set_clipboard(code)
                 else:
                     utils.log_message('Compilation aborted!')
+
             except ksp_ast.ParseException as e:
                 error_msg = unicode(e)
                 line_object = self.compiler.lines[e.lineno]
+
                 if line_object:
                     error_lineno = line_object.lineno-1
                     error_filename = line_object.filename
+
                 if line_object:
                     error_msg = re.sub(r'line (\d+)', 'line %s' % line_object.lineno, error_msg)
+
             except ksp_compiler.ParseException as e:
                 error_lineno = e.line.lineno-1
                 error_filename = e.line.filename
                 error_msg = e.message
+
             except Exception as e:
                 error_msg = str(e)
                 error_msg = ''.join(traceback.format_exception(*sys.exc_info()))
 
             if error_msg:
                 self.compile_handle_error(error_msg, error_lineno, error_filename)
+
                 if should_play_sound:
                     sound_utility.play(command="error")
             else:
@@ -295,7 +315,10 @@ builtin_compl_funcs = []
 builtin_compl_vars = []
 
 if sublime_version >= 4000:
-    builtin_compl_vars.extend(sublime.CompletionItem(trigger=v[1:], annotation='variable', completion=v[1:], kind=sublime.KIND_VARIABLE) for v in variables)
+    builtin_compl_vars.extend(sublime.CompletionItem(trigger = v[1:],
+                                                     annotation = 'variable',
+                                                     completion = v[1:],
+                                                     kind = sublime.KIND_VARIABLE) for v in variables)
 else:
     builtin_compl_vars.extend(('%s\tvariable' % v[1:], v[1:]) for v in variables)
     builtin_compl_vars.sort()
@@ -317,7 +340,12 @@ for f in functions:
     completion = ["%s\tfunction" % (f), "%s%s" % (f,args_str)]
 
     if sublime_version >= 4000:
-        builtin_compl_funcs.append(sublime.CompletionItem(trigger=f, annotation='function', completion=f+args_str, details=function_details, completion_format=sublime.COMPLETION_FORMAT_SNIPPET, kind=sublime.KIND_FUNCTION))
+        builtin_compl_funcs.append(sublime.CompletionItem(trigger = f,
+                                                          annotation = 'function',
+                                                          completion = f + args_str,
+                                                          details = function_details,
+                                                          completion_format = sublime.COMPLETION_FORMAT_SNIPPET,
+                                                          kind = sublime.KIND_FUNCTION))
     else:
         builtin_compl_funcs.append(tuple(completion))
         builtin_compl_funcs.sort()
@@ -331,11 +359,13 @@ for v in variables:
     completion = []
     name = None
     original_variable = v
+
     if v.startswith('$CONTROL_PAR_'):
         v = v.replace('$CONTROL_PAR_', '')
         v = remap_control_pars.get(v, v).lower()
         completion.append(('%s\tui param' % v, v))
         name = 'ui param'
+
     if re.search(r'^\$EVENT_PAR_[0|1|2|3]', v):
         v = v.replace('$EVENT_', '').lower()
         completion.append(('%s\tevent param' % v, v))
@@ -347,7 +377,12 @@ for v in variables:
 
     if completion:
         if sublime_version >= 4000:
-            magic_control_and_event_pars.append(sublime.CompletionItem(trigger=v, annotation=name, completion=v, details=original_variable , completion_format=sublime.COMPLETION_FORMAT_SNIPPET, kind=sublime.KIND_VARIABLE))
+            magic_control_and_event_pars.append(sublime.CompletionItem(trigger = v,
+                                                                       annotation = name,
+                                                                       completion = v,
+                                                                       details = original_variable ,
+                                                                       completion_format = sublime.COMPLETION_FORMAT_SNIPPET,
+                                                                       kind = sublime.KIND_VARIABLE))
         else:
             magic_control_and_event_pars.append(tuple(completion[0]))
             magic_control_and_event_pars.sort()
@@ -362,12 +397,14 @@ for filename in listdir(snippets_path):
     name        = tree.findtext('description')
     tabTrigger  = tree.findtext('tabTrigger')
     content     = tree.findtext('content')
-    content     = content.replace('\n','', 1)
+    content     = content.replace('\n', '', 1)
 
     completion = ["%s\t%s" % (tabTrigger, name), content]
 
     if sublime_version >= 4000:
-        builtin_snippets.append(sublime.CompletionItem.snippet_completion(trigger=tabTrigger, snippet=content, annotation=name))
+        builtin_snippets.append(sublime.CompletionItem.snippet_completion(trigger = tabTrigger,
+                                                                          snippet = content,
+                                                                          annotation = name))
     else:
         builtin_snippets.append(tuple(completion))
         builtin_snippets.sort()
@@ -379,6 +416,7 @@ class KSPCompletions(sublime_plugin.EventListener):
     def _extract_completions(self, view, prefix, point):
         # the sublime view.extract_completions implementation doesn't seem to allow for
         # the . character to be included in the prefix irrespectively of the "word_separators" setting
+
         if '.' in prefix:
             # potentially slow work around for the case where there is a period in the prefix
             code = view.substr(sublime.Region(0, view.size()))
@@ -396,6 +434,7 @@ class KSPCompletions(sublime_plugin.EventListener):
 
     def on_query_completions(self, view, prefix, locations):
         # parts of the code inspired by: https://github.com/agibsonsw/AndyPython/blob/master/PythonCompletions.py
+
         global builtin_compl_vars, builtin_compl_funcs, magic_control_and_event_pars, builtin_snippets
 
         if not view.match_selector(locations[0], 'source.ksp -string -comment -constant'):
@@ -414,8 +453,11 @@ class KSPCompletions(sublime_plugin.EventListener):
             compl = magic_control_and_event_pars
         else:
             compl = self._extract_completions(view, prefix, pt)
-            compl = [(item + "\tdefault", item.replace('$', '\\$', 1)) for item in compl
-                     if len(item) > 3 and item not in all_builtins]
+            compl = [(item + "\tdefault", item.replace('$', '\\$', 1))
+                     for item in compl
+                         if len(item) > 3 and item not in all_builtins
+                    ]
+
             if '.' not in prefix:
                 bc = []
                 bc.extend(builtin_compl_vars)
@@ -439,18 +481,48 @@ class NumericSequenceCommand(sublime_plugin.TextCommand):
     def run(self, edit):
         if len(self.view.sel()) < 2:
             return
+
         start = self.view.substr(self.view.sel()[0])
+
         if start and not re.match(r'\d+', start):
             return
+
         start = int(start) if start else 1
 
         for i, selection in enumerate(self.view.sel()):
             self.view.replace(edit, selection, str(start + i))
 
+class OpenPathFromImportOrPragmaCommand(sublime_plugin.TextCommand):
+    '''Tries to recognize the path used in import or save_compiled_source pragma statements
+       and opens it in a new Sublime Text view'''
+
+    def run(self, edit):
+        v = self.view
+
+        for region in v.sel():
+            line = v.substr(v.line(region))
+
+            for m in pragma_and_import_re.finditer(line):
+                for g in m.groups():
+                    if g != None:
+                        path = g.strip()
+
+                if not os.path.isabs(path):
+                    if v.file_name() == None:
+                        return
+
+                    parent = os.path.dirname(v.file_name())
+                    path = os.path.realpath(os.path.join(parent, path))
+
+                if not os.path.exists(path):
+                    return
+                else:
+                    sublime.active_window().open_file(path)
+
 
 class ReplaceTextWithCommand(sublime_plugin.TextCommand):
     def run(self, edit, new_text=''):
-        self.view.replace(edit, sublime.Region(0,self.view.size()),new_text)
+        self.view.replace(edit, sublime.Region(0, self.view.size()), new_text)
 
 
 class KspGlobalSettingToggleCommand(sublime_plugin.ApplicationCommand):
@@ -508,28 +580,36 @@ class KspReindent(sublime_plugin.TextCommand):
     def reindent(self, lines, indent):
         increase_indent = re.compile(r'\s*(on|const|if|else|select|while|function|taskfunc|macro|for|family|struct|list|property|case)\b')
         decrease_indent = re.compile(r'(?m)^\s*(end\s+(\w+)|case\b|else\b)')
-        result = []
 
+        result = []
         last_line = None
+
         for line in lines:
             if last_line is not None:
                 m = increase_indent.match(last_line)
                 ind = self.get_indent(last_line)
+
                 if m:
                     if m.group(1) == 'select':
                         ind = ind + indent * 2
                     else:
                         ind = ind + indent
+
                 m = decrease_indent.match(line)
+
                 if m:
                     if line.lstrip().startswith('end select'):
                         ind = ind.replace(indent, '', 2)
                     else:
                         ind = ind.replace(indent, '', 1)
+
                 line = ind + line.lstrip()
+
             if line.strip():
                 last_line = line
+
             result.append(line)
+
         return result
 
     def run(self, edit, **kwargs):
@@ -547,6 +627,7 @@ class KspOnEnter(sublime_plugin.TextCommand):
     def get_line(self, lineno):
         if not (0 <= lineno <= self.get_last_lineno()):
             return ''
+
         return self.view.substr(self.view.line(self.view.text_point(lineno, 0)))
 
     def get_last_lineno(self):
@@ -558,34 +639,43 @@ class KspOnEnter(sublime_plugin.TextCommand):
 
     def run(self, edit):
         self.view.run_command('insert', {'characters': '\n'})
+
         for selection in self.view.sel():
             row, col = self.view.rowcol(selection.begin())
-            prev_line = self.get_line(row-1)
+            prev_line = self.get_line(row - 1)
             this_line = self.get_line(row)
-            next_line = self.get_line(row+1)
+            next_line = self.get_line(row + 1)
+
             m = re.match(r'\s*(list|const|struct|on|if|select|while|function|taskfunc|macro|for|family|property)\b', prev_line)
+
             # if the next line is not an 'end ...' line, the next line is not already more indented and the regexp matched
             if (not (next_line and next_line.lstrip().startswith('end ') and
-                     len(self.get_indent(next_line)) == len(self.get_indent(prev_line))) and
-               len(self.get_indent(next_line)) <= len(self.get_indent(prev_line)) and m):
+                len(self.get_indent(next_line)) == len(self.get_indent(prev_line))) and
+                len(self.get_indent(next_line)) <= len(self.get_indent(prev_line)) and m):
+
                 # insert end text
                 indent = self.get_indent(prev_line)
                 end_line = '\n%send %s' % (indent, m.group(1))
                 self.view.insert(edit, selection.b, end_line)
+
                 # remove the old selection and add a new
                 self.view.sel().subtract(self.view.line(self.view.text_point(row+1, 0)))
                 self.view.sel().add(sublime.Region(self.view.text_point(row, len(this_line))))
+
             self.view.run_command('move_to', {"to": "eol"})
 
 
 class KspUncompressCode(sublime_plugin.TextCommand):
     def run(self, edit):
         global last_compiler
+
         if last_compiler:
             uncompress = last_compiler.uncompress_variable_names
             selections = self.view.sel()
+
             if len(selections) == 1 and selections[0].empty():
                 selections = [sublime.Region(0, self.view.size())]
+
             for selection in selections:
                 code = self.view.substr(selection)
                 self.view.replace(edit, selection, uncompress(code))
@@ -603,12 +693,28 @@ class KspAboutCommand(sublime_plugin.ApplicationCommand):
 class KspFixLineEndings(sublime_plugin.EventListener):
     def is_probably_ksp_file(self, view):
         ext = os.path.splitext(view.file_name())[1].lower()
+
         if ext == '.ksp' or ext == '.b3s' or ext == '.nbsc':
             return True
+
         elif ext == '.txt':
             code = view.substr(sublime.Region(0, view.size()))
-            score = sum(sc for (pat, sc) in [(r'^on init\b', 1), (r'^on note\b', 1), (r'^on release\b', 1), (r'^on controller\b', 1), ('^end function', 1), ('EVENT_ID', 2), ('EVENT_NOTE', 2), ('EVENT_VELOCITY', 2), ('^on ui_control', 3), (r'make_persistent', 2), ('^end on', 1), (r'-> result', 2), (r'declare \w+\[\w+\]', 2)]
-                        if re.search('(?m)' + pat, code))
+            score = sum(sc for (pat, sc) in [(r'^on init\b', 1),
+                                             (r'^on note\b', 1),
+                                             (r'^on release\b', 1),
+                                             (r'^on controller\b', 1),
+                                             ('^end function', 1),
+                                             ('EVENT_ID', 2),
+                                             ('EVENT_NOTE', 2),
+                                             ('EVENT_VELOCITY', 2),
+                                             ('^on ui_control', 3),
+                                             (r'make_persistent', 2),
+                                             ('^end on', 1),
+                                             (r'-> result', 2),
+                                             (r'declare \w+\[\w+\]', 2)]
+                            if re.search('(?m)' + pat, code)
+                        )
+
             return score >= 2
         else:
             return False
@@ -620,10 +726,15 @@ class KspFixLineEndings(sublime_plugin.EventListener):
         if self.is_probably_ksp_file(view):
             s = codecs.open(view.file_name(), 'r', 'latin-1').read()
             mixed_line_endings = re.search(r'\r(?!\n)', s) and '\r\n' in s
+
             if mixed_line_endings:
                 s, changes = re.subn(r'\r+\n', '\n', s) # normalize line endings
+
                 if changes:
-                    s = '\n'.join(x.rstrip() for x in s.split('\n')) # strip trailing white-space too while we're at it
+                    # strip trailing whitespace too while we're at it
+                    s = '\n'.join(x.rstrip() for x in s.split('\n'))
+
                     view.run_command('replace_text_with', {'new_text': s})
-                    sublime.set_timeout(lambda: utils.log_message('EOL characters automatically fixed. Please save to keep the changes.'), 100)
+                    sublime.set_timeout(lambda: utils.log_message('EOL characters automatically fixed! Please save to keep the changes.'), 100)
+
             self.set_ksp_syntax(view)
