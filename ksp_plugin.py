@@ -234,13 +234,24 @@ class CompileKspThread(threading.Thread):
                     last_compiler = self.compiler
                     code = self.compiler.compiled_code
                     code = code.replace('\r', '')
-                    if self.compiler.output_file:
-                        if not os.path.isabs(self.compiler.output_file):
-                            self.compiler.output_file = os.path.join(self.base_path, self.compiler.output_file)
-                        codecs.open(self.compiler.output_file, 'w', 'latin-1').write(code)
-                        utils.log_message("Successfully compiled (compiled code saved to %s)!" % self.compiler.output_file)
+                    num_output_files = len(self.compiler.output_files)
+
+                    if num_output_files > 0:
+                        paths = []
+
+                        for f in self.compiler.output_files:
+                            if not os.path.isabs(f):
+                                f = os.path.join(self.base_path, f)
+
+                            codecs.open(f, 'w', 'latin-1').write(code)
+                            paths.append(f)
+
+                        utils.log_message("Successfully compiled! Compiled code was saved to:")
+
+                        for p in paths:
+                            utils.log_message("    %s" % p)
                     else:
-                        utils.log_message("Successfully compiled (the code is now on the clipboard ready to be pasted into Kontakt)!")
+                        utils.log_message("Successfully compiled! The code is copied to the clipboard, ready to be pasted into Kontakt.")
                         sublime.set_clipboard(code)
                 else:
                     utils.log_message('Compilation aborted!')
