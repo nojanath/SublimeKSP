@@ -1758,17 +1758,19 @@ class KSPCompiler(object):
         self.add_compiled_date_comment = add_compiled_date_comment
         self.force_compiler_arguments = force_compiler_arguments
         self.extra_syntax_checks = extra_syntax_checks or optimize
+
         self.abort_requested = False
+
+        self.module = None
+        self.define_cache = None
 
         self.lines = []
         self.macros = []
-        self.module = None
-        self.define_cache = None
+        self.output_files = []
 
         self.original2short = {}
         self.short2original = {}
 
-        self.output_file = None
         self.variable_names_to_preserve = set()
         self.compiler_options_to_override = set()
 
@@ -1951,7 +1953,7 @@ class KSPCompiler(object):
 
         m = pragma_re.search(code)
 
-        if m:
+        for m in pragma_re.finditer(code):
             dir_check = m.group(1).strip()
 
             if not os.path.isabs(dir_check):
@@ -1965,7 +1967,7 @@ class KSPCompiler(object):
             if not os.path.exists(dir_path):
                 raise Exception('The filepath specified in save_compiled_source does not exist!\n' + dir_path)
             else:
-                self.output_file = dir_check
+                self.output_files.append(dir_check)
 
         # find info about which variable names not to compact
         pragma_re = re.compile(r'\{\s*\#pragma\s+preserve_names\s+(.*?)\s*\}')
@@ -2316,15 +2318,20 @@ if __name__ == "__main__":
 
     # write the compiled code to output
     code = compiler.compiled_code.replace('\r', '')
-    output = args.output_file
+    paths = []
 
-    if output is None:
-        output_path = compiler.output_file
+    # append the argument to possibly already defined output files via save_compiled_source pragma
+    if args.output_file:
+        compiler.output_files.append(args.output_file.name)
 
-        if not os.path.isabs(output_path):
-            output_path = os.path.join(basedir, output_path)
+    for f in compiler.output_files:
+        if not os.path.isabs(f):
+            f = os.path.join(basedir, f)
 
-        output = codecs.open(output_path, 'w', encoding='latin-1')
+        codecs.open(f, 'w', encoding='latin-1').write(code)
+        paths.append(f)
 
-    if output:
-        output.write(code)
+    utils.log_message("Successfully compiled! Compiled code was saved to:")
+
+    for p in paths:
+        utils.log_message("    %s" % p)
