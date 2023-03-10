@@ -35,6 +35,7 @@ import utils
 
 variable_prefixes = '$%@!?~'
 
+
 # regular expressions:
 white_space_re = r'(\s*(\{[^\n]*?\})?\s*)'
 white_space = r'(?ms)%s' % white_space_re
@@ -94,6 +95,26 @@ varname_dot_re = re.compile(r'''
     \.                       # a literal dot
 ''', re.VERBOSE)
 
+pragma_compiler_re = re.compile(r'''
+    \{\s*\#pragma\s+compile_with\s+
+    (
+        remove_whitespace
+        |
+        compact_variables
+        |
+        combine_callbacks
+        |
+        extra_syntax_checks
+        |
+        optimize_code
+        |
+        add_compile_date
+        |
+        sanitize_exit_command
+    )
+    \s*\}
+    ''', re.VERBOSE)
+
 import_re = re.compile(r'''
     ^\s*                                    # match start of line and any leading whitespace
     import\s+                               # match 'import' keyword and one or more whitespace characters
@@ -114,6 +135,7 @@ import_re = re.compile(r'''
 import_basic_re = re.compile(r'^\s*import ')
 macro_start_re = re.compile(r'^\s*macro(?=\W)')
 macro_end_re = re.compile(r'^\s*end\s+macro')
+
 
 placeholders            = {}            # mapping from placeholder number to contents (placeholders used for comments, strings, etc.)
 functions               = OrderedDict() # maps from function names (prefixed with namespaces) to AST node corresponding to the function definition
@@ -610,12 +632,15 @@ class ASTModifierCombineCallbacks(ASTModifierBase):
 
     def modifyModule(self, node, *args, **kwargs):
         callbacks = {}
+
         for b in node.blocks:
             if isinstance(b,ksp_ast.Callback):
                 ui_name = ""
+
                 if b.variable:  # ui_controls have a variable which is stored as a child component
                     if b.lexinfo[3]: # If the ui_control has been imported with a namespace
                         ui_name = "".join(b.lexinfo[2])
+
                     ui_name += str(b.variable)
 
                 cb_key = b.name + ui_name
@@ -623,15 +648,20 @@ class ASTModifierCombineCallbacks(ASTModifierBase):
                 if cb_key in callbacks:
                     if not self.combine_callbacks:
                         raise ksp_ast.ParseException(b, "This callback has already been declared! Either remove the duplicate, or enable the Combine Duplicate Callbacks option.")
-                    children = b.get_childnodes()
-                    if b.variable:
-                        children = children[1:] # Removes ui_name from children to prevent duplicate CBs
-                    callbacks[cb_key].lines.extend(children) # Extend the existing CB with lines from the duplicate
-                    b.lines = [] # Delete lines of duplicate CBs
+                    else:
+                        children = b.get_childnodes()
+
+                        if b.variable:
+                            children = children[1:] # Removes ui_name from children to prevent duplicate CBs
+
+                        callbacks[cb_key].lines.extend(children) # Extend the existing CB with lines from the duplicate
+                        b.lines = [] # Delete lines of duplicate CBs
                 else:
                     callbacks[cb_key] = b
 
-        node.blocks = [b for b in node.blocks if b.lines != []] # Removes the CBs with no lines from node.blocks
+        if self.combine_callbacks:
+            # Removes the CBs with no lines from node.blocks
+            node.blocks = [b for b in node.blocks if b.lines != []]
 
 class ASTModifierFixReferencesAndFamilies(ASTModifierBase):
     '''Travel through AST and modify nodes to native KSP'''
@@ -1714,7 +1744,8 @@ class KSPCompiler(object):
                  extra_syntax_checks = False,
                  optimize = False,
                  sanitize_exit_command = False,
-                 add_compiled_date_comment = False):
+                 add_compiled_date_comment = False,
+                 force_compiler_arguments = False):
 
         self.source = source
         self.basedir = basedir
@@ -1725,6 +1756,7 @@ class KSPCompiler(object):
         self.sanitize_exit_command = sanitize_exit_command
         self.combine_callbacks = combine_callbacks
         self.add_compiled_date_comment = add_compiled_date_comment
+        self.force_compiler_arguments = force_compiler_arguments
         self.extra_syntax_checks = extra_syntax_checks or optimize
         self.abort_requested = False
 
@@ -1738,6 +1770,7 @@ class KSPCompiler(object):
 
         self.output_file = None
         self.variable_names_to_preserve = set()
+        self.compiler_options_to_override = set()
 
     def do_imports_and_convert_to_line_objects(self):
         # Import files
@@ -1913,32 +1946,47 @@ class KSPCompiler(object):
     def examine_pragmas(self, code, namespaces):
         '''Examine pragmas within code'''
 
+        # find path to where we will save the compiled code
         pragma_re = re.compile(r'\{\s*\#pragma\s+save_compiled_source\s+(.*)\}')
+
         m = pragma_re.search(code)
+
         if m:
             dir_check = m.group(1).strip()
+
             if not os.path.isabs(dir_check):
                 if self.basedir == None:
                     raise Exception('Please save the file to hard drive before attempting to compile to a relative path!')
 
                 dir_check = os.path.join(self.basedir, dir_check)
 
-            if not os.path.exists(os.path.dirname(dir_check)):
-                raise Exception('The filepath in save_compiled_source is invalid!')
+            dir_path = os.path.dirname(dir_check)
+
+            if not os.path.exists(dir_path):
+                raise Exception('The filepath specified in save_compiled_source does not exist!\n' + dir_path)
             else:
                 self.output_file = dir_check
 
         # find info about which variable names not to compact
         pragma_re = re.compile(r'\{\s*\#pragma\s+preserve_names\s+(.*?)\s*\}')
+
         for m in pragma_re.finditer(code):
             names = re.sub(r'[$!%@?~]', '', m.group(1))  # remove any prefixes
+
             for variable_name_pattern in re.split(r'\s+,?\s*|\s*,\s+|,', names):
                 if len(variable_name_pattern) == 0:
                     continue
+
                 if namespaces:
                     variable_name_pattern = '__'.join(namespaces + [variable_name_pattern])
+
                 variable_name_pattern = variable_name_pattern.replace('.', '__').replace('*', '.*')
                 self.variable_names_to_preserve.add(variable_name_pattern)
+
+        # compiler option overrides
+        for m in pragma_compiler_re.finditer(code):
+            self.compiler_options_to_override.add(m.group(1))
+
         return code
 
     def parse_code(self):
@@ -2042,14 +2090,45 @@ class KSPCompiler(object):
             used_functions = set()
             used_variables = set()
 
+            time_so_far = 0
+
+            # do the code scanning and importing as a separate step in order to capture "compile_with" pragmas
+            # so that we can override compiler options downstream
+            if callback:
+                callback('scanning and importing code', time_so_far) # parameters are: description, percent done
+            self.do_imports_and_convert_to_line_objects()
+            time_so_far += 1
+
+            if self.abort_requested:
+                return False
+
+            # override compiler options through pragma directives
+            # but only if --force command line option is not used
+            if not self.force_compiler_arguments:
+                for o in self.compiler_options_to_override:
+                    if o == 'remove_whitespace':
+                        self.compact = True
+                    if o == 'compact_variables':
+                        self.compact_variables = True
+                    if o == 'combine_callbacks':
+                        self.combine_callbacks = True
+                    if o == 'extra_syntax_checks':
+                        self.extra_syntax_checks = True
+                    if o == 'optimize_code':
+                        self.extra_syntax_checks = True
+                        self.optimize = True
+                    if o == 'add_compile_date':
+                        self.add_compiled_date_comment = True
+                    if o == 'sanitize_exit_command':
+                        self.sanitize_exit_command = True
+
             do_extra = self.extra_syntax_checks
             do_optim = do_extra and self.optimize
             do_sanitize_exit = self.sanitize_exit_command
 
             #      description                   function                                                                         condition        time-weight
             tasks = [
-                 ('scanning and importing code', lambda: self.do_imports_and_convert_to_line_objects(),                             True,                   1),
-                 ('extensions (with macros)',    lambda: self.extensions_with_macros(),                                             True,                   1),
+                 ('processing extensions',       lambda: self.extensions_with_macros(),                                             True,                   1),
 
                  ('pre-macro processes',         lambda: self.run_pre_macro_functions(),                                            True,                   1),
                  ('parsing macros',              lambda: self.extract_macros(),                                                     True,                   1),
@@ -2066,7 +2145,7 @@ class KSPCompiler(object):
                  ('various tasks',               lambda: ASTModifierFixReferencesAndFamilies(self.module, self.lines),              True,                   1),
                  ('add variable name prefixes',  lambda: ASTModifierFixPrefixesIncludingLocalVars(self.module),                     True,                   1),
                  ('inline functions',            lambda: ASTModifierFunctionExpander(self.module),                                  True,                   1),
-                 ('handle taskfunc',             lambda: ASTModifierTaskfuncFunctionHandler(self.module),                           True,                   1),
+                 ('handle taskfuncs',            lambda: ASTModifierTaskfuncFunctionHandler(self.module),                           True,                   1),
                  ('handle local variables',      lambda: self.sort_functions_and_insert_local_variables_into_on_init(),             True,                   1),
                  ('add variable name prefixes',  lambda: ASTModifierFixPrefixesAndFixControlPars(self.module),                      True,                   1),
                  ('convert dots to underscore',  lambda: self.convert_dots_to_double_underscore(),                                  True,                   1),
@@ -2090,7 +2169,6 @@ class KSPCompiler(object):
             tasks = [(desc, func, time) for (desc, func, condition, time) in tasks if condition]
 
             total_time = float(sum(t[-1] for t in tasks))
-            time_so_far = 0
 
             for (desc, func, time) in tasks:
                 if callback:
@@ -2117,6 +2195,7 @@ class KSPCompiler(object):
                 line = self.lines[line_number]
 
             message = '\n'.join(messages)
+
             raise ParseException(line, message)
 
     def abort_compilation(self):
@@ -2167,15 +2246,34 @@ if __name__ == "__main__":
 
     # parse command line arguments
     arg_parser = argparse.ArgumentParser()
-    arg_parser.add_argument('-c', '--compact', dest='compact', action='store_true', default=False, help='remove indents and empty lines in compiled code')
-    arg_parser.add_argument('-v', '--compact_variables', dest='compact_variables', action='store_true', default=False, help='shorten and obfuscate variable names in compiled code')
-    arg_parser.add_argument('-d', '--combine_callbacks', dest='combine_callbacks', action='store_true', default=False, help='combines duplicate callbacks - but not functions or macros')
-    arg_parser.add_argument('-e', '--extra_syntax_checks', dest='extra_syntax_checks', action='store_true', default=False, help='additional syntax checks during compilation')
-    arg_parser.add_argument('-o', '--optimize', dest='optimize', action='store_true', default=False, help='optimize the compiled code')
-    arg_parser.add_argument('-t', '--add_compile_date', dest='add_compile_date', action='store_true', default=False, help='adds the date and time comment atop the compiled code')
-    arg_parser.add_argument('-x', '--sanitize_exit_command', dest='sanitize_exit_command', action='store_true', default=False, help='adds a dummy no-op command before every exit function call')
+
+    arg_parser.add_argument('-f', '--force',
+                            dest='force_compiler_arguments', action='store_true', default=False,
+                            help='force all specified compiler options, overriding any compile_with pragma directives from the script')
+    arg_parser.add_argument('-c', '--compact',
+                            dest='compact', action='store_true', default=False,
+                            help='remove indents and empty lines in compiled code')
+    arg_parser.add_argument('-v', '--compact_variables',
+                            dest='compact_variables', action='store_true', default=False,
+                            help='shorten and obfuscate variable names in compiled code')
+    arg_parser.add_argument('-d', '--combine_callbacks',
+                            dest='combine_callbacks', action='store_true', default=False,
+                            help='combines duplicate callbacks - but not functions or macros')
+    arg_parser.add_argument('-e', '--extra_syntax_checks',
+                            dest='extra_syntax_checks', action='store_true', default=False,
+                            help='additional syntax checks during compilation')
+    arg_parser.add_argument('-o', '--optimize',
+                            dest='optimize', action='store_true', default=False,
+                            help='optimize the compiled code')
+    arg_parser.add_argument('-t', '--add_compile_date',
+                            dest='add_compile_date', action='store_true', default=False,
+                            help='adds the date and time comment atop the compiled code')
+    arg_parser.add_argument('-x', '--sanitize_exit_command',
+                            dest='sanitize_exit_command', action='store_true', default=False,
+                            help='adds a dummy no-op command before every exit function call')
     arg_parser.add_argument('source_file', type=FileType('r', encoding='latin-1'))
     arg_parser.add_argument('output_file', type=FileType('w', encoding='latin-1'), nargs='?')
+
     args = arg_parser.parse_args()
 
     # determine the base directory of the source file
@@ -2191,6 +2289,7 @@ if __name__ == "__main__":
                 raise Exception('Relative import paths are not supported when the base path of the source file is unknown!')
             else:
                 filepath = os.path.join(basedir, filepath)
+
         return codecs.open(filepath, 'r', 'latin-1').read()
 
     # make sure that extra syntax checks are enabled if --optimize argument is used
@@ -2199,6 +2298,7 @@ if __name__ == "__main__":
 
     # read the source and compile it
     code = args.source_file.read()
+
     compiler = KSPCompiler(
         code,
         basedir,
@@ -2209,7 +2309,8 @@ if __name__ == "__main__":
         extra_syntax_checks=args.extra_syntax_checks,
         optimize=args.optimize,
         sanitize_exit_command=args.sanitize_exit_command,
-        add_compiled_date_comment=(args.add_compile_date))
+        add_compiled_date_comment=(args.add_compile_date),
+        force_compiler_arguments=(args.force_compiler_arguments))
 
     compiler.compile(callback=utils.compile_on_progress)
 
@@ -2219,8 +2320,11 @@ if __name__ == "__main__":
 
     if output is None:
         output_path = compiler.output_file
+
         if not os.path.isabs(output_path):
             output_path = os.path.join(basedir, output_path)
+
         output = codecs.open(output_path, 'w', encoding='latin-1')
+
     if output:
         output.write(code)
