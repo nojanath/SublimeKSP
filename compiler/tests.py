@@ -187,6 +187,35 @@ end on'''
         expected_output = [l.strip() for l in expected_output.split('\n') if l]
         self.assertEqual(output, expected_output)
 
+    def testCombineCallbacksWithEmptyFunction(self):
+        code = '''
+        on init
+            declare ui_button Button
+        end on
+
+        function foo()
+        end function
+
+        on ui_control (Button)
+            call foo()
+        end on
+        '''
+        expected_output = '''
+        on init
+          declare ui_button $Button
+        end on
+
+        function foo
+        end function
+
+        on ui_control($Button)
+          call foo
+        end on'''
+        output = do_compile(code, combine_callbacks=True, remove_preprocessor_vars=True)
+        output = [l.strip() for l in output.split('\n') if l]
+        expected_output = [l.strip() for l in expected_output.split('\n') if l]
+        self.assertEqual(output, expected_output)
+
 class Precedence(unittest.TestCase):
     def testBinaryPrecedence1(self):
         code = '''
