@@ -661,7 +661,7 @@ class ASTModifierCombineCallbacks(ASTModifierBase):
 
         if self.combine_callbacks:
             # Removes the CBs with no lines from node.blocks
-            node.blocks = [b for b in node.blocks if b.lines != []]
+            node.blocks = [b for b in node.blocks if (isinstance(b, ksp_ast.Callback) and b.lines != []) or not isinstance(b, ksp_ast.Callback)]
 
 class ASTModifierFixReferencesAndFamilies(ASTModifierBase):
     '''Travel through AST and modify nodes to native KSP'''
