@@ -54,8 +54,8 @@ class CompileKspCommand(sublime_plugin.ApplicationCommand):
     def run(self, *args, **kwargs):
         # wait until any previous thread is finished
         if self.thread and self.thread.is_alive():
-            utils.log_message('Waiting for earlier compilation to finish...')
-            self.thread.join()
+            utils.log_message('Another compilation is in progress! Please wait until it is finished.')
+            return False
 
         # find the view containing the code to compile
         view = sublime.active_window().active_view()
