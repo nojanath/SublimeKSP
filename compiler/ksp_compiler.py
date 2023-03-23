@@ -1808,6 +1808,13 @@ class KSPCompiler(object):
             # Preparing a new source block to add called amended_logger_code
             amended_logger_code = logger_code
 
+            utils.log_message("!!! WARNING          WARNING         WARNING         WARNING         WARNING         WARNING         !!!")
+            utils.log_message("!!!                                                                                                  !!!")
+            utils.log_message("!!!   LOGGER FUNCTIONALITY IS NOW DEPRECATED AND WILL BE REMOVED IN THE NEXT VERSION OF SUBLIMEKSP   !!!")
+            utils.log_message("!!!   CONSIDER REPLACING LOGGER WITH CREATOR TOOLS AND WATCH_VAR() AND WATCH_ARRAY_IDX() COMMANDS    !!!")
+            utils.log_message("!!!                                                                                                  !!!")
+            utils.log_message("!!! WARNING          WARNING         WARNING         WARNING         WARNING         WARNING         !!!")
+
             activate_line = m.group(0).strip()
             activate_line = re.sub(comment_singleline_re, '', activate_line)
             filepath_m = re.search(r"(\"|\').*(\"|\')", str(activate_line))
