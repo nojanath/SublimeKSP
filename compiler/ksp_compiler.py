@@ -2092,15 +2092,15 @@ class KSPCompiler(object):
 
             time_so_far = 0
 
+            if self.abort_requested:
+                return False
+
             # do the code scanning and importing as a separate step in order to capture "compile_with" pragmas
             # so that we can override compiler options downstream
             if callback:
                 callback('scanning and importing code', time_so_far) # parameters are: description, percent done
             self.do_imports_and_convert_to_line_objects()
             time_so_far += 1
-
-            if self.abort_requested:
-                return False
 
             # override compiler options through pragma directives
             # but only if --force command line option is not used
@@ -2171,13 +2171,13 @@ class KSPCompiler(object):
             total_time = float(sum(t[-1] for t in tasks))
 
             for (desc, func, time) in tasks:
+                if self.abort_requested:
+                    return False
+
                 if callback:
                     callback(desc, 100 * time_so_far / total_time) # parameters are: description, percent done
                 func()
                 time_so_far += time
-
-                if self.abort_requested:
-                    return False
 
             return True
 
@@ -2200,6 +2200,7 @@ class KSPCompiler(object):
 
     def abort_compilation(self):
         self.abort_requested = True
+        utils.log_message('Compilation aborted!')
 
 if __name__ == "__main__":
     '''Using the compiler as command line tool'''

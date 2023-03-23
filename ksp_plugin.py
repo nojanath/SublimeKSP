@@ -52,13 +52,17 @@ class CompileKspCommand(sublime_plugin.ApplicationCommand):
             return 'KSP.sublime-syntax' in view.settings().get('syntax', '')
 
     def run(self, *args, **kwargs):
-        # wait until any previous thread is finished
-        if self.thread and self.thread.is_alive():
-            utils.log_message('Another compilation is in progress! Please wait until it is finished.')
-            return False
-
         # find the view containing the code to compile
         view = sublime.active_window().active_view()
+
+        # wait until any previous thread is finished
+        if self.thread and self.thread.is_alive():
+            # if attempting to compile a different file, bail out, otherwise abort current compile and start a new one
+            if view.file_name() != self.last_filename:
+                utils.log_message('Another compilation is in progress! Please wait until it is finished.')
+                return False
+            else:
+                self.thread.stop()
 
         if kwargs.get('recompile', None) and self.last_filename:
             view = CompileKspThread.find_view_by_filename(self.last_filename)
@@ -267,8 +271,6 @@ class CompileKspThread(threading.Thread):
                     else:
                         utils.log_message("Successfully compiled! The code is copied to the clipboard, ready to be pasted into Kontakt.")
                         sublime.set_clipboard(code)
-                else:
-                    utils.log_message('Compilation aborted!')
 
             except ksp_ast.ParseException as e:
                 error_msg = unicode(e)
@@ -296,7 +298,7 @@ class CompileKspThread(threading.Thread):
                 if should_play_sound:
                     sound_utility.play(command="error")
             else:
-                if should_play_sound:
+                if should_play_sound and self.compiler.abort_requested == False:
                     sound_utility.play(command="finished")
 
     def description(self, *args):
