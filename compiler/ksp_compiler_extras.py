@@ -192,7 +192,7 @@ def evaluate_expression(expr):
         funcs2numparameters = {'abs': 1, 'in_range': 3, 'sh_left': 2, 'sh_right': 2, 'by_marks': 1, 'int_to_real': 1, 'real_to_int': 1, 'int': 1, 'real': 1}
         if name in list(funcs2numparameters.keys()):
             if len(parameters) != funcs2numparameters[name]:
-                raise ParseException(expr, 'Wrong number of parameters for %s!' % name)
+                raise ParseException(expr, 'Wrong number of parameters for %s()!' % name)
             if name == 'abs':
                 return abs(parameters[0])
             elif name == 'in_range':
@@ -233,42 +233,59 @@ class ASTVisitorDetermineExpressionTypes(ASTVisitor):
     def visitFunctionCall(self, parent, node, *args):
         self.visit_children(parent, node, *args)
         function_name = node.function_name.identifier
+
         if function_name in ksp_builtins.function_signatures:
-            params, return_type = ksp_builtins.function_signatures[function_name]
-            if type:
-                node.type = return_type
-            else:
-                node.type = 'undefined'
-            passed_params = node.parameters
-            if len(passed_params) != len(params):
-                raise ParseException(node, 'Wrong number of parameters for %s: expected %d, got %d!' % (function_name, len(params), len(passed_params)))
-            for (param_descriptor, passed_param) in zip(params, passed_params):
-                param_descriptor = param_descriptor.replace('<', '').replace('>', '')
-                is_text = 'text' in param_descriptor or param_descriptor.endswith('name') or param_descriptor.endswith('-path')
-                if not is_text:
-                    if function_name == 'abs' and passed_param.type in ('integer', 'real'):
-                        # special case: the abs function returns an integer or real depending on what param type it's given
-                        node.type = passed_param.type
-                    elif 'any-array-variable' in param_descriptor:
-                        if not passed_param.type in ('integer array', 'real array', 'string array'):
-                            assert_type(passed_param, 'integer, real or string array')
-                    elif 'array-or-string-array-variable' in param_descriptor:
-                        if not passed_param.type in ('integer array', 'string array'):
-                            assert_type(passed_param, 'integer or string array')
-                    elif 'string-array' in param_descriptor:
-                        assert_type(passed_param, 'string array')
-                    elif 'array-variable' in param_descriptor:
-                        assert_type(passed_param, 'integer array')
-                    elif 'real-variable' in param_descriptor:
-                        assert_type(passed_param, 'real array')
-                    elif 'key-id' in param_descriptor:
-                        if not isinstance(passed_param, VarRef):
-                            raise ParseException(node, 'Expected key id!')
-                        passed_param.type = 'key-id'
-                    elif 'real-value' in param_descriptor:
-                        assert_type(passed_param, 'real')
-                    elif not 'variable' in param_descriptor:
-                        assert_type(passed_param, 'integer')
+            matches_param_count = False
+
+            for s in ksp_builtins.function_signatures[function_name]:
+                params, return_type = s
+
+                if type:
+                    node.type = return_type
+                else:
+                    node.type = 'undefined'
+
+                passed_params = node.parameters
+
+                if len(passed_params) == len(params) and matches_param_count == False:
+                    matches_param_count = True
+
+                for (param_descriptor, passed_param) in zip(params, passed_params):
+                    param_descriptor = param_descriptor.replace('<', '').replace('>', '')
+                    is_text = 'text' in param_descriptor or param_descriptor.endswith('name') or param_descriptor.endswith('-path')
+
+                    if not is_text:
+                        if function_name == 'abs' and passed_param.type in ('integer', 'real'):
+                            # special case: the abs function returns an integer or real depending on what param type it's given
+                            node.type = passed_param.type
+                        elif 'any-array-variable' in param_descriptor:
+                            if not passed_param.type in ('integer array', 'real array', 'string array'):
+                                assert_type(passed_param, 'integer, real or string array')
+                        elif 'array-or-string-array-variable' in param_descriptor:
+                            if not passed_param.type in ('integer array', 'string array'):
+                                assert_type(passed_param, 'integer or string array')
+                        elif 'string-array' in param_descriptor:
+                            assert_type(passed_param, 'string array')
+                        elif 'array-variable' in param_descriptor:
+                            assert_type(passed_param, 'integer array')
+                        elif 'real-variable' in param_descriptor:
+                            assert_type(passed_param, 'real array')
+                        elif 'key-id' in param_descriptor:
+                            if not isinstance(passed_param, VarRef):
+                                raise ParseException(node, 'Expected key id!')
+                            passed_param.type = 'key-id'
+                        elif 'real-value' in param_descriptor:
+                            assert_type(passed_param, 'real')
+                        elif not 'variable' in param_descriptor:
+                            assert_type(passed_param, 'integer')
+
+            if matches_param_count == False:
+                if len(ksp_builtins.function_signatures[function_name]) > 1:
+                    raise ParseException(node, \
+                        'Wrong number of parameters for %s()! This function has multiple overloads, neither of which expect %d parameter%s given!' \
+                        % (function_name, len(passed_params), 's that were' if len(passed_params) > 1 else ' that was' ))
+                else:
+                    raise ParseException(node, 'Wrong number of parameters for %s(): expected %d, got %d!' % (function_name, len(params), len(passed_params)))
 
         return False
 

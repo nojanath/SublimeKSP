@@ -329,6 +329,7 @@ $ENGINE_PAR_GROUP_DYNAMICS
 $ENGINE_PAR_HOLD
 $ENGINE_PAR_HOLD_UNIT
 $ENGINE_PAR_HP_CUTOFF
+$ENGINE_PAR_HQI_MODE
 $ENGINE_PAR_HS_BASS
 $ENGINE_PAR_HS_DEPTH
 $ENGINE_PAR_HS_MASTER
@@ -475,6 +476,7 @@ $ENGINE_PAR_RV_DAMPING
 $ENGINE_PAR_RV_PREDELAY
 $ENGINE_PAR_RV_SIZE
 $ENGINE_PAR_RV_STEREO
+$ENGINE_PAR_S1200_FILTER_MODE
 $ENGINE_PAR_SCOMP_ATTACK
 $ENGINE_PAR_SCOMP_LINK
 $ENGINE_PAR_SCOMP_MAKEUP
@@ -508,12 +510,16 @@ $ENGINE_PAR_SEQ_HF_GAIN
 $ENGINE_PAR_SEQ_HMF_FREQ
 $ENGINE_PAR_SEQ_HMF_GAIN
 $ENGINE_PAR_SEQ_HMF_Q
+$ENGINE_PAR_SEQ_HP
+$ENGINE_PAR_SEQ_HP_FREQ
 $ENGINE_PAR_SEQ_LF_BELL
 $ENGINE_PAR_SEQ_LF_FREQ
 $ENGINE_PAR_SEQ_LF_GAIN
 $ENGINE_PAR_SEQ_LMF_FREQ
 $ENGINE_PAR_SEQ_LMF_GAIN
 $ENGINE_PAR_SEQ_LMF_Q
+$ENGINE_PAR_SEQ_LP
+$ENGINE_PAR_SEQ_LP_FREQ
 $ENGINE_PAR_SHAPE
 $ENGINE_PAR_SHAPE_TYPE
 $ENGINE_PAR_SK_BASS
@@ -563,6 +569,8 @@ $ENGINE_PAR_SUPERGT_SATURATION
 $ENGINE_PAR_SUPERGT_TRIM
 $ENGINE_PAR_SUSTAIN
 $ENGINE_PAR_THRESHOLD
+$ENGINE_PAR_TM_LEGATO
+$ENGINE_PAR_TMPRO_KEEP_FORMANTS
 $ENGINE_PAR_TP_GAIN
 $ENGINE_PAR_TP_HF_ROLLOFF
 $ENGINE_PAR_TP_QUALITY
@@ -571,11 +579,11 @@ $ENGINE_PAR_TR_ATTACK
 $ENGINE_PAR_TR_INPUT
 $ENGINE_PAR_TR_SMOOTH
 $ENGINE_PAR_TR_SUSTAIN
+$ENGINE_PAR_TRACKING
 $ENGINE_PAR_TRANSIENT_SIZE
 $ENGINE_PAR_TRANSLIM_CEILING
 $ENGINE_PAR_TRANSLIM_RELEASE
 $ENGINE_PAR_TRANSLIM_THRESHOLD
-$ENGINE_PAR_TM_LEGATO
 $ENGINE_PAR_TUNE
 $ENGINE_PAR_TW_BASS
 $ENGINE_PAR_TW_BRIGHT
@@ -622,8 +630,8 @@ $EVENT_PAR_MIDI_BYTE_1
 $EVENT_PAR_MIDI_BYTE_2
 $EVENT_PAR_MIDI_CHANNEL
 $EVENT_PAR_MIDI_COMMAND
-$EVENT_PAR_MOD_VALUE_ID
 $EVENT_PAR_MOD_VALUE_EX_ID
+$EVENT_PAR_MOD_VALUE_ID
 $EVENT_PAR_NOTE
 $EVENT_PAR_NOTE_LENGTH
 $EVENT_PAR_PAN
@@ -887,11 +895,15 @@ $NI_GROUP_PAR_COLOR
 $NI_GROUP_PAR_HIGH_KEY
 $NI_GROUP_PAR_LOW_KEY
 $NI_GROUP_PAR_NUM_ZONES
+$NI_HQI_MODE_HIGH
+$NI_HQI_MODE_PERFECT
+$NI_HQI_MODE_STANDARD
 $NI_INSERT_BUS
 $NI_KEY_TYPE_CONTROL
 $NI_KEY_TYPE_DEFAULT
 $NI_KEY_TYPE_NONE
 $NI_KONTAKT_IS_HEADLESS
+$NI_KONTAKT_IS_STANDALONE
 $NI_LEVEL_METER_GROUP
 $NI_LEVEL_METER_INSERT
 $NI_LEVEL_METER_MAIN
@@ -915,6 +927,11 @@ $NI_REVERB2_TYPE_HALL
 $NI_REVERB2_TYPE_ROOM
 $NI_RINGMOD_LFO_WAVE_SINE
 $NI_RINGMOD_LFO_WAVE_SQUARE
+$NI_S1200_FILTER_HIGH
+$NI_S1200_FILTER_HIGH_MID
+$NI_S1200_FILTER_LOW
+$NI_S1200_FILTER_LOW_MID
+$NI_S1200_FILTER_NONE
 $NI_SEND_BUS
 $NI_SHAPE_TYPE_CLASSIC
 $NI_SHAPE_TYPE_DRUMS
@@ -1167,7 +1184,7 @@ get_sample_length(<zone-id>):integer
 get_target_idx(<group-idx>, <mod-idx>, <target-name>):integer
 get_ui_id(<variable>):integer
 get_ui_wf_property(<waveform>, <property>, <index>):integer
-get_voice_limit(<voice­type>):integer
+get_voice_limit(<voice-type>):integer
 get_zone_id(<zone-idx>):integer
 get_zone_par(<zone-id>, <parameter>):integer
 get_zone_status(<zone-id>):integer
@@ -1211,6 +1228,7 @@ mf_get_event_par(<event-id>, <parameter>):integer
 mf_get_first(<track-idx>)
 mf_get_id():integer
 mf_get_last(<track-idx>)
+mf_get_last_filename():string
 mf_get_length():integer
 mf_get_mark(<event-id>, <mark>):integer
 mf_get_next(<track-idx>)
@@ -1272,6 +1290,7 @@ save_array(<array-or-string-array-variable>, <mode>):integer
 save_array_str(<array-or-string-array-variable>, <path-text>):integer
 save_midi_file(<path-text>):integer
 search(<array-variable>, <value>):integer
+search(<array-variable>, <value>, <from>, <to>):integer
 set_bounds(<control>, <x>, <y>, <width>, <height>)
 set_button_properties(<button>, <text>, <picture>, <text-alignment>, <font-type>, <textpos-y>)
 set_control_help(<variable>, <text>)
@@ -1325,7 +1344,7 @@ set_ui_height_px(<height>)
 set_ui_wf_property(<waveform>, <property>, <index>, <value>)
 set_ui_width_px(<width>)
 set_value_edit_properties(<value-edit>, <text>, <font-type>, <textpos-y>, <show-arrows>)
-set_voice_limit(<voice­type>,<value>)
+set_voice_limit(<voice-type>,<value>)
 set_waveform_properties(<waveform>, <bar-color>, <zero-line-color>, <bg-color>, <bg-alpha>, <wave-color>, <wave-cursor-color>, <slicemarkers-color>, <wf-vis-mode>)
 set_wavetable2d_properties(<wavetable>, <wt-zone>, <bg-color>, <bg-alpha>, <wave-color>, <wave-alpha>, <wave-end-color>, <wave-end-alpha>)
 set_wavetable3d_properties(<wavetable>, <wt-zone>, <bg-color>, <bg-alpha>, <wavetable-color>, <wavetable-alpha>, <wavetable-end-color>, <wavetable-end-alpha>, <parallax-x>, <parallax-y>)
@@ -1372,6 +1391,7 @@ mf_get_byte_one
 mf_get_byte_two
 mf_get_channel
 mf_get_command
+mf_get_last_filename
 
 [functions_with_constant_return]
 abs
