@@ -1184,7 +1184,9 @@ int(<real-value>):integer
 int_to_real(<integer>):real
 is_zone_empty(<zone-id>):integer
 iterate_macro(<expression>)
+iterate_post_macro(<expression>)
 literate_macro(<expression>)
+literate_post_macro(<expression>)
 load_array(<array-or-string-array-variable>, <mode>):integer
 load_array_str(<array-or-string-array-variable>, <path-text>):integer
 load_ir_sample(<file-name>, <slot>, <generic>):integer
