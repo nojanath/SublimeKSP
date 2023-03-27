@@ -327,31 +327,33 @@ else:
 
 
 for f in functions:
-    args = [a.replace('number variable or text','').replace('-', '_') for a in function_signatures[f][0]]
-    args = ['${%d:%s}' % (i+1, a) for i, a in enumerate(args)]
+    for s in function_signatures[f]:
+        args = [a.replace('-', '_') for a in s[0]]
+        snippet_args = ['${%d:%s}' % (i + 1, a) for i, a in enumerate(args)]
 
-    if args:
-        args_str = '(%s)' % ', '.join(args)
-    elif f in functions_with_forced_parentheses:
-        args_str = '()'
-    else:
-        args_str = ''
+        if snippet_args:
+            args_str = '(%s)' % ', '.join(snippet_args)
+        elif f in functions_with_forced_parentheses:
+            args_str = '()'
+        else:
+            args_str = ''
 
-    function_details = "<b>Args</b>: %s  |  <b>Returns</b>: [%s]" % ((function_signatures[f][0]), function_signatures[f][1])
+        formatted_args = str(args).replace('\'', '').strip('[]')
 
-    completion = ["%s\tfunction" % (f), "%s%s" % (f,args_str)]
+        if sublime_version >= 4000:
+            function_details = '<b>Args</b>: %s | <b>Returns</b>: %s' % (formatted_args, s[1])
 
-    if sublime_version >= 4000:
-        builtin_compl_funcs.append(sublime.CompletionItem(trigger = f,
-                                                          annotation = 'function',
-                                                          completion = f + args_str,
-                                                          details = function_details,
-                                                          completion_format = sublime.COMPLETION_FORMAT_SNIPPET,
-                                                          kind = sublime.KIND_FUNCTION))
-    else:
-        builtin_compl_funcs.append(tuple(completion))
-        builtin_compl_funcs.sort()
+            builtin_compl_funcs.append(sublime.CompletionItem(trigger = f,
+                                                              annotation = 'function',
+                                                              completion = f + args_str,
+                                                              details = function_details,
+                                                              completion_format = sublime.COMPLETION_FORMAT_SNIPPET,
+                                                              kind = sublime.KIND_FUNCTION))
+        else:
+            completion = ['%s(%s)\tfunction' % (f, formatted_args), '%s%s' % (f, args_str)]
 
+            builtin_compl_funcs.append(tuple(completion))
+            builtin_compl_funcs.sort()
 
 # control par references that can be used as control -> x, or control -> value
 magic_control_and_event_pars = []
