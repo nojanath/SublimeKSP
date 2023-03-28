@@ -1521,7 +1521,14 @@ class ASTModifierFixPrefixesAndFixControlPars(ASTModifierFixPrefixes):
             node = result
 
         # shorter name alias
+        if not isinstance(node, ksp_ast.FunctionCall):
+            return node
         function_name = node.function_name.identifier
+
+        # if it's an event_par which does not give a constant return then raise error e.g ticks_to_ms(x) -> volume := 49
+        if function_name in ksp_builtins.functions and not node.using_call_keyword and (function_name.startswith('set_event_par') or function_name.startswith('get_event_par')) \
+        and isinstance(node.parameters[0], ksp_ast.FunctionCall) and str(node.parameters[0].function_name) not in ksp_builtins.functions_with_constant_return:
+            raise ksp_ast.ParseException(node.parameters[0], '"%s" is not a valid as a function that can use arrow notation!' % node.parameters[0].function_name)
 
         # if it's a builtin function that sets or gets a control par and the first parameter is not an integer ID, but rather a UI variable
         if function_name in ksp_builtins.functions and not node.using_call_keyword and \
