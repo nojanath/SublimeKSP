@@ -585,12 +585,16 @@ def p_array_size(p):
 
 def p_set_par_stmt(p):
     '''set-par-stmt        : varref RIGHTARROW ident ASSIGN expression
-                           | varref RIGHTARROW literal ASSIGN expression'''
+                           | varref RIGHTARROW literal ASSIGN expression
+                           | function-call RIGHTARROW ident ASSIGN expression
+                           | function-call RIGHTARROW literal ASSIGN expression'''
     p[0] = handle_set_par(p[1], p[3], p[5])
 
 def p_get_par_expr(p):
     '''get-par-expr        : varref RIGHTARROW ident
-                           | varref RIGHTARROW literal'''
+                           | varref RIGHTARROW literal
+                           | function-call RIGHTARROW ident
+                           | function-call RIGHTARROW literal'''
     p[0] = handle_get_par(p[1], p[3])
 
 def p_subscripts(p):
