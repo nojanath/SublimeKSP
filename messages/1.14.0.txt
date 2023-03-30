@@ -1,0 +1,86 @@
+Version 1.14.0
+---------------------------------------------------
+
+This is a sizable update, improving many little and some larger things in the compiler, while also bringing support for new additions in Kontakt 7.2!
+
+- Added an option to sanitize the behavior of "exit" KSP command, which works around a nasty bug where it will collapse the whole function call tree in certain situations (issue #299)
+
+- Added pragma directives to force specific compiler options (issue #240) - this way a script can be compiled with its required settings without manually changing options every time!
+
+- Added a new command to open the file import command and save_compiled_source pragma point to: Press Alt+O (Opt+O on Mac) while the cursor is focused on the line containing the file path!
+
+- save_compiled_source pragma directive can now be used multiple times, to save the compiled code in multiple locations in one go (issue #326)
+
+- Updated behavior of command line switches: --force (or -f) switch was added to enforce other compiler option switches, otherwise pragmas take precedence, if they have been defined
+
+- Added another define substitution step after l/iterate_post_macro() (thanks to @eitherys)
+
+- Improved log message for successful compilation (now also shows paths where compiled code ended up)
+
+- As of this version, Logger functionality is considered deprecated in favor of variable watching and debugger panel in Creator Tools. Logger will be removed completely in version 1.15!
+
+- Further autocomplete improvements, supporting snippets in ST4, showing function arguments and return type, control and event pars now properly autocomplete after '->', and so on (issue #287)
+
+- Several snippets have been slightly updated
+
+- SublimeKSP options menu will now properly show checkmarks on Linux (thanks to @teskdop!)
+
+- Improved compiler's back-end structure for ingesting definitions of built-ins, which now supports functions that have optional arguments (like search() in Kontakt 7.2)
+
+- Improved syntax coloring for function/macro/taskfunc calls
+
+- Improved syntax coloring for variable declaration
+
+- Improved checking for declare constants - now they HAVE to have a value assigned (issue #331)
+
+- Improved indentation patterns (issue #293)
+
+- Functions can now be used alongside -> control/event par shorthands, for example to use by_marks() -> volume, etc. (issue #311)
+
+- When assigning parent panels using -> shorthand syntax, wrap the assigned variable inside get_ui_id() (issue #335)
+
+- Added iterate_post_macro and literate_post_macro to syntax coloring
+
+- Sublime's Goto Definition was broken due to SublimeKSP registering an indexed symbol list - we think this is a bug in Sublime Text (issue #289)
+
+- Fixed a crash if attempting to recompile quickly after starting a compilation: SublimeKSP won't attempt to join threads anymore, instead it will either stop current compilation then restart it (if attempting to recompile existing file), or present a log message to wait until current compilation is done (if attempting to compile a different file)
+
+- Fixed a typo in Combine Callbacks function (issue #276) and compile error when declaring a list (issue #279)
+
+- Fixed an issue where Combine Callbacks option was doing some unauthorized code compacting even if it was disabled (issue #324)
+
+- Fixed Extra Syntax Checks and Optimize Compiled Code options being grayed out in the menu on a fresh SublimeKSP install
+
+- Fixed incorrect argument type specified for sgn() and signbit() functions (issue #316)
+
+- Fixed Recompile Last Script option not working (issue #315)
+
+- Fixed an issue where using certain functions as assignments to constants can work in vanilla KSP but not SublimeKSP (issue #222)
+
+- Preprocessor injected variable declarations will never be namespaced, nor attempted to be declared multiple times, fixing certain compile errors (issue #309)
+
+- Minor internal restructuring of the repository - as a consequence, running the compiler from command line won't show Python deprecation warnings anymore
+
+
+Thanks again to Jack Williams from Fracture Sounds for doing a lot of the heavy lifting!
+
+
+Have fun!
+
+
+---------------------------------------------------
+
+If you would like to roll back a version of SublimeKSP for time critical work prevented by a new bug:
+
+First, remove SublimeKSP from Sublime Package Control:
+1. Press `Ctrl + Shift + P` on Windows and Linux, or `Cmd + Shift + P` on Mac.
+2. Type "Remove Package" and select it, then select the "KSP (Kontakt Script Processor)" entry.
+
+Next, download the version you'd like [here](https://github.com/nojanath/SublimeKSP/releases).
+
+After the download, you can install it as a user package in Sublime following these instructions:
+
+1. Open the Preferences menu in Sublime Text and click Browse Packages. A folder will open up.
+2. Extract the ZIP archive you have downloaded and place it into this folder.
+3. IMPORTANT: Rename the unpacked folder to `SublimeKSP`!
+4. Restart Sublime Text. Alternatively, make sure you have [Automatic​Package​Reloader](https://packagecontrol.io/packages/AutomaticPackageReloader) package installed
