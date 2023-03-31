@@ -95,25 +95,10 @@ varname_dot_re = re.compile(r'''
     \.                       # a literal dot
 ''', re.VERBOSE)
 
-pragma_compiler_re = re.compile(r'''
-    \{\s*\#pragma\s+compile_with\s+
-    (
-        remove_whitespace
-        |
-        compact_variables
-        |
-        combine_callbacks
-        |
-        extra_syntax_checks
-        |
-        optimize_code
-        |
-        add_compile_date
-        |
-        sanitize_exit_command
-    )
-    \s*\}
-    ''', re.VERBOSE)
+compiler_options = '(remove_whitespace|compact_variables|combine_callbacks|extra_syntax_checks|optimize_code|add_compile_date|sanitize_exit_command)'
+
+pragma_compile_with_re = re.compile(r'\{\s*\#pragma\s+compile_with\s+%s\s*\}' % compiler_options)
+pragma_compile_without_re = re.compile(r'\{\s*\#pragma\s+compile_without\s+%s\s*\}' % compiler_options)
 
 import_re = re.compile(r'''
     ^\s*                                    # match start of line and any leading whitespace
@@ -1781,7 +1766,7 @@ class KSPCompiler(object):
         self.short2original = {}
 
         self.variable_names_to_preserve = set()
-        self.compiler_options_to_override = set()
+        self.compiler_options_to_override = dict()
 
     def do_imports_and_convert_to_line_objects(self):
         # Import files
@@ -2000,8 +1985,13 @@ class KSPCompiler(object):
                 self.variable_names_to_preserve.add(variable_name_pattern)
 
         # compiler option overrides
-        for m in pragma_compiler_re.finditer(code):
-            self.compiler_options_to_override.add(m.group(1))
+        for m in pragma_compile_with_re.finditer(code):
+            if m.group(1) not in self.compiler_options_to_override:
+                self.compiler_options_to_override[m.group(1)] = True
+
+        for m in pragma_compile_without_re.finditer(code):
+            if m.group(1) not in self.compiler_options_to_override:
+                self.compiler_options_to_override[m.group(1)] = False
 
         return code
 
@@ -2115,28 +2105,29 @@ class KSPCompiler(object):
             # so that we can override compiler options downstream
             if callback:
                 callback('scanning and importing code', time_so_far) # parameters are: description, percent done
+
             self.do_imports_and_convert_to_line_objects()
             time_so_far += 1
 
             # override compiler options through pragma directives
             # but only if --force command line option is not used
             if not self.force_compiler_arguments:
-                for o in self.compiler_options_to_override:
-                    if o == 'remove_whitespace':
-                        self.compact = True
-                    if o == 'compact_variables':
-                        self.compact_variables = True
-                    if o == 'combine_callbacks':
-                        self.combine_callbacks = True
-                    if o == 'extra_syntax_checks':
-                        self.extra_syntax_checks = True
-                    if o == 'optimize_code':
-                        self.extra_syntax_checks = True
-                        self.optimize = True
-                    if o == 'add_compile_date':
-                        self.add_compiled_date_comment = True
-                    if o == 'sanitize_exit_command':
-                        self.sanitize_exit_command = True
+                for option, value in self.compiler_options_to_override.items():
+                    if option == 'remove_whitespace':
+                        self.compact = value
+                    if option == 'compact_variables':
+                        self.compact_variables = value
+                    if option == 'combine_callbacks':
+                        self.combine_callbacks = value
+                    if option == 'extra_syntax_checks':
+                        self.extra_syntax_checks = value
+                    if option == 'optimize_code':
+                        self.extra_syntax_checks = value
+                        self.optimize = value
+                    if option == 'add_compile_date':
+                        self.add_compiled_date_comment = value
+                    if option == 'sanitize_exit_command':
+                        self.sanitize_exit_command = value
 
             do_extra = self.extra_syntax_checks
             do_optim = do_extra and self.optimize

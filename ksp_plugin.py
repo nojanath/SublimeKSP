@@ -30,6 +30,8 @@ except Exception:
 last_compiler = None
 sublime_version = int(sublime.version())
 
+SKSP_PACKAGE_PATH = 'Packages/KSP (Kontakt Script Processor)/'
+
 pragma_save_src_re = r'\{\s*\#pragma\s+save_compiled_source\s+(.*)\}'
 import_path_re = r'\s*import\s+[\"\'](.*)[\"\']'
 save_src_compiled_re = re.compile(pragma_save_src_re)
@@ -392,27 +394,22 @@ for v in variables:
             magic_control_and_event_pars.sort()
 
 
-snippets_path = os.path.dirname(__file__) + '/snippets'
 builtin_snippets = []
 
-for filename in listdir(snippets_path):
-    snippet     = os.path.join(snippets_path, filename)
-    tree        = ET.parse(snippet)
-    name        = tree.findtext('description')
-    tabTrigger  = tree.findtext('tabTrigger')
-    content     = tree.findtext('content')
-    content     = content.replace('\n', '', 1)
+if sublime_version >= 4000:
+    snippet_list = sublime.find_resources('*.sublime-snippet')
+    snippet_list = [s for s in snippet_list if s.startswith(SKSP_PACKAGE_PATH)]
 
-    completion = ["%s\t%s" % (tabTrigger, name), content]
+    for s in snippet_list:
+        snippet     = sublime.load_resource(s)
+        tree        = ET.fromstring(snippet)
+        name        = tree.findtext('description')
+        tabTrigger  = tree.findtext('tabTrigger')
+        content     = tree.findtext('content').replace('\n', '', 1)
 
-    if sublime_version >= 4000:
-        builtin_snippets.append(sublime.CompletionItem.snippet_completion(trigger = tabTrigger,
-                                                                          snippet = content,
-                                                                          annotation = name))
-    else:
-        builtin_snippets.append(tuple(completion))
-        builtin_snippets.sort()
-
+    builtin_snippets.append(sublime.CompletionItem.snippet_completion(trigger = tabTrigger,
+                                                                      snippet = content,
+                                                                      annotation = name))
 
 class KSPCompletions(sublime_plugin.EventListener):
     '''Handles KSP autocompletions'''
@@ -561,7 +558,6 @@ class KspGlobalSettingToggleCommand(sublime_plugin.ApplicationCommand):
 
     def is_enabled(self, setting, default):
         extra_checks = bool(sublime.load_settings("KSP.sublime-settings").get("ksp_extra_checks", True))
-        optim_code = bool(sublime.load_settings("KSP.sublime-settings").get("ksp_optimize_code", False))
 
         if setting == "ksp_optimize_code":
             return extra_checks
