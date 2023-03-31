@@ -407,9 +407,9 @@ if sublime_version >= 4000:
         tabTrigger  = tree.findtext('tabTrigger')
         content     = tree.findtext('content').replace('\n', '', 1)
 
-    builtin_snippets.append(sublime.CompletionItem.snippet_completion(trigger = tabTrigger,
-                                                                      snippet = content,
-                                                                      annotation = name))
+        builtin_snippets.append(sublime.CompletionItem.snippet_completion(trigger = tabTrigger,
+                                                                          snippet = content,
+                                                                          annotation = name))
 
 class KSPCompletions(sublime_plugin.EventListener):
     '''Handles KSP autocompletions'''
