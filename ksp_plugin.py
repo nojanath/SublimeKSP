@@ -30,8 +30,6 @@ except Exception:
 last_compiler = None
 sublime_version = int(sublime.version())
 
-SKSP_PACKAGE_PATH = 'Packages/KSP (Kontakt Script Processor)/'
-
 pragma_save_src_re = r'\{\s*\#pragma\s+save_compiled_source\s+(.*)\}'
 import_path_re = r'\s*import\s+[\"\'](.*)[\"\']'
 save_src_compiled_re = re.compile(pragma_save_src_re)
@@ -317,99 +315,100 @@ functions, variables = set(functions), set(variables)
 
 builtin_compl_funcs = []
 builtin_compl_vars = []
-
-if sublime_version >= 4000:
-    builtin_compl_vars.extend(sublime.CompletionItem(trigger = v[1:],
-                                                     annotation = 'variable',
-                                                     completion = v[1:],
-                                                     kind = sublime.KIND_VARIABLE) for v in variables)
-else:
-    builtin_compl_vars.extend(('%s\tvariable' % v[1:], v[1:]) for v in variables)
-    builtin_compl_vars.sort()
-
-
-for f in functions:
-    for s in function_signatures[f]:
-        args = [a.replace('-', '_') for a in s[0]]
-        snippet_args = ['${%d:%s}' % (i + 1, a) for i, a in enumerate(args)]
-
-        if snippet_args:
-            args_str = '(%s)' % ', '.join(snippet_args)
-        elif f in functions_with_forced_parentheses:
-            args_str = '()'
-        else:
-            args_str = ''
-
-        formatted_args = str(args).replace('\'', '').strip('[]')
-
-        if sublime_version >= 4000:
-            function_details = '<b>Args</b>: %s | <b>Returns</b>: %s' % (formatted_args, s[1])
-
-            builtin_compl_funcs.append(sublime.CompletionItem(trigger = f,
-                                                              annotation = 'function',
-                                                              completion = f + args_str,
-                                                              details = function_details,
-                                                              completion_format = sublime.COMPLETION_FORMAT_SNIPPET,
-                                                              kind = sublime.KIND_FUNCTION))
-        else:
-            completion = ['%s(%s)\tfunction' % (f, formatted_args), '%s%s' % (f, args_str)]
-
-            builtin_compl_funcs.append(tuple(completion))
-            builtin_compl_funcs.sort()
-
-# control par references that can be used as control -> x, or control -> value
-magic_control_and_event_pars = []
-remap_control_pars = {'POS_X': 'x', 'POS_Y': 'y', 'MAX_VALUE': 'MAX', 'MIN_VALUE': 'MIN', 'DEFAULT_VALUE': 'DEFAULT'}
-
-for v in variables:
-    completion = []
-    name = None
-    original_variable = v
-
-    if v.startswith('$CONTROL_PAR_'):
-        v = v.replace('$CONTROL_PAR_', '')
-        v = remap_control_pars.get(v, v).lower()
-        completion.append(('%s\tui param' % v, v))
-        name = 'ui param'
-
-    if re.search(r'^\$EVENT_PAR_[0|1|2|3]', v):
-        v = v.replace('$EVENT_', '').lower()
-        completion.append(('%s\tevent param' % v, v))
-        name = 'event param'
-    elif v.startswith('$EVENT_PAR_'):
-        v = v.replace('$EVENT_PAR_', '').lower()
-        completion.append(('%s\tevent param' % v, v))
-        name = 'event param'
-
-    if completion:
-        if sublime_version >= 4000:
-            magic_control_and_event_pars.append(sublime.CompletionItem(trigger = v,
-                                                                       annotation = name,
-                                                                       completion = v,
-                                                                       details = original_variable ,
-                                                                       completion_format = sublime.COMPLETION_FORMAT_SNIPPET,
-                                                                       kind = sublime.KIND_VARIABLE))
-        else:
-            magic_control_and_event_pars.append(tuple(completion[0]))
-            magic_control_and_event_pars.sort()
-
-
 builtin_snippets = []
 
-if sublime_version >= 4000:
-    snippet_list = sublime.find_resources('*.sublime-snippet')
-    snippet_list = [s for s in snippet_list if s.startswith(SKSP_PACKAGE_PATH)]
+magic_control_and_event_pars = []
 
-    for s in snippet_list:
-        snippet     = sublime.load_resource(s)
-        tree        = ET.fromstring(snippet)
-        name        = tree.findtext('description')
-        tabTrigger  = tree.findtext('tabTrigger')
-        content     = tree.findtext('content').replace('\n', '', 1)
+def plugin_loaded():
+    if sublime_version >= 4000:
+        builtin_compl_vars.extend(sublime.CompletionItem(trigger = v[1:],
+                                                         annotation = 'variable',
+                                                         completion = v[1:],
+                                                         kind = sublime.KIND_VARIABLE) for v in variables)
+    else:
+        builtin_compl_vars.extend(('%s\tvariable' % v[1:], v[1:]) for v in variables)
+        builtin_compl_vars.sort()
 
-        builtin_snippets.append(sublime.CompletionItem.snippet_completion(trigger = tabTrigger,
-                                                                          snippet = content,
-                                                                          annotation = name))
+    for f in functions:
+        for s in function_signatures[f]:
+            args = [a.replace('-', '_') for a in s[0]]
+            snippet_args = ['${%d:%s}' % (i + 1, a) for i, a in enumerate(args)]
+
+            if snippet_args:
+                args_str = '(%s)' % ', '.join(snippet_args)
+            elif f in functions_with_forced_parentheses:
+                args_str = '()'
+            else:
+                args_str = ''
+
+            formatted_args = str(args).replace('\'', '').strip('[]')
+
+            if sublime_version >= 4000:
+                function_details = '<b>Args</b>: %s | <b>Returns</b>: %s' % (formatted_args, s[1])
+
+                builtin_compl_funcs.append(sublime.CompletionItem(trigger = f,
+                                                                  annotation = 'function',
+                                                                  completion = f + args_str,
+                                                                  details = function_details,
+                                                                  completion_format = sublime.COMPLETION_FORMAT_SNIPPET,
+                                                                  kind = sublime.KIND_FUNCTION))
+            else:
+                completion = ['%s(%s)\tfunction' % (f, formatted_args), '%s%s' % (f, args_str)]
+
+                builtin_compl_funcs.append(tuple(completion))
+                builtin_compl_funcs.sort()
+
+    # control par references that can be used as control -> x, or control -> value
+    remap_control_pars = {'POS_X': 'x', 'POS_Y': 'y', 'MAX_VALUE': 'MAX', 'MIN_VALUE': 'MIN', 'DEFAULT_VALUE': 'DEFAULT'}
+
+    for v in variables:
+        completion = []
+        name = None
+        original_variable = v
+
+        if v.startswith('$CONTROL_PAR_'):
+            v = v.replace('$CONTROL_PAR_', '')
+            v = remap_control_pars.get(v, v).lower()
+            completion.append(('%s\tui param' % v, v))
+            name = 'ui param'
+
+        if re.search(r'^\$EVENT_PAR_[0|1|2|3]', v):
+            v = v.replace('$EVENT_', '').lower()
+            completion.append(('%s\tevent param' % v, v))
+            name = 'event param'
+        elif v.startswith('$EVENT_PAR_'):
+            v = v.replace('$EVENT_PAR_', '').lower()
+            completion.append(('%s\tevent param' % v, v))
+            name = 'event param'
+
+        if completion:
+            if sublime_version >= 4000:
+                magic_control_and_event_pars.append(sublime.CompletionItem(trigger = v,
+                                                                           annotation = name,
+                                                                           completion = v,
+                                                                           details = original_variable ,
+                                                                           completion_format = sublime.COMPLETION_FORMAT_SNIPPET,
+                                                                           kind = sublime.KIND_VARIABLE))
+            else:
+                magic_control_and_event_pars.append(tuple(completion[0]))
+                magic_control_and_event_pars.sort()
+
+    if sublime_version >= 4000:
+        from sublime_lib import ResourcePath
+
+        snippets_path = ResourcePath('Packages', __package__, 'snippets')
+        snippet_list = snippets_path.children()
+
+        for s in snippet_list:
+            snippet     = s.read_text()
+            tree        = ET.fromstring(snippet)
+            name        = tree.findtext('description')
+            tabTrigger  = tree.findtext('tabTrigger')
+            content     = tree.findtext('content').replace('\n', '', 1)
+
+            builtin_snippets.append(sublime.CompletionItem.snippet_completion(trigger = tabTrigger,
+                                                                              snippet = content,
+                                                                              annotation = name))
 
 class KSPCompletions(sublime_plugin.EventListener):
     '''Handles KSP autocompletions'''
