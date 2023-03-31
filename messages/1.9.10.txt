@@ -24,5 +24,5 @@ After the download, you can install it as a user package in Sublime following th
 
 1. Open the Preferences menu in Sublime Text and click Browse Packages. A folder will open up.
 2. Extract the ZIP archive you have downloaded and place it into this folder.
-3. IMPORTANT: Rename the unpacked folder to `SublimeKSP`!
+3. IMPORTANT: Rename the unpacked folder to `KSP (Kontakt Script Processor)` (this is important so that your settings from Package Control version are retained)!
 4. Restart Sublime Text. Alternatively, make sure you have [Automatic​Package​Reloader](https://packagecontrol.io/packages/AutomaticPackageReloader) package installed

@@ -1,14 +1,15 @@
-Version 1.11.1
+Version 1.14.1
 ---------------------------------------------------
 
-Updates from EvilDragon!
+Hotfix update to make SublimeKSP work again, after issue was uncovered by Sublime Text 4 users, and due to our lack of testing with properly packed plugin as .sublime-package!
+We apologize for any inconvenience caused, we will do better in the future!
 
--Real numbers: allow negative exponents in scientific notation, allow decimal numbers without integer part, f.i. .025 (issue #194)
--Raise an exception if a constant is declared as an array - requires Extra syntax checks enabled (issue #86)
--Fixed syntax coloring for multiple nested block comments (issue #197)
--Allow more than one whitespace before pragma keyword (issue #198)
--Raise a syntax error if iterate/literate_macro declarations are missing parameters or incomplete (issue #200)
--Increase the number of passes for resolving nested define statements (thanks to Nabeel Ansari for info and fix for this one!)
+As an aside, EvilDragon has quickly sweetened the deal by improving a feature introduced in 1.14.0. Namely, now there's also a "pragma compile_without <compiler option>",
+which will force a particular compiler option OFF even if it was enabled in Tools->SublimeKSP menu! See Wiki for more info.
+
+
+Have fun!
+
 
 ---------------------------------------------------
 
