@@ -502,9 +502,9 @@ class MultiDimensionalArray(object):
 		newLines = collections.deque()
 		# Build the declare const lines and add them to the newLines deque.
 		for dimNum, dimSize in enumerate(self.dimensions):
-			declareConstText = constTemplate\
-				.replace("#name#", self.name)\
-				.replace("#dimNum#", str(dimNum + 1))\
+			declareConstText = constTemplate          \
+				.replace("#name#", self.name)         \
+				.replace("#dimNum#", str(dimNum + 1)) \
 				.replace("#val#", dimSize)
 			newLines.append(line.copy(declareConstText))
 		# Build the list of arguments, eg: "d1, d2, d3"
@@ -520,10 +520,10 @@ class MultiDimensionalArray(object):
 		calculatedDimList.append(dimensionArgList[numDimensions - 1])
 		calculatedDimensions = "".join(calculatedDimList)
 		for propLine in propertyTemplate:
-			propertyText = propLine\
-				.replace("#propName#", self.name)\
-				.replace("#dimList#", dimensionArgString)\
-				.replace("#rawArrayName#", self.rawArrayName)\
+			propertyText = propLine                                 \
+				.replace("#propName#", self.name)                   \
+				.replace("#dimList#", dimensionArgString)           \
+				.replace("#rawArrayName#", self.rawArrayName)       \
 				.replace("#calculatedDimList#", calculatedDimensions)
 			newLines.append(line.copy(propertyText))
 		return(newLines)
@@ -819,9 +819,9 @@ class List(object):
 				sizeCounter = simplifyAdditionString("%s+%s" % (sizeCounter, self.sizeList[i]))
 				posList.append(sizeCounter)
 			for text in listMatrixTemplate:
-				replacedText = text.replace("#list#", self.noUnderscoreName)\
-					.replace("#sizeList#", ",".join(self.sizeList))\
-					.replace("#posList#", ",".join(posList))\
+				replacedText = text.replace("#list#", self.noUnderscoreName) \
+					.replace("#sizeList#", ",".join(self.sizeList))          \
+					.replace("#posList#", ",".join(posList))                 \
 					.replace("#size#", str(len(self.sizeList)))
 				newLines.append(line.copy(replacedText))
 		return(newLines)
@@ -844,9 +844,9 @@ class List(object):
 			"#list#[list_it + #offset#] := #arr#[list_it]",
 		"end for"]
 		for templateLine in addArrayToListTemplate:
-			text = templateLine.replace("#size#", arraySize)\
-				.replace("#list#", self.familyPrefix + self.name)\
-				.replace("#offset#", self.inc)\
+			text = templateLine.replace("#size#", arraySize)      \
+				.replace("#list#", self.familyPrefix + self.name) \
+				.replace("#offset#", self.inc)                    \
 				.replace("#arr#", arrayName)
 			newLines.append(line.copy(text))
 		self.increaseInc(arraySize)
