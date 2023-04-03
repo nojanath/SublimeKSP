@@ -1910,6 +1910,12 @@ class ControlParTest(unittest.TestCase):
             control_reference := get_ui_id(myvalue)
             control_reference->value := 10
             CONTROL_REFERENCE->value := 10   { test case-sensitivity }
+
+            declare ui_panel Engine.mainKnobMod(0,128)
+            declare ui_panel Engine.mainLabel(0,128)
+            declare ui_panel Engine.modBackgroundLabel(1,1)
+            Engine.modBackgroundLabel -> picture_state := Engine.mainKnobMod
+            Engine.modBackgroundLabel -> parent_panel := Engine.mainLabel
         end on
 
         function make_settings(fam)
@@ -1927,8 +1933,10 @@ class ControlParTest(unittest.TestCase):
         self.assertTrue('set_control_par_str(get_ui_id($myfam__myknob),$CONTROL_PAR_TEXT,"text")' in output)
         self.assertTrue('message(get_control_par(get_ui_id($myfam__myknob),$CONTROL_PAR_POS_X))' in output)
         self.assertTrue('message(get_control_par_str(get_ui_id($myfam__myknob),$CONTROL_PAR_TEXT))' in output)
+        self.assertTrue('set_control_par(get_ui_id($Engine__modBackgroundLabel),$CONTROL_PAR_PARENT_PANEL,get_ui_id($Engine__mainLabel))' in output)
         # ... but not on this one (since it uses an integer variable and not a UI variable):
         self.assertTrue('set_control_par($control_reference,$CONTROL_PAR_VALUE,10)' in output)
+        self.assertTrue('set_control_par(get_ui_id($Engine__modBackgroundLabel),$CONTROL_PAR_PICTURE_STATE,$Engine__mainKnobMod)' in output)
 
 class TestSubscripts(unittest.TestCase):
     def testSubscripts1(self):
