@@ -1522,7 +1522,7 @@ class ASTModifierFixPrefixesAndFixControlPars(ASTModifierFixPrefixes):
             # then wrap the UI variable in a get_ui_id call, eg. myknob is converted into get_ui_id(myknob)
             func_call_inner = ksp_ast.FunctionCall(node.lexinfo, ksp_ast.ID(node.parameters[0].lexinfo, 'get_ui_id'), [node.parameters[0]], is_procedure=False)
             # If last parameter is a ui_variable and is trying to add to parent_panel then add get_ui_id() wrapper
-            if function_name.startswith('set_control_par') and isinstance(node.parameters[2], ksp_ast.VarRef) and str(node.parameters[1]) == "$CONTROL_PAR_PARENT_PANEL" and str(node.parameters[2].identifier).lower() in ui_variables:
+            if str(node.parameters[1]) == "$CONTROL_PAR_PARENT_PANEL" and str(node.parameters[2].identifier).lower() in ui_variables:
                 func_call_outer = ksp_ast.FunctionCall(node.lexinfo, ksp_ast.ID(node.parameters[2].lexinfo, 'get_ui_id'), [node.parameters[2]], is_procedure=False)
                 node.parameters[2] = func_call_outer
             node            = ksp_ast.FunctionCall(node.lexinfo, node.function_name, [func_call_inner] + node.parameters[1:], is_procedure=node.is_procedure)
