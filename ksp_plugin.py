@@ -100,7 +100,7 @@ class CompileAllOpenKspCommand(sublime_plugin.ApplicationCommand):
         sublime.active_window().run_command('compile_ksp', {'compile_all_open': True})
 
 
-class CompilerSounds:
+class GetSound:
     dir = None
 
     def __init__(self):
@@ -219,7 +219,7 @@ class CompileKspThread(threading.Thread):
             error_lineno = None
             error_filename = filepath # path to main script
 
-            sound_utility = CompilerSounds()
+            sound_utility = GetSound()
 
             if self.compile_all_open and not save_src_compiled_re.search(code):
                 if filepath == None:
@@ -294,9 +294,6 @@ class CompileKspThread(threading.Thread):
 
             if error_msg:
                 self.compile_handle_error(error_msg, error_lineno, error_filename)
-
-                if should_play_sound:
-                    sound_utility.play(command="error")
             else:
                 if should_play_sound and self.compiler.abort_requested == False:
                     sound_utility.play(command="finished")

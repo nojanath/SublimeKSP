@@ -1532,7 +1532,7 @@ class ASTModifierFixPrefixesAndFixControlPars(ASTModifierFixPrefixes):
 
             # If last parameter is a ui_variable and is trying to add to parent_panel then add get_ui_id() wrapper
             if function_name.startswith('set_control_par') and str(node.parameters[1]).endswith("PARENT_PANEL")  \
-               and str(node.parameters[2].identifier).lower() in ui_variables:
+               and isinstance(node.parameters[2], ksp_ast.VarRef):
 
                 func_call_outer = ksp_ast.FunctionCall(node.lexinfo, ksp_ast.ID(node.parameters[2].lexinfo, 'get_ui_id'), [node.parameters[2]], is_procedure = False)
                 node.parameters[2] = func_call_outer
