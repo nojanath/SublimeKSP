@@ -1,0 +1,6 @@
+<snippet>
+	<content><![CDATA[{ #pragma compile_without add_compile_date }]]></content>
+	<description>pragma compile without add compile date</description>
+	<tabTrigger>poa</tabTrigger>
+	<scope>source.ksp</scope>
+</snippet>
