@@ -26,6 +26,7 @@ event_parameters = set()
 function_signatures = {}
 functions_with_forced_parentheses = set()
 functions_with_constant_return = set() # Functions with return values that can be used for const variables
+functions_evaluated_with_optimize_code = set() # Functions that can be evaluated during compiling when optimize_code is enabled
 
 sKSP_preprocessor_variables = ("sksp_dummy", "string_it", "list_it", "concat_it", "concat_offset", "preproc_i")
 
@@ -38,6 +39,7 @@ data = {'variables': variables,
         'event_parameters' : event_parameters,
         'functions_with_forced_parentheses': functions_with_forced_parentheses,
         'functions_with_constant_return': functions_with_constant_return,
+        'functions_evaluated_with_optimize_code': functions_evaluated_with_optimize_code,
         'sKSP_variables' : sKSP_preprocessor_variables,
         }
 
@@ -64,6 +66,9 @@ for line in lines:
                 function_signatures[name].append((params, return_type))
             else:
                 function_signatures[name] = [(params, return_type)]
+
+            if name not in functions_with_constant_return and return_type == "real" or return_type == "integer":
+                functions_with_constant_return.add(name)
 
         if section == 'variables':
             m = re.match(r'(?P<control_par>\$CONTROL_PAR_\w+?)|(?P<engine_par>\$ENGINE_PAR_\w+?)|(?P<event_par>\$EVENT_PAR_\w+?)', line)
