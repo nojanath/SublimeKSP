@@ -297,6 +297,8 @@ class ASTVisitorDetermineExpressionTypes(ASTVisitor):
                             assert_type(passed_param, 'numeric')
                         elif 'real-value' in param_descriptor:
                             assert_type(passed_param, 'real')
+                        elif 'value' in param_descriptor:
+                            assert_type(passed_param, 'integer')
                         elif not 'variable' in param_descriptor:
                             assert_type(passed_param, 'integer')
 
@@ -546,9 +548,9 @@ class ASTVisitorCheckDeclarations(ASTVisitor):
             self.assert_true(not 'const' in node.modifiers,      node, 'UI controls cannot be constant!')
             self.assert_true(not 'polyphonic' in node.modifiers, node, 'UI controls cannot be polyphonic!')
 
-        if any(x in ui_controls_without_params for x in node.modifiers):
+        if any(x in node.modifiers for x in ui_controls_without_params):
             self.assert_true(not node.parameters, node, "This UI control type does not have any parameters!")
-        elif any(x in ['ui_knob', 'ui_value_edit'] for x in node.modifiers):
+        elif any(x in node.modifiers for x in ['ui_knob', 'ui_value_edit']):
             self.assert_true(node.parameters and len(node.parameters) == 3, node, 'Expected three parameters: min, max, display ratio')
         elif 'ui_label' in node.modifiers:
             self.assert_true(node.parameters and len(node.parameters) == 2, node, 'Expected two parameters: width, height!')

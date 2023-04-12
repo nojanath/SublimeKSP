@@ -1097,7 +1097,7 @@ _pgs_set_key_val(<key-id>, <index>, <value>)
 _read_persistent_var(<variable>)
 _reset_rls_trig_counter(<note>)
 _set_engine_par(<parameter>, <value>, <group>, <slot>, <generic>):integer
-_set_skin_offset(<offset>)
+_set_skin_offset(<value>)
 _slice_idx_loop_end(<group-idx>, <loop-idx>):integer
 _slice_idx_loop_start(<group-idx>, <loop-idx>):integer
 _slice_length(<group-idx>, <slice-idx>):integer
@@ -1252,19 +1252,19 @@ mf_insert_file(<file-path>, <track-offset>, <position-offset>, <mode>):integer
 mf_remove_event(<event-id>)
 mf_reset():integer
 mf_set_buffer_size(<size>):integer
-mf_set_byte_one(<par>)
-mf_set_byte_two(<par>)
-mf_set_channel(<midi-channel>)
-mf_set_command(<par>)
+mf_set_byte_one(<value>)
+mf_set_byte_two(<value>)
+mf_set_channel(<value>)
+mf_set_command(<command>)
 mf_set_event_par(<event-id>, <parameter>, <value>)
 mf_set_export_area(<name>, <start-pos>, <end-pos>, <start-track>, <end-track>):integer
 mf_set_note_length(<value>)
 mf_set_num_export_areas(<value>)
-mf_set_length(<par>)
+mf_set_length(<value>)
 mf_set_mark(<event-id>, <mark>, <status>)
-mf_set_pos(<par>)
-move_control(<variable>, <xpos>, <ypos>)
-move_control_px(<variable>, <x-position>, <y-position>)
+mf_set_pos(<pos>)
+move_control(<variable>, <x-grid-unit>, <y-grid-unit>)
+move_control_px(<variable>, <x-pos-px>, <y-pos-px>)
 ms_to_ticks(<microseconds>):integer
 msb(<value>):integer
 note_off(<event-id>)
@@ -1338,7 +1338,7 @@ set_num_user_zones(<size>)
 set_rpn(<address>, <value>)
 set_sample(<zone-id>, <file-path>):integer
 set_script_title(<text>)
-set_skin_offset(<offset>)
+set_skin_offset(<value>)
 set_slider_properties(<slider>, <default>, <picture>, <mouse-behaviour>)
 set_snapshot_type(<snapshot-type>)
 set_switch_properties(<switch>, <text>, <picture>, <text-alignment>, <font-type>, <textpos-y>)
@@ -1348,9 +1348,9 @@ set_text(<variable>, <text>)
 set_text_edit_properties(<text-edit>, <text>, <picture>, <text-alignment>, <font-type>, <textpos-y>)
 set_ui_color(<hex-value>)
 set_ui_height(<height>)
-set_ui_height_px(<height>)
+set_ui_height_px(<value>)
 set_ui_wf_property(<waveform>, <property>, <index>, <value>)
-set_ui_width_px(<width>)
+set_ui_width_px(<value>)
 set_value_edit_properties(<value-edit>, <text>, <font-type>, <textpos-y>, <show-arrows>)
 set_voice_limit(<voice-type>,<value>)
 set_waveform_properties(<waveform>, <bar-color>, <zero-line-color>, <bg-color>, <bg-alpha>, <wave-color>, <wave-cursor-color>, <slice-marker-color>, <wf-vis-mode>)
