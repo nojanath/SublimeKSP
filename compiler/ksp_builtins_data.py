@@ -1401,24 +1401,16 @@ mf_get_channel
 mf_get_command
 mf_get_last_filename
 
-[functions_with_constant_return]
+[functions_evaluated_with_optimize_code]
 abs
-acos
-asin
-atan
+in_range
+sh_left
+sh_right
 by_marks
-by_track
-cos
-exp
-floor
-get_ui_id
-log
-lsb
-num_elements
-pow
-sin
-sqrt
-tan
+int_to_real
+real
+real_to_int
+int
 
 [keywords]
 _pgs_changed

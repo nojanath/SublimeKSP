@@ -529,7 +529,8 @@ class ASTVisitorCheckDeclarations(ASTVisitor):
                 raise ParseException(node.variable, 'A constant must have a value assigned!')
             init_expr = node.initial_value
             # First need to check if the initial value is an NI constant
-            if not (isinstance(init_expr, VarRef) and (str(init_expr.identifier).upper() in ksp_builtins.variables) or ("function_name" in init_expr.__dict__ and str(init_expr.function_name) in ksp_builtins.functions_with_constant_return)):
+            if not (isinstance(init_expr, VarRef) and (str(init_expr.identifier).upper() in ksp_builtins.variables) or ("function_name" in init_expr.__dict__ \
+            and str(init_expr.function_name) in ksp_builtins.functions_with_constant_return) and str(init_expr.function_name) not in ksp_builtins.functions_evaluated_with_optimize_code):
                 try:
                     test = evaluate_expression(node.initial_value)
                     if test == None:
