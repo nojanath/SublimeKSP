@@ -1901,21 +1901,22 @@ class ControlParTest(unittest.TestCase):
         code = '''
         on init
             family myfam
-              declare ui_knob myknob(0, 100, 1)
+              declare ui_knob myknob (0, 100, 1)
             end family
+
             make_settings(myfam)
 
-            declare ui_value_edit myvalue(0, 100, 1)
+            declare ui_value_edit myvalue (0, 100, 1)
             declare control_reference
             control_reference := get_ui_id(myvalue)
             control_reference->value := 10
             CONTROL_REFERENCE->value := 10   { test case-sensitivity }
 
-            declare ui_panel Engine.mainKnobMod(0,128)
-            declare ui_panel Engine.mainLabel(0,128)
-            declare ui_panel Engine.modBackgroundLabel(1,1)
-            Engine.modBackgroundLabel -> picture_state := Engine.mainKnobMod
-            Engine.modBackgroundLabel -> parent_panel := Engine.mainLabel
+            declare ui_label Engine.label (1, 1)
+            declare ui_knob  Engine.knob (0, 128, 1)
+            declare ui_panel Engine.panel
+            Engine.label -> picture_state := Engine.knob
+            Engine.label -> parent_panel := Engine.panel
         end on
 
         function make_settings(fam)
@@ -1933,10 +1934,10 @@ class ControlParTest(unittest.TestCase):
         self.assertTrue('set_control_par_str(get_ui_id($myfam__myknob),$CONTROL_PAR_TEXT,"text")' in output)
         self.assertTrue('message(get_control_par(get_ui_id($myfam__myknob),$CONTROL_PAR_POS_X))' in output)
         self.assertTrue('message(get_control_par_str(get_ui_id($myfam__myknob),$CONTROL_PAR_TEXT))' in output)
-        self.assertTrue('set_control_par(get_ui_id($Engine__modBackgroundLabel),$CONTROL_PAR_PARENT_PANEL,get_ui_id($Engine__mainLabel))' in output)
+        self.assertTrue('set_control_par(get_ui_id($Engine__label),$CONTROL_PAR_PARENT_PANEL,get_ui_id($Engine__panel))' in output)
         # ... but not on this one (since it uses an integer variable and not a UI variable):
         self.assertTrue('set_control_par($control_reference,$CONTROL_PAR_VALUE,10)' in output)
-        self.assertTrue('set_control_par(get_ui_id($Engine__modBackgroundLabel),$CONTROL_PAR_PICTURE_STATE,$Engine__mainKnobMod)' in output)
+        self.assertTrue('set_control_par(get_ui_id($Engine__label),$CONTROL_PAR_PICTURE_STATE,$Engine__knob)' in output)
 
     def testEventPars(self):
         '''Make sure that set_event_par can deal with functions that return a constant in the first param'''
@@ -1947,7 +1948,7 @@ class ControlParTest(unittest.TestCase):
             declare const GRAIN_EVENT_PAR0 := 4
         end on
         on note
-            if get_event_par_arr(EVENT_ID, EVENT_PAR_CUSTOM,GRAIN_BLIP_EVT_STORAGE) # 0 
+            if get_event_par_arr(EVENT_ID, EVENT_PAR_CUSTOM,GRAIN_BLIP_EVT_STORAGE) # 0
                 set_event_par(get_event_par_arr(EVENT_ID, EVENT_PAR_CUSTOM,GRAIN_BLIP_EVT_STORAGE), EVENT_PAR_3, ENGINE_UPTIME) //PROBLEM
                 set_event_par_arr(get_event_par_arr(EVENT_ID, EVENT_PAR_CUSTOM,GRAIN_BLIP_EVT_STORAGE), EVENT_PAR_CUSTOM, EVENT_STATE.RELEASE, GRAIN_EVENT_PAR0)
             end if
