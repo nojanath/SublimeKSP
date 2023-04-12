@@ -1087,7 +1087,7 @@ USE_CODE_IF_NOT(<condition>)
 _delay_event_for_loading_slots(<unknown>)
 _get_engine_par(<parameter>, <group>, <slot>, <generic>):integer
 _get_engine_par_disp(<parameter>, <group>, <slot>, <generic>):string
-_get_folder(<path variable>):string
+_get_folder(<file-path>):string
 _load_ir_sample(<file-name>, <slot>, <generic>):integer
 _num_slices(<group-idx>):integer
 _pgs_create_key(<key-id>, <size>)
@@ -1109,7 +1109,7 @@ acos(<real-value>):real
 add_menu_item(<variable>, <text>, <number>)
 add_text_line(<variable>, <text>)
 allow_group(<group-idx>)
-array_equal(<array-variable>, <array-variable>):boolean
+array_equal(<int-array>, <int-array>):boolean
 asin(<real-value>):real
 atan(<real-value>):real
 attach_level_meter(<ui-id>, <group-idx>, <slot-idx>, <channel-idx>, <bus-idx>)
@@ -1161,14 +1161,14 @@ get_control_par_str(<ui-id>, <control-parameter>):string
 get_control_par_str_arr(<ui-id>, <control-parameter>, <index>):string
 get_engine_par(<parameter>, <group>, <slot>, <generic>):integer
 get_engine_par_disp(<parameter>, <group>, <slot>, <generic>):string
-get_engine_par_disp_m(<parameter>, <instrument-slot-idx>, <slot>, <generic>):string
-get_engine_par_m(<parameter>, <instrument-slot-idx>, <slot>, <generic>):integer
-get_event_ids(<array-variable>)
+get_engine_par_disp_m(<parameter>, <instr-slot-idx>, <slot>, <generic>):string
+get_engine_par_m(<parameter>, <instr-slot-idx>, <slot>, <generic>):integer
+get_event_ids(<int-array>)
 get_event_mark(<event-id>, <bit-mark>):integer
 get_event_par(<event-id>, <parameter>):integer
 get_event_par_arr(<event-id>, <parameter>, <group-idx>):integer
-get_folder(<path variable>):string
-get_font_id(<path-text>):integer
+get_folder(<file-path>):string
+get_font_id(<file-path>):integer
 get_group_idx(<group-name>):integer
 get_group_par(<group-idx>, <parameter>):integer
 get_key_color(<note-number>):integer
@@ -1195,13 +1195,13 @@ get_zone_id(<zone-idx>):integer
 get_zone_par(<zone-id>, <parameter>):integer
 get_zone_status(<zone-id>):integer
 group_name(<group-idx>):string
-guiidx_to_slotidx(<instrument-gui-idx>):integer
+guiidx_to_slotidx(<instr-gui-idx>):integer
 hide_part(<variable>, <value>)
 ignore_controller()
 ignore_event(<event-id>)
 ignore_midi()
-import_nckp(<path variable>):string
-in_range(<expression>, <lower>, <upper>):boolean
+import_nckp(<file-path>):string
+in_range(<int-or-real-value>, <int-or-real-value>, <int-or-real-value>):boolean
 inc(<expression>)
 int(<real-value>):integer
 int_to_real(<integer>):real
@@ -1210,18 +1210,18 @@ iterate_macro(<expression>)
 iterate_post_macro(<expression>)
 literate_macro(<expression>)
 literate_post_macro(<expression>)
-load_array(<array-or-string-array-variable>, <mode>):integer
-load_array_str(<array-or-string-array-variable>, <path-text>):integer
+load_array(<int-or-string-array>, <mode>):integer
+load_array_str(<int-or-string-array>, <file-path>):integer
 load_ir_sample(<file-name>, <slot>, <generic>):integer
-load_ir_sample_m(<file-name>, <output-number>, <slot>, <generic>):integer
-load_native_ui(<path-text>)
-load_midi_file(<path-text>):integer
-load_patch(<path-text>, <instrument-slot-idx>)
+load_ir_sample_m(<file-name>, <output-idx>, <slot>, <generic>):integer
+load_native_ui(<file-path>)
+load_midi_file(<file-path>):integer
+load_patch(<file-path>, <instr-slot-idx>)
 load_performance_view(<file-name>):string
 log(<real-value>):real
 log2(<real-value>):real
 log10(<real-value>):real
-lsb(<variable>):integer
+lsb(<value>):integer
 make_instr_persistent(<variable>)
 make_perfview()
 make_persistent(<variable>)
@@ -1248,7 +1248,7 @@ mf_get_prev(<track-idx>)
 mf_get_prev_at(<track-idx>, <pos>)
 mf_get_track_idx():integer
 mf_insert_event(<track>, <pos>, <command>, <byte1>, <byte2>):integer
-mf_insert_file(<path-text>, <track-offset>, <position-offset>, <mode>):integer
+mf_insert_file(<file-path>, <track-offset>, <position-offset>, <mode>):integer
 mf_remove_event(<event-id>)
 mf_reset():integer
 mf_set_buffer_size(<size>):integer
@@ -1266,12 +1266,12 @@ mf_set_pos(<par>)
 move_control(<variable>, <xpos>, <ypos>)
 move_control_px(<variable>, <x-position>, <y-position>)
 ms_to_ticks(<microseconds>):integer
-msb(<variable>):integer
+msb(<value>):integer
 note_off(<event-id>)
 num_elements(<any-array-variable>):integer
 num_slices(<group-idx>):integer
 num_slices_zone(<zone-id>):integer
-output_channel_name(<output-number>):integer
+output_channel_name(<output-idx>):integer
 pgs_create_key(<key-id>, <size>)
 pgs_create_str_key(<key-id>)
 pgs_get_key_val(<key-id>, <index>):integer
@@ -1287,18 +1287,18 @@ random(<min>, <max>):integer
 read_persistent_var(<variable>)
 real(<integer>):real
 real_to_int(<real-value>):integer
-redirect_midi(<unknown>)
-redirect_output(<event-id>, <type>, <output-number>)
+redirect_midi(<event-id>, <instr-slot-idx>, <instr-bank-slot-idx>)
+redirect_output(<event-id>, <output-type>, <output-idx>)
 remove_keyrange(<key-number>)
 reset_engine()
 reset_ksp_timer()
 reset_rls_trig_counter(<note>)
 round(<real-value>):real
-save_array(<array-or-string-array-variable>, <mode>):integer
-save_array_str(<array-or-string-array-variable>, <path-text>):integer
-save_midi_file(<path-text>):integer
-search(<array-variable>, <value>):integer
-search(<array-variable>, <value>, <from>, <to>):integer
+save_array(<int-or-string-array>, <mode>):integer
+save_array_str(<int-or-string-array>, <file-path>):integer
+save_midi_file(<file-path>):integer
+search(<int-array>, <value>):integer
+search(<int-array>, <value>, <from>, <to>):integer
 set_bounds(<control>, <x>, <y>, <width>, <height>)
 set_button_properties(<button>, <text>, <picture>, <text-alignment>, <font-type>, <textpos-y>)
 set_control_help(<variable>, <text>)
@@ -1309,7 +1309,7 @@ set_control_par_str(<ui-id>, <control-parameter>, <text>)
 set_control_par_str_arr(<ui-id>, <control-parameter>, <text>, <index>)
 set_controller(<controller-number>, <controller-value>)
 set_engine_par(<parameter>, <value>, <group>, <slot>, <generic>):integer
-set_engine_par_m(<parameter>, <value>, <instrument-slot-idx>, <slot>, <generic>):integer
+set_engine_par_m(<parameter>, <value>, <instr-slot-idx>, <slot>, <generic>):integer
 set_event_mark(<event-id>, <bit-mark>)
 set_event_par(<event-id>, <parameter>, <value>)
 set_event_par_arr(<event-id>, <parameter>, <value>, <group-idx>)
@@ -1336,14 +1336,14 @@ set_midi(<channel>, <command>, <byte1>, <byte2>)
 set_nrpn(<address>, <value>)
 set_num_user_zones(<size>)
 set_rpn(<address>, <value>)
-set_sample(<zone-id>, <path-text>):integer
+set_sample(<zone-id>, <file-path>):integer
 set_script_title(<text>)
 set_skin_offset(<offset>)
 set_slider_properties(<slider>, <default>, <picture>, <mouse-behaviour>)
-set_snapshot_type(<type>)
+set_snapshot_type(<snapshot-type>)
 set_switch_properties(<switch>, <text>, <picture>, <text-alignment>, <font-type>, <textpos-y>)
 set_table_properties(<table>, <bar-color>, <zero-line-color>)
-set_table_steps_shown(<array-variable>, <num-steps>)
+set_table_steps_shown(<int-array>, <num-steps>)
 set_text(<variable>, <text>)
 set_text_edit_properties(<text-edit>, <text>, <picture>, <text-alignment>, <font-type>, <textpos-y>)
 set_ui_color(<hex-value>)
@@ -1353,28 +1353,29 @@ set_ui_wf_property(<waveform>, <property>, <index>, <value>)
 set_ui_width_px(<width>)
 set_value_edit_properties(<value-edit>, <text>, <font-type>, <textpos-y>, <show-arrows>)
 set_voice_limit(<voice-type>,<value>)
-set_waveform_properties(<waveform>, <bar-color>, <zero-line-color>, <bg-color>, <bg-alpha>, <wave-color>, <wave-cursor-color>, <slicemarkers-color>, <wf-vis-mode>)
+set_waveform_properties(<waveform>, <bar-color>, <zero-line-color>, <bg-color>, <bg-alpha>, <wave-color>, <wave-cursor-color>, <slice-marker-color>, <wf-vis-mode>)
 set_wavetable2d_properties(<wavetable>, <wt-zone>, <bg-color>, <bg-alpha>, <wave-color>, <wave-alpha>, <wave-end-color>, <wave-end-alpha>)
-set_wavetable3d_properties(<wavetable>, <wt-zone>, <bg-color>, <bg-alpha>, <wavetable-color>, <wavetable-alpha>, <wavetable-end-color>, <wavetable-end-alpha>, <parallax-x>, <parallax-y>)
+set_wavetable3d_properties(<wavetable>, <wt-zone>, <bg-color>, <bg-alpha>, <wt-color>, <wt-alpha>, <wt-end-color>, <wt-end-alpha>, <parallax-x>, <parallax-y>)
 set_zone_par(<zone-id>, <parameter>, <value>):integer
-sgn(<variable>):integer
+sgn(<int-or-real-value>):integer
 sh_left(<expression>, <amount>):integer
 sh_right(<expression>, <amount>):integer
 show_library_tab()
-signbit(<variable>):integer
+signbit(<int-or-real-value>):integer
 sin(<real-value>):real
 slice_idx_loop_end(<group-idx>, <loop-idx>):integer
 slice_idx_loop_start(<group-idx>, <loop-idx>):integer
 slice_length(<group-idx>, <slice-idx>):integer
 slice_loop_count(<group-idx>, <loop-idx>):integer
 slice_start(<group-idx>, <slice-idx>):integer
-slotidx_to_guiidx(<instrument-slot-idx>):integer
-sort(<array-variable>, <direction>)
+slotidx_to_guiidx(<instr-slot-idx>):integer
+sort(<int-or-real-array>, <direction>)
+sort(<int-or-real-array>, <direction>, <from>, <to>)
 sqrt(<real-value>):real
 stop_wait(<callback-id>, <par>)
 tan(<real-value>):real
 ticks_to_ms(<ticks>):integer
-unload_slot(<instrument-slot-idx>)
+unload_slot(<instr-slot-idx>)
 wait(<wait-time>)
 wait_async(<event-id>):integer
 watch_var(<variable>)
@@ -1413,13 +1414,11 @@ real_to_int
 int
 
 [keywords]
-_pgs_changed
 and
 as
 call
 case
 const
-controller
 declare
 downto
 else
@@ -1430,23 +1429,20 @@ end function
 end if
 end macro
 end on
-end_on
 end property
 end select
 end taskfunc
 end while
+end_on
 family
 for
 function
 if
 import
-init
 macro
-midi_in
 not
-note
-nrpn
 on
+on _pgs_changed
 on async_complete
 on controller
 on init
@@ -1456,26 +1452,22 @@ on note
 on nrpn
 on persistence_changed
 on pgs_changed
-on_pgs_changed
 on poly_at
 on release
 on rpn
 on ui_control
 on ui_update
+on_pgs_changed
+on_post_init
+on_release
 or
 out
 override
-pgs_changed
-poly_at
 property
-release
-rpn
 select
 step
 taskfunc
 to
-ui_control
-ui_update
 var
 while
 
@@ -1484,6 +1476,7 @@ $CONTROL_PAR_AUTOMATION_NAME
 $CONTROL_PAR_BASEPATH
 $CONTROL_PAR_CURSOR_PICTURE
 $CONTROL_PAR_FILEPATH
+$CONTROL_PAR_IDENTIFIER
 $CONTROL_PAR_HELP
 $CONTROL_PAR_LABEL
 $CONTROL_PAR_PICTURE
