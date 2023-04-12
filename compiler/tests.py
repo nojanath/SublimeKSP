@@ -1938,6 +1938,36 @@ class ControlParTest(unittest.TestCase):
         self.assertTrue('set_control_par($control_reference,$CONTROL_PAR_VALUE,10)' in output)
         self.assertTrue('set_control_par(get_ui_id($Engine__modBackgroundLabel),$CONTROL_PAR_PICTURE_STATE,$Engine__mainKnobMod)' in output)
 
+    def testEventPars(self):
+        '''Make sure that set_event_par can deal with functions that return a constant in the first param'''
+        code = '''
+        on init
+            declare const GRAIN_BLIP_EVT_STORAGE := 1
+            declare const EVENT_STATE.RELEASE := 2
+            declare const GRAIN_EVENT_PAR0 := 4
+        end on
+        on note
+            if get_event_par_arr(EVENT_ID, EVENT_PAR_CUSTOM,GRAIN_BLIP_EVT_STORAGE) # 0 
+                set_event_par(get_event_par_arr(EVENT_ID, EVENT_PAR_CUSTOM,GRAIN_BLIP_EVT_STORAGE), EVENT_PAR_3, ENGINE_UPTIME) //PROBLEM
+                set_event_par_arr(get_event_par_arr(EVENT_ID, EVENT_PAR_CUSTOM,GRAIN_BLIP_EVT_STORAGE), EVENT_PAR_CUSTOM, EVENT_STATE.RELEASE, GRAIN_EVENT_PAR0)
+            end if
+        end on
+        '''
+        output = do_compile(code)
+        self.assertTrue('set_event_par(get_event_par_arr($EVENT_ID,$EVENT_PAR_CUSTOM,$GRAIN_BLIP_EVT_STORAGE),$EVENT_PAR_3,$ENGINE_UPTIME)' in output)
+        self.assertTrue('set_event_par_arr(get_event_par_arr($EVENT_ID,$EVENT_PAR_CUSTOM,$GRAIN_BLIP_EVT_STORAGE),$EVENT_PAR_CUSTOM,$EVENT_STATE__RELEASE,$GRAIN_EVENT_PAR0)' in output)
+
+    def testEventParsWithArrowNotation(self):
+        code = '''
+        on note
+            get_event_par_arr(EVENT_ID, EVENT_PAR_CUSTOM,5) -> par_3 := ENGINE_UPTIME
+            by_marks(MARK_3) -> volume := random(-100000,0)
+        end on
+        '''
+        output = do_compile(code)
+        self.assertTrue('set_event_par(get_event_par_arr($EVENT_ID,$EVENT_PAR_CUSTOM,5),$EVENT_PAR_3,$ENGINE_UPTIME)' in output)
+        self.assertTrue('set_event_par(by_marks($MARK_3),$EVENT_PAR_VOLUME,random(-100000,0))' in output)
+
 class TestSubscripts(unittest.TestCase):
     def testSubscripts1(self):
         code = '''
