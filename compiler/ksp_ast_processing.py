@@ -14,7 +14,6 @@
 
 from ksp_ast import *
 from ksp_builtins import string_typed_control_parameters, control_parameters, event_parameters
-#import io
 
 def stripNone(L):
     return [x for x in L if x is not None]

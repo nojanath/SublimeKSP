@@ -1482,4 +1482,22 @@ $CONTROL_PAR_LABEL
 $CONTROL_PAR_PICTURE
 $CONTROL_PAR_TEXT
 $CONTROL_PAR_TEXTLINE
+
+[ui_control_signatures]
+ui_button $<name>
+ui_file_selector $<name>
+ui_label $<name> (<grid-width>, <grid-height>)
+ui_knob $<name> (<min>, <max>, <display-ratio>)
+ui_level_meter $<name>
+ui_menu $<name>
+ui_mouse_area $<name>
+ui_panel $<name>
+ui_slider $<name> (<min>, <max>)
+ui_switch $<name>
+ui_table %<name>[num-elements] (<grid-width>, <grid-height>, <range>)
+ui_text_edit @<name>
+ui_value_edit $<name> (<min>, <max>, <display-ratio>)
+ui_waveform $<name> (<grid-width>, <grid-height>)
+ui_wavetable $<name>
+ui_xy ?<name>[num-elements]
 '''

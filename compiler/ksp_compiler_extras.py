@@ -541,25 +541,23 @@ class ASTVisitorCheckDeclarations(ASTVisitor):
     def visitDeclareStmt(self, parent, node, *args):
         name = str(node.variable)
         is_ui_control = [x for x in node.modifiers if x.startswith('ui_')]
-        ui_controls_without_params = \
-            ['ui_button', 'ui_file_selector', 'ui_level_meter', 'ui_menu', 'ui_mouse_area', 'ui_panel', 'ui_switch', 'ui_text_edit', 'ui_wavetable', 'ui_xy']
 
         if is_ui_control:
             self.assert_true(not 'const' in node.modifiers,      node, 'UI controls cannot be constant!')
             self.assert_true(not 'polyphonic' in node.modifiers, node, 'UI controls cannot be polyphonic!')
 
-        if any(x in node.modifiers for x in ui_controls_without_params):
-            self.assert_true(not node.parameters, node, "This UI control type does not have any parameters!")
-        elif any(x in node.modifiers for x in ['ui_knob', 'ui_value_edit']):
-            self.assert_true(node.parameters and len(node.parameters) == 3, node, 'Expected three parameters: min, max, display ratio')
-        elif 'ui_label' in node.modifiers:
-            self.assert_true(node.parameters and len(node.parameters) == 2, node, 'Expected two parameters: width, height!')
-        elif 'ui_slider' in node.modifiers:
-            self.assert_true(node.parameters and len(node.parameters) == 2, node, 'Expected two parameters: min, max')
-        elif 'ui_table' in node.modifiers:
-            self.assert_true(node.parameters and len(node.parameters) == 3, node, 'Expected three parameters: width, height, range')
-        elif 'ui_waveform' in node.modifiers:
-            self.assert_true(node.parameters and len(node.parameters) == 2, node, 'Expected two parameters: width, height')
+        for ui_control_type, params in ksp_builtins.ui_control_signatures.items():
+            if ui_control_type in node.modifiers:
+                par_count = len(node.parameters)
+
+                if len(params) == 0:
+                    self.assert_true(not node.parameters, node, 'This UI control type does not have any parameters!')
+                else:
+                    self.assert_true(node.parameters and par_count == len(params), node,
+                                     "Expected %d parameters (%d %s given): %s" % (len(params),
+                                                                                  par_count,
+                                                                                  'was' if par_count < 2 else 'were',
+                                                                                  ', '.join(params).replace('-', ' ')))
 
         if name.lower() in symbol_table:
             raise ParseException(node.variable, 'Redeclaration of %s!' % name)
