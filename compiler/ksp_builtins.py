@@ -27,6 +27,7 @@ function_signatures = {}
 functions_with_forced_parentheses = set()
 functions_with_constant_return = set() # Functions with return values that can be used for const variables
 functions_evaluated_with_optimize_code = set() # Functions that can be evaluated during compiling when optimize_code is enabled
+ui_control_signatures = {}
 
 sKSP_preprocessor_variables = ("sksp_dummy", "string_it", "list_it", "concat_it", "concat_offset", "preproc_i")
 
@@ -51,10 +52,12 @@ lines = builtins_data.replace('\r\n', '\n').split('\n')
 
 for line in lines:
     line = line.strip()
+
     if line.startswith('['):
         section = line[1:-1].strip()
     elif line:
-        data[section].add(line)
+        if section in data:
+            data[section].add(line)
 
         if section == 'functions':
             m = re.match(r'(?P<name>\w+)(\((?P<params>.*?)\))?(:(?P<return_type>\w+))?', line)
@@ -67,13 +70,15 @@ for line in lines:
             else:
                 function_signatures[name] = [(params, return_type)]
 
-            if name not in functions_with_constant_return and return_type == "real" or return_type == "integer":
+            if name not in functions_with_constant_return and (return_type == "real" or return_type == "integer"):
                 functions_with_constant_return.add(name)
 
         if section == 'variables':
             m = re.match(r'(?P<control_par>\$CONTROL_PAR_\w+?)|(?P<engine_par>\$ENGINE_PAR_\w+?)|(?P<event_par>\$EVENT_PAR_\w+?)', line)
+
             if m:
                 control_par, engine_par, event_par = m.group('control_par'), m.group('engine_par'), m.group('event_par')
+
                 if control_par:
                     control_parameters.add(line)
                 elif engine_par:
@@ -81,7 +86,18 @@ for line in lines:
                 elif event_par:
                     event_parameters.add(line)
 
+        if section == 'ui_control_signatures':
+            m = re.match(r'(?P<ui_control>\w+)\s+(?P<identifier>[$%!~@?]<[^>]+>)\s*(?P<size>\[[^]]*\])?\s*(\((?P<params>.*)\))?', line)
+            ui_ctrl, params = m.group('ui_control'), m.group('params')
+
+            if params:
+                params = [p.strip() for p in params.replace('<', '').replace('>', '').split(',') if p.strip()]
+            else:
+                params = []
+
+            ui_control_signatures[ui_ctrl] = params
+
+
 # mapping from function_name to descriptive string
 functions = dict([(x.split('(')[0], x) for x in functions])
 variables_unprefixed = set([v[1:] for v in variables])
-keywords = set(keywords).union(set(['async_complete']))
