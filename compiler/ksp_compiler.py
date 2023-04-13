@@ -204,9 +204,11 @@ class ExceptionWithMessage(Exception):
 class ParseException(ExceptionWithMessage):
     '''Parse Exceptions for parse errors raised before AST lex/yacc parsing'''
 
-    def __init__(self, line, message):
-        assert(isinstance(line, Line))
-        msg = "%s\n%s\n\n%s" % (message, str(line).strip(), line.get_locations_string())
+    def __init__(self, line, message, no_traceback = False):
+        if no_traceback:
+            utils.disable_traceback()
+
+        msg = "%s\n\n%s\n\n%s" % (message, str(line).strip(), line.get_locations_string())
         Exception.__init__(self, msg)
         self.line = line
         self.message = msg
