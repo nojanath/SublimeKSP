@@ -21,6 +21,12 @@ try:
 except ImportError:
     has_sublime_api = False
 
+def disable_traceback():
+    if sys.version_info < (3, 6, 2):
+        sys.tracebacklimit = None
+    else:
+        sys.tracebacklimit = 0
+
 def split_args(arg_string, line):
     '''converts eg. "x, y*(1+z), z" into a list ['x', 'y*(1+z)', 'z']'''
     if arg_string.strip() == '':
@@ -41,13 +47,15 @@ def split_args(arg_string, line):
         if ch == ',' and unmatched_left_paren == 0 and not double_quote_on:
             cur_arg = cur_arg.strip()
             if not cur_arg:
-                raise ParseException(line, 'Syntax error: empty argument in function call %s!' % arg_string)
+                from ksp_compiler import ParseException
+                raise ParseException(line, 'Empty argument in function call %s!' % arg_string, True)
             args.append(cur_arg)
             cur_arg = ''
         else:
             cur_arg += ch
     if unmatched_left_paren:
-        raise ParseException(line, 'Error: unmatched parenthesis in function call %s!' % arg_string)
+        from ksp_compiler import ParseException
+        raise ParseException(line, 'Unmatched parenthesis in function call %s!' % arg_string, True)
     return args
 
 def log_message(msg):
