@@ -222,6 +222,7 @@ contexts:
       comment: Variable declaration
       captures:
         1: keyword.other.source.ksp
+        2: keyword.other.source.ksp
         3: keyword.other.source.ksp
         4: keyword.other.source.ksp
         5: variable.source.ksp
