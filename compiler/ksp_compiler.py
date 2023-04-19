@@ -27,7 +27,6 @@ from taskfunc import taskfunc_code
 from collections import OrderedDict
 import hashlib
 import ply.lex as lex
-from logger import logger_code
 import time
 import json
 import copy
@@ -1794,94 +1793,24 @@ class KSPCompiler(object):
     # TO PRESERVE LINE PROPERTIES, SELF.LINES CAN NOT BE REMERGED INTO SOURCE
 
     def extensions_with_macros(self):
-        '''Replaces lines with relevant preprocessor plugin code. Like logger'''
+        '''Replaces lines with relevant preprocessor plugin code, ike Task Control Module'''
         check_lines = [copy.copy(l) for l in self.lines]
-        for line in check_lines:
+
+        for i, line in enumerate(check_lines):
             line.replace_placeholders()
 
-        check_source = merge_lines(check_lines) # only for checking purposes, not for reproducing lines
+            if 'activate_logger' in line.command:
+                raise ParseException(self.lines[i],
+                                     'Logger functionality has been removed!\n\n' +
+                                     'Please consider updating your script to use watch_var() and watch_array_idx() commands instead!')
 
-        ### Extensions ###
+        check_source = merge_lines(check_lines) # only for checking purposes, not for reproducing lines
 
         # Add TCM code if tcm.init() is found
         if re.search(r'(?m)^\s*tcm.init', check_source):
             self.lines += parse_lines_and_handle_imports(taskfunc_code,
                                             read_file_function=self.read_file_func,
                                             preprocessor_func=self.examine_pragmas)
-
-        # Add logger code if activate_logger is found.
-        m = re.search(r"(?m)^\s*activate_logger.*\)", check_source)
-        if m:
-            # Preparing a new source block to add called amended_logger_code
-            amended_logger_code = logger_code
-
-            utils.log_message("!!! WARNING          WARNING         WARNING         WARNING         WARNING         WARNING         !!!")
-            utils.log_message("!!!                                                                                                  !!!")
-            utils.log_message("!!!   LOGGER FUNCTIONALITY IS NOW DEPRECATED AND WILL BE REMOVED IN THE NEXT VERSION OF SUBLIMEKSP   !!!")
-            utils.log_message("!!!   CONSIDER REPLACING LOGGER WITH CREATOR TOOLS AND WATCH_VAR() AND WATCH_ARRAY_IDX() COMMANDS    !!!")
-            utils.log_message("!!!                                                                                                  !!!")
-            utils.log_message("!!! WARNING          WARNING         WARNING         WARNING         WARNING         WARNING         !!!")
-
-            activate_line = m.group(0).strip()
-            activate_line = re.sub(comment_singleline_re, '', activate_line)
-            filepath_m = re.search(r"(\"|\').*(\"|\')", str(activate_line))
-            if not filepath_m:
-                raise ParseException(Line("", [(None, 1)], None), 'No filepath used in activate_logger()!\n')
-            filepath_m_string = filepath_m.group(0)
-            quote_type_str = filepath_m_string[0]
-            filepath = filepath_m.group(0)[1:-1]
-            valid_file_path_flag = False
-            if re.search(r"(?m)^(?:\w:)?(\/[a-zA-Z_\-\s0-9\.]+)*\.nka$", filepath):
-                valid_file_path_flag = True
-                m = re.search(r"/[^/]*.nka", filepath)
-                filename = "_" + m.group(0).replace("/", "").replace(".nka", "").replace("-", "")
-                filename = re.sub(r"\s", "", filename)
-                amended_logger_code = amended_logger_code.replace("#name#", filename)
-            if re.search(r"(?m)^(?:\w:)?(\/[a-zA-Z_\-\s0-9\.]+)*\/$", filepath):
-                valid_file_path_flag = True
-                new_logger_str = "logger_filepath := filepath & %slogger.nka%s" % (quote_type_str, quote_type_str)
-                amended_logger_code = amended_logger_code.replace("#name#", "logger").replace("logger_filepath := filepath", new_logger_str)
-            if valid_file_path_flag == False:
-                raise ParseException(Line("", [(None, 1)], None), 'Invalid filepath used in activate_logger()).\nFilepaths must be in this format: "C:/Users/Name/LogFile.nka" or "/Users/Name/LogFile.nka"')
-
-            # A persistance_changed callback function needs to be inserted if the script has one.
-            # Insert *directly* into self.lines if there is, or just add it to the new source block if there isn't.
-            pccb_start = -1
-            for i in range(0, len(self.lines)):
-                content = self.lines[i].command
-                m = re.search(r"(?m)^\s*on\s+persistence_changed", content)
-                if m:
-                    pccb_start = i
-                    break
-
-            if pccb_start != -1:
-                pccb_end = -1
-                for i in range(pccb_start, len(self.lines)):
-                    content = self.lines[i].command
-                    if "end on" in content:
-                        pccb_end = i
-                        break
-
-                insert_function_line_obj = parse_lines_and_handle_imports("checkPrintFlag()",
-                                                    read_file_function=self.read_file_func,
-                                                    preprocessor_func=self.examine_pragmas)
-
-                replace_lines = collections.deque([])
-                for i in range(0, len(self.lines)):
-                    if i == pccb_end:
-
-                        replace_lines.append(insert_function_line_obj[0])
-                    replace_lines.append(self.lines[i])
-
-                self.lines = replace_lines
-            else:
-                # if there is no persistence_changed callback then generate one
-                amended_logger_code = amended_logger_code + "\non persistence_changed\ncheckPrintFlag()\nend on\n"
-
-            self.lines += parse_lines_and_handle_imports(amended_logger_code,
-                                                    read_file_function=self.read_file_func,
-                                                    preprocessor_func=self.examine_pragmas)
-        ###
 
         # Run conditional stage a second time to catch the new source additions.
         handle_conditional_lines(self.lines)
@@ -1890,8 +1819,6 @@ class KSPCompiler(object):
         '''Import nckp if import_nckp() found'''
         if open_nckp(self.lines, self.basedir):
             strip_import_nckp_function_from_source(self.lines)
-
-        ###
 
     def replace_string_placeholders(self):
         for line in self.lines:
