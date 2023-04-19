@@ -191,7 +191,7 @@ class Struct(object):
 		self.members.insert(location, memberObj)
 
 def handleStructs(lines):
-	structSyntax = "\&"
+	prefix = r'&'
 	structs = []
 
 	def findStructs():
@@ -248,7 +248,7 @@ def handleStructs(lines):
 				stillRemainginStructs = False
 				# Struct member may themselves have struct members, so this is looped until it is fully resolved.
 				while j < len(structs[i].members) or stillRemainginStructs == True:
-					m = re.search(r"^([^%s]+\.)?%s\s*%s\s+%s" % (structSyntax, structSyntax, variableNameUnRe, variableNameUnRe), structs[i].members[j].name)
+					m = re.search(r"^([^%s]+\.)?%s\s*%s\s+%s" % (prefix, prefix, variableNameUnRe, variableNameUnRe), structs[i].members[j].name)
 					if m:
 						structs[i].deleteMember(j)
 						structNum = structNames.index(m.group(2))
@@ -268,7 +268,7 @@ def handleStructs(lines):
 
 						# If there are still any struct member declarations, keep looping to resolve them.
 						for name in structs[i].members[j].name:
-							mm = re.search(r"^(?:[^%s]+\.)?%s\s*%s\s+%s" % (structSyntax, structSyntax, variableNameUnRe, variableNameUnRe), name)
+							mm = re.search(r"^(?:[^%s]+\.)?%s\s*%s\s+%s" % (prefix, prefix, variableNameUnRe, variableNameUnRe), name)
 							if mm:
 								stillRemainginStructs = True
 					j += 1
@@ -287,7 +287,7 @@ def handleStructs(lines):
 			newLines = collections.deque()
 			for i in range(len(lines)):
 				line = lines[i].command.strip()
-				m = re.search(r"^declare\s+%s\s*%s\s+%s(?:\[(.*)\])?$" % (structSyntax, variableNameUnRe, variableNameUnRe), line)
+				m = re.search(r"^declare\s+%s\s*%s\s+%s(?:\[(.*)\])?$" % (prefix, variableNameUnRe, variableNameUnRe), line)
 				if m:
 					structName = m.group(1)
 					declaredName = m.group(4)

@@ -132,14 +132,6 @@ contexts:
         1: operator.source.ksp
         2: support.variable.source.ksp
 
-    - match: ':=|&|<=|>=|<|>|#|=|->|\.\.\.'
-      comment: Operator
-      scope: operator.source.ksp
-
-    - match: "[-+*/]"
-      comment: Arithmetic Operator
-      scope: operator.source.ksp
-
     - match: (?!#)\b(if|to|downto|else|for|while|select|case)\b(?!#)
       comment: Control keywords
       scope: keyword.control.source.ksp
@@ -651,6 +643,14 @@ contexts:
           pop: true
         - include: main
 
-    - match: '(\b|[~?$%!@])[A-Za-z0-9_.]+|\b\d+[A-Za-z_][A-Za-z0-9_]*\b'
+    - match: '(\b|[~?$%!@&])[A-Za-z0-9_.]+|\b\d+[A-Za-z_][A-Za-z0-9_]*\b'
       comment: Identifier
       scope: variable.source.ksp
+
+    - match: ':=|&|<=|>=|<|>|#|=|->|\.\.\.'
+      comment: Operator
+      scope: operator.source.ksp
+
+    - match: "[-+*/]"
+      comment: Arithmetic Operator
+      scope: arithmetic.source.ksp

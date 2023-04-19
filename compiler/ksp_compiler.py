@@ -235,7 +235,7 @@ class Line:
             ('%s%s:%d \r\n' % (' ' * (i * 4), filename or '<main script>', lineno)) for (i, (filename, lineno)) in enumerate(reversed(self.locations)))
 
     def copy(self, new_command=None, add_location=None):
-        ''' Returns a copy of the line. \n
+        ''' Returns a copy of the line.
             If the new_command parameter is specified, that will be the command of the new line
             and it will get the same indentation as the old line. '''
         line = Line(self.command, self.locations, self.namespaces)
