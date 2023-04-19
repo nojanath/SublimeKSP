@@ -1917,6 +1917,11 @@ class ControlParTest(unittest.TestCase):
             declare ui_panel Engine.panel
             Engine.label -> picture_state := Engine.knob
             Engine.label -> parent_panel := Engine.panel
+
+            declare ui_button A[5]
+            declare ui_panel Panel[2]
+
+            A0 -> parent_panel := Panel0
         end on
 
         function make_settings(fam)
@@ -1935,6 +1940,8 @@ class ControlParTest(unittest.TestCase):
         self.assertTrue('message(get_control_par(get_ui_id($myfam__myknob),$CONTROL_PAR_POS_X))' in output)
         self.assertTrue('message(get_control_par_str(get_ui_id($myfam__myknob),$CONTROL_PAR_TEXT))' in output)
         self.assertTrue('set_control_par(get_ui_id($Engine__label),$CONTROL_PAR_PARENT_PANEL,get_ui_id($Engine__panel))' in output)
+        self.assertTrue('set_control_par(get_ui_id($A0),$CONTROL_PAR_PARENT_PANEL,get_ui_id($Panel0))' in output)
+
         # ... but not on this one (since it uses an integer variable and not a UI variable):
         self.assertTrue('set_control_par($control_reference,$CONTROL_PAR_VALUE,10)' in output)
         self.assertTrue('set_control_par(get_ui_id($Engine__label),$CONTROL_PAR_PICTURE_STATE,$Engine__knob)' in output)
