@@ -2230,6 +2230,7 @@ if __name__ == "__main__":
     import codecs
     import argparse
     from time import strftime, localtime
+    from datetime import datetime
 
     # definition of argsparse.FileType in Python 3.4 (with support for encoding) - in case we're running Python 3.3
     class FileType(object):
@@ -2320,6 +2321,8 @@ if __name__ == "__main__":
     # read the source and compile it
     code = args.source_file.read()
 
+    t1 = datetime.now()
+
     compiler = KSPCompiler(
         code,
         basedir,
@@ -2350,7 +2353,9 @@ if __name__ == "__main__":
         codecs.open(f, 'w', encoding='latin-1').write(code)
         paths.append(f)
 
-    utils.log_message("Successfully compiled! Compiled code was saved to:")
+    delta = utils.calc_time_diff(datetime.now() - t1)
+
+    utils.log_message("Successfully compiled in %s! Compiled code was saved to:" % delta)
 
     for p in paths:
         utils.log_message("    %s" % p)

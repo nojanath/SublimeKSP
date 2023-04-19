@@ -5,6 +5,7 @@ import codecs
 import traceback
 import os.path
 from   os import listdir
+from datetime import datetime
 import sys
 import re
 import threading
@@ -225,11 +226,13 @@ class CompileKspThread(threading.Thread):
                 if filepath == None:
                     filepath = 'untitled'
 
-                utils.log_message("Error: No output path was specified for '%s' - skipping compilation for this script!" % filepath)
+                utils.log_message('Error: No output path was specified for \'%s\' - skipping compilation for this script!' % filepath)
 
                 continue
 
             try:
+                t1 = datetime.now()
+
                 if self.compile_all_open:
                     utils.log_message('Compiling \'%s\', script %s of %s...' % (filepath, self.open_views.index(view) + 1, len(self.open_views)))
                 else:
@@ -254,6 +257,8 @@ class CompileKspThread(threading.Thread):
                     code = code.replace('\r', '')
                     num_output_files = len(self.compiler.output_files)
 
+                    delta = utils.calc_time_diff(datetime.now() - t1)
+
                     if num_output_files > 0:
                         paths = []
 
@@ -264,12 +269,12 @@ class CompileKspThread(threading.Thread):
                             codecs.open(f, 'w', 'latin-1').write(code)
                             paths.append(f)
 
-                        utils.log_message("Successfully compiled! Compiled code was saved to:")
+                        utils.log_message('Successfully compiled in %s! Compiled code was saved to:' % delta)
 
                         for p in paths:
-                            utils.log_message("    %s" % p)
+                            utils.log_message('    %s' % p)
                     else:
-                        utils.log_message("Successfully compiled! The code is copied to the clipboard, ready to be pasted into Kontakt.")
+                        utils.log_message('Successfully compiled in %s! The code is copied to the clipboard, ready to be pasted into Kontakt.' % delta)
                         sublime.set_clipboard(code)
 
             except ksp_ast.ParseException as e:
