@@ -70,3 +70,18 @@ def log_message(msg):
 
 def compile_on_progress(text, percent_complete):
     log_message('Compiling (%d%%) - %s...' % (percent_complete, text))
+
+def calc_time_diff(timedelta):
+    d = dict()
+    d['m'], d['s'] = divmod(timedelta.seconds, 60)
+    d['ms'] = int(round(timedelta.microseconds / 1000, 0))
+
+    if d['s'] == 0:
+        fmt = '{} msec'.format(d['ms'])
+    elif d['m'] == 0:
+        fmt = '{} sec, {} msec'.format(d['s'], d['ms'])
+    else:
+        fmt = '{} min, {} sec'.format(d['m'], d['s'])
+
+    return fmt
+
