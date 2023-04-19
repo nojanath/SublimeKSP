@@ -1795,19 +1795,22 @@ class KSPCompiler(object):
     def extensions_with_macros(self):
         '''Replaces lines with relevant preprocessor plugin code, ike Task Control Module'''
         check_lines = [copy.copy(l) for l in self.lines]
-        for line in check_lines:
+
+        for i, line in enumerate(check_lines):
             line.replace_placeholders()
 
-        check_source = merge_lines(check_lines) # only for checking purposes, not for reproducing lines
+            if 'activate_logger' in line.command:
+                raise ParseException(self.lines[i],
+                                     'Logger functionality has been removed!\n\n' +
+                                     'Please consider updating your script to use watch_var() and watch_array_idx() commands instead!')
 
-        ### Extensions ###
+        check_source = merge_lines(check_lines) # only for checking purposes, not for reproducing lines
 
         # Add TCM code if tcm.init() is found
         if re.search(r'(?m)^\s*tcm.init', check_source):
             self.lines += parse_lines_and_handle_imports(taskfunc_code,
                                             read_file_function=self.read_file_func,
                                             preprocessor_func=self.examine_pragmas)
-
 
         # Run conditional stage a second time to catch the new source additions.
         handle_conditional_lines(self.lines)
