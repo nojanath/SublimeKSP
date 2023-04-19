@@ -18,6 +18,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), 'compiler'))
 
 import ksp_compiler
 import ksp_ast
+import preprocessor_plugins
 import utils
 
 import urllib, tarfile, json, shutil

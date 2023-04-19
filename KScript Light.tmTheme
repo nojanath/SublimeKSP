@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>comment</key>
-	<string>http://nilsliberg.se/ksp/</string>
+	<string>https://github.com/nojanath/SublimeKSP</string>
 	<key>name</key>
-	<string>KScript Editor Theme</string>
+	<string>SublimeKSP Light Theme</string>
 	<key>settings</key>
 	<array>
 		<dict>
@@ -53,6 +53,17 @@
 			<string>Operator</string>
 			<key>scope</key>
 			<string>operator</string>
+			<key>settings</key>
+			<dict>
+				<key>foreground</key>
+				<string>#000000</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>name</key>
+			<string>Arithmetic Operator</string>
+			<key>scope</key>
+			<string>arithmetic</string>
 			<key>settings</key>
 			<dict>
 				<key>foreground</key>
