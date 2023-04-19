@@ -21,7 +21,7 @@ import re
 import math
 import collections
 import utils
-from ksp_compiler import ParseException
+from ksp_compiler import ParseException, Line
 from simple_eval import SimpleEval
 from time import strftime, localtime
 
@@ -1126,46 +1126,55 @@ class IterateMacro(object):
 	def __init__(self, macroName, minVal, maxVal, step, direction, line):
 		self.line = line
 		self.macroName = macroName
-		self.isSingleLine = "#n#" in self.macroName
-		self.minVal = int(tryStringEval(minVal, line, "min"))
-		self.maxVal = int(tryStringEval(maxVal, line, "max"))
-		self.step = 1
-		if step:
-			self.step = int(tryStringEval(step, line, "step"))
+		self.isSingleLine = '#n#' in self.macroName
+		self.minVal = int(tryStringEval(minVal, line, 'min'))
+		self.maxVal = int(tryStringEval(maxVal, line, 'max'))
 		self.direction = direction
+		self.step = 1
+
+		if step:
+			self.step = int(tryStringEval(step, line, 'step'))
 
 	def buildLines(self):
 		newLines = collections.deque()
 		offset = 1
-		if self.direction == "downto":
+
+		if self.direction == 'downto':
 			self.step = -self.step
 			offset = -1
 
-		if not ((self.minVal > self.maxVal and self.direction == "to") or (self.minVal < self.maxVal and self.direction == "downto")):
+		if not ((self.minVal > self.maxVal and self.direction == 'to') or (self.minVal < self.maxVal and self.direction == 'downto')):
 			if not self.isSingleLine:
 				for i in range(self.minVal, self.maxVal + offset, self.step):
-					newLines.append(self.line.copy("%s(%s)" % (self.macroName, str(i))))
+					newLines.append(self.line.copy('%s(%s)' % (self.macroName, str(i))))
 			else:
 				for i in range(self.minVal, self.maxVal + offset, self.step):
-					newLines.append(self.line.copy(self.macroName.replace("#n#", str(i))))
+					l = Line(self.macroName)
+					l.replace_placeholders()
+					newLines.append(self.line.copy(l.command.replace('#n#', str(i))))
 
 		return(newLines)
 
 def handleIterateMacro(lines):
 	scan = False
 	newLines = collections.deque()
+
 	for l in lines:
 		command = l.command.strip()
-		if command.startswith("iterate_macro"):
+
+		if command.startswith('iterate_macro'):
 			scan = True
-			m = re.search(r"^iterate_macro\s*\((?P<macro>.+)\)\s*:=\s*(?P<min>.+)\b(?P<direction>to|downto)(?P<max>(?:.(?!\bstep\b))+)(?:\s+step\s+(?P<step>.+))?$", command)
+			m = re.search(r'^iterate_macro\s*\((?P<macro>.+)\)\s*:=\s*(?P<min>.+)\b(?P<direction>to|downto)(?P<max>(?:.(?!\bstep\b))+)(?:\s+step\s+(?P<step>.+))?$',
+						  command)
+
 			if m:
-				iterateObj = IterateMacro(m.group("macro"), m.group("min"), m.group("max"), m.group("step"), m.group("direction"), l)
+				iterateObj = IterateMacro(m.group('macro'), m.group('min'), m.group('max'), m.group('step'), m.group('direction'), l)
 				newLines.extend(iterateObj.buildLines())
 			else:
-				raise ParseException(l, "Syntax error in iterate_macro: incomplete or missing parameters!\n")
+				raise ParseException(l, 'Syntax error in iterate_macro: incomplete or missing parameters!\n')
 		else:
 			newLines.append(l)
+
 	replaceLines(lines, newLines)
 
 	return scan
@@ -1174,18 +1183,138 @@ def handleIterateMacro(lines):
 def handleIteratePostMacro(lines):
 	scan = False
 	newLines = collections.deque()
+
 	for l in lines:
 		command = l.command.strip()
-		if command.startswith("iterate_post_macro"):
+
+		if command.startswith('iterate_post_macro'):
 			scan = True
-			m = re.search(r"^iterate_post_macro\s*\((?P<macro>.+)\)\s*:=\s*(?P<min>.+)\b(?P<direction>to|downto)(?P<max>(?:.(?!\bstep\b))+)(?:\s+step\s+(?P<step>.+))?$", command)
+			m = re.search(r'^iterate_post_macro\s*\((?P<macro>.+)\)\s*:=\s*(?P<min>.+)\b(?P<direction>to|downto)(?P<max>(?:.(?!\bstep\b))+)(?:\s+step\s+(?P<step>.+))?$',
+						  command)
+
 			if m:
-				iterateObj = IterateMacro(m.group("macro"), m.group("min"), m.group("max"), m.group("step"), m.group("direction"), l)
+				iterateObj = IterateMacro(m.group('macro'), m.group('min'), m.group('max'), m.group('step'), m.group('direction'), l)
 				newLines.extend(iterateObj.buildLines())
 			else:
 				newLines.append(l)
 		else:
 			newLines.append(l)
+
+	replaceLines(lines, newLines)
+
+	return scan
+
+#=================================================================================================
+def handleDefineLiterals(lines):
+	''' Finds all define literals, and just replaces their occurances with the list of literals. '''
+
+	defineTitles = []
+	defineValues = []
+	defineLinePos = []
+
+	for index in range(len(lines)):
+		line = lines[index].command.strip()
+
+		if line.startswith("define"):
+			if re.search(r"^define\s+literals\s+", line):
+				if re.search(r"^define\s+literals\s+" + variableNameUnRe + r"\s*:=", line):
+					textWithoutDefine = re.sub(r"^define\s+literals\s*", "", line)
+					colonBracketPos = textWithoutDefine.find(":=")
+
+					# before the assign operator is the title
+					title = textWithoutDefine[ : colonBracketPos].strip()
+					defineTitles.append(title)
+
+					# after the assign operator is the value
+					value = textWithoutDefine[colonBracketPos + 2 : ].strip()
+					m = re.search(r"^\((([a-zA-Z_][a-zA-Z0-9_.]*)?(\s*,\s*[a-zA-Z_][a-zA-Z0-9_.]*)*)\)$", value)
+
+					if not m:
+						raise ParseException(lines[index], "Syntax error in define literals: Comma-separated identifier list expected in parentheses.\n")
+
+					value = m.group(1)
+					value = ",".join([val.strip() for val in value.split(",")]) # remove whitespace
+
+					defineValues.append(value)
+					defineLinePos.append(index)
+
+					# remove the line
+					lines[index].command = re.sub(r'[^\r\n]', '', line)
+				else:
+					raise ParseException(lines[index], "Syntax error in define literals!\n")
+
+	# if at least one define const exsists
+	if defineTitles:
+		# scan the code can replace any occurances of the variable with it's value
+		for lineObj in lines:
+			line = lineObj.command
+
+			for index, item in enumerate(defineTitles):
+				if re.search(r"\b" + item + r"\b", line):
+					lineObj.command = lineObj.command.replace(item, str(defineValues[index]))
+
+#=================================================================================================
+def handleLiterateMacro(lines):
+	scan = False
+	newLines = collections.deque()
+
+	for lineIdx in range(len(lines)):
+		line = lines[lineIdx].command.strip()
+
+		if line.startswith("literate_macro"):
+			scan = True
+			m = re.search(r"^literate_macro\s*\((?P<macro>.+)\)\s+on\s+(?P<target>.+)$", line)
+
+			if m:
+				name = m.group("macro")
+				targets = utils.split_args(m.group("target"), lines[lineIdx])
+
+				if not "#l#" in name:
+					for text in targets:
+						newLines.append(lines[lineIdx].copy("%s(%s)" % (name, text)))
+				else:
+					for index, text in enumerate(targets):
+						l = Line(name)
+						l.replace_placeholders()
+						newLines.append(lines[lineIdx].copy(l.command.replace("#l#", text).replace("#n#", str(index))))
+				continue
+			else:
+				raise ParseException(lines[lineIdx], "Syntax error in literate_macro: incomplete or missing parameters!\n")
+
+		newLines.append(lines[lineIdx])
+
+	replaceLines(lines, newLines)
+
+	return scan
+
+#=================================================================================================
+def handleLiteratePostMacro(lines):
+	scan = False
+	newLines = collections.deque()
+
+	for lineIdx in range(len(lines)):
+		line = lines[lineIdx].command.strip()
+
+		if line.startswith("literate_post_macro"):
+			scan = True
+			m = re.search(r"^literate_post_macro\s*\((?P<macro>.+)\)\s+on\s+(?P<target>.+)$", line)
+
+			if m:
+				name = m.group("macro")
+				targets = utils.split_args(m.group("target"), lines[lineIdx])
+
+				if not "#l#" in name:
+					for text in targets:
+						newLines.append(lines[lineIdx].copy("%s(%s)" % (name, text)))
+				else:
+					for index, text in enumerate(targets):
+						l = Line(name)
+						l.replace_placeholders()
+						newLines.append(lines[lineIdx].copy(l.command.replace("#l#", text).replace("#n#", str(index))))
+				continue
+
+		newLines.append(lines[lineIdx])
+
 	replaceLines(lines, newLines)
 
 	return scan
@@ -1408,96 +1537,3 @@ def handleUIArrays(lines):
 					continue
 		newLines.append(lines[lineNum])
 	replaceLines(lines, newLines)
-
-#=================================================================================================
-def handleDefineLiterals(lines):
-	''' Finds all define literals, and just replaces their occurances with the list of literals. '''
-	defineTitles = []
-	defineValues = []
-	defineLinePos = []
-	for index in range(len(lines)):
-		line = lines[index].command.strip()
-		if line.startswith("define"):
-			if re.search(r"^define\s+literals\s+", line):
-				if re.search(r"^define\s+literals\s+" + variableNameUnRe + r"\s*:=", line):
-					textWithoutDefine = re.sub(r"^define\s+literals\s*", "", line)
-					colonBracketPos = textWithoutDefine.find(":=")
-
-					# before the assign operator is the title
-					title = textWithoutDefine[ : colonBracketPos].strip()
-					defineTitles.append(title)
-
-					# after the assign operator is the value
-					value = textWithoutDefine[colonBracketPos + 2 : ].strip()
-					m = re.search(r"^\((([a-zA-Z_][a-zA-Z0-9_.]*)?(\s*,\s*[a-zA-Z_][a-zA-Z0-9_.]*)*)\)$", value)
-					if not m:
-						raise ParseException(lines[index], "Syntax error in define literals: Comma-separated identifier list expected in parentheses.\n")
-
-					value = m.group(1)
-					value = ",".join([val.strip() for val in value.split(",")]) # remove whitespace
-					defineValues.append(value)
-
-					defineLinePos.append(index)
-					# remove the line
-					lines[index].command = re.sub(r'[^\r\n]', '', line)
-				else:
-					raise ParseException(lines[index], "Syntax error in define literals!\n")
-
-	# if at least one define const exsists
-	if defineTitles:
-		# scan the code can replace any occurances of the variable with it's value
-		for lineObj in lines:
-			line = lineObj.command
-			for index, item in enumerate(defineTitles):
-				if re.search(r"\b" + item + r"\b", line):
-					# character_before = line[line.find(item) - 1 : line.find(item)]
-					# if character_before.isalpha() == False and character_before.isdiget() == False:
-					lineObj.command = lineObj.command.replace(item, str(defineValues[index]))
-
-#=================================================================================================
-def handleLiterateMacro(lines):
-	scan = False
-	newLines = collections.deque()
-	for lineIdx in range(len(lines)):
-		line = lines[lineIdx].command.strip()
-		if line.startswith("literate_macro"):
-			scan = True
-			m = re.search(r"^literate_macro\s*\((?P<macro>.+)\)\s+on\s+(?P<target>.+)$", line)
-			if m:
-				name = m.group("macro")
-				targets = utils.split_args(m.group("target"), lines[lineIdx])
-				if not "#l#" in name:
-					for text in targets:
-						newLines.append(lines[lineIdx].copy("%s(%s)" % (name, text)))
-				else:
-					for index, text in enumerate(targets):
-						newLines.append(lines[lineIdx].copy(name.replace("#l#", text).replace("#n#", str(index))))
-				continue
-			else:
-				raise ParseException(lines[lineIdx], "Syntax error in literate_macro: incomplete or missing parameters!\n")
-		newLines.append(lines[lineIdx])
-	replaceLines(lines, newLines)
-	return scan
-
-#=================================================================================================
-def handleLiteratePostMacro(lines):
-	scan = False
-	newLines = collections.deque()
-	for lineIdx in range(len(lines)):
-		line = lines[lineIdx].command.strip()
-		if line.startswith("literate_post_macro"):
-			scan = True
-			m = re.search(r"^literate_post_macro\s*\((?P<macro>.+)\)\s+on\s+(?P<target>.+)$", line)
-			if m:
-				name = m.group("macro")
-				targets = utils.split_args(m.group("target"), lines[lineIdx])
-				if not "#l#" in name:
-					for text in targets:
-						newLines.append(lines[lineIdx].copy("%s(%s)" % (name, text)))
-				else:
-					for index, text in enumerate(targets):
-						newLines.append(lines[lineIdx].copy(name.replace("#l#", text).replace("#n#", str(index))))
-				continue
-		newLines.append(lines[lineIdx])
-	replaceLines(lines, newLines)
-	return scan
