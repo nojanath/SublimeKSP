@@ -62,7 +62,6 @@ def pre_macro_functions(lines):
 		Returns the resulting define objects as a cache to be re-used.
 		lines is a deque of Line objects - see ksp_compiler.py.'''
 	createBuiltinDefines(lines)
-	removeActivateLoggerPrint(lines)
 
 	return substituteDefines(lines)
 
@@ -318,22 +317,6 @@ def handleStructs(lines):
 
 			replaceLines(lines, newLines)
 		findAndHandleStructInstanceDeclarations()
-
-#=================================================================================================
-# Remove print functions when the activate_logger() is not present.
-def removeActivateLoggerPrint(lines):
-	printLineNumbers = []
-	loggerActiveFlag = False
-	for i in range(len(lines)):
-		line = lines[i].command.strip()
-		if re.search(r"^activate_logger\s*\(", line):
-			loggerActiveFlag = True
-		if re.search(r"^print\s*\(", line):
-			printLineNumbers.append(i)
-
-	if not loggerActiveFlag:
-		for i in range(len(printLineNumbers)):
-			lines[printLineNumbers[i]].command = ""
 
 #=================================================================================================
 class Incrementer(object):
