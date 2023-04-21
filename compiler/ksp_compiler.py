@@ -362,17 +362,25 @@ def parse_lines(s, filename=None, namespaces=None):
 def convert_strings_to_placeholders(lines):
     '''Converts all strings to placeholders, appending string to placeholder dictionary'''
     def replace_func(match):
-        i=len(placeholders)
+        i = len(placeholders)
+
         # replace the match with a placeholder (eg. "{8}") and store the replaced string
         s = match.group(0)
-        if s and s[0] == "'":           # convert single quotes (') to double quotes (")
+
+        # convert single quotes (') to double quotes (")
+        if s and s[0] == "'":
             s = '"%s"' % s[1:-1].replace(r"\'", "'")
+
         placeholders[i] = s
+
         return '{%d}' % i
 
     # substitute strings with placeholders
-    for l in lines:
-        l.command = string_re.sub(replace_func, l.command)
+    if hasattr(lines, '__iter__'):
+        for l in lines:
+            l.command = string_re.sub(replace_func, l.command)
+    else:
+        lines.command = string_re.sub(replace_func, lines.command)
 
 def parse_lines_and_handle_imports(code, filename=None, namespaces=None, read_file_function=None, preprocessor_func=None):
     '''parses lines into Line objects and imports all files. preprocessor_func does not mean preprocessor_plugins'''
@@ -2283,7 +2291,10 @@ if __name__ == "__main__":
 
     delta = utils.calc_time_diff(datetime.now() - t1)
 
-    utils.log_message("Successfully compiled in %s! Compiled code was saved to:" % delta)
+    if len(paths) > 0:
+        utils.log_message("Successfully compiled in %s! Compiled code was saved to:" % delta)
 
-    for p in paths:
-        utils.log_message("    %s" % p)
+        for p in paths:
+            utils.log_message("    %s" % p)
+    else:
+        utils.log_message("The output file for the compiled code was not defined, but compilation ended successfully in %s!" % delta)
