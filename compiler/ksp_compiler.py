@@ -1524,13 +1524,15 @@ class ASTModifierFixPrefixesAndFixControlPars(ASTModifierFixPrefixes):
         # if it's a builtin function that sets or gets a control par and the first parameter is not an integer ID, but rather a UI variable
         if function_name in ksp_builtins.functions and not node.using_call_keyword                           \
            and (function_name.startswith('set_control_par') or function_name.startswith('get_control_par'))  \
-           and len(node.parameters) > 0 and str(node.parameters[0].identifier).lower() in ui_variables:
+           and len(node.parameters) > 0 and isinstance(node.parameters[0], ksp_ast.VarRef)                   \
+           and str(node.parameters[0].identifier).lower() in ui_variables:
 
             # then wrap the UI variable in a get_ui_id call, eg. myknob is converted into get_ui_id(myknob)
             func_call_inner = ksp_ast.FunctionCall(node.lexinfo, ksp_ast.ID(node.parameters[0].lexinfo, 'get_ui_id'), [node.parameters[0]], is_procedure = False)
 
             # If last parameter is a ui_variable and is trying to add to parent_panel then add get_ui_id() wrapper
             if function_name.startswith('set_control_par') and str(node.parameters[1]).endswith("PARENT_PANEL")  \
+               and isinstance(node.parameters[2], ksp_ast.VarRef)                                                \
                and str(node.parameters[2].identifier).lower() in ui_variables:
 
                 func_call_outer = ksp_ast.FunctionCall(node.lexinfo, ksp_ast.ID(node.parameters[2].lexinfo, 'get_ui_id'), [node.parameters[2]], is_procedure = False)
