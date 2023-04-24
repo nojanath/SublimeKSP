@@ -152,6 +152,11 @@ contexts:
           scope: variable.parameter.function.source.ksp
         - include: main
 
+    - match: '(\#.+?\#)'
+      comment: Macro argument
+      captures:
+        1: variable.parameter.function.source.ksp
+
     - match: '^\s*(const +)([a-zA-Z_.0-9]+)'
       comment: Const block definition
       scope: constblock.ksp
@@ -210,14 +215,16 @@ contexts:
                 ui_waveform|
                 ui_wavetable
               )\s*
-              ([a-zA-Z0-9_.]+)\s*\('
+              (([a-zA-Z0-9_.]+)?(\#.+?\#)?([a-zA-Z0-9_.]+)?)\s*\('
       comment: Variable declaration
       captures:
         1: keyword.other.source.ksp
         2: keyword.other.source.ksp
         3: keyword.other.source.ksp
         4: keyword.other.source.ksp
-        5: variable.source.ksp
+        6: variable.source.ksp
+        7: variable.parameter.function.source.ksp
+        8: variable.source.ksp
       push:
         - match: \)|$
           pop: true
