@@ -640,9 +640,7 @@ class ASTModifierCombineCallbacks(ASTModifierBase):
                 cb_key = b.name + ui_name
 
                 if cb_key in callbacks:
-                    if not self.combine_callbacks:
-                        raise ksp_ast.ParseException(b, "This callback has already been declared! Either remove the duplicate, or enable the Combine Duplicate Callbacks option.")
-                    else:
+                    if  self.combine_callbacks:
                         children = b.get_childnodes()
 
                         if b.variable:
