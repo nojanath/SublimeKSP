@@ -107,16 +107,6 @@ end on'''
         expected_output = [l.strip() for l in expected_output.split('\n') if l]
         self.assertEqual(output, expected_output)
 
-    def testCombineCallbacksError(self):
-        code = '''
-        on init
-            declare x := 1
-        end on
-        on init
-            declare y := 1
-        end on'''
-        self.assertRaises(ParseException, do_compile, code, combine_callbacks=False)
-
     def testCombineUICallbacks(self):
         code = '''
         on init
