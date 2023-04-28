@@ -146,9 +146,12 @@ contexts:
         - meta_scope: function.ksp
         - match: \)|$
           pop: true
-        - match: "out |var "
+        - match: 'override'
           scope: keyword.other.source.ksp
-        - match: "[a-zA-Z0-9_#.]+"
+        - match: 'out\s+|var\s+'
+          scope: keyword.other.source.ksp
+          comment: Macro Keywords
+        - match: '[a-zA-Z0-9_#.]+'
           scope: variable.parameter.function.source.ksp
         - include: main
 
