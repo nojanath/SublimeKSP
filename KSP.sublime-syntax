@@ -517,8 +517,7 @@ contexts:
 
                   END_USE_CODE|(RE)?SET_CONDITION|USE_CODE_IF(_NOT)?|
 
-                  (_)?(delay_event_for_loading_slots|
-                       get_engine_par(_disp)?|get_folder|
+                  (_)?(get_engine_par(_disp)?|get_folder|
                        load_ir_sample|
                        num_slices|
                        pgs_create_key|pgs_get_key_val|pgs_key_exists|pgs_set_key_val|

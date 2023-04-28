@@ -60,9 +60,9 @@ for line in lines:
             data[section].add(line)
 
         if section == 'functions':
-            m = re.match(r'(?P<name>\w+)(\((?P<params>.*?)\))?(:(?P<return_type>\w+))?', line)
+            m = re.match(r'(?P<name>\w+)(\(+(?P<params>.*?)\)+)?(:(?P<return_type>\w+))?', line)
             name, params, return_type = m.group('name'), m.group('params'), m.group('return_type')
-            params = [p.strip() for p in params.replace('<', '').replace('>', '').split(',') if p.strip()]
+            params = [p.strip() for p in params.replace('<', '').replace('>', '').split(',') if p.strip()] if params else ''
 
             # if a function has overloads, append the (params, return_type) set to the value list
             if name in function_signatures:
@@ -96,7 +96,6 @@ for line in lines:
                 params = []
 
             ui_control_signatures[ui_ctrl] = params
-
 
 # mapping from function_name to descriptive string
 functions = dict([(x.split('(')[0], x) for x in functions])
