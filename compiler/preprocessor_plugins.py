@@ -21,7 +21,7 @@ import re
 import math
 import collections
 import utils
-from ksp_compiler import ParseException, Line
+from ksp_compiler import ParseException, Line, placeholders
 from simple_eval import SimpleEval
 from time import strftime, localtime
 
@@ -65,13 +65,13 @@ def pre_macro_functions(lines):
 
 	return substituteDefines(lines)
 
-def macro_iter_functions(lines):
+def macro_iter_functions(lines, placeholders=placeholders):
 	''' Will process macro iteration and return true if any were found '''
-	return (handleIterateMacro(lines) or handleLiterateMacro(lines))
+	return (handleIterateMacro(lines, placeholders) or handleLiterateMacro(lines, placeholders))
 
-def post_macro_iter_functions(lines):
+def post_macro_iter_functions(lines, placeholders=placeholders):
 	''' Will process macro iteration and return true if any were found '''
-	return (handleIteratePostMacro(lines)) or (handleLiteratePostMacro(lines))
+	return (handleIteratePostMacro(lines, placeholders)) or (handleLiteratePostMacro(lines, placeholders))
 
 def post_macro_functions(lines):
 	''' This function is called after the regular macros have been expanded.
@@ -1106,7 +1106,7 @@ def handlePersistence(lines):
 
 #=================================================================================================
 class IterateMacro(object):
-	def __init__(self, macroName, minVal, maxVal, step, direction, line):
+	def __init__(self, macroName, minVal, maxVal, step, direction, line, placeholders):
 		self.line = line
 		self.macroName = macroName
 		self.isSingleLine = '#n#' in self.macroName
@@ -1114,6 +1114,7 @@ class IterateMacro(object):
 		self.maxVal = int(tryStringEval(maxVal, line, 'max'))
 		self.direction = direction
 		self.step = 1
+		self.placeholders = placeholders
 
 		if step:
 			self.step = int(tryStringEval(step, line, 'step'))
@@ -1133,12 +1134,12 @@ class IterateMacro(object):
 			else:
 				for i in range(self.minVal, self.maxVal + offset, self.step):
 					l = Line(self.macroName)
-					l.replace_placeholders()
+					l.replace_placeholders(placeholders=self.placeholders)
 					newLines.append(self.line.copy(l.command.replace('#n#', str(i))))
 
 		return(newLines)
 
-def handleIterateMacro(lines):
+def handleIterateMacro(lines, placeholders):
 	scan = False
 	newLines = collections.deque()
 
@@ -1151,7 +1152,7 @@ def handleIterateMacro(lines):
 						  command)
 
 			if m:
-				iterateObj = IterateMacro(m.group('macro'), m.group('min'), m.group('max'), m.group('step'), m.group('direction'), l)
+				iterateObj = IterateMacro(m.group('macro'), m.group('min'), m.group('max'), m.group('step'), m.group('direction'), l, placeholders)
 				newLines.extend(iterateObj.buildLines())
 			else:
 				raise ParseException(l, 'Syntax error in iterate_macro: incomplete or missing parameters!\n')
@@ -1163,7 +1164,7 @@ def handleIterateMacro(lines):
 	return scan
 
 #=================================================================================================
-def handleIteratePostMacro(lines):
+def handleIteratePostMacro(lines, placeholders):
 	scan = False
 	newLines = collections.deque()
 
@@ -1176,7 +1177,7 @@ def handleIteratePostMacro(lines):
 						  command)
 
 			if m:
-				iterateObj = IterateMacro(m.group('macro'), m.group('min'), m.group('max'), m.group('step'), m.group('direction'), l)
+				iterateObj = IterateMacro(m.group('macro'), m.group('min'), m.group('max'), m.group('step'), m.group('direction'), l, placeholders)
 				newLines.extend(iterateObj.buildLines())
 			else:
 				newLines.append(l)
@@ -1237,7 +1238,7 @@ def handleDefineLiterals(lines):
 					lineObj.command = lineObj.command.replace(item, str(defineValues[index]))
 
 #=================================================================================================
-def handleLiterateMacro(lines):
+def handleLiterateMacro(lines, placeholders):
 	scan = False
 	newLines = collections.deque()
 
@@ -1258,7 +1259,7 @@ def handleLiterateMacro(lines):
 				else:
 					for index, text in enumerate(targets):
 						l = Line(name)
-						l.replace_placeholders()
+						l.replace_placeholders(placeholders=placeholders)
 						newLines.append(lines[lineIdx].copy(l.command.replace("#l#", text).replace("#n#", str(index))))
 				continue
 			else:
@@ -1271,7 +1272,7 @@ def handleLiterateMacro(lines):
 	return scan
 
 #=================================================================================================
-def handleLiteratePostMacro(lines):
+def handleLiteratePostMacro(lines, placeholders):
 	scan = False
 	newLines = collections.deque()
 
@@ -1292,7 +1293,7 @@ def handleLiteratePostMacro(lines):
 				else:
 					for index, text in enumerate(targets):
 						l = Line(name)
-						l.replace_placeholders()
+						l.replace_placeholders(placeholders=placeholders)
 						newLines.append(lines[lineIdx].copy(l.command.replace("#l#", text).replace("#n#", str(index))))
 				continue
 

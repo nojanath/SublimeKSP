@@ -215,11 +215,12 @@ class ParseException(ExceptionWithMessage):
 class Line:
     '''Line object used for handling lines before AST lex/yacc parsing'''
 
-    def __init__(self, s, locations=None, namespaces=None):
+    def __init__(self, s, locations=None, namespaces=None, placeholders=placeholders):
         # locations should be a list of (filename, lineno) tuples
         self.command = s # current line returned as string
         self.locations = locations or [(None, -1)] # filename and line number
         self.namespaces = namespaces or []   # a list of the namespaces (each import appends the as-name onto the stack)
+        self.placeholders = placeholders
 
     def get_lineno(self):
         return self.locations[0][1]
@@ -264,7 +265,7 @@ class Line:
         s = varname_dot_re.sub(repl_func, s)
         return self.copy(new_command=s)
 
-    def replace_placeholders(self):
+    def replace_placeholders(self, placeholders=placeholders):
         replace_func = lambda matchobj: placeholders[int(matchobj.group(1))]
         self.command = re.sub(r'\{(\d+?)\}', replace_func, self.command)
 
@@ -1873,7 +1874,7 @@ class KSPCompiler(object):
 
 
         # nested expansion, supports now using macros to further specify define constants used for iterate and literate macros
-        while macro_iter_functions(self.lines):
+        while macro_iter_functions(self.lines, placeholders):
             normal_lines, callback_lines = expand_macros(self.lines, self.macros, 0, True)
             self.lines = normal_lines + callback_lines
 
@@ -1883,7 +1884,7 @@ class KSPCompiler(object):
         # run define subs a second time, catch returned cache just as a formality
         self.define_cache = substituteDefines(self.lines, self.define_cache)
 
-        while post_macro_iter_functions(self.lines):
+        while post_macro_iter_functions(self.lines, placeholders):
             normal_lines, callback_lines = expand_macros(self.lines, self.macros, 0, True)
             self.lines = normal_lines + callback_lines
 
