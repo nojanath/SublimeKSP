@@ -342,23 +342,24 @@ def plugin_loaded():
                 formatted_args = str(args).replace('\'', '').strip('[]')
             elif f in functions_with_forced_parentheses:
                 args_str = '()'
-                formatted_args = '()'
+                formatted_args = args_str
             else:
                 args_str = ''
-                formatted_args = None
+                formatted_args = args_str
+
+            formatted_args = '(' + formatted_args + ')' if formatted_args else ''
 
             if sublime_version >= 4000:
-                fargs = None if f in functions_with_forced_parentheses else formatted_args
-                function_details = '<b>Args</b>: %s | <b>Returns</b>: %s' % (fargs, s[1])
+                function_details = '<b>Returns</b>: %s' % (s[1])
 
-                builtin_compl_funcs.append(sublime.CompletionItem(trigger = f,
+                builtin_compl_funcs.append(sublime.CompletionItem(trigger = f + formatted_args,
                                                                   annotation = 'function',
                                                                   completion = f + args_str,
                                                                   details = function_details,
                                                                   completion_format = sublime.COMPLETION_FORMAT_SNIPPET,
                                                                   kind = sublime.KIND_FUNCTION))
             else:
-                completion = ['%s%s\tfunction' % (f, '(' + formatted_args + ')' if formatted_args else ''), '%s%s' % (f, args_str)]
+                completion = ['%s%s\tfunction' % (f, formatted_args), '%s%s' % (f, args_str)]
 
                 builtin_compl_funcs.append(tuple(completion))
                 builtin_compl_funcs.sort()
