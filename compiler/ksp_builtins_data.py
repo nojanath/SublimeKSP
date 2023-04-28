@@ -1079,12 +1079,11 @@ $ZONE_PAR_VOLUME
 !NI_DND_ITEMS_MIDI
 
 [functions]
-END_USE_CODE()
+END_USE_CODE
 RESET_CONDITION(<condition>)
 SET_CONDITION(<condition>)
 USE_CODE_IF(<condition>)
 USE_CODE_IF_NOT(<condition>)
-_delay_event_for_loading_slots(<unknown>)
 _get_engine_par(<parameter>, <group>, <slot>, <generic>):integer
 _get_engine_par_disp(<parameter>, <group>, <slot>, <generic>):string
 _get_folder(<file-path>):string
@@ -1128,7 +1127,6 @@ change_vol(<event-id>, <volume>, <relative-bit>)
 cbrt(<real-value>):real
 cos(<real-value>):real
 dec(<expression>):integer
-delay_event_for_loading_slots(<unknown>)
 delete_event_mark(<event-id>, <bit-mark>)
 detect_pitch(<zone-id>, <return-variable>):integer
 detect_rms(<zone-id>, <return-variable>):integer
@@ -1141,10 +1139,10 @@ disable_logging(<log-type>)
 disallow_group(<group-idx>)
 dont_use_machine_mode(<event-id>)
 event_status(<event-id>):integer
-exit()
+exit
 exp(<real-value>):real
 exp2(<real-value>):real
-expose_controls()
+expose_controls
 fade_in(<event-id>, <fade-time>)
 fade_out(<event-id>, <fade-time>, <stop-voice>)
 find_group(<group-name>):integer
@@ -1197,9 +1195,9 @@ get_zone_status(<zone-id>):integer
 group_name(<group-idx>):string
 guiidx_to_slotidx(<instr-gui-idx>):integer
 hide_part(<variable>, <value>)
-ignore_controller()
+ignore_controller
 ignore_event(<event-id>)
-ignore_midi()
+ignore_midi
 import_nckp(<file-path>):string
 in_range(<int-or-real-value>, <int-or-real-value>, <int-or-real-value>):boolean
 inc(<expression>)
@@ -1223,7 +1221,7 @@ log2(<real-value>):real
 log10(<real-value>):real
 lsb(<value>):integer
 make_instr_persistent(<variable>)
-make_perfview()
+make_perfview
 make_persistent(<variable>)
 message(<variable-or-text>)
 mf_copy_export_area(<zone-id>)
@@ -1290,8 +1288,8 @@ real_to_int(<real-value>):integer
 redirect_midi(<event-id>, <instr-slot-idx>, <instr-bank-slot-idx>)
 redirect_output(<event-id>, <output-type>, <output-idx>)
 remove_keyrange(<key-number>)
-reset_engine()
-reset_ksp_timer()
+reset_engine
+reset_ksp_timer
 reset_rls_trig_counter(<note>)
 round(<real-value>):real
 save_array(<int-or-string-array>, <mode>):integer
@@ -1360,7 +1358,7 @@ set_zone_par(<zone-id>, <parameter>, <value>):integer
 sgn(<int-or-real-value>):integer
 sh_left(<expression>, <amount>):integer
 sh_right(<expression>, <amount>):integer
-show_library_tab()
+show_library_tab
 signbit(<int-or-real-value>):integer
 sin(<real-value>):real
 slice_idx_loop_end(<group-idx>, <loop-idx>):integer
@@ -1390,11 +1388,6 @@ zone_slice_start(<zone-id>, <slice-idx>):integer
 
 [functions_with_forced_parentheses]
 mf_reset
-mf_get_buffer_size
-mf_get_byte_one
-mf_get_byte_two
-mf_get_channel
-mf_get_command
 mf_get_buffer_size
 mf_get_byte_one
 mf_get_byte_two
