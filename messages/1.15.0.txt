@@ -5,9 +5,9 @@ This version brings support for Kontakt 7.3 additions, a number of bugfixes and 
 
 - Fixed get_ui_id() being inserted in various situations when it shouldn't have been added (for example when using an array when setting $CONTROL_PAR_PARENT_PANEL etc.)
 
-- Fixed a couple of issues that prevented compilation from command line in certain cases
+- Fixed a couple of issues that prevented compilation from command line in certain cases (when using inline iterate_macro(), for example, string placeholders weren't reachable to the preprocessor)
 
-- Fixed #n# token not being replaced inside strings when using inline literate/iterate_macro()
+- Fixed #n# token not being replaced inside strings when using inline literate/iterate_macro() (issue #306)
 
 - Info bar line in Sublime Text will now report how long the compilation lasted upon successful compilation
 
@@ -17,7 +17,7 @@ This version brings support for Kontakt 7.3 additions, a number of bugfixes and 
 
 - redirect_midi() command now has its arguments properly documented
 
-- Arrow shorthand notation for event parameters didn't work with functions like by_marks(), now it does
+- Arrow shorthand notation for event parameters didn't work with functions like by_marks(), now it does (issue #350)
 
 - Added more syntax checks (when Extra syntax checks option is enabled) relevant to UI control declarations, and arguments which can be both integer and real (like for the sort() command)
 
