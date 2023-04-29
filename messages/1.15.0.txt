@@ -1,0 +1,64 @@
+Version 1.15.0
+---------------------------------------------------
+
+This version brings support for Kontakt 7.3 additions, a number of bugfixes and even more syntax coloring improvements, as well as the announced removal of the Logger module.
+
+- Fixed get_ui_id() being inserted in various situations when it shouldn't have been added (for example when using an array when setting $CONTROL_PAR_PARENT_PANEL etc.)
+
+- Fixed a couple of issues that prevented compilation from command line in certain cases
+
+- Fixed #n# token not being replaced inside strings when using inline literate/iterate_macro()
+
+- Info bar line in Sublime Text will now report how long the compilation lasted upon successful compilation
+
+- If compiling from command line and output file argument wasn't specified, the compiler will notify the user about it upon successful compilation
+
+- Added NI_ZONE_STATUS_ constants to builtins, which somehow managed to evade being included around Kontakt 7.1 times!
+
+- redirect_midi() command now has its arguments properly documented
+
+- Arrow shorthand notation for event parameters didn't work with functions like by_marks(), now it does
+
+- Added more syntax checks (when Extra syntax checks option is enabled) relevant to UI control declarations, and arguments which can be both integer and real (like for the sort() command)
+
+- Minor tweaks to KScript Dark theme for improved contrast
+
+- Cleaned up several files in the repository for better readability
+
+- Even more syntax coloring improvements, for example previously %CONTROL_PAR_VALUE would colorize as a valid control parameter, when it isn't valid - now it doesn't anymore; using macro tokens inside variable declarations didn't colorize properly, now it does
+
+- Completions list now looks the same in Sublime Text 4 as it does in Sublime Text 3 (function arguments are listed in parentheses after function name)
+
+- Fixed an error where all functions that had no arguments in the completion list ended up with closed parentheses (for example, exit()) which was incorrect
+
+- Added several more unit tests to keep us on our toes so that we don't break things in the future
+
+- Added .bat and .sh scripts to run tests locally (requires Python 3 to be installed and added to PATH environment variable)
+
+- Removed duplicate callbacks warning that was triggered too early in the compilation process
+
+- Removed Logger functionality - we recommend using Creator Tools with watch_var()/watch_array_idx() commands instead!
+
+
+Thanks as always to Jack Williams from Fracture Sounds for solving some of the tricky ones from the above list!
+
+
+Have fun!
+
+
+---------------------------------------------------
+
+If you would like to roll back a version of SublimeKSP for time critical work prevented by a new bug:
+
+First, remove SublimeKSP from Sublime Package Control:
+1. Press `Ctrl + Shift + P` on Windows and Linux, or `Cmd + Shift + P` on Mac.
+2. Type "Remove Package" and select it, then select the "KSP (Kontakt Script Processor)" entry.
+
+Next, download the version you'd like [here](https://github.com/nojanath/SublimeKSP/releases).
+
+After the download, you can install it as a user package in Sublime following these instructions:
+
+1. Open the Preferences menu in Sublime Text and click Browse Packages. A folder will open up.
+2. Extract the ZIP archive you have downloaded and place it into this folder.
+3. IMPORTANT: Rename the unpacked folder to `KSP (Kontakt Script Processor)` (this is important so that your settings from Package Control version are retained)!
+4. Restart Sublime Text. Alternatively, make sure you have [Automatic​Package​Reloader](https://packagecontrol.io/packages/AutomaticPackageReloader) package installed
