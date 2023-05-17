@@ -241,15 +241,16 @@ def highest_precision(type1, type2):
         return 'integer'
 
 class ASTVisitorDetermineExpressionTypes(ASTVisitor):
-    def __init__(self, ast):
+    def __init__(self, ast, functions):
         ASTVisitor.__init__(self)
+        self.functions = functions
         self.traverse(ast)
 
     def visitFunctionCall(self, parent, node, *args):
         self.visit_children(parent, node, *args)
         function_name = node.function_name.identifier
 
-        if function_name in ksp_builtins.function_signatures:
+        if function_name in ksp_builtins.function_signatures or (function_name in ksp_builtins.function_signatures and function_name in self.functions and self.functions[function_name].override):
             matches_param_count = False
 
             for s in ksp_builtins.function_signatures[function_name]:

@@ -1327,7 +1327,7 @@ class ASTModifierFunctionExpander(ASTModifierBase):
 
         function_name = node.function_name.identifier
 
-        if function_name not in ksp_builtins.functions or (function_name in functions and function_name in ksp_builtins.functions and functions[function_name].override):  # and not (isinstance(parent_toplevel, ksp_ast.FunctionCall) and function_name in parent_toplevel.locals_name_subst_dict):
+        if function_name not in ksp_builtins.functions:# or (function_name in functions and function_name in ksp_builtins.functions and functions[function_name].override):  # and not (isinstance(parent_toplevel, ksp_ast.FunctionCall) and function_name in parent_toplevel.locals_name_subst_dict):
             if function_name not in functions:
                 raise ksp_ast.ParseException(node.function_name, "Unknown function: %s!" % function_name)
             call_graph[parent_function_name].append(function_name)  # enter a link from the caller to the callee in the call graph
@@ -1364,7 +1364,6 @@ class ASTModifierFunctionExpander(ASTModifierBase):
             Unless "call" is used inline the function '''
 
         function_name = node.function_name.identifier  # shorter name alias
-        print("modifyFunctionCall: ", function_name)
 
         # update call graph
         self.updateCallGraph(node, parent_toplevel, function_stack)
@@ -2109,7 +2108,7 @@ class KSPCompiler(object):
                  ('convert dots to underscore',  lambda: self.convert_dots_to_double_underscore(),                                  True,                   1),
 
                  ('init extra syntax checks',    lambda: self.init_extra_syntax_checks(),                                           do_extra,               1),
-                 ('check expression types',      lambda: comp_extras.ASTVisitorDetermineExpressionTypes(self.module),               do_extra,               1),
+                 ('check expression types',      lambda: comp_extras.ASTVisitorDetermineExpressionTypes(self.module, functions),    do_extra,               1),
                  ('check statement types',       lambda: comp_extras.ASTVisitorCheckStatementExprTypes(self.module),                do_extra,               1),
                  ('check declarations',          lambda: comp_extras.ASTVisitorCheckDeclarations(self.module),                      do_extra,               1),
                  ('simplying expressions',       lambda: comp_extras.ASTModifierSimplifyExpressions(self.module, True),             do_optim,               1),
