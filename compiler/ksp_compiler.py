@@ -1326,7 +1326,8 @@ class ASTModifierFunctionExpander(ASTModifierBase):
             parent_function_name = None   # if called from within a callback represent the callback as None in the call graph (since it's not really relevant from which callback)
 
         function_name = node.function_name.identifier
-        if function_name not in ksp_builtins.functions:  # and not (isinstance(parent_toplevel, ksp_ast.FunctionCall) and function_name in parent_toplevel.locals_name_subst_dict):
+
+        if function_name not in ksp_builtins.functions or (function_name in functions and function_name in ksp_builtins.functions and functions[function_name].override):  # and not (isinstance(parent_toplevel, ksp_ast.FunctionCall) and function_name in parent_toplevel.locals_name_subst_dict):
             if function_name not in functions:
                 raise ksp_ast.ParseException(node.function_name, "Unknown function: %s!" % function_name)
             call_graph[parent_function_name].append(function_name)  # enter a link from the caller to the callee in the call graph
@@ -1363,12 +1364,13 @@ class ASTModifierFunctionExpander(ASTModifierBase):
             Unless "call" is used inline the function '''
 
         function_name = node.function_name.identifier  # shorter name alias
+        print("modifyFunctionCall: ", function_name)
 
         # update call graph
         self.updateCallGraph(node, parent_toplevel, function_stack)
 
         # invocations of built-in functions are not checked at this compilation stage
-        if function_name in ksp_builtins.functions and not node.using_call_keyword:
+        if function_name in ksp_builtins.functions and not (function_name in functions and function_name in ksp_builtins.functions and functions[function_name].override) and not node.using_call_keyword:
             if function_name == 'wait' and isinstance(parent_toplevel, ksp_ast.FunctionDef):
                 functions_invoking_wait.add(parent_toplevel.name.identifier)
             return ASTModifierBase.modifyFunctionCall(self, node, parent_toplevel=parent_toplevel, function_stack=function_stack, assign_stmt_lhs=assign_stmt_lhs)
