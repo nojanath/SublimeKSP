@@ -4,7 +4,8 @@ import sublime_plugin
 import codecs
 import traceback
 import os.path
-from   os import listdir
+import os
+from pathlib import Path
 from datetime import datetime
 import sys
 import re
@@ -320,6 +321,8 @@ builtin_compl_funcs = []
 builtin_compl_vars = []
 builtin_snippets = []
 
+picture_filenames_compl = []
+import_filenames_compl = []
 magic_control_and_event_pars = []
 
 def plugin_loaded():
@@ -438,40 +441,71 @@ class KSPCompletions(sublime_plugin.EventListener):
                 seen.add(item)
                 yield item
 
+    def on_load_async(self, view):
+        global picture_filenames_compl, import_filenames_compl
+        workspace_files = sublime.active_window().folders()
+        for folders in workspace_files:
+            img_list = Path(folders).rglob("*.png")
+            import_list = Path(folders).rglob("*.ksp|*.txt")
+            for path in img_list:
+                picture_filename = os.path.basename(str(path))
+                picture_filenames_compl.append(sublime.CompletionItem(trigger = picture_filename[:-4],
+                                                    details = 'image file',
+                                                    annotation = "",
+                                                    completion_format = sublime.COMPLETION_FORMAT_TEXT,
+                                                    kind=sublime.KIND_SNIPPET))
+            # for path in import_list:
+            #     import_filename = os.path.basename(str(path))
+            #     import_filenames_compl.append(sublime.CompletionItem(trigger = import_filename,
+            #                                         details = 'script file',
+            #                                         annotation = "",
+            #                                         completion_format = sublime.COMPLETION_FORMAT_TEXT,
+            #                                         kind=sublime.KIND_SNIPPET))
+
     def on_query_completions(self, view, prefix, locations):
         # parts of the code inspired by: https://github.com/agibsonsw/AndyPython/blob/master/PythonCompletions.py
+        print("query completions")
+        global builtin_compl_vars, builtin_compl_funcs, magic_control_and_event_pars, builtin_snippets, picture_filenames_compl
 
-        global builtin_compl_vars, builtin_compl_funcs, magic_control_and_event_pars, builtin_snippets
+        compl = []
 
-        if not view.match_selector(locations[0], 'source.ksp -string -comment -constant'):
-            return []
+        if view.match_selector(locations[0], 'source.ksp -string -comment -constant'):
+            pt = locations[0] # - len(prefix) - 1
+            line_start_pos = view.line(sublime.Region(pt, pt)).begin()
+            line = view.substr(sublime.Region(line_start_pos, pt))    # the character before the trigger
 
-        pt = locations[0] # - len(prefix) - 1
-        line_start_pos = view.line(sublime.Region(pt, pt)).begin()
-        line = view.substr(sublime.Region(line_start_pos, pt))    # the character before the trigger
-
-        compl = self._extract_completions(view, prefix, pt)
-
-        if re.match(r' *declare .*', line) and ':=' not in line:
-            compl = []
-        elif re.match(r'.*-> ?[a-zA-Z_]*$', line): # if the line ends with something like '->' or '-> value'
-            compl.clear
-            compl = magic_control_and_event_pars
-        else:
             compl = self._extract_completions(view, prefix, pt)
-            compl = [(item + "\tdefault", item.replace('$', '\\$', 1))
-                     for item in compl
-                         if len(item) > 3 and item not in all_builtins
-                    ]
+            print("initial compl")
 
-            if '.' not in prefix:
-                bc = []
-                bc.extend(builtin_compl_vars)
-                bc.extend(builtin_compl_funcs)
-                compl.extend(bc)
+            if re.match(r'\s*declare\s.*', line) and ':=' not in line:
+                print("match declare")
+                compl = []
+            elif re.match(r'.*-> ?[a-zA-Z_]*$', line): # if the line ends with something like '->' or '-> value'
+                print("match arrow")
+                compl.clear
+                compl = magic_control_and_event_pars
+            else:
+                print("match other")
+                compl = self._extract_completions(view, prefix, pt)
+                compl = [(item + "\tdefault", item.replace('$', '\\$', 1))
+                         for item in compl
+                             if len(item) > 3 and item not in all_builtins
+                        ]
 
-            if sublime_version >= 4000:
-                compl.extend(builtin_snippets)
+                if '.' not in prefix:
+                    bc = []
+                    bc.extend(builtin_compl_vars)
+                    bc.extend(builtin_compl_funcs)
+                    compl.extend(bc)
+
+                if sublime_version >= 4000:
+                    compl.extend(builtin_snippets)
+
+        elif view.match_selector(locations[0], 'string.quoted.double.source.ksp') or view.match_selector(locations[0], 'string.quoted.single.source.ksp'):
+            compl.clear
+            compl = picture_filenames_compl
+        else:
+            return []
 
         if sublime_version >= 4000:
             sublime.CompletionList(compl, sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETIONS)
