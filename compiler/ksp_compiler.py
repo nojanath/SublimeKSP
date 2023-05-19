@@ -825,7 +825,6 @@ class ASTModifierFixReferencesAndFamilies(ASTModifierBase):
             else:
                 raise ksp_ast.ParseException(node, 'Function already declared!')
         else:
-            # print(node.name.params)
             functions[node.name.identifier] = node
 
         # modify the body of the function
