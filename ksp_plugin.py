@@ -442,29 +442,32 @@ class KSPCompletions(sublime_plugin.EventListener):
                 yield item
 
     def on_load_async(self, view):
-        global picture_filenames_compl, import_filenames_compl
-        workspace_files = sublime.active_window().folders()
-        for folders in workspace_files:
-            img_list = Path(folders).rglob("*.png")
-            import_list = Path(folders).rglob("*.ksp|*.txt")
-            for path in img_list:
-                picture_filename = os.path.basename(str(path))
-                picture_filenames_compl.append(sublime.CompletionItem(trigger = picture_filename[:-4],
-                                                    details = 'image file',
+        if sublime_version >= 4000:
+            global picture_filenames_compl, import_filenames_compl
+            workspace_files = sublime.active_window().folders()
+            script_path = sublime.active_window().active_view().file_name()
+            for folders in workspace_files:
+                img_list = Path(folders).rglob("*.png")
+                import_list = Path(folders).rglob("*.ksp")
+                for path in img_list:
+                    picture_filename = os.path.basename(str(path))
+                    picture_filenames_compl.append(sublime.CompletionItem(trigger = picture_filename[:-4], # remove '.png'
+                                                        details = 'image file',
+                                                        annotation = "",
+                                                        completion_format = sublime.COMPLETION_FORMAT_TEXT,
+                                                        kind=sublime.KIND_SNIPPET))
+                for path in import_list:
+                    if str(path) == script_path:
+                        continue
+                    relative_path = os.path.relpath(str(path), str(script_path))
+                    import_filenames_compl.append(sublime.CompletionItem(trigger = relative_path[3:], # remove '../'
+                                                    details = 'script file',
                                                     annotation = "",
                                                     completion_format = sublime.COMPLETION_FORMAT_TEXT,
                                                     kind=sublime.KIND_SNIPPET))
-            # for path in import_list:
-            #     import_filename = os.path.basename(str(path))
-            #     import_filenames_compl.append(sublime.CompletionItem(trigger = import_filename,
-            #                                         details = 'script file',
-            #                                         annotation = "",
-            #                                         completion_format = sublime.COMPLETION_FORMAT_TEXT,
-            #                                         kind=sublime.KIND_SNIPPET))
 
     def on_query_completions(self, view, prefix, locations):
         # parts of the code inspired by: https://github.com/agibsonsw/AndyPython/blob/master/PythonCompletions.py
-        print("query completions")
         global builtin_compl_vars, builtin_compl_funcs, magic_control_and_event_pars, builtin_snippets, picture_filenames_compl
 
         compl = []
@@ -475,17 +478,13 @@ class KSPCompletions(sublime_plugin.EventListener):
             line = view.substr(sublime.Region(line_start_pos, pt))    # the character before the trigger
 
             compl = self._extract_completions(view, prefix, pt)
-            print("initial compl")
 
             if re.match(r'\s*declare\s.*', line) and ':=' not in line:
-                print("match declare")
                 compl = []
             elif re.match(r'.*-> ?[a-zA-Z_]*$', line): # if the line ends with something like '->' or '-> value'
-                print("match arrow")
                 compl.clear
                 compl = magic_control_and_event_pars
             else:
-                print("match other")
                 compl = self._extract_completions(view, prefix, pt)
                 compl = [(item + "\tdefault", item.replace('$', '\\$', 1))
                          for item in compl
@@ -502,8 +501,14 @@ class KSPCompletions(sublime_plugin.EventListener):
                     compl.extend(builtin_snippets)
 
         elif view.match_selector(locations[0], 'string.quoted.double.source.ksp') or view.match_selector(locations[0], 'string.quoted.single.source.ksp'):
+            pt = locations[0] # - len(prefix) - 1
+            line_start_pos = view.line(sublime.Region(pt, pt)).begin()
+            line = view.substr(sublime.Region(line_start_pos, pt))    # the character before the trigger
             compl.clear
-            compl = picture_filenames_compl
+            if 'import' in line:
+                compl = import_filenames_compl
+            else:
+                compl = picture_filenames_compl
         else:
             return []
 
