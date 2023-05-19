@@ -452,17 +452,17 @@ class KSPCompletions(sublime_plugin.EventListener):
                 for path in img_list:
                     picture_filename = os.path.basename(str(path))
                     picture_filenames_compl.append(sublime.CompletionItem(trigger = picture_filename[:-4], # remove '.png'
-                                                        details = 'image file',
-                                                        annotation = "",
+                                                        details = "",
+                                                        annotation = "image file",
                                                         completion_format = sublime.COMPLETION_FORMAT_TEXT,
-                                                        kind=sublime.KIND_SNIPPET))
+                                                        kind=(4, 'p', 'Picture')))
                 for path in import_list:
                     if str(path) == script_path:
                         continue
                     relative_path = os.path.relpath(str(path), str(script_path))
                     import_filenames_compl.append(sublime.CompletionItem(trigger = relative_path[3:], # remove '../'
-                                                    details = 'script file',
-                                                    annotation = "",
+                                                    details = "",
+                                                    annotation = "script file",
                                                     completion_format = sublime.COMPLETION_FORMAT_TEXT,
                                                     kind=sublime.KIND_SNIPPET))
 
@@ -507,8 +507,10 @@ class KSPCompletions(sublime_plugin.EventListener):
             compl.clear
             if 'import' in line:
                 compl = import_filenames_compl
-            else:
+            elif 'picture' in line.lower():
                 compl = picture_filenames_compl
+            else:
+                compl.clear
         else:
             return []
 
