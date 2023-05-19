@@ -1327,7 +1327,7 @@ class ASTModifierFunctionExpander(ASTModifierBase):
 
         function_name = node.function_name.identifier
 
-        if function_name not in ksp_builtins.functions:# or (function_name in functions and function_name in ksp_builtins.functions and functions[function_name].override):  # and not (isinstance(parent_toplevel, ksp_ast.FunctionCall) and function_name in parent_toplevel.locals_name_subst_dict):
+        if function_name not in ksp_builtins.functions:
             if function_name not in functions:
                 raise ksp_ast.ParseException(node.function_name, "Unknown function: %s!" % function_name)
             call_graph[parent_function_name].append(function_name)  # enter a link from the caller to the callee in the call graph
