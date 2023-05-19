@@ -547,7 +547,7 @@ def expand_macros(lines, macros, level=0, replace_raw=True):
     name2macro = {}
 
     for m in macros:
-        name = m.get_name_prefixed_by_namespace()
+        m.name = m.get_name_prefixed_by_namespace()
         name = m.get_overloaded_name()
         if not (name == 'tcm.init' and name in name2macro):
             name2macro[name] = m
