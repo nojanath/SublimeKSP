@@ -940,6 +940,44 @@ class MacroDefineChecks(unittest.TestCase):
         output = do_compile(code)
         self.assertTrue('message("MYDEFINE")' in output)
 
+class MacroOverloading(unittest.TestCase):
+    def testOverloadedWithNumArgs(self):
+        code = '''
+        on init
+            test_macro()
+            test_macro(a)
+            test_macro(a,b,c)
+        end on
+        macro test_macro
+            message("macro with 0 arguments")
+        end macro
+        macro test_macro(#name#)
+            message("macro with 1 argument")
+        end macro
+        macro test_macro(#name#, #x#, #y#)
+            message("macro with 3 arguments")
+        end macro
+        '''
+        output = do_compile(code)
+        self.assertTrue('message("macro with 0 arguments")' in output)
+        self.assertTrue('message("macro with 1 argument")' in output)
+        self.assertTrue('message("macro with 3 arguments")' in output)
+    def testOverloadedNestedWithNumArgs(self):
+        code = '''
+        on init
+            test_macro()
+        end on
+        macro test_macro
+            message("macro with 0 arguments")
+            test_macro(a,b,c)
+        end macro
+        macro test_macro(#name#, #x#, #y#)
+            message("macro with 3 arguments")
+        end macro'''
+        output = do_compile(code)
+        self.assertTrue('message("macro with 0 arguments")' in output)
+        self.assertTrue('message("macro with 3 arguments")' in output)
+
 class MacroInlining(unittest.TestCase):
     def testBasicMacroInlining(self):
         code = '''
