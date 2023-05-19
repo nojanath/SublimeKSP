@@ -450,9 +450,13 @@ class KSPCompletions(sublime_plugin.EventListener):
                 img_list = Path(folders).rglob("*.png")
                 import_list = Path(folders).rglob("*.ksp")
                 for path in img_list:
+                    try:
+                        relative_path = str(os.path.relpath(str(path), str(script_path)))
+                    except ValueError:
+                        relative_path = ""
                     picture_filename = os.path.basename(str(path))
                     picture_filenames_compl.append(sublime.CompletionItem(trigger = picture_filename[:-4], # remove '.png'
-                                                        details = "",
+                                                        details = relative_path,
                                                         annotation = "image file",
                                                         completion_format = sublime.COMPLETION_FORMAT_TEXT,
                                                         kind=(4, 'p', 'Picture')))
