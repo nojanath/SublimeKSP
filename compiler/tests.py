@@ -940,6 +940,44 @@ class MacroDefineChecks(unittest.TestCase):
         output = do_compile(code)
         self.assertTrue('message("MYDEFINE")' in output)
 
+class MacroOverloading(unittest.TestCase):
+    def testOverloadedWithNumArgs(self):
+        code = '''
+        on init
+            test_macro()
+            test_macro(a)
+            test_macro(a,b,c)
+        end on
+        macro test_macro
+            message("macro with 0 arguments")
+        end macro
+        macro test_macro(#name#)
+            message("macro with 1 argument")
+        end macro
+        macro test_macro(#name#, #x#, #y#)
+            message("macro with 3 arguments")
+        end macro
+        '''
+        output = do_compile(code)
+        self.assertTrue('message("macro with 0 arguments")' in output)
+        self.assertTrue('message("macro with 1 argument")' in output)
+        self.assertTrue('message("macro with 3 arguments")' in output)
+    def testOverloadedNestedWithNumArgs(self):
+        code = '''
+        on init
+            test_macro()
+        end on
+        macro test_macro
+            message("macro with 0 arguments")
+            test_macro(a,b,c)
+        end macro
+        macro test_macro(#name#, #x#, #y#)
+            message("macro with 3 arguments")
+        end macro'''
+        output = do_compile(code)
+        self.assertTrue('message("macro with 0 arguments")' in output)
+        self.assertTrue('message("macro with 3 arguments")' in output)
+
 class MacroInlining(unittest.TestCase):
     def testBasicMacroInlining(self):
         code = '''
@@ -1425,22 +1463,44 @@ class NamespacePrefixing(unittest.TestCase):
         output = do_compile(code, optimize=True, read_file_func=default_read_file_func)
         self.assertTrue('x := 8' in output)
 
-    # def testMacroBodyNotPrefixed(self):
-    #     def default_read_file_func(filepath):
-    #         assert(filepath == 'mymodule.txt')
-    #         return '''
-    #             macro declare_var(var)
-    #               declare var
-    #             end macro
-    #             '''
-    #     code = '''
-    #         import 'mymodule.txt' as mymodule
+    def testMacroImportedPrefixed(self):
+        def default_read_file_func(filepath):
+            assert(filepath == 'mymodule.txt')
+            return '''
+                macro declare_var(var)
+                  declare var
+                end macro
+                '''
+        code = '''
+            import 'mymodule.txt' as mymodule
 
-    #         on init
-    #             mymodule.declare_var(x)
-    #         end on'''
-    #     output = do_compile(code, read_file_func=default_read_file_func)
-    #     self.assertTrue('declare $x' in output)
+            on init
+                mymodule.declare_var(variable)
+            end on'''
+        output = do_compile(code, read_file_func=default_read_file_func)
+        self.assertTrue('declare $mymodule__variable' in output)
+
+    def testOverloadedMacroImportedPrefixed(self):
+        def default_read_file_func(filepath):
+            assert(filepath == 'mymodule.txt')
+            return '''
+                macro foo
+                  message("macro with no arguments")
+                end macro
+                macro foo(a,b)
+                  message("macro with 2 arguments")
+                end macro
+                '''
+        code = '''
+            import 'mymodule.txt' as mymodule
+
+            on init
+                mymodule.foo
+                mymodule.foo(0,0)
+            end on'''
+        output = do_compile(code, read_file_func=default_read_file_func)
+        self.assertTrue('message("macro with no arguments")' in output)
+        self.assertTrue('message("macro with 2 arguments")' in output)
 
 class PragmaTests(unittest.TestCase):
     def testPragma(self):

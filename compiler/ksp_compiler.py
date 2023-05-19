@@ -157,6 +157,12 @@ class StringIO:
     def getvalue(self):
         return ''.join(self.parts)
 
+def append_overloaded_name(name, params):
+    '''Returns name with number of arguments appended'''
+    print(params)
+    name = name + "__" + str(len(params))
+    return name
+
 def prefix_with_ns(name, namespaces, function_parameter_names=None, force_prefixing=False):
     '''Returns prefixed name'''
 
@@ -283,6 +289,9 @@ class Macro:
 
     def get_name_prefixed_by_namespace(self):
         return prefix_with_ns(self.name, self.lines[0].namespaces)
+
+    def get_overloaded_name(self):
+        return append_overloaded_name(self.name, self.parameters)
 
     def get_macro_name_and_parameters(self):
         '''Returns the function name, parameter list, and result variable (or None) as a tuple'''
@@ -507,6 +516,7 @@ def extract_macros(lines_deque):
         # else if line outside of macro definition
         else:
             cleaned_lines.append(line)
+
     return (cleaned_lines, macros)
 
 def extract_callback_lines(lines):
@@ -537,7 +547,8 @@ def expand_macros(lines, macros, level=0, replace_raw=True):
     name2macro = {}
 
     for m in macros:
-        name = m.get_name_prefixed_by_namespace()
+        m.name = m.get_name_prefixed_by_namespace()
+        name = m.get_overloaded_name()
         if not (name == 'tcm.init' and name in name2macro):
             name2macro[name] = m
 
@@ -553,6 +564,10 @@ def expand_macros(lines, macros, level=0, replace_raw=True):
         if m:
             macro_name, args = m.group(1), m.group(2)
             macro_name = prefix_with_ns(macro_name, line.namespaces)
+            if args:
+                macro_name = append_overloaded_name(macro_name, utils.split_args(args[1:-1], line))
+            else:
+                macro_name = append_overloaded_name(macro_name, [])
 
             if macro_name in name2macro:
                 new_lines.pop()
