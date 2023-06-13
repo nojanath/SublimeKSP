@@ -88,10 +88,10 @@ def post_macro_functions(lines):
 	handleLists(lines)
 	handleUIFunctions(lines)
 	''' continued in ksp_compiler.py, run_post_macro_functions()
-	    because KSPCompiler has to own running of handleStringArrayInitialisation method,
-	    so that string placeholders can be properly used there when compiling from command line
-	    (this fixed the circular import dependancy that was there before, which prevented compiling
-	     from command line properly)'''
+		because KSPCompiler has to own running of handleStringArrayInitialisation method,
+		so that string placeholders can be properly used there when compiling from command line
+		(this fixed the circular import dependancy that was there before, which prevented compiling
+		 from command line properly)'''
 
 #=================================================================================================
 def simplifyAdditionString(string):
@@ -1481,43 +1481,69 @@ class UIArray(object):
 	def buildLines(self, line):
 		''' Return the deque of lines for the ui declaration (just a load of declare ui and get_ui_id()). '''
 		newLines = collections.deque()
+
 		for i in range(self.numElements):
 			uiName = self.underscore + self.name
+
 			if self.uiType == "ui_table" or self.uiType == "ui_xy":
 				text = "declare %s %s %s %s" % (self.persistence, self.uiType, self.prefixSymbol + uiName + str(i), self.tableSize + self.uiParams)
 			else:
 				text = "declare %s %s %s %s" % (self.persistence, self.uiType, self.prefixSymbol + uiName + str(i), self.uiParams)
+
 			newLines.append(line.copy(text))
+
 		newLines.append(line.copy("for preproc_i := 0 to %s" % (self.numElements - 1)))
 		newLines.append(line.copy("%s[preproc_i] := get_ui_id(%s) + preproc_i" % (self.familyPrefix + uiName, self.familyPrefix + uiName + '0')))
 		newLines.append(line.copy("end for"))
+
 		return(newLines)
 
 def handleUIArrays(lines):
 	uiTypeRe = r"\b(?P<uitype>ui_\w*)\b"
 	uiArrayRe = r"^declare\s+%s%s\s+%s\s*\[(?P<arraysize>[^\]]+)\]\s*(?P<tablesize>\[[^\]]+\]\s*)?(?P<uiparams>\(.*)?" % (persistenceRe, uiTypeRe, variableNameRe)
+	uiArrayTypeFirstRe = r"^declare\s+%s\s+%s\s*%s\s*\[(?P<arraysize>[^\]]+)\]\s*(?P<tablesize>\[[^\]]+\]\s*)?(?P<uiparams>\(.*)?" % (uiTypeRe, persistenceRe, variableNameRe)
 	newLines = collections.deque()
 	famCount = 0
+
 	for lineNum in range(len(lines)):
 		line = lines[lineNum].command.strip()
 		famCount = countFamily(line, famCount)
+
 		if line.startswith("on"):
 			if re.search(initRe, line):
 				newLines.append(lines[lineNum])
+
 				if not any(l.command == "declare preproc_i" for l in newLines): # Only add preprocessor variable if not previously declared
 					newLines.append(lines[lineNum].copy("declare preproc_i"))
+
 				continue
 		elif line.startswith("decl"):
 			m = re.search(uiArrayRe, line)
-			if m:
-				uiType = m.group("uitype")
+			n = re.search(uiArrayTypeFirstRe, line)
+			r = m if m else n
+
+			if r:
+				uiType = r.group("uitype")
 				famPre = None
+
 				if famCount != 0:
 					famPre = inspectFamilyState(lines, lineNum)
-				if ((uiType == "ui_table" or uiType == "ui_xy") and m.group("tablesize")) or (uiType != "ui_table" and uiType != "ui_xy"):
-					arrayObj = UIArray(m.group("name"), uiType, m.group("arraysize"), m.group("persistence"), famPre, m.group("uiparams"), m.group("tablesize"), m.group("prefix"), lines[lineNum])
+
+				if ((uiType == "ui_table" or uiType == "ui_xy") and r.group("tablesize")) or (uiType != "ui_table" and uiType != "ui_xy"):
+					arrayObj = UIArray(r.group("name"),
+									   uiType,
+									   r.group("arraysize"),
+									   r.group("persistence"),
+									   famPre,
+									   r.group("uiparams"),
+									   r.group("tablesize"),
+									   r.group("prefix"),
+									   lines[lineNum])
 					newLines.append(lines[lineNum].copy(arrayObj.getRawArrayDeclaration()))
 					newLines.extend(arrayObj.buildLines(lines[lineNum]))
+
 					continue
+
 		newLines.append(lines[lineNum])
+
 	replaceLines(lines, newLines)
