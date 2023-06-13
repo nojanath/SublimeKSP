@@ -5,7 +5,7 @@
     <key>name</key>
     <string>KSP Symbols (Local)</string>
     <key>scope</key>
-    <string>entity.name.type.source.ksp, meta.function.source.ksp, meta.constblock.source.ksp, meta.family.source.ksp, meta.list.source.ksp, meta.struct.source.ksp, entity.name.callback.source.ksp</string>
+    <string>entity.name.type.source.ksp, meta.function.source.ksp, meta.constblock.source.ksp, meta.family.source.ksp, meta.list.source.ksp, meta.struct.source.ksp, entity.name.callback.source.ksp, section.comment.source.ksp</string>
     <key>settings</key>
     <dict>
         <key>showInSymbolList</key>
@@ -15,7 +15,8 @@
                 s/const +(.*)/    const \1/g;
                 s/family +(.*)/    family \1/g;
                 s/list +(.*)/    list \1/g;
-                s/struct +(.*)/    struct \1/g
+                s/struct +(.*)/    struct \1/g;
+                s/{{ +(.*) +}}/section: \1/g
         </string>
     </dict>
 </dict>

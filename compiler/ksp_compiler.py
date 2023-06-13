@@ -502,16 +502,21 @@ def extract_macros(lines_deque):
         if macro_start_re.match(line.command):
             found_end = False
             macro_lines = [line]
+
             while lines:
                 line = lines.popleft()
                 macro_lines.append(line)
+
                 if macro_end_re.match(line.command):
                     found_end = True
                     break
+
                 if macro_start_re.match(line.command):
                     raise ParseException(line, "Macro definitions cannot be nested! Maybe you forgot an 'end macro' line earlier?")
+
             if not found_end:
                 raise ParseException(macro_lines[0], "Could not find a corresponding 'end macro' statement.")
+
             macros.append(Macro(macro_lines))
         # else if line outside of macro definition
         else:
@@ -549,6 +554,7 @@ def expand_macros(lines, macros, level=0, replace_raw=True):
     for m in macros:
         m.name = m.get_name_prefixed_by_namespace()
         name = m.get_overloaded_name()
+
         if not (name == 'tcm.init' and name in name2macro):
             name2macro[name] = m
 
@@ -564,6 +570,7 @@ def expand_macros(lines, macros, level=0, replace_raw=True):
         if m:
             macro_name, args = m.group(1), m.group(2)
             macro_name = prefix_with_ns(macro_name, line.namespaces)
+
             if args:
                 macro_name = append_overloaded_name(macro_name, utils.split_args(args[1:-1], line))
             else:
@@ -1384,9 +1391,13 @@ class ASTModifierFunctionExpander(ASTModifierBase):
         self.updateCallGraph(node, parent_toplevel, function_stack)
 
         # invocations of built-in functions are not checked at this compilation stage
-        if function_name in ksp_builtins.functions and not (function_name in functions and function_name in ksp_builtins.functions and functions[function_name].override) and not node.using_call_keyword:
+        if function_name in ksp_builtins.functions                                                                                \
+           and not (function_name in functions and function_name in ksp_builtins.functions and functions[function_name].override) \
+           and not node.using_call_keyword:
+
             if function_name == 'wait' and isinstance(parent_toplevel, ksp_ast.FunctionDef):
                 functions_invoking_wait.add(parent_toplevel.name.identifier)
+
             return ASTModifierBase.modifyFunctionCall(self, node, parent_toplevel=parent_toplevel, function_stack=function_stack, assign_stmt_lhs=assign_stmt_lhs)
 
         # get a reference to the function node and run error checks
