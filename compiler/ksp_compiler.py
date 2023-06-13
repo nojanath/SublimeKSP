@@ -159,7 +159,6 @@ class StringIO:
 
 def append_overloaded_name(name, params):
     '''Returns name with number of arguments appended'''
-    print(params)
     name = name + "__" + str(len(params))
     return name
 
