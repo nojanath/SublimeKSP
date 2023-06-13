@@ -1308,20 +1308,27 @@ class DefineConstant(object):
 	def __init__(self, name, value, argString, line):
 		self.name = name
 		self.value = value
+
 		# In previous versions of the compiler the value had to wrapped in # symbols.
 		if self.value.startswith("#") and self.value.endswith("#") and not "#" in self.value[1 : len(self.value) - 1]:
 			self.value = self.value[1 : len(self.value) - 1]
+
 		self.args = []
+
 		if argString:
 			self.args = utils.split_args(argString, line)
+
 		self.line = line
+
 		if re.search(r"\b%s\b" % self.name, self.value):
 			raise ParseException(self.line, "Define constant cannot call itself!")
 
 	def getName(self):
 		return(self.name)
+
 	def getValue(self):
 		return(self.value)
+
 	def setValue(self, val):
 		self.value = val
 
@@ -1405,16 +1412,26 @@ def handleDefineConstants(lines, define_cache = None):
 		defineConstants = collections.deque()
 
 	newLines = collections.deque()
+	defineNames = set()
 
 	# Scan through all the lines to find define declarations.
 	for l in lines:
 		command = l.command.strip()
+
 		if command.startswith("define"):
 			m = re.search(defineRe, command)
+
 			if m:
 				defineObj = DefineConstant(m.group("whole"), m.group("val").strip(), m.group("args"), l)
-				defineConstants.append(defineObj)
+
+				if m.group("name") in defineNames:
+					raise ParseException(l, "Define constant was already declared!")
+				else:
+					defineConstants.append(defineObj)
+					defineNames.add(m.group("name"))
+
 				continue
+
 		newLines.append(l)
 
 	if defineConstants:
@@ -1424,6 +1441,7 @@ def handleDefineConstants(lines, define_cache = None):
 				for dc_i in defineConstants:
 					for dc_j in defineConstants:
 						dc_i.setValue(dc_j.substituteValue(dc_i.getValue(), defineConstants))
+
 					dc_i.evaluateValue()
 
 		for l in newLines:
