@@ -11,6 +11,13 @@ scope: source.ksp
 
 contexts:
   main:
+    - match: '\{\{'
+      comment: Double curly bracket section comment (symbol list only)
+      push:
+        - meta_scope: comment.block.source.ksp, section.comment.source.ksp
+        - match: '\}\}'
+          pop: true
+
     - match: '\{'
       comment: Curly bracket block comment
       push:
@@ -150,7 +157,7 @@ contexts:
           scope: keyword.other.source.ksp
         - match: 'out\s+|var\s+'
           scope: keyword.other.source.ksp
-          comment: Macro Keywords
+          comment: Task function keywords
         - match: '[a-zA-Z0-9_#.]+'
           scope: variable.parameter.function.source.ksp
         - include: main
