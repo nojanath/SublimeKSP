@@ -540,7 +540,7 @@ contexts:
                   by_(marks|track)|
                   cc_delivery_request|ceil|change_(listener_par|note|pan|time_with_pitch|tune|velo|vol)|(cb|sq)rt|
                   dec|delete_event_mark|detect_(pitch|rms|peak|loudness|sample_type|instrument_type|drum_type)|disable_logging|(dis)?allow_group|dont_use_machine_mode|
-                  event_status|exit|exp(2)?|expose_controls|
+                  event_status|continue|exit|exp(2)?|expose_controls|
                   fade_(in|out)|find_(group|mod|target|zone)|floor|fs_(get_filename|navigate)|
                   get_(
                         control_par(_arr|_real_arr|_str|_str_arr)?|

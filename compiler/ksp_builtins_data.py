@@ -1139,6 +1139,7 @@ disable_logging(<log-type>)
 disallow_group(<group-idx>)
 dont_use_machine_mode(<event-id>)
 event_status(<event-id>):integer
+continue
 exit
 exp(<real-value>):real
 exp2(<real-value>):real
