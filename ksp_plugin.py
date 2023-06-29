@@ -12,6 +12,8 @@ import re
 import threading
 import webbrowser
 
+from .utils.get_image_size import get_image_size, UnknownImageFormat
+
 import xml.etree.ElementTree as ET
 
 sys.path.append(os.path.dirname(__file__))
@@ -441,34 +443,73 @@ class KSPCompletions(sublime_plugin.EventListener):
                 seen.add(item)
                 yield item
 
-    def on_load_async(self, view):
-        if sublime_version >= 4000:
-            global picture_filenames_compl, import_filenames_compl
-            workspace_files = sublime.active_window().folders()
-            script_path = sublime.active_window().active_view().file_name()
-            for folders in workspace_files:
-                img_list = Path(folders).rglob("*.png")
-                import_list = Path(folders).rglob("*.ksp")
-                for path in img_list:
+    def extract_workspace_completions(self, view):
+        global picture_filenames_compl, import_filenames_compl
+        picture_filenames_compl.clear()
+        import_filenames_compl.clear()
+
+        workspace_files = sublime.active_window().folders()
+        script_path = sublime.active_window().active_view().file_name()
+        for folders in workspace_files:
+            image_file_type = ("*.png", "*.jpeg", "*.webp", "*.tiff", "*.svg", "*.tga")
+            img_list = [Path(folders).rglob(img_type) for img_type in image_file_type] # Creates a list of generators for each image type
+            img_list = [(img_file, image_file_type[idx]) for idx, img_type in enumerate(img_list) for img_file in img_type] # Flattens into tuple (img_file, img_file_string)
+            img_dimensions = {}
+            for img_path, image_file_type in img_list:
+                img_txt_path = str(img_path)[:-3] + "txt"
+                try:
+                    relative_path = str(os.path.relpath(str(img_path), str(script_path)))
+                except ValueError:
+                    relative_path = str(img_path)
+
+                if os.path.exists(img_txt_path):
                     try:
-                        relative_path = str(os.path.relpath(str(path), str(script_path)))
-                    except ValueError:
-                        relative_path = ""
-                    picture_filename = os.path.basename(str(path))
-                    picture_filenames_compl.append(sublime.CompletionItem(trigger = picture_filename[:-4], # remove '.png'
-                                                        details = relative_path,
-                                                        annotation = "image file",
-                                                        completion_format = sublime.COMPLETION_FORMAT_TEXT,
-                                                        kind=(4, 'p', 'Picture')))
-                for path in import_list:
-                    if str(path) == script_path:
-                        continue
-                    relative_path = os.path.relpath(str(path), str(script_path))
+                        with open(img_txt_path, 'r') as img_txt_file:
+                            img_txt_contents = img_txt_file.readlines()[1]
+                            img_num_animations = re.search(r'\d+',img_txt_contents).group(0)
+
+                            img_dimensions[img_path] = list(get_image_size(str(img_path)))
+                            img_width_height = img_dimensions[img_path][0], round(img_dimensions[img_path][1]/int(img_num_animations))
+                            dimensions = "Width: <b>%s</b>, Height: <b>%s</b>" % img_width_height # + " | Num frames: <b>%s</b>" % (img_num_animations)
+                    except UnknownImageFormat:
+                        dimensions = "Unable to read image format!"
+                    except:
+                        dimensions = relative_path
+                else:
+                    dimensions = "Unable to locate .txt file!"
+
+                picture_filename = os.path.basename(str(img_path))
+                if sublime_version >= 4000:
+                    picture_filenames_compl.append(sublime.CompletionItem(
+                                                    trigger = picture_filename[:-len(image_file_type[1:])],  # remove '.png'
+                                                    details = dimensions,
+                                                    annotation = "%s image" % image_file_type[2:],
+                                                    completion_format = sublime.COMPLETION_FORMAT_TEXT,
+                                                    kind=(4, 'p', 'Picture')))
+                else:
+                    img_file_name = picture_filename[:-4]
+                    picture_filenames_compl.append((img_file_name + "\timage", img_file_name))
+
+            import_list = Path(folders).rglob("*.ksp")
+            for path in import_list:
+                if str(path) == script_path:
+                    continue
+                relative_path = os.path.relpath(str(path), str(script_path))
+                if sublime_version >= 4000:
                     import_filenames_compl.append(sublime.CompletionItem(trigger = relative_path[3:], # remove '../'
                                                     details = "",
                                                     annotation = "script file",
                                                     completion_format = sublime.COMPLETION_FORMAT_TEXT,
                                                     kind=sublime.KIND_SNIPPET))
+                else:
+                    import_filenames_compl.append((relative_path[3:] + "\tscript file", relative_path[3:])) 
+
+
+    def on_load_async(self, view):
+        self.extract_workspace_completions(view)
+
+    def on_post_save_async(self, view):
+        self.extract_workspace_completions(view)
 
     def on_query_completions(self, view, prefix, locations):
         # parts of the code inspired by: https://github.com/agibsonsw/AndyPython/blob/master/PythonCompletions.py
