@@ -283,10 +283,10 @@ contexts:
         DURATION_(BAR|EIGHTH(_TRIPLET)?|QUARTER(_TRIPLET)?|SIXTEENTH(_TRIPLET)?)|
         EFFECT_TYPE_(
                      ACBOX|AET_FILTER|
-                     BASSINVADER|BASSPRO|BUS_COMP|
+                     BASSINVADER|BASSPRO|BITE|BUS_COMP|
                      CABINET|CAT|CHORAL|CHORUS|COMPRESSOR|CRYWAH|
-                     DELAY|DISTORTION|DSTORTION|
-                     FB_COMP|FILTER|FLAIR|FLANGER|
+                     DELAY|DIRT|DISTORTION|DSTORTION|
+                     FB_COMP|FILTER|FLAIR|FLANGER|FREAK|
                      GAINER|
                      HOTSOLO|
                      INVERTER|IRC|
@@ -294,10 +294,11 @@ contexts:
                      LIMITER|LOFI|
                      NONE|
                      PHASER|PHASIS|PLATEREVERB|PSYCHEDELAY|
-                     REPLIKA|REVERB|REVERB2|RINGMOD|ROTATOR|
+                     RAUM|REPLIKA|REVERB|REVERB2|RINGMOD|ROTATOR|
                      SEND_LEVELS|SHAPER|SKREAMER|SOLID_GEQ|STEREO|SUPERGT|SURROUND_PANNER|
-                     TAPE_SAT|TRANS_MASTER|TRANSLIM|TWANG|
-                     VAN51
+                     TAPE_SAT|TRANS_MASTER|TRANSLIM|TWANG|TWINDELAY|
+                     VAN51|VIBRATO_CHORUS|
+                     WOWFLUTTER
                     )|
         ENGINE_PAR_(
                     AC_(BASS|(BRILLIANT|NORMAL)VOLUME|MONO|TONECUT|TREBLE|TREMOLO(DEPTH|SPEED))|
@@ -306,6 +307,7 @@ contexts:
                     BANDWIDTH|
                     BASSINVADER_(BASS|BOOST|HI_BOOST|HI_MID|LO_CUT|LO_MID|MASTER|MID_CONTOUR|TREBLE|VOLUME)|
                     BASSPRO_(BASS|BRIGHT|DRIVE|GAIN|GEQ(_10K|_180|_1K|_2K|_300|_40|_4K|_500|_90|_VOLUME)?|MASTER|MID|MIDFREQ|MONO|TREBLE|ULTRA(HI|LO))|
+                    BITE_(BITS|CRUNCH|DC_QUANT|DITHER|EXPAND|FREQUENCY|HPF|JITTER|MIX|(POST|PRE)FILTER|SATURATE)|
                     BITS|BREAK|BW[1-3]|
                     CABINET_TYPE|CB_(AIR|BASS|SIZE|TREBLE)|
                     CH_(DEPTH|PHASE|SPEED(_UNIT)?)|
@@ -316,6 +318,7 @@ contexts:
                     CW_(MONO|PEDAL)|
                     DAMPING|
                     DECAY(_UNIT)?|DECAY(1(_UNIT)?|2(_UNIT)?)|
+                    DIRT_((AMOUNT|DRIVE|BIAS|MODE|SAFETY|TILT)[A-B]|BLEND|MIX|ROUTING)|
                     DISTORTION_TYPE|
                     DL_(DAMPING|FEEDBACK|PAN|TIME(_UNIT)?)|DRIVE|
                     DS_(BASS|DRIVE|MID|MONO|TONE|TREBLE|VOLUME)|
@@ -330,6 +333,7 @@ contexts:
                     FLAIR_(AMOUNT|CHORD|DAMPING|DETUNE|FEEDBACK|INVERT_PHASE|MIX|MODE|OFFSET|PITCH|RATE(_UNIT)?|SCANMODE|VOICES|WIDTH)|
                     FLEXENV_(LOOP|ONESHOT)|
                     FORMANT(_(SHARP|SHIFT|SIZE|TALK))?|
+                    FREAK_(ANTIFOLD|BP_(FILTER|FREQ)|CARRIER|CONTOUR|DEMOD|FEEDBACK|FREQUENCY|GATE|HARMONICS|MIX|MODE|RELEASE|STEREO|TUNING|TYPE|WIDE_RANGE|WIDTH)|
                     FREQ[1-3]|FREQUENCY|
                     GAIN([1-3])?|
                     GLIDE_COEF(_UNIT)?|
@@ -353,6 +357,7 @@ contexts:
                     PR_(DECAY|HIDAMP|LOWSHELF|PREDELAY|STEREO)|
                     PSYDL_(DETUNE|(DETUNE|REVERSE)_STEREO|(CROSS_)?FEEDBACK|LR_OFFSET|PITCH|REVERSE|TIME(_UNIT)?)|
                     RATIO|
+                    RAUM_(DAMPING|DECAY|DIFFUSION|FEEDBACK|FREEZE|(HIGH|LOW)CUT|MIX|MOD|PREDELAY|RATE|SIZE|SPARSE|TYPE)|
                     RDL_(AMOUNT|BBDTYPE|DENSE|DEPTH|FEEDBACK|FLUTTER|(HIGH|LOW)CUT|MODULATION|NOISE|PINGPONG|QUALITY|RATE|SATURATION|SIZE|STEREO|TAPEAGE|TIME(_UNIT)?|TYPE)|
                     RELEASE(_UNIT|_TRIGGER)?|RESONANCE|
                     RINGMOD_(EDGE|FAST_MODE|FM|FREQUENCY|LFO_(AMOUNT|RATE(_UNIT)?|WAVE)|RING)|
@@ -368,6 +373,7 @@ contexts:
                     SK_(BASS|BRIGHT|DRIVE|MIX|TONE)|
                     SLICE_(ATTACK|RELEASE)|
                     SMOOTH|
+                    SOURCE_MODE|
                     SP_(DIVERGENCE|LFE_VOLUME|OFFSET_(AZIMUTH|DISTANCE|X|Y)|SIZE)|
                     SPEED(_UNIT)?|
                     START_CRITERIA_(CC_(MAX|MIN)|CONTROLLER|CYCLE_CLASS|KEY_(MAX|MIN)|MODE|NEXT_CRIT|SEQ_ONLY|(SLICE|ZONE)_IDX)|
@@ -375,6 +381,7 @@ contexts:
                     STEREO(_PAN|_PSEUDO)?|
                     SUPERGT_(ATTACK|(CHANNEL_LINK|CHAR|HPF|SAT)_MODE|CHARACTER|COMPRESS|MIX|RELEASE|SATURATION|TRIM)|
                     SUSTAIN|
+                    TDL_(CROSS_FEEDBACK|FEEDBACK_(L|R)|LEVEL_(L|R)|PREDELAY_(L|R)(_UNIT)?|TIME_(L|R)(_UNIT)?|WIDTH)|
                     THRESHOLD|
                     TM_LEGATO|
                     TMPRO_KEEP_FORMANTS|
@@ -385,7 +392,9 @@ contexts:
                     TUNE|
                     TW_(BASS|BRIGHT|MID|MONO|TREBLE|VOLUME)|
                     V5_(BASS|BRIGHT|CRUNCH|(HI|POST)GAIN|LEADCHANNEL|MID|MONO|PREGAIN(LEAD|RHYTHM)|PRESENCE|RESONANCE|TREBLE)|
+                    VC_(BLEND|COLOR|DEPTH|MIX|RATE|WIDTH)|
                     VOLUME|
+                    WOWFLUTTER_(AGE|FLUTTER|GATE|MIX|SATURATION|SCRAPE|SPEED|STEREO|WOW)|
                     WT_(FORM(_MODE)?|INHARMONIC(_MODE)?|PHASE(_RAND)?|POSITION|QUALITY)
                    )|
         ENGINE_UPTIME|
@@ -439,6 +448,7 @@ contexts:
             ASYNC_(EXIT_STATUS|ID)|
             BAR_START_POSITION|
             BUS_OFFSET|
+            BITE_HPF_MODE_(5|100|200)|
             CALLBACK_(ID|TYPE)|
             CB_TYPE_(ASYNC_COMPLETE|CONTROLLER|INIT|LISTENER|MIDI_IN|NOTE|NRPN|PERSISTENCE_CHANGED|PGS|POLY_AT|RELEASE|RPN|UI_CONTROL|UI_UPDATE)|
             CHORAL_MODE_(DIMENSION|ENSEMBLE|SYNTH|UNIVERSAL)|
@@ -449,11 +459,13 @@ contexts:
                     INSTRUMENT_TYPE_(BASS|BOWED_STRING|BRASS|FLUTE|GUITAR|INVALID|KEYBOARD|MALLET|ORGAN|PLUCKED_STRING|REED|SYNTH|VOCAL)|
                     SAMPLE_TYPE_(DRUM|INSTRUMENT|INVALID)
                    )|
+            DIRT_(MODE_(I){1,3}|ROUTING_(ATOB|BTOA|PARALLEL))|
             DISTORTION_TYPE_(TRANS|TUBE)|
             DND_ACCEPT_(MULTIPLE|NONE|ONE)|
             FILE_(EXTENSION|FULL_PATH|FULL_PATH_OS|NAME)|
             FILE_TYPE_(ARRAY|AUDIO|MIDI)|
             FLAIR_(MODE_(SCAN|STANDARD|THRU_ZERO)|SCANMODE_(SAW_DOWN|SAW_UP|TRIANGLE))|
+            FREAK_MODE_(OSCILLATOR|RADIO|SIDECHAIN)|
             GROUP_PAR_(COLOR|(HIGH|LOW)_KEY|NUM_ZONES)|
             HQI_MODE_(HIGH|PERFECT|STANDARD)|
             (INSERT|MAIN|SEND)_BUS|
@@ -463,16 +475,18 @@ contexts:
             LOG_(MESSAGE|WARNING|WATCHING)|
             MOUSE_(EVENT_(TYPE(_DRAG|_DROP|_LEFT_BUTTON_DOWN|_LEFT_BUTTON_UP)?)|OVER_CONTROL)|
             NOT_FOUND|
+            RAUM_TYPE_(AIRY|COSMIC|GROUNDED)|
             REPLIKA_TYPE_(ANALOGUE|DIFFUSION|MODERN|TAPE|VINTAGE)|
             REVERB2_TYPE_(HALL|ROOM)|
             RINGMOD_LFO_WAVE_(SINE|SQUARE)|
             S1200_FILTER_((HIGH|LOW)(_MID)?|NONE)|
             SHAPE_TYPE_(CLASSIC|DRUMS|ENHANCED)|
             SIGNAL_(TIMER_(BEAT|MS)|TRANSP_(START|STOP)|TYPE)|
-            SONG_POSITION|
+            SONG_POSITION|SOURCE_MODE_(BEAT_MACHINE|DFD|MP60_MACHINE|SAMPLER|S1200_MACHINE|TIME_MACHINE_(1|2|PRO)|TONE_MACHINE|WAVETABLE)|
             SUPERGT_(CHANNEL_LINK_MODE_(DUAL_MONO|MS|STEREO)|CHAR_MODE_(BRIGHT|FAT|WARM)|HPF_MODE_(100|300|OFF)|SAT_MODE_(HOT|MILD|MODERATE))|
             SYNC_UNIT_(16TH(_TRIPLET)?|256TH|32ND(_TRIPLET)?|64TH(_TRIPLET)?|8TH(_TRIPLET)?|ABS|HALF(_TRIPLET)?|QUARTER(_TRIPLET)?|WHOLE(_TRIPLET)?|ZONE)|
             TRANSPORT_RUNNING|
+            VC_(COLOR_TYPE_[A-C]|DEPTH_[1-6])|
             VL_TMPRO_(HQ|STANDARD)|
             WF_VIS_MODE_[1-3]|
             WT_(FORM_(ASYM(M?P?)|BEND(M?P?)|FLIP|LINEAR|MIRROR|PWM|QUANTIZE|SYNC[1-3])|QUALITY_(BEST|HIGH|LOFI|MEDIUM))|
@@ -491,7 +505,7 @@ contexts:
         UI_WF_PROP_(FLAGS|MIDI_DRAG_START_NOTE|PLAY_CURSOR|TABLE_IDX_HIGHLIGHT|TABLE_VAL)|
         VALUE_EDIT_MODE_NOTE_NAMES|
         VCC_(MONO_AT|PITCH_BEND)|
-        ZONE_PAR_(BPM|(FADE_)?(HIGH|LOW)_(KEY|VELO)|GROUP|PAN|ROOT_KEY|SAMPLE_(END|MOD_RANGE|RATE|START)|TUNE|VOLUME)|
+        ZONE_PAR_(BPM|(FADE_)?(HIGH|LOW)_(KEY|VELO)|GROUP|PAN|ROOT_KEY|SAMPLE_(END|MOD_RANGE|RATE|START)|SELECTED|TUNE|VOLUME)|
         NI_DND_ITEMS_(ARRAY|AUDIO|MIDI)
        )\b|
 
@@ -538,9 +552,9 @@ contexts:
 
                   abs|(a)?(cos|sin|tan)|add_(menu_item|text_line)|array_equal||attach_(level_meter|zone)|
                   by_(marks|track)|
-                  cc_delivery_request|ceil|change_(listener_par|note|pan|time_with_pitch|tune|velo|vol)|(cb|sq)rt|
+                  cc_delivery_request|ceil|change_(listener_par|note|pan|time_with_pitch|tune|velo|vol)|(cb|sq)rt|continue|
                   dec|delete_event_mark|detect_(pitch|rms|peak|loudness|sample_type|instrument_type|drum_type)|disable_logging|(dis)?allow_group|dont_use_machine_mode|
-                  event_status|continue|exit|exp(2)?|expose_controls|
+                  event_status|exit|exp(2)?|expose_controls|
                   fade_(in|out)|find_(group|mod|target|zone)|floor|fs_(get_filename|navigate)|
                   get_(
                         control_par(_arr|_real_arr|_str|_str_arr)?|
@@ -555,7 +569,7 @@ contexts:
                         menu_item_(str|value|visibility)|
                         num_zones|
                         purge_state|
-                        sample(_length)?|
+                        sample(_length)?|sel_zones_idx
                         ui_(id|wf_property)|
                         voice_limit|
                         zone_(id|par|status)
@@ -621,7 +635,7 @@ contexts:
                         knob_(defval|label|unit)|
                         listener|
                         loop_par|
-                        menu_item_(str|value|visibility)|
+                        map_editor_event_color|menu_item_(str|value|visibility)|
                         midi|
                         (n)?rpn|
                         num_user_zones|
