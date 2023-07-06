@@ -569,7 +569,7 @@ contexts:
                         menu_item_(str|value|visibility)|
                         num_zones|
                         purge_state|
-                        sample(_length)?|sel_zones_idx
+                        sample(_length)?|sel_zones_idx|
                         ui_(id|wf_property)|
                         voice_limit|
                         zone_(id|par|status)
