@@ -139,7 +139,7 @@ contexts:
         1: operator.source.ksp
         2: support.variable.source.ksp
 
-    - match: (?!#)\b(if|to|downto|else|for|while|select|case)\b(?!#)
+    - match: (?!#)\b(if|to|downto|else|for|while|select|case|continue)\b(?!#)
       comment: Control keywords
       scope: keyword.control.source.ksp
 
@@ -552,7 +552,7 @@ contexts:
 
                   abs|(a)?(cos|sin|tan)|add_(menu_item|text_line)|array_equal||attach_(level_meter|zone)|
                   by_(marks|track)|
-                  cc_delivery_request|ceil|change_(listener_par|note|pan|time_with_pitch|tune|velo|vol)|(cb|sq)rt|continue|
+                  cc_delivery_request|ceil|change_(listener_par|note|pan|time_with_pitch|tune|velo|vol)|(cb|sq)rt|
                   dec|delete_event_mark|detect_(pitch|rms|peak|loudness|sample_type|instrument_type|drum_type)|disable_logging|(dis)?allow_group|dont_use_machine_mode|
                   event_status|exit|exp(2)?|expose_controls|
                   fade_(in|out)|find_(group|mod|target|zone)|floor|fs_(get_filename|navigate)|
