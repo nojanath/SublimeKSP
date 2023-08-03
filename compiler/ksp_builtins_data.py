@@ -1343,8 +1343,8 @@ iterate_macro(<expression>)
 iterate_post_macro(<expression>)
 literate_macro(<expression>)
 literate_post_macro(<expression>)
-load_array(<int-or-string-array>, <mode>):integer
-load_array_str(<int-or-string-array>, <file-path>):integer
+load_array(<any-array-variable>, <mode>):integer
+load_array_str(<any-array-variable>, <file-path>):integer
 load_ir_sample(<file-name>, <slot>, <generic>):integer
 load_ir_sample_m(<file-name>, <output-idx>, <slot>, <generic>):integer
 load_native_ui(<file-path>)
@@ -1427,8 +1427,8 @@ reset_engine
 reset_ksp_timer
 reset_rls_trig_counter(<note>)
 round(<real-value>):real
-save_array(<int-or-string-array>, <mode>):integer
-save_array_str(<int-or-string-array>, <file-path>):integer
+save_array(<any-array-variable>, <mode>):integer
+save_array_str(<any-array-variable>, <file-path>):integer
 save_midi_file(<file-path>):integer
 search(<int-array>, <value>):integer
 search(<int-array>, <value>, <from>, <to>):integer
