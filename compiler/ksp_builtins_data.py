@@ -1350,6 +1350,7 @@ load_ir_sample_m(<file-name>, <output-idx>, <slot>, <generic>):integer
 load_native_ui(<file-path>)
 load_midi_file(<file-path>):integer
 load_patch(<file-path>, <instr-slot-idx>)
+load_next_patch(<direction>, <instr-slot-idx>)
 load_performance_view(<file-name>):string
 log(<real-value>):real
 log2(<real-value>):real
@@ -1358,7 +1359,7 @@ lsb(<value>):integer
 make_instr_persistent(<variable>)
 make_perfview
 make_persistent(<variable>)
-message(<variable-or-text>)
+message(<expression>)
 mf_copy_export_area(<zone-id>)
 mf_get_buffer_size():integer
 mf_get_byte_one():integer
@@ -1423,7 +1424,7 @@ real_to_int(<real-value>):integer
 redirect_midi(<event-id>, <instr-slot-idx>, <instr-bank-slot-idx>)
 redirect_output(<event-id>, <output-type>, <output-idx>)
 remove_keyrange(<key-number>)
-reset_engine
+reset_engine(<instr-slot-idx>)
 reset_ksp_timer
 reset_rls_trig_counter(<note>)
 round(<real-value>):real
@@ -1453,6 +1454,7 @@ set_key_pressed(<key-number>, <value>)
 set_key_pressed_support(<value>)
 set_key_type(<note-number>, key-type-constant>)
 set_keyrange(<key-number1>, <key-number2>, <range-name>)
+set_kill_priority(<event-id>, <value>)
 set_knob_defval(<knob-variable>, <value>)
 set_knob_label(<knob-variable>, <text>)
 set_knob_properties(<knob>, <text>, <default>)

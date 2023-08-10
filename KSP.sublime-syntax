@@ -577,7 +577,7 @@ contexts:
                   group_name|guiidx_to_slotidx|
                   hide_part|
                   ignore_(controller|event|midi)|import_nckp|in_range|inc|int(_to_real)?|is_zone_empty|iterate_(post_)?macro|
-                  literate_(post_)?macro|load_(array(_str)?|ir_sample_m|native_ui|midi_file|patch|performance_view)|log(2|10)?|[l-m]sb|
+                  literate_(post_)?macro|load_(array(_str)?|ir_sample_m|native_ui|midi_file|(next_)?patch|performance_view)|log(2|10)?|[l-m]sb|
                   make_((instr_)?persistent|perfview)|message|
                   mf_(
                        copy_export_area|
@@ -632,6 +632,7 @@ contexts:
                         group_dyn_par_name|
                         key_(color|name|pressed(_support)?|type)|
                         keyrange|
+                        kill_priority|
                         knob_(defval|label|unit)|
                         listener|
                         loop_par|
