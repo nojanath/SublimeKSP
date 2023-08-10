@@ -1359,7 +1359,7 @@ lsb(<value>):integer
 make_instr_persistent(<variable>)
 make_perfview
 make_persistent(<variable>)
-message(<expression>)
+message(<variable-or-text>)
 mf_copy_export_area(<zone-id>)
 mf_get_buffer_size():integer
 mf_get_byte_one():integer
