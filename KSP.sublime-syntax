@@ -65,14 +65,12 @@ contexts:
                   listener|
                   midi_in|
                   note|
-                  nrpn|
+                  (n)?rpn|
                   release|
-                  rpn|
                   persistence_changed|
-                  pgs_changed|
+                  (_)?pgs_changed|
                   poly_at|
                   ui_update|
-                  _pgs_changed|
                  )|
                  on_pgs_changed|on_post_init|on_release)
                \b'
@@ -357,7 +355,7 @@ contexts:
                     PR_(DECAY|HIDAMP|LOWSHELF|PREDELAY|STEREO)|
                     PSYDL_(DETUNE|(DETUNE|REVERSE)_STEREO|(CROSS_)?FEEDBACK|LR_OFFSET|PITCH|REVERSE|TIME(_UNIT)?)|
                     RATIO|
-                    RAUM_(DAMPING|DECAY|DIFFUSION|FEEDBACK|FREEZE|(HIGH|LOW)CUT|MIX|MOD|PREDELAY(_UNIT)?|RATE|REVERB|SIZE|SPARSE|TYPE)|
+                    RAUM_(DAMPING|DECAY|DIFFUSION|FEEDBACK|FREEZE|HIGHCUT|LOWSHELF|MIX|MOD|PREDELAY(_UNIT)?|RATE|REVERB|SIZE|SPARSE|TYPE)|
                     RDL_(AMOUNT|BBDTYPE|DENSE|DEPTH|FEEDBACK|FLUTTER|(HIGH|LOW)CUT|MODULATION|NOISE|PINGPONG|QUALITY|RATE|SATURATION|SIZE|STEREO|TAPEAGE|TIME(_UNIT)?|TYPE)|
                     RELEASE(_UNIT|_TRIGGER)?|RESONANCE|
                     RINGMOD_(EDGE|FAST_MODE|FM|FREQUENCY|LFO_(AMOUNT|RATE(_UNIT)?|WAVE)|RING)|
