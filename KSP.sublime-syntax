@@ -70,7 +70,7 @@ contexts:
                   persistence_changed|
                   (_)?pgs_changed|
                   poly_at|
-                  ui_update|
+                  ui_update
                  )|
                  on_pgs_changed|on_post_init|on_release)
                \b'
@@ -100,7 +100,7 @@ contexts:
                  active_index|allow_automation|automation_(id|name)|
                  (bar|bg|off|on|overload|peak|slicemarkers|wave(_cursor|_end)?|wavetable(_end)?|zero_line)_color|
                  (base|file)path|(bg|wave(_end)?|wavetable(_end)?)_alpha|
-                 column_width|cursor_picture|
+                 column_width|cursor_picture|custom_id|
                  default(_value)?|disable_text_shifting|dnd_(accept_(array|audio|midi)|behaviour)|
                  enable_dnd|
                  file_type|font_type(_off_hover|_off_pressed|_on|_on_hover|_on_pressed)?|
@@ -110,11 +110,11 @@ contexts:
                  key_(alt|control|shift)|
                  label|
                  (max|min)_value|midi_export_area_idx|mouse_(behaviour(_x|_y)?|mode)|
-                 none|num_items|
+                 nks_(num_values|str_values|style|type)|none|num_items|
                  parallax_(x|y)|
                  parent_panel|picture(_state)?|(pos_)?(x|y)|range_(max|min)|receive_drag_events|
-                 selected_item_idx|show_arrows|
-                 text(_alignment|line|pos_y)?|
+                 selected_item_idx|short_name|show_arrows|
+                 text(_alignment|line|pos_y)?|type|
                  unit|
                  value(pos_y)?|vertical|
                  (wf|wt)_vis_mode|width|wt_zone|
@@ -266,11 +266,11 @@ contexts:
                      KEY_(ALT|CONTROL|SHIFT)|
                      LABEL|
                      (MAX|MIN)_VALUE|MIDI_EXPORT_AREA_IDX|MOUSE_(BEHAVIOUR(_X|_Y)?|MODE)|
-                     NONE|NUM_ITEMS|
+                     NKS_(NUM_VALUES|STR_VALUES|STYLE|TYPE)|NONE|NUM_ITEMS|
                      PARALLAX_(X|Y)|
                      PARENT_PANEL|PICTURE(_STATE)?|POS_(X|Y)|RANGE_(MAX|MIN)|RECEIVE_DRAG_EVENTS|
-                     SELECTED_ITEM_IDX|SHOW_ARROWS|
-                     TEXT(_ALIGNMENT|LINE|POS_Y)?|
+                     SELECTED_ITEM_IDX|SHORT_NAME|SHOW_ARROWS|
+                     TEXT(_ALIGNMENT|LINE|POS_Y)?|TYPE|
                      UNIT|
                      VALUE(POS_Y)?|VERTICAL|
                      (WF|WT)_VIS_MODE|WIDTH|WT_ZONE|
@@ -451,7 +451,7 @@ contexts:
             CB_TYPE_(ASYNC_COMPLETE|CONTROLLER|INIT|LISTENER|MIDI_IN|NOTE|NRPN|PERSISTENCE_CHANGED|PGS|POLY_AT|RELEASE|RPN|UI_CONTROL|UI_UPDATE)|
             CHORAL_MODE_(DIMENSION|ENSEMBLE|SYNTH|UNIVERSAL)|
             COMP_TYPE_(CLASSIC|ENHANCED|PRO)|
-            CONTROL_PAR_IDX|
+            CONTROL_PAR_IDX|CONTROL_TYPE_(BUTTON|FILE_SELECTOR|KNOB|LABEL|LEVEL_METER|MENU|MOUSE_AREA|NONE|PANEL|SLIDER|SWITCH|TABLE|TEXT_EDIT|VALUE_EDIT|WAVEFORM|WAVETABLE|XY)|
             DETECT_(
                     DRUM_TYPE_(CLAP|CLOSED_HH|CYMBAL|INVALID|KICK|OPEN_HH|PERC_DRUM|PERC_OTHER|SHAKER|SNARE|TOM)|
                     INSTRUMENT_TYPE_(BASS|BOWED_STRING|BRASS|FLUTE|GUITAR|INVALID|KEYBOARD|MALLET|ORGAN|PLUCKED_STRING|REED|SYNTH|VOCAL)|
@@ -472,6 +472,7 @@ contexts:
             LEVEL_METER_(GROUP|INSERT|MAIN)|
             LOG_(MESSAGE|WARNING|WATCHING)|
             MOUSE_(EVENT_(TYPE(_DRAG|_DROP|_LEFT_BUTTON_DOWN|_LEFT_BUTTON_UP)?)|OVER_CONTROL)|
+            NKS_(STYLE_(FILTERTYPE|KNOB|MENU|POWER|TEMPOSYNC|VALUE|WAVEFORM)|TYPE_(CONTINUOUS_(BI|UNI)|DISCRETE_(BI|UNI)|TOGGLE))|
             NOT_FOUND|
             RAUM_TYPE_(AIRY|COSMIC|GROUNDED)|
             REPLIKA_TYPE_(ANALOGUE|DIFFUSION|MODERN|TAPE|VINTAGE)|
@@ -484,6 +485,7 @@ contexts:
             SUPERGT_(CHANNEL_LINK_MODE_(DUAL_MONO|MS|STEREO)|CHAR_MODE_(BRIGHT|FAT|WARM)|HPF_MODE_(100|300|OFF)|SAT_MODE_(HOT|MILD|MODERATE))|
             SYNC_UNIT_(16TH(_TRIPLET)?|256TH|32ND(_TRIPLET)?|64TH(_TRIPLET)?|8TH(_TRIPLET)?|ABS|HALF(_TRIPLET)?|QUARTER(_TRIPLET)?|WHOLE(_TRIPLET)?|ZONE)|
             TRANSPORT_RUNNING|
+            UI_ID|
             VC_(COLOR_TYPE_[A-C]|DEPTH_[1-6])|
             VL_TMPRO_(HQ|STANDARD)|
             WF_VIS_MODE_[1-3]|
@@ -565,6 +567,7 @@ contexts:
                         keyrange_((max|min)_note|name)|
                         loop_par|
                         menu_item_(str|value|visibility)|
+                        nks_nav_(name|par)|
                         num_zones|
                         purge_state|
                         sample(_length)?|sel_zones_idx|
@@ -618,7 +621,7 @@ contexts:
                   note_off|num_(elements|slices_zone)|
                   output_channel_name|
                   pgs_(create_str_key|(get|set)_str_key_val|str_key_exists)|play_note|pow|purge_group|
-                  random|real(_to_int)?|redirect_(midi|output)|remove_keyrange|reset_(engine|ksp_timer)|round|
+                  random|real(_to_int)?|redirect_(midi|output)|remove_keyrange|reset_(engine|ksp_timer|nks_nav)|round|
                   save_(array(_str)?|midi_file)|search|
                   set_(
                         bounds|
@@ -636,6 +639,7 @@ contexts:
                         loop_par|
                         map_editor_event_color|menu_item_(str|value|visibility)|
                         midi|
+                        nks_nav_(name|par)|
                         (n)?rpn|
                         num_user_zones|
                         sample|

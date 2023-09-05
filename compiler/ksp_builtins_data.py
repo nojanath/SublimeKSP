@@ -13,6 +13,7 @@ $CONTROL_PAR_BG_ALPHA
 $CONTROL_PAR_BG_COLOR
 $CONTROL_PAR_COLUMN_WIDTH
 $CONTROL_PAR_CURSOR_PICTURE
+$CONTROL_PAR_CUSTOM_ID
 $CONTROL_PAR_DEFAULT_VALUE
 $CONTROL_PAR_DISABLE_TEXT_SHIFTING
 $CONTROL_PAR_DND_ACCEPT_ARRAY
@@ -48,6 +49,10 @@ $CONTROL_PAR_MOUSE_BEHAVIOUR_X
 $CONTROL_PAR_MOUSE_BEHAVIOUR_Y
 $CONTROL_PAR_MOUSE_MODE
 $CONTROL_PAR_NONE
+$CONTROL_PAR_NKS_NUM_VALUES
+$CONTROL_PAR_NKS_STR_VALUES
+$CONTROL_PAR_NKS_STYLE
+$CONTROL_PAR_NKS_TYPE
 $CONTROL_PAR_NUM_ITEMS
 $CONTROL_PAR_OFF_COLOR
 $CONTROL_PAR_ON_COLOR
@@ -64,12 +69,14 @@ $CONTROL_PAR_RANGE_MAX
 $CONTROL_PAR_RANGE_MIN
 $CONTROL_PAR_RECEIVE_DRAG_EVENTS
 $CONTROL_PAR_SELECTED_ITEM_IDX
+$CONTROL_PAR_SHORT_NAME
 $CONTROL_PAR_SHOW_ARROWS
 $CONTROL_PAR_SLICEMARKERS_COLOR
 $CONTROL_PAR_TEXT
 $CONTROL_PAR_TEXT_ALIGNMENT
 $CONTROL_PAR_TEXTLINE
 $CONTROL_PAR_TEXTPOS_Y
+$CONTROL_PAR_TYPE
 $CONTROL_PAR_UNIT
 $CONTROL_PAR_VALUE
 $CONTROL_PAR_VALUEPOS_Y
@@ -949,6 +956,23 @@ $NI_COMP_TYPE_CLASSIC
 $NI_COMP_TYPE_ENHANCED
 $NI_COMP_TYPE_PRO
 $NI_CONTROL_PAR_IDX
+$NI_CONTROL_TYPE_BUTTON
+$NI_CONTROL_TYPE_FILE_SELECTOR
+$NI_CONTROL_TYPE_KNOB
+$NI_CONTROL_TYPE_LABEL
+$NI_CONTROL_TYPE_LEVEL_METER
+$NI_CONTROL_TYPE_MENU
+$NI_CONTROL_TYPE_MOUSE_AREA
+$NI_CONTROL_TYPE_NONE
+$NI_CONTROL_TYPE_PANEL
+$NI_CONTROL_TYPE_SLIDER
+$NI_CONTROL_TYPE_SWITCH
+$NI_CONTROL_TYPE_TABLE
+$NI_CONTROL_TYPE_TEXT_EDIT
+$NI_CONTROL_TYPE_VALUE_EDIT
+$NI_CONTROL_TYPE_WAVEFORM
+$NI_CONTROL_TYPE_WAVETABLE
+$NI_CONTROL_TYPE_XY
 $NI_DETECT_DRUM_TYPE_CLAP
 $NI_DETECT_DRUM_TYPE_CLOSED_HH
 $NI_DETECT_DRUM_TYPE_CYMBAL
@@ -1029,6 +1053,18 @@ $NI_MOUSE_EVENT_TYPE_DROP
 $NI_MOUSE_EVENT_TYPE_LEFT_BUTTON_DOWN
 $NI_MOUSE_EVENT_TYPE_LEFT_BUTTON_UP
 $NI_MOUSE_OVER_CONTROL
+$NI_NKS_STYLE_FILTERTYPE
+$NI_NKS_STYLE_KNOB
+$NI_NKS_STYLE_MENU
+$NI_NKS_STYLE_POWER
+$NI_NKS_STYLE_TEMPOSYNC
+$NI_NKS_STYLE_VALUE
+$NI_NKS_STYLE_WAVEFORM
+$NI_NKS_TYPE_CONTINUOUS_UNI
+$NI_NKS_TYPE_CONTINUOUS_BI
+$NI_NKS_TYPE_DISCRETE_UNI
+$NI_NKS_TYPE_DISCRETE_BI
+$NI_NKS_TYPE_TOGGLE
 $NI_NOT_FOUND
 $NI_RAUM_TYPE_AIRY
 $NI_RAUM_TYPE_COSMIC
@@ -1097,6 +1133,7 @@ $NI_SYNC_UNIT_WHOLE
 $NI_SYNC_UNIT_WHOLE_TRIPLET
 $NI_SYNC_UNIT_ZONE
 $NI_TRANSPORT_RUNNING
+$NI_UI_ID
 $NI_VC_COLOR_TYPE_A
 $NI_VC_COLOR_TYPE_B
 $NI_VC_COLOR_TYPE_C
@@ -1315,6 +1352,8 @@ get_menu_item_str(<ui-id>, <index>):string
 get_menu_item_value(<ui-id>, <index>):integer
 get_menu_item_visibility(<ui-id>, <index>):integer
 get_mod_idx(<group-idx>, <mod-name>):integer
+get_nks_nav_name(<par-group-idx>, <index>):string
+get_nks_nav_par(<par-group-idx>, <index>):integer
 get_num_zones():integer
 get_purge_state(<group-idx>):integer
 get_sample(<zone-id>,<return-parameter>):string
@@ -1426,6 +1465,7 @@ redirect_output(<event-id>, <output-type>, <output-idx>)
 remove_keyrange(<key-number>)
 reset_engine(<instr-slot-idx>)
 reset_ksp_timer
+reset_nks_nav()
 reset_rls_trig_counter(<note>)
 round(<real-value>):real
 save_array(<any-array-variable>, <mode>):integer
@@ -1469,6 +1509,8 @@ set_menu_item_value(<menu-id>, <index>, <value>)
 set_menu_item_visibility(<menu-id>, <index>, <visibility>)
 set_menu_properties(<menu>, <picture>, <font-type>, <text-alignment>, <textpos-y>)
 set_midi(<channel>, <command>, <byte1>, <byte2>)
+set_nks_nav_name(<par-group-idx>, <index>, <name>)
+set_nks_nav_par(<par-group-idx>, <index>, <par-auto-id>)
 set_nrpn(<address>, <value>)
 set_num_user_zones(<size>)
 set_rpn(<address>, <value>)
@@ -1532,6 +1574,7 @@ mf_get_byte_two
 mf_get_channel
 mf_get_command
 mf_get_last_filename
+reset_nks_nav
 
 [functions_evaluated_with_optimize_code]
 abs
@@ -1610,7 +1653,9 @@ $CONTROL_PAR_FILEPATH
 $CONTROL_PAR_IDENTIFIER
 $CONTROL_PAR_HELP
 $CONTROL_PAR_LABEL
+$CONTROL_PAR_NKS_STR_VALUES
 $CONTROL_PAR_PICTURE
+$CONTROL_PAR_SHORT_NAME
 $CONTROL_PAR_TEXT
 $CONTROL_PAR_TEXTLINE
 
