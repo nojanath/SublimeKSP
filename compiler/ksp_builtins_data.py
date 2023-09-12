@@ -1587,13 +1587,22 @@ zone_slice_loop_count(<zone-id>, <loop-idx>):integer
 zone_slice_start(<zone-id>, <slice-idx>):integer
 
 [functions_with_forced_parentheses]
-mf_reset
+get_num_zones
+mf_copy_export_area
 mf_get_buffer_size
 mf_get_byte_one
 mf_get_byte_two
 mf_get_channel
 mf_get_command
+mf_get_id
 mf_get_last_filename
+mf_get_length
+mf_get_note_length
+mf_get_note_length
+mf_get_num_tracks
+mf_get_pos
+mf_get_track_idx
+mf_reset
 reset_nks_nav
 
 [functions_evaluated_with_optimize_code]
