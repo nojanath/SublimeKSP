@@ -347,7 +347,8 @@ def plugin_loaded():
                 args_str = ''
                 formatted_args = args_str
 
-            formatted_args = '(' + formatted_args + ')' if formatted_args else ''
+            if args_str != formatted_args:
+                formatted_args = '(' + formatted_args + ')' if formatted_args else ''
 
             if sublime_version >= 4000:
                 function_details = '<b>Returns</b>: %s' % (s[1])

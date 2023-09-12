@@ -250,7 +250,10 @@ class ASTVisitorDetermineExpressionTypes(ASTVisitor):
         self.visit_children(parent, node, *args)
         function_name = node.function_name.identifier
 
-        if function_name in ksp_builtins.function_signatures or (function_name in ksp_builtins.function_signatures and function_name in self.functions and self.functions[function_name].override):
+        if function_name in ksp_builtins.function_signatures or   \
+           (function_name in ksp_builtins.function_signatures and \
+            function_name in self.functions and self.functions[function_name].override):
+
             matches_param_count = False
 
             for s in ksp_builtins.function_signatures[function_name]:
