@@ -5,7 +5,10 @@ import codecs
 import traceback
 import os.path
 import os
-from pathlib import Path
+try:
+    from pathlib import Path
+except ImportError:
+    pass
 from datetime import datetime
 import sys
 import re
@@ -451,12 +454,18 @@ class KSPCompletions(sublime_plugin.EventListener):
         workspace_files = sublime.active_window().folders()
         script_path = sublime.active_window().active_view().file_name()
         for folders in workspace_files:
-            image_file_type = ("*.png", "*.jpeg", "*.webp", "*.tiff", "*.svg", "*.tga")
-            img_list = [Path(folders).rglob(img_type) for img_type in image_file_type] # Creates a list of generators for each image type
-            img_list = [(img_file, image_file_type[idx]) for idx, img_type in enumerate(img_list) for img_file in img_type] # Flattens into tuple (img_file, img_file_string)
+
+            image_file_type = [".png", ".jpeg", ".webp", ".tiff", ".svg", ".tga"]
+            img_list = []
+            for root, dirs, files in os.walk(folders):
+                for file in files:
+                    if any([img_type in file for img_type in image_file_type]):
+                        img_type = [x for idx, x in enumerate(image_file_type) if image_file_type[idx] in file][0]
+                        img_list.append((os.path.join(root, file), img_type))
+
             img_dimensions = {}
-            for img_path, image_file_type in img_list:
-                img_txt_path = str(img_path)[:-3] + "txt"
+            for img_path, img_file_type in img_list:
+                img_txt_path = str(img_path)[:-len(img_file_type)] + ".txt"
                 try:
                     relative_path = str(os.path.relpath(str(img_path), str(script_path)))
                 except ValueError:
@@ -465,32 +474,47 @@ class KSPCompletions(sublime_plugin.EventListener):
                 if os.path.exists(img_txt_path):
                     try:
                         with open(img_txt_path, 'r') as img_txt_file:
-                            img_txt_contents = img_txt_file.readlines()[1]
-                            img_num_animations = re.search(r'\d+',img_txt_contents).group(0)
-
+                            img_txt_contents = img_txt_file.read()
+                            img_num_animations = re.search(r'number\s+of\s+animations:\s*((\d+))', img_txt_contents, re.IGNORECASE) # JACK LOOK AT THIS ALSO IF HORIZONTAL ANIMATION THEN YOU'LL NEED TO DIVDE BY WIDTH, NOT HEIGHT
+                            img_dir = re.search(r'horizontal\s+animation:\s*(no|yes|0|1)', img_txt_contents, re.IGNORECASE)
                             img_dimensions[img_path] = list(get_image_size(str(img_path)))
-                            img_width_height = img_dimensions[img_path][0], round(img_dimensions[img_path][1]/int(img_num_animations))
-                            dimensions = "Width: <b>%s</b>, Height: <b>%s</b>" % img_width_height # + " | Num frames: <b>%s</b>" % (img_num_animations)
+                            if img_num_animations and img_dir:
+                                img_num_animations = int(img_num_animations.group(1))
+                                img_width_height = img_dimensions[img_path][0], img_dimensions[img_path][1]
+                                if img_num_animations > 0 and img_dir.group(1) == "no" or img_dir.group(1) == "0":
+                                    img_width_height = img_width_height[0], round(img_width_height[1]/int(img_num_animations))
+                                elif img_num_animations > 0 and img_dir.group(1) == "yes" or img_dir.group(1) == "1":
+                                    img_width_height = img_width_height[0]/int(img_num_animations), round(img_width_height[1])
+                                
+                                dimensions = "Width: <b>%s</b>, Height: <b>%s</b>" % img_width_height
+                    
                     except UnknownImageFormat:
-                        dimensions = "Unable to read image format!"
+                        dimensions = "<b>Unable to read image format!</b>"
                     except:
                         dimensions = relative_path
                 else:
-                    dimensions = "Unable to locate .txt file!"
+                    dimensions = "<b>Unable to locate .txt file!</b>"
+                    # utils.log_message('%s: Unable to locate .txt file!' % img_path)
 
                 picture_filename = os.path.basename(str(img_path))
                 if sublime_version >= 4000:
                     picture_filenames_compl.append(sublime.CompletionItem(
-                                                    trigger = picture_filename[:-len(image_file_type[1:])],  # remove '.png'
+                                                    trigger = picture_filename[:-len(img_file_type)],  # remove file extension '.png'
                                                     details = dimensions,
-                                                    annotation = "%s image" % image_file_type[2:],
+                                                    annotation = "%s image" % img_file_type[1:],
                                                     completion_format = sublime.COMPLETION_FORMAT_TEXT,
                                                     kind=(4, 'p', 'Picture')))
                 else:
-                    img_file_name = picture_filename[:-4]
-                    picture_filenames_compl.append((img_file_name + "\timage", img_file_name))
+                    img_file_name = picture_filename[:-len(img_file_type)]
+                    picture_filenames_compl.append((img_file_name + "\t" + img_file_type[1:] + " image", img_file_name))
+                    picture_filenames_compl.sort()
 
-            import_list = Path(folders).rglob("*.ksp")
+            import_list = []
+            for root, dirs, files in os.walk(folders):
+                for file in files:
+                    if ".ksp" in file:
+                        import_list.append(os.path.join(root, file))
+
             for path in import_list:
                 if str(path) == script_path:
                     continue
@@ -502,8 +526,8 @@ class KSPCompletions(sublime_plugin.EventListener):
                                                     completion_format = sublime.COMPLETION_FORMAT_TEXT,
                                                     kind=sublime.KIND_SNIPPET))
                 else:
-                    import_filenames_compl.append((relative_path[3:] + "\tscript file", relative_path[3:])) 
-
+                    import_filenames_compl.append((relative_path[3:] + "\tscript file", relative_path[3:]))
+                    import_filenames_compl.sort()
 
     def on_load_async(self, view):
         self.extract_workspace_completions(view)
@@ -551,11 +575,9 @@ class KSPCompletions(sublime_plugin.EventListener):
             line = view.substr(sublime.Region(line_start_pos, pt))    # the character before the trigger
             compl.clear
             if 'import' in line:
-                compl = import_filenames_compl
-            elif 'picture' in line.lower():
-                compl = picture_filenames_compl
+                compl = import_filenames_compl    
             else:
-                compl.clear
+                compl = picture_filenames_compl
         else:
             return []
 
