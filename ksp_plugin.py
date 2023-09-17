@@ -5,10 +5,7 @@ import codecs
 import traceback
 import os.path
 import os
-try:
-    from pathlib import Path
-except ImportError:
-    pass
+
 from datetime import datetime
 import sys
 import re
