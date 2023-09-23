@@ -175,23 +175,39 @@ class CompileKspThread(threading.Thread):
         sublime.status_message('')
 
     def read_file_function(self, filepath):
-        if filepath.startswith('http://'):
+        if filepath.startswith('http://') or filepath.startswith('https://'):
             from urllib.request import urlopen
 
             s = urlopen(filepath, timeout=5).read().decode('utf-8')
             return re.sub('\r+\n*', '\n', s)
 
         if self.base_path:
-            filepath = os.path.join(self.base_path, filepath)
+            path = os.path.join(self.base_path, filepath)
 
-        filepath = os.path.abspath(filepath)
-        view = CompileKspThread.find_view_by_filename(filepath, self.base_path)
+        path = os.path.abspath(path)
 
-        if view is None:
-            s = codecs.open(filepath, 'r', 'utf-8').read()
-            return re.sub('\r+\n*', '\n', s)
-        else:
-            return view.substr(sublime.Region(0, view.size()))
+        paths = []
+        out  = ''
+
+        if os.path.isdir(path):
+            for f in os.listdir(path):
+                split = os.path.splitext(f)
+
+                if split[1] == '.ksp':
+                    paths.append(os.path.join(path, f))
+        elif os.path.isfile(path):
+            paths.append(os.path.abspath(path))
+
+        for p in paths:
+            view = CompileKspThread.find_view_by_filename(p, self.base_path)
+
+            if view is None:
+                s = codecs.open(p, 'r', 'utf-8').read()
+                out += '\n' + re.sub('\r+\n*', '\n', s)
+            else:
+                out += '\n' + view.substr(sublime.Region(0, view.size()))
+
+        return out
 
     def run(self):
         global last_compiler
@@ -524,7 +540,24 @@ class OpenPathFromImportOrPragmaCommand(sublime_plugin.TextCommand):
                 if not os.path.exists(path):
                     return
                 else:
-                    sublime.active_window().open_file(path)
+                    if os.path.isfile(path):
+                        sublime.active_window().open_file(path)
+                    elif os.path.isdir(path):
+                        paths = []
+
+                        for f in os.listdir(path):
+                            split = os.path.splitext(f)
+
+                            if split[1] == '.ksp':
+                                paths.append(os.path.join(path, f))
+
+                        if paths:
+                            sublime.run_command('new_window')
+
+                            for f in paths:
+                                sublime.active_window().open_file(os.path.join(path, f))
+                        else:
+                            sublime.active_window().run_command('open_dir', {'dir': path})
 
 
 class ReplaceTextWithCommand(sublime_plugin.TextCommand):
