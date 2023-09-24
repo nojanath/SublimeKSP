@@ -419,7 +419,9 @@ def parse_lines_and_handle_imports(code, filename=None, namespaces=None, read_fi
             try:
                 code = read_file_function(filename)
             except IOError:
-                raise ParseException(line, "File does not exist or could not be read! '%s' \nTry saving the files before compiling in order to make relative paths work." % filename)
+                raise ParseException(line, \
+                      "File does not exist or could not be read! '%s' "
+                      "\nTry saving the files before compiling in order to make relative paths work." % filename)
 
             # parse code and add an extra namespace if applicable
             namespaces = line.namespaces
@@ -2273,7 +2275,25 @@ if __name__ == "__main__":
             else:
                 filepath = os.path.join(basedir, filepath)
 
-        return codecs.open(filepath, 'r', 'latin-1').read()
+        path = os.path.abspath(filepath)
+
+        paths = []
+        out  = ''
+
+        if os.path.isdir(path):
+            for f in os.listdir(path):
+                split = os.path.splitext(f)
+
+                if split[1] == '.ksp':
+                    paths.append(os.path.join(path, f))
+        elif os.path.isfile(path):
+            paths.append(os.path.abspath(path))
+
+        for p in paths:
+            s = codecs.open(p, 'r', 'utf-8').read()
+            out += '\n' + re.sub('\r+\n*', '\n', s)
+
+        return out
 
     # make sure that extra syntax checks are enabled if --optimize argument is used
     if args.optimize == True and args.extra_syntax_checks == False:
