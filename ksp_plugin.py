@@ -1,33 +1,34 @@
 import sublime
 import sublime_plugin
 
-import codecs
 import traceback
-import os.path
-from   os import listdir
-from datetime import datetime
-import sys
+import io
+import os
 import re
+import sys
+
 import threading
+import urllib, tarfile, json, shutil
 import webbrowser
 
 import xml.etree.ElementTree as ET
 
-sys.path.append(os.path.dirname(__file__))
-sys.path.append(os.path.join(os.path.dirname(__file__), 'compiler'))
-
-import ksp_compiler
-import ksp_ast
-import preprocessor_plugins
-import utils
-
-import urllib, tarfile, json, shutil
+from datetime import datetime
 from subprocess import call
 
 try:
     import winsound
 except Exception:
     pass
+
+sys.path.append(os.path.dirname(__file__))
+sys.path.append(os.path.join(os.path.dirname(__file__), 'compiler'))
+
+import ksp_ast
+import ksp_compiler
+
+import preprocessor_plugins
+import utils
 
 last_compiler = None
 sublime_version = int(sublime.version())
@@ -111,15 +112,13 @@ class GetSound:
     def play(self, **kwargs):
         sound_path = os.path.join(self.dir, '{}.wav'.format(kwargs['command']))
 
-        if sublime.platform() == "osx":
-            if os.path.isfile(sound_path):
-                call(["afplay", "-v", str(1), sound_path])
-
         if sublime.platform() == "windows":
             if os.path.isfile(sound_path):
                 winsound.PlaySound(sound_path, winsound.SND_FILENAME | winsound.SND_ASYNC | winsound.SND_NODEFAULT)
-
-        if sublime.platform() == "linux":
+        elif sublime.platform() == "osx":
+            if os.path.isfile(sound_path):
+                call(["afplay", "-v", str(1), sound_path])
+        else:
             if os.path.isfile(sound_path):
                 call(["aplay", sound_path])
 
@@ -199,13 +198,8 @@ class CompileKspThread(threading.Thread):
             paths.append(os.path.abspath(path))
 
         for p in paths:
-            view = CompileKspThread.find_view_by_filename(p, self.base_path)
-
-            if view is None:
-                s = codecs.open(p, 'r', 'utf-8').read()
-                out += '\n' + re.sub('\r+\n*', '\n', s)
-            else:
-                out += '\n' + view.substr(sublime.Region(0, view.size()))
+            s = io.open(p, 'r', encoding='utf-8').read()
+            out += '\n' + re.sub('\r+\n*', '\n', s)
 
         return out
 
@@ -283,7 +277,7 @@ class CompileKspThread(threading.Thread):
                             if not os.path.isabs(f):
                                 f = os.path.join(self.base_path, f)
 
-                            codecs.open(f, 'w', 'latin-1').write(code)
+                            io.open(f, 'w', encoding='latin-1').write(code)
                             paths.append(f)
 
                         utils.log_message('Successfully compiled in %s! Compiled code was saved to:' % delta)
@@ -763,7 +757,7 @@ class KspFixLineEndings(sublime_plugin.EventListener):
 
     def on_load(self, view):
         if self.is_probably_ksp_file(view):
-            s = codecs.open(view.file_name(), 'r', 'latin-1').read()
+            s = io.open(view.file_name(), 'r', encoding='latin-1').read()
             mixed_line_endings = re.search(r'\r(?!\n)', s) and '\r\n' in s
 
             if mixed_line_endings:
