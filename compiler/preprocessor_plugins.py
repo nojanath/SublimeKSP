@@ -1418,21 +1418,28 @@ def handleDefineConstants(lines, define_cache = None):
 	for l in lines:
 		command = l.command.strip()
 
-		if command.startswith("define"):
-			m = re.search(defineRe, command)
+		if not command.startswith("define"):
+			newLines.append(l)
+			continue
 
-			if m:
-				defineObj = DefineConstant(m.group("whole"), m.group("val").strip(), m.group("args"), l)
+		m = re.search(defineRe, command)
 
-				if m.group("name") in defineNames:
-					raise ParseException(l, "Define constant was already declared!")
-				else:
-					defineConstants.append(defineObj)
-					defineNames.add(m.group("name"))
+		if not m:
+			newLines.append(l)
+			continue
 
+		# Create define and evaluate if legitimate
+		defineObj = DefineConstant(m.group("whole"), m.group("val").strip(), m.group("args"), l)
+
+		existing = list(filter(lambda d: d.name == m.group("name"), defineConstants))
+
+		if len(existing) > 0:
+			if existing[0].value == m.group("val").strip():
 				continue
+			else:
+				raise ParseException(l, "Define constant was already declared!")
 
-		newLines.append(l)
+		defineConstants.append(defineObj)
 
 	if defineConstants:
 		# Replace all occurences where other defines are used in define values - do it a few times to catch some deeper nested defines.
