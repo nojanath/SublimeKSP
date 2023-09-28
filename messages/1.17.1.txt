@@ -1,0 +1,33 @@
+Version 1.17.1
+---------------------------------------------------
+
+This is a minor update with the following changes:
+
+- Improved detection of duplicate defines - now both the name and the value of a define have to match in order to throw a compiler error
+
+- Removed $ENGINE_PAR_RAUM_MIX because it is not a valid engine parameter
+
+- Added support for importing whole folders in one go, instead of listing them file by file
+
+- Pressing Alt+O with cursor focused on the line which imports a folder will show all .ksp files within that folder in a new Sublime Text window
+
+
+Have fun!
+
+
+---------------------------------------------------
+
+If you would like to roll back a version of SublimeKSP for time critical work prevented by a new bug:
+
+First, remove SublimeKSP from Sublime Package Control:
+1. Press `Ctrl + Shift + P` on Windows and Linux, or `Cmd + Shift + P` on Mac.
+2. Type "Remove Package" and select it, then select the "KSP (Kontakt Script Processor)" entry.
+
+Next, download the version you'd like [here](https://github.com/nojanath/SublimeKSP/releases).
+
+After the download, you can install it as a user package in Sublime following these instructions:
+
+1. Open the Preferences menu in Sublime Text and click Browse Packages. A folder will open up.
+2. Extract the ZIP archive you have downloaded and place it into this folder.
+3. IMPORTANT: Rename the unpacked folder to `KSP (Kontakt Script Processor)` (this is important so that your settings from Package Control version are retained)!
+4. Restart Sublime Text. Alternatively, make sure you have [Automatic​Package​Reloader](https://packagecontrol.io/packages/AutomaticPackageReloader) package installed
