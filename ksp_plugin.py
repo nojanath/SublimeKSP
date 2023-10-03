@@ -104,7 +104,7 @@ class GetSound:
     dir = None
 
     def __init__(self):
-        self.dir = os.path.join(os.path.dirname(__file__), 'sounds')
+        self.dir = os.path.join(sublime.packages_path(), 'KSP (Kontakt Script Processor)', 'sounds')
 
     def play(self, **kwargs):
         sound_path = os.path.join(self.dir, '{}.wav'.format(kwargs['command']))
@@ -331,6 +331,22 @@ builtin_snippets = []
 magic_control_and_event_pars = []
 
 def plugin_loaded():
+    # copy our built in sound to the unmanaged packages folder, so we can io.open it at runtime
+    try:
+        res = sublime.load_binary_resource('Packages/KSP (Kontakt Script Processor)/sounds/finished.wav')
+        path = os.path.join(sublime.packages_path(), 'KSP (Kontakt Script Processor)', 'sounds')
+        filepath = os.path.join(path, 'finished.wav')
+
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+            # but only copy it if it doesn't exist already, so users can override it if need be
+            if not os.path.exists(filepath):
+                with open(filepath, 'wb') as sound:
+                    sound.write(res)
+    except:
+        pass
+
     if sublime_version >= 4000:
         builtin_compl_vars.extend(sublime.CompletionItem(trigger = v[1:],
                                                          annotation = 'variable',
