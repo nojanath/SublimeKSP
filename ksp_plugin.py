@@ -170,37 +170,6 @@ class CompileKspThread(threading.Thread):
         sublime.error_message(error_msg)
         sublime.status_message('')
 
-    def read_file_function(self, filepath):
-        if filepath.startswith('http://') or filepath.startswith('https://'):
-            from urllib.request import urlopen
-
-            s = urlopen(filepath, timeout = 5).read().decode('utf-8')
-
-            return re.sub('\r+\n*', '\n', s)
-
-        if self.base_path:
-            filepath = os.path.join(self.base_path, filepath)
-
-        path = os.path.abspath(filepath)
-
-        paths = []
-        out  = ''
-
-        if os.path.isdir(path):
-            for f in os.listdir(path):
-                split = os.path.splitext(f)
-
-                if split[1] == '.ksp':
-                    paths.append(os.path.join(path, f))
-        elif os.path.isfile(path):
-            paths.append(path)
-
-        for p in paths:
-            s = io.open(p, 'r', encoding = 'utf-8').read()
-            out += '\n' + re.sub('\r+\n*', '\n', s)
-
-        return out
-
     def run(self):
         global last_compiler
 
@@ -250,12 +219,12 @@ class CompileKspThread(threading.Thread):
 
                     utils.log_message('Compiling \'%s\'...' % filepath)
 
-                self.compiler = ksp_compiler.KSPCompiler(code, self.base_path,
+                self.compiler = ksp_compiler.KSPCompiler(code,
+                                                         self.base_path,
                                                          compact                   = compact,
                                                          compact_variables         = compact_variables,
                                                          extra_syntax_checks       = check,
                                                          combine_callbacks         = combine_callbacks,
-                                                         read_file_func            = self.read_file_function,
                                                          optimize                  = optimize and check,
                                                          sanitize_exit_command     = sanitize_exit_command,
                                                          add_compiled_date_comment = add_compiled_date_comment)
@@ -287,7 +256,7 @@ class CompileKspThread(threading.Thread):
                         sublime.set_clipboard(code)
 
             except ksp_ast.ParseException as e:
-                error_msg = unicode(e)
+                error_msg = str(e)
                 line_object = self.compiler.lines[e.lineno]
 
                 if line_object:
