@@ -6,11 +6,9 @@ import io
 import os
 import re
 import sys
-
 import threading
 import urllib, tarfile, json, shutil
 import webbrowser
-
 import xml.etree.ElementTree as ET
 
 from datetime import datetime
@@ -26,7 +24,6 @@ sys.path.append(os.path.join(os.path.dirname(__file__), 'compiler'))
 
 import ksp_ast
 import ksp_compiler
-
 import preprocessor_plugins
 import utils
 
@@ -141,7 +138,7 @@ class CompileKspThread(threading.Thread):
             self.compiler.abort_compilation()
 
     @classmethod
-    def find_view_by_filename(cls, filename, base_path=None):
+    def find_view_by_filename(cls, filename, base_path = None):
         if filename is None:
             return sublime.active_window().active_view()
 
@@ -177,13 +174,14 @@ class CompileKspThread(threading.Thread):
         if filepath.startswith('http://') or filepath.startswith('https://'):
             from urllib.request import urlopen
 
-            s = urlopen(filepath, timeout=5).read().decode('utf-8')
+            s = urlopen(filepath, timeout = 5).read().decode('utf-8')
+
             return re.sub('\r+\n*', '\n', s)
 
         if self.base_path:
-            path = os.path.join(self.base_path, filepath)
+            filepath = os.path.join(self.base_path, filepath)
 
-        path = os.path.abspath(path)
+        path = os.path.abspath(filepath)
 
         paths = []
         out  = ''
@@ -195,10 +193,10 @@ class CompileKspThread(threading.Thread):
                 if split[1] == '.ksp':
                     paths.append(os.path.join(path, f))
         elif os.path.isfile(path):
-            paths.append(os.path.abspath(path))
+            paths.append(path)
 
         for p in paths:
-            s = io.open(p, 'r', encoding='utf-8').read()
+            s = io.open(p, 'r', encoding = 'utf-8').read()
             out += '\n' + re.sub('\r+\n*', '\n', s)
 
         return out
@@ -262,7 +260,7 @@ class CompileKspThread(threading.Thread):
                                                          sanitize_exit_command     = sanitize_exit_command,
                                                          add_compiled_date_comment = add_compiled_date_comment)
 
-                if self.compiler.compile(callback=utils.compile_on_progress):
+                if self.compiler.compile(callback = utils.compile_on_progress):
                     last_compiler = self.compiler
                     code = self.compiler.compiled_code
                     code = code.replace('\r', '')
@@ -277,7 +275,7 @@ class CompileKspThread(threading.Thread):
                             if not os.path.isabs(f):
                                 f = os.path.join(self.base_path, f)
 
-                            io.open(f, 'w', encoding='latin-1').write(code)
+                            io.open(f, 'w', encoding = 'latin-1').write(code)
                             paths.append(f)
 
                         utils.log_message('Successfully compiled in %s! Compiled code was saved to:' % delta)
@@ -312,7 +310,7 @@ class CompileKspThread(threading.Thread):
                 self.compile_handle_error(error_msg, error_lineno, error_filename)
             else:
                 if should_play_sound and self.compiler.abort_requested == False:
-                    sound_utility.play(command="finished")
+                    sound_utility.play(command = "finished")
 
     def description(self, *args):
         return 'Compiled KSP'
@@ -555,7 +553,7 @@ class OpenPathFromImportOrPragmaCommand(sublime_plugin.TextCommand):
 
 
 class ReplaceTextWithCommand(sublime_plugin.TextCommand):
-    def run(self, edit, new_text=''):
+    def run(self, edit, new_text = ''):
         self.view.replace(edit, sublime.Region(0, self.view.size()), new_text)
 
 
@@ -757,7 +755,7 @@ class KspFixLineEndings(sublime_plugin.EventListener):
 
     def on_load(self, view):
         if self.is_probably_ksp_file(view):
-            s = io.open(view.file_name(), 'r', encoding='latin-1').read()
+            s = io.open(view.file_name(), 'r', encoding = 'latin-1').read()
             mixed_line_endings = re.search(r'\r(?!\n)', s) and '\r\n' in s
 
             if mixed_line_endings:

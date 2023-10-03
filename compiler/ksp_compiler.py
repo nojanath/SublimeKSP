@@ -162,7 +162,7 @@ def append_overloaded_name(name, params):
     name = name + "__" + str(len(params))
     return name
 
-def prefix_with_ns(name, namespaces, function_parameter_names=None, force_prefixing=False):
+def prefix_with_ns(name, namespaces, function_parameter_names = None, force_prefixing = False):
     '''Returns prefixed name'''
 
     if not namespaces:
@@ -188,9 +188,9 @@ def prefix_with_ns(name, namespaces, function_parameter_names=None, force_prefix
     # add namespace to name
     return prefix + '.'.join(namespaces + [unprefixed_name])
 
-def prefix_ID_with_ns(id, namespaces, function_parameter_names=None, force_prefixing=False):
+def prefix_ID_with_ns(id, namespaces, function_parameter_names = None, force_prefixing = False):
     if namespaces:
-        return ksp_ast.ID(id.lexinfo, identifier=prefix_with_ns(str(id), namespaces, function_parameter_names, force_prefixing))
+        return ksp_ast.ID(id.lexinfo, identifier = prefix_with_ns(str(id), namespaces, function_parameter_names, force_prefixing))
     else:
         return id
 
@@ -220,7 +220,7 @@ class ParseException(ExceptionWithMessage):
 class Line:
     '''Line object used for handling lines before AST lex/yacc parsing'''
 
-    def __init__(self, s, locations=None, namespaces=None, placeholders=placeholders):
+    def __init__(self, s, locations = None, namespaces = None, placeholders = placeholders):
         # locations should be a list of (filename, lineno) tuples
         self.command = s # current line returned as string
         self.locations = locations or [(None, -1)] # filename and line number
@@ -239,7 +239,7 @@ class Line:
         return '\n'.join(
             ('%s%s:%d \r\n' % (' ' * (i * 4), filename or '<main script>', lineno)) for (i, (filename, lineno)) in enumerate(reversed(self.locations)))
 
-    def copy(self, new_command=None, add_location=None):
+    def copy(self, new_command = None, add_location = None):
         ''' Returns a copy of the line.
             If the new_command parameter is specified, that will be the command of the new line
             and it will get the same indentation as the old line. '''
@@ -268,9 +268,9 @@ class Line:
                 return n + suffix
         s = varname_re.sub(repl_func, self.command)
         s = varname_dot_re.sub(repl_func, s)
-        return self.copy(new_command=s)
+        return self.copy(new_command = s)
 
-    def replace_placeholders(self, placeholders=placeholders):
+    def replace_placeholders(self, placeholders = placeholders):
         replace_func = lambda matchobj: placeholders[int(matchobj.group(1))]
         self.command = re.sub(r'\{(\d+?)\}', replace_func, self.command)
 
@@ -314,7 +314,7 @@ class Macro:
 
     def substitute_names(self, replace_string_placeholders, name_subst_dict):
         '''Returns a copy of the block with the specified name substitutions made'''
-        new_macro = self.copy(lines=[line.substitute_names(name_subst_dict) for line in self.lines])
+        new_macro = self.copy(lines = [line.substitute_names(name_subst_dict) for line in self.lines])
 
         if replace_string_placeholders:
             for line in new_macro.lines:
@@ -333,7 +333,7 @@ def merge_lines(lines):
        This will remove any context information such as locations or namespaces'''
     return '\n'.join([line.command for line in lines])
 
-def parse_lines(s, filename=None, namespaces=None):
+def parse_lines(s, filename = None, namespaces = None):
     '''converts a source code string to a list of Line objects'''
 
     if namespaces is None:
@@ -391,7 +391,7 @@ def convert_strings_to_placeholders(lines):
     else:
         lines.command = string_re.sub(replace_func, lines.command)
 
-def parse_lines_and_handle_imports(code, filename=None, namespaces=None, read_file_function=None, preprocessor_func=None):
+def parse_lines_and_handle_imports(code, filename = None, namespaces = None, read_file_func = None, preprocessor_func = None):
     '''parses lines into Line objects and imports all files. preprocessor_func does not mean preprocessor_plugins'''
 
     if preprocessor_func:
@@ -417,7 +417,7 @@ def parse_lines_and_handle_imports(code, filename=None, namespaces=None, read_fi
             namespace = m.group('asname')
 
             try:
-                code = read_file_function(filename)
+                code = read_file_func(filename)
             except IOError:
                 raise ParseException(line, \
                       "File does not exist or could not be read! '%s' "
@@ -431,7 +431,7 @@ def parse_lines_and_handle_imports(code, filename=None, namespaces=None, read_fi
             if preprocessor_func:
                 code = preprocessor_func(code, namespaces)
 
-            new_lines.extend(parse_lines_and_handle_imports(code, filename, namespaces, read_file_function))
+            new_lines.extend(parse_lines_and_handle_imports(code, filename, namespaces, read_file_func))
         # non-import line so just add it to result line list:
         else:
             new_lines.append(line)
@@ -546,7 +546,7 @@ def extract_callback_lines(lines):
     return (normal_lines, callback_lines)
 
 
-def expand_macros(lines, macros, level=0, replace_raw=True):
+def expand_macros(lines, macros, level = 0, replace_raw = True):
     '''Inline macro invocations by the body of the macro definition (with parameters properly replaced)
         returns tuple (normal_lines, callback_lines) where the latter are callbacks'''
     macro_call_re = re.compile(r'(?ms)^\s*([\w_.]+)\s*(\(.*\))?%s$' % white_space_re)
@@ -596,7 +596,7 @@ def expand_macros(lines, macros, level=0, replace_raw=True):
                 # build a substitution mapping parameters to arguments, and substitute
                 name_subst_dict = dict(list(zip(macro.parameters, args)))
 
-                macro = macro.copy(add_location=line.locations[0])
+                macro = macro.copy(add_location = line.locations[0])
                 macro = macro.substitute_names(replace_raw, name_subst_dict)
 
                 # add macro body
@@ -619,8 +619,8 @@ def expand_macros(lines, macros, level=0, replace_raw=True):
 
 class ASTModifierBase(ksp_ast_processing.ASTModifier):
     '''Class for accessing AST nodes for modification'''
-    def __init__(self, modify_expressions=False):
-        ksp_ast_processing.ASTModifier.__init__(self, modify_expressions=modify_expressions)
+    def __init__(self, modify_expressions = False):
+        ksp_ast_processing.ASTModifier.__init__(self, modify_expressions = modify_expressions)
 
     def modifyFunctionCall(self, node, *args, **kwargs):
         '''there are some functions/preprocessor directives for which the first parameter should always be left as is'''
@@ -645,8 +645,8 @@ class ASTModifierCombineCallbacks(ASTModifierBase):
     '''Combines callbacks by generating a dictionary of used CBs and extending existing ones with lines in the duplicate CB'''
     def __init__(self, ast, combine_callbacks):
         self.combine_callbacks = combine_callbacks
-        ASTModifierBase.__init__(self, modify_expressions=True)
-        self.traverse(ast, parent_function=None, function_params=[], parent_families=[])
+        ASTModifierBase.__init__(self, modify_expressions = True)
+        self.traverse(ast, parent_function = None, function_params = [], parent_families = [])
 
     def modifyModule(self, node, *args, **kwargs):
         callbacks = {}
@@ -682,9 +682,9 @@ class ASTModifierCombineCallbacks(ASTModifierBase):
 class ASTModifierFixReferencesAndFamilies(ASTModifierBase):
     '''Travel through AST and modify nodes to native KSP'''
     def __init__(self, ast, line_map):
-        ASTModifierBase.__init__(self, modify_expressions=True)
+        ASTModifierBase.__init__(self, modify_expressions = True)
         self.line_map = line_map
-        self.traverse(ast, parent_function=None, function_params=[], parent_families=[])
+        self.traverse(ast, parent_function = None, function_params = [], parent_families = [])
 
     def modifyModule(self, node, *args, **kwargs):
         '''find and extract 'on init' block'''
@@ -697,7 +697,7 @@ class ASTModifierFixReferencesAndFamilies(ASTModifierBase):
 
         # if there was none, create one
         if on_init_block is None:
-            on_init_block = ksp_ast.Callback(node.lexinfo, 'init', lines=[])
+            on_init_block = ksp_ast.Callback(node.lexinfo, 'init', lines = [])
 
         node.on_init = on_init_block
 
@@ -734,7 +734,7 @@ class ASTModifierFixReferencesAndFamilies(ASTModifierBase):
             incdec_statement = ksp_ast.AssignStmt(node.lexinfo, node.loopvar.copy(), ksp_ast.BinOp(node.lexinfo, node.loopvar.copy(), incdec_op, node.step))
         # otherwise we use inc(x) or dec(x)
         else:
-            incdec_statement = ksp_ast.FunctionCall(node.lexinfo, ksp_ast.ID(node.lexinfo, incdec), [node.loopvar.copy()], is_procedure=True)
+            incdec_statement = ksp_ast.FunctionCall(node.lexinfo, ksp_ast.ID(node.lexinfo, incdec), [node.loopvar.copy()], is_procedure = True)
 
         statements = [ksp_ast.AssignStmt(node.lexinfo, node.loopvar.copy(), node.start),
                       ksp_ast.WhileStmt(node.lexinfo, loop_condition,
@@ -785,23 +785,23 @@ class ASTModifierFixReferencesAndFamilies(ASTModifierBase):
 
         # prefix the name
         if kwargs['parent_families']:
-            node.name = prefix_ID_with_ns(node.name, kwargs['parent_families'], kwargs['function_params'], force_prefixing=True)
+            node.name = prefix_ID_with_ns(node.name, kwargs['parent_families'], kwargs['function_params'], force_prefixing = True)
         else:
             node.name = self.modifyID(node.name, kwargs['parent_function'], kwargs['parent_families'])
 
         # change the get/set function names before proceeding to them
         if node.get_func_def:
             node.get_func_def.name.identifier = node.name.identifier + '.get'   # if property is called prop, then this function is named prop.get
-            node.get_func_def = self.modify(node.get_func_def, parent_function=None, function_params=[], parent_families=[], add_name_prefix=False)
+            node.get_func_def = self.modify(node.get_func_def, parent_function = None, function_params = [], parent_families = [], add_name_prefix = False)
         if node.set_func_def:
             node.set_func_def.name.identifier = node.name.identifier + '.set'   # if property is called prop, then this function is named prop.set
-            node.set_func_def = self.modify(node.set_func_def, parent_function=None, function_params=[], parent_families=[], add_name_prefix=False)
+            node.set_func_def = self.modify(node.set_func_def, parent_function = None, function_params = [], parent_families = [], add_name_prefix = False)
 
         # add property to list
         properties.add(node.name.identifier)
         return []
 
-    def modifyFunctionDef(self, node, parent_function=None, function_params=None, parent_families=None, add_name_prefix=True):
+    def modifyFunctionDef(self, node, parent_function = None, function_params = None, parent_families = None, add_name_prefix = True):
         ''' Pass along some context information (e.g. what function definition we're inside and which parameters it has)
             Also initialize some member variables on the function object that will be modified inside its body (e.g. local variable declarations) '''
 
@@ -823,7 +823,7 @@ class ASTModifierFixReferencesAndFamilies(ASTModifierBase):
 
         # modify name first (add namespace prefix)
         if add_name_prefix:
-            node.name = self.modify(node.name, parent_function=node, function_params=params, parent_families=parent_families)
+            node.name = self.modify(node.name, parent_function = node, function_params = params, parent_families = parent_families)
 
         # add function to table of available functions
         if node.name.identifier in functions and not node.override:
@@ -836,10 +836,10 @@ class ASTModifierFixReferencesAndFamilies(ASTModifierBase):
             functions[node.name.identifier] = node
 
         # modify the body of the function
-        node.lines = flatten([self.modify(l, parent_function=node, function_params=params, parent_families=parent_families) for l in node.lines])
+        node.lines = flatten([self.modify(l, parent_function = node, function_params = params, parent_families = parent_families) for l in node.lines])
         return node
 
-    def modifyFamilyStmt(self, node, parent_function=None, function_params=None, parent_families=None):
+    def modifyFamilyStmt(self, node, parent_function = None, function_params = None, parent_families = None):
         '''First make sure the name of the family is prefixed with the right namespace, then pass this name as context to the further handling of the family body'''
 
         if parent_families is None:
@@ -847,16 +847,16 @@ class ASTModifierFixReferencesAndFamilies(ASTModifierBase):
 
         # only add namespaces to the outermost family name if multiple ones are nested
         if not parent_families:
-            node.name = self.modify(node.name, parent_function=parent_function, function_params=function_params, parent_families=parent_families)
+            node.name = self.modify(node.name, parent_function = parent_function, function_params = function_params, parent_families = parent_families)
 
         # add family name to the table of all used families
         global_family_name = '.'.join(parent_families + [node.name.identifier])
         families.add(global_family_name)
 
         # then modify statements and pass along information to nodes further down the tree of the chain of family definitions so far
-        node.statements = flatten([self.modify(n, parent_function=parent_function,
-                                               function_params=function_params,
-                                               parent_families=parent_families + [str(node.name)]) for n in node.statements])
+        node.statements = flatten([self.modify(n, parent_function = parent_function,
+                                               function_params = function_params,
+                                               parent_families = parent_families + [str(node.name)]) for n in node.statements])
         return [node.statements]
 
     def add_global_var(self, global_varname, modifiers):
@@ -954,10 +954,10 @@ class ASTModifierFixReferencesAndFamilies(ASTModifierBase):
 
         # if variable was declared inside a family, prefix it with the namespaces given by the chain of nested families it's declared inside
         if kwargs['parent_families']:
-            node.variable = prefix_ID_with_ns(node.variable, kwargs['parent_families'], kwargs['function_params'], force_prefixing=True)
+            node.variable = prefix_ID_with_ns(node.variable, kwargs['parent_families'], kwargs['function_params'], force_prefixing = True)
         # otherwise treat it as any other name
         else:
-            node.variable = self.modifyID(node.variable, kwargs['parent_function'], kwargs['parent_families'], is_name_in_declaration=True)
+            node.variable = self.modifyID(node.variable, kwargs['parent_function'], kwargs['parent_families'], is_name_in_declaration = True)
 
         # if no variable prefix used, add one automatically
         if not node.variable.prefix:
@@ -976,7 +976,7 @@ class ASTModifierFixReferencesAndFamilies(ASTModifierBase):
             self.add_global_var(vname, node.modifiers)
             return [node]
 
-    def modifyVarRef(self, node, parent_function=None, function_params=None, parent_families=None, is_name_in_declaration=False):
+    def modifyVarRef(self, node, parent_function = None, function_params = None, parent_families = None, is_name_in_declaration = False):
         '''Translate any references to local variables to their real name
            Note 1: previously this could all be handled in modifyID, but since the taskfunc system introduced VarRef objects with subscripts
                    we now need to handle it here since if you replace eg. x by %p[$sp + 1] the subscript need to be included in the resulting node.
@@ -991,7 +991,7 @@ class ASTModifierFixReferencesAndFamilies(ASTModifierBase):
             return new_node
         return super(ASTModifierFixReferencesAndFamilies, self).modifyVarRef(node, parent_function, function_params, parent_families, is_name_in_declaration)
 
-    def modifyID(self, node, parent_function=None, function_params=None, parent_families=None, is_name_in_declaration=False):
+    def modifyID(self, node, parent_function = None, function_params = None, parent_families = None, is_name_in_declaration = False):
         '''Add namespace prefix and translate references to local variables to their globally unique counterpart as determined by the translation table of the function.\n
            Look up the line object from the first macro preprocessor phase in order to extract information about the namespace'''
 
@@ -1001,7 +1001,7 @@ class ASTModifierFixReferencesAndFamilies(ASTModifierBase):
         if hasattr(node, 'namespace_prefix_done'):
             id = node
         else:
-            id = prefix_ID_with_ns(node, namespaces, function_params, force_prefixing=is_name_in_declaration)
+            id = prefix_ID_with_ns(node, namespaces, function_params, force_prefixing = is_name_in_declaration)
 
         # if this is a local variable name, then replace it with the corresponding global name
         # most of these are handled by modifyVarRef, but here we catch some other cases like for example declaration statements (where the identifier isn't a VarRef)
@@ -1017,16 +1017,16 @@ class ASTModifierFixPrefixes(ASTModifierBase):
     '''Traverse AST and add prefixs to variables'''
 
     def __init__(self, ast):
-        ASTModifierBase.__init__(self, modify_expressions=True)
+        ASTModifierBase.__init__(self, modify_expressions = True)
         self.traverse(ast)
 
-    def modifyFunctionDef(self, node, parent_function=None, parent_varref=None):
-        return ASTModifierBase.modifyFunctionDef(self, node, parent_function=node) # pass along a reference to what function we're currently inside
+    def modifyFunctionDef(self, node, parent_function = None, parent_varref = None):
+        return ASTModifierBase.modifyFunctionDef(self, node, parent_function = node) # pass along a reference to what function we're currently inside
 
-    def modifyVarRef(self, node, parent_function=None, parent_varref=None):
-        return ASTModifierBase.modifyVarRef(self, node, parent_function=parent_function, parent_varref=node) # pass along a reference to what varref we're currently inside
+    def modifyVarRef(self, node, parent_function = None, parent_varref = None):
+        return ASTModifierBase.modifyVarRef(self, node, parent_function = parent_function, parent_varref = node) # pass along a reference to what varref we're currently inside
 
-    def modifyID(self, node, parent_function=None, parent_varref=None):
+    def modifyID(self, node, parent_function = None, parent_varref = None):
         '''Add a variable prefix (one of $, %, @, !, ? and ~) to each variable based on the list of variables previously built'''
         name = node.prefix + node.identifier
         first_part = name.split('.')[0]
@@ -1064,12 +1064,12 @@ class ASTModifierFixPrefixesIncludingLocalVars(ASTModifierFixPrefixes):
     def __init__(self, ast):
         ASTModifierFixPrefixes.__init__(self, ast)
 
-    def modifyFunctionDef(self, node, parent_function=None):
+    def modifyFunctionDef(self, node, parent_function = None):
         # pass along a reference to what function we're currently inside
-        node = ASTModifierBase.modifyFunctionDef(self, node, parent_function=node)
+        node = ASTModifierBase.modifyFunctionDef(self, node, parent_function = node)
         # extracted local/global variable declarations won't be handled automatically, so modify them explicitly here
-        node.local_declaration_statements  = flatten([self.modify(n, parent_function=node) for n in node.local_declaration_statements])
-        node.global_declaration_statements = flatten([self.modify(n, parent_function=node) for n in node.global_declaration_statements])
+        node.local_declaration_statements  = flatten([self.modify(n, parent_function = node) for n in node.local_declaration_statements])
+        node.global_declaration_statements = flatten([self.modify(n, parent_function = node) for n in node.global_declaration_statements])
         # TODO: check if we need to handle this one too:
         #node.taskfunc_declaration_statements    = flatten([self.modify(n, parent_function=node) for n in node.taskfunc_declaration_statements])
         return node
@@ -1078,10 +1078,10 @@ class ASTModifierIDSubstituter(ASTModifierBase):
     '''Class for replacing whole names with new names, eg. replace all "$x" by "$y" and all "$loop_counter" by "$plsd" (in case variable names are compacted).
        If there is an "x" to "y" substitution and it sees the name x.z, then it will NOT be translated into y.z. Only whole names are changed. '''
 
-    def __init__(self, name_subst_dict, force_lower_case=False):
+    def __init__(self, name_subst_dict, force_lower_case = False):
         self.name_subst_dict = name_subst_dict
         self.force_lower_case = force_lower_case
-        ASTModifierBase.__init__(self, modify_expressions=True)
+        ASTModifierBase.__init__(self, modify_expressions = True)
 
     def modifyID(self, node, *args, **kwargs):
         # Translate identifiers according to the translation table
@@ -1104,11 +1104,11 @@ class ASTModifierVarRefSubstituter(ASTModifierBase):
        If there is an "x" to "y" substitution and it sees the name x.z, then this will be translated into y.z.
        (unlike if ASTModifierIDSubstituter had been used) '''
 
-    def __init__(self, name_subst_dict, inlining_function_node=None, subscript_addition=False):
+    def __init__(self, name_subst_dict, inlining_function_node = None, subscript_addition = False):
         self.name_subst_dict = name_subst_dict
         self.inlining_function_node = inlining_function_node
         self.subscript_addition = subscript_addition
-        ASTModifierBase.__init__(self, modify_expressions=True)
+        ASTModifierBase.__init__(self, modify_expressions = True)
 
     def modify(self, node, *args, **kwargs):
         '''if a reference to a parent function that is being inlined should be added, then add it to the result (each statement of the result in case it's a list)'''
@@ -1144,7 +1144,7 @@ class ASTModifierVarRefSubstituter(ASTModifierBase):
                 # build a new VarRef where the first part of the identifier has been replaced by the new_expr name.
                 return ksp_ast.VarRef(new_expr.lexinfo,
                                       ksp_ast.ID(new_expr.identifier.lexinfo, new_expr.identifier.prefix + new_expr.identifier.identifier + node.identifier.identifier_last_part),
-                                      subscripts=subscripts)
+                                      subscripts = subscripts)
             else:
                 return new_expr
         else:
@@ -1188,7 +1188,7 @@ class ASTModifierVarRefSubstituter(ASTModifierBase):
 class ASTModifierNameFixer(ASTModifierBase):
     '''Replace '.' in IDs with '__' '''
     def __init__(self, ast):
-        ASTModifierBase.__init__(self, modify_expressions=True)
+        ASTModifierBase.__init__(self, modify_expressions = True)
         self.traverse(ast)
 
     def replace_dots_in_name(self, name):
@@ -1206,8 +1206,8 @@ class ASTModifierNameFixer(ASTModifierBase):
 class ASTModifierFunctionExpander(ASTModifierBase):
     '''Handle function usage'''
     def __init__(self, ast):
-        ASTModifierBase.__init__(self, modify_expressions=True)
-        self.traverse(ast, parent_toplevel=None, function_stack=[])
+        ASTModifierBase.__init__(self, modify_expressions = True)
+        self.traverse(ast, parent_toplevel = None, function_stack = [])
 
     def modifyModule(self, node, *args, **kwargs):
         '''Add init callback if it is not already available and move it to the top (before all other functions and callbacks)'''
@@ -1228,7 +1228,7 @@ class ASTModifierFunctionExpander(ASTModifierBase):
 
         return ASTModifierBase.modifyModule(self, node, *args, **kwargs)
 
-    def modifyFunctionDef(self, node, parent_toplevel=None, function_stack=None):
+    def modifyFunctionDef(self, node, parent_toplevel = None, function_stack = None):
         ''' Add to context info about which function/callback we are currently inside '''
         # only functions without parameters/return vaue can be invoked using 'call'
         # those are the only ones where we need to modify the original function definition
@@ -1236,11 +1236,11 @@ class ASTModifierFunctionExpander(ASTModifierBase):
         if (node.parameters or node.return_value) and not node.is_taskfunc:
             return node
         else:
-            return ASTModifierBase.modifyFunctionDef(self, node, parent_toplevel=node, function_stack=function_stack)
+            return ASTModifierBase.modifyFunctionDef(self, node, parent_toplevel = node, function_stack = function_stack)
 
-    def modifyCallback(self, node, parent_toplevel=None, function_stack=None):
+    def modifyCallback(self, node, parent_toplevel = None, function_stack = None):
         '''Add to context info about which function/callback we are currently inside'''
-        return ASTModifierBase.modifyCallback(self, node, parent_toplevel=node, function_stack=function_stack)
+        return ASTModifierBase.modifyCallback(self, node, parent_toplevel = node, function_stack = function_stack)
 
     def convert_property_access_to_function_call(self, node):
         '''Convert a property reference like myprop to a function call like myprop.get()'''
@@ -1263,7 +1263,7 @@ class ASTModifierFunctionExpander(ASTModifierBase):
         else:
             return ASTModifierBase.modifyVarRef(self, node, *args, **kwargs)
 
-    def modifyAssignStmt(self, node, parent_toplevel=None, function_stack=None, disallow_function_in_rhs=False):
+    def modifyAssignStmt(self, node, parent_toplevel = None, function_stack = None, disallow_function_in_rhs = False):
         ''' If it's an assignment of the type "x := myfunc(...)" then pass the left hand side of the assignment ("x" in this case)
             as a parameter to the function call handler. This effectively passes the lhs as a parameter to the function and replaces
             the whole assignment by the inlined function body. This allows myfunc to be a multi-line function.
@@ -1282,10 +1282,10 @@ class ASTModifierFunctionExpander(ASTModifierBase):
                 raise ksp_ast.ParseException(node.varref, 'The property %s has no set function, therefore it is read-only!' % str(node.varref.identifier.identifier))
             set_function = functions[func_name]
             parameters = node.varref.subscripts + [node.expression]
-            function_call = ksp_ast.FunctionCall(node.lexinfo, set_function.name, parameters, is_procedure=True)
+            function_call = ksp_ast.FunctionCall(node.lexinfo, set_function.name, parameters, is_procedure = True)
             return self.modifyFunctionCall(function_call,
-                                           parent_toplevel=parent_toplevel,
-                                           function_stack=function_stack)
+                                           parent_toplevel = parent_toplevel,
+                                           function_stack = function_stack)
 
         expression = node.expression
 
@@ -1297,11 +1297,11 @@ class ASTModifierFunctionExpander(ASTModifierBase):
         if isinstance(expression, ksp_ast.FunctionCall) and expression.function_name.identifier not in ksp_builtins.functions and not disallow_function_in_rhs:
             # invocations of built-in functions are not checked at this compilation stage
             return self.modifyFunctionCall(expression,
-                                           parent_toplevel=parent_toplevel,
-                                           function_stack=function_stack,
-                                           assign_stmt_lhs=node.varref)
+                                           parent_toplevel = parent_toplevel,
+                                           function_stack = function_stack,
+                                           assign_stmt_lhs = node.varref)
         else:
-            return ASTModifierBase.modifyAssignStmt(self, node, parent_toplevel=parent_toplevel, function_stack=function_stack)
+            return ASTModifierBase.modifyAssignStmt(self, node, parent_toplevel = parent_toplevel, function_stack = function_stack)
 
     def doFunctionCallChecks(self, node, function_name, func, is_inside_init_callback, function_stack, assign_stmt_lhs):
         ''' Make various checks that a function call is correct (e.g. function exists, parameters match, not recursive, invoked from a valid context).
@@ -1340,7 +1340,7 @@ class ASTModifierFunctionExpander(ASTModifierBase):
             if func.is_taskfunc:
                 raise ksp_ast.ParseException(node, 'A taskfunc cannot be invoked using the "call" keyword!')
 
-    def updateCallGraph(self, node, parent_toplevel=None, function_stack=None):
+    def updateCallGraph(self, node, parent_toplevel = None, function_stack = None):
         '''This function takes a function call as parameter node and updates the call graph accordingly'''
 
         if isinstance(parent_toplevel, ksp_ast.FunctionDef):
@@ -1382,7 +1382,7 @@ class ASTModifierFunctionExpander(ASTModifierBase):
                 epilogue.append(ksp_ast.AssignStmt(li, param, p_ref))
         return (prologue, epilogue)
 
-    def modifyFunctionCall(self, node, parent_toplevel=None, function_stack=None, assign_stmt_lhs=None):
+    def modifyFunctionCall(self, node, parent_toplevel = None, function_stack = None, assign_stmt_lhs = None):
         ''' For invocations of user-defined functions check that the function is defined and that the number of parameters match.
             Unless "call" is used inline the function '''
 
@@ -1399,7 +1399,7 @@ class ASTModifierFunctionExpander(ASTModifierBase):
             if function_name == 'wait' and isinstance(parent_toplevel, ksp_ast.FunctionDef):
                 functions_invoking_wait.add(parent_toplevel.name.identifier)
 
-            return ASTModifierBase.modifyFunctionCall(self, node, parent_toplevel=parent_toplevel, function_stack=function_stack, assign_stmt_lhs=assign_stmt_lhs)
+            return ASTModifierBase.modifyFunctionCall(self, node, parent_toplevel = parent_toplevel, function_stack = function_stack, assign_stmt_lhs = assign_stmt_lhs)
 
         # get a reference to the function node and run error checks
         func = functions.get(function_name, None)
@@ -1413,8 +1413,8 @@ class ASTModifierFunctionExpander(ASTModifierBase):
         # if it's a call to a taskfunc function
         if func.is_taskfunc:
             (prologue, epilogue) = self.getTaskFuncCallPrologueAndEpilogue(node, func, assign_stmt_lhs)
-            prologue = flatten([self.modifyAssignStmt(stmt, parent_toplevel, function_stack, disallow_function_in_rhs=True) for stmt in prologue])
-            epilogue = flatten([self.modifyAssignStmt(stmt, parent_toplevel, function_stack, disallow_function_in_rhs=True) for stmt in epilogue])
+            prologue = flatten([self.modifyAssignStmt(stmt, parent_toplevel, function_stack, disallow_function_in_rhs = True) for stmt in prologue])
+            epilogue = flatten([self.modifyAssignStmt(stmt, parent_toplevel, function_stack, disallow_function_in_rhs = True) for stmt in epilogue])
             result = prologue + [node] + epilogue
             node.parameters = []
             node.using_call_keyword = True
@@ -1443,10 +1443,10 @@ class ASTModifierFunctionExpander(ASTModifierBase):
             name_subst_dict.update(func.locals_name_subst_dict)
 
             # apply name substitutions to a copy of the function
-            func = ASTModifierVarRefSubstituter(name_subst_dict, inlining_function_node=node).modify(func.copy())
+            func = ASTModifierVarRefSubstituter(name_subst_dict, inlining_function_node = node).modify(func.copy())
 
             # recursively modify each line in the function body and add them to the return value
-            result = result + flatten([self.modify(line, parent_toplevel=parent_toplevel, function_stack=function_stack + [function_name]) for line in func.lines])
+            result = result + flatten([self.modify(line, parent_toplevel = parent_toplevel, function_stack = function_stack + [function_name]) for line in func.lines])
 
             # if this function call is embedded within some expression
             if not (assign_stmt_lhs or node.is_procedure):
@@ -1461,13 +1461,13 @@ class ASTModifierTaskfuncFunctionHandler(ASTModifierBase):
     '''Handle Taskfunc Nodes'''
 
     def __init__(self, ast):
-        ASTModifierBase.__init__(self, modify_expressions=False)
-        self.traverse(ast, parent_taskfunc_function=None)
+        ASTModifierBase.__init__(self, modify_expressions = False)
+        self.traverse(ast, parent_taskfunc_function = None)
 
     def modifyCallback(self, node, *args, **kwargs):
         return node
 
-    def modifyFunctionDef(self, node, parent_taskfunc_function=None, assign_stmt_lhs=None):
+    def modifyFunctionDef(self, node, parent_taskfunc_function = None, assign_stmt_lhs = None):
         # Add to context info about which taskfunc function we are currently inside
         ID, BinOp, Integer, VarRef, AssignStmt, FunctionCall = ksp_ast.ID, ksp_ast.BinOp, ksp_ast.Integer, ksp_ast.VarRef, ksp_ast.AssignStmt, ksp_ast.FunctionCall
         if not node.is_taskfunc:
@@ -1488,7 +1488,7 @@ class ASTModifierTaskfuncFunctionHandler(ASTModifierBase):
             name_subst_dict[str(param)] = p_ref
 
         # apply name substitutions to a copy of the function
-        func = ASTModifierVarRefSubstituter(name_subst_dict, subscript_addition=False).modify(node)
+        func = ASTModifierVarRefSubstituter(name_subst_dict, subscript_addition = False).modify(node)
 
         # add prolog
         Pxmax = len(params)
@@ -1504,7 +1504,7 @@ class ASTModifierTaskfuncFunctionHandler(ASTModifierBase):
         node.lines.insert(2, line2)
 
         if 'TCM_DEBUG' in true_conditions:
-            line3 = FunctionCall(li, function_name=ID(li, 'check_full'), parameters=[], is_procedure=True, using_call_keyword=True)
+            line3 = FunctionCall(li, function_name = ID(li, 'check_full'), parameters = [], is_procedure = True, using_call_keyword = True)
             node.lines.insert(3, line3)
             call_graph[node.name.identifier].append('check_full')
             called_functions.add('check_full')
@@ -1580,7 +1580,7 @@ class ASTModifierFixPrefixesAndFixControlPars(ASTModifierFixPrefixes):
         else:
             return node
 
-def mark_used_functions_using_depth_first_traversal(call_graph, start_node=None, visited=None):
+def mark_used_functions_using_depth_first_traversal(call_graph, start_node = None, visited = None):
     ''' Make a depth-first traversal of call graph and set the used attribute of functions invoked directly or indirectly from some callback.
         The graph is represented by a dictionary where graph[f1] == f1 means that the function with name f1 calls the function with name f2 (the names are strings).'''
 
@@ -1599,7 +1599,7 @@ def mark_used_functions_using_depth_first_traversal(call_graph, start_node=None,
     for n in nodes_to_visit:
         mark_used_functions_using_depth_first_traversal(call_graph, n, visited)
 
-def find_node(start_node, search_node, visited=None, path=None):
+def find_node(start_node, search_node, visited = None, path = None):
     if visited is None:
         visited = []
         path = []
@@ -1611,7 +1611,7 @@ def find_node(start_node, search_node, visited=None, path=None):
         find_node(n, search_node, visited, path)
     return path
 
-def find_cycles(graph, ready=None):
+def find_cycles(graph, ready = None):
     # adapted from code at http://neopythonic.blogspot.com/2009/01/detecting-cycles-in-directed-graph.html
     if ready is None:
         ready = set()
@@ -1716,7 +1716,7 @@ def parse_nckp(path):
                         yield result
 
     with open(path, 'r') as read_file:
-        data = json.load(read_file, object_pairs_hook=OrderedDict)
+        data = json.load(read_file, object_pairs_hook = OrderedDict)
 
     ui_controls_names = list(search_ui_in_dict_recursively(data))
 
@@ -1820,8 +1820,8 @@ class KSPCompiler(object):
     def do_imports_and_convert_to_line_objects(self):
         # Import files
         self.lines = parse_lines_and_handle_imports(self.source,
-                                                    read_file_function=self.read_file_func,
-                                                    preprocessor_func=self.examine_pragmas)
+                                                    read_file_func = self.read_file_func,
+                                                    preprocessor_func = self.examine_pragmas)
 
         # Parse conditionals and remove lines if appropriate
         handle_conditional_lines(self.lines)
@@ -1846,8 +1846,8 @@ class KSPCompiler(object):
         # Add TCM code if tcm.init() is found
         if re.search(r'(?m)^\s*tcm.init', check_source):
             self.lines += parse_lines_and_handle_imports(taskfunc_code,
-                                            read_file_function=self.read_file_func,
-                                            preprocessor_func=self.examine_pragmas)
+                                            read_file_func = self.read_file_func,
+                                            preprocessor_func = self.examine_pragmas)
 
         # Run conditional stage a second time to catch the new source additions.
         handle_conditional_lines(self.lines)
@@ -1984,7 +1984,7 @@ class KSPCompiler(object):
         # make sure that used function that uses others set the used flag of those secondary ones as well
         used_functions = set()
 
-        mark_used_functions_using_depth_first_traversal(call_graph, visited=used_functions)
+        mark_used_functions_using_depth_first_traversal(call_graph, visited = used_functions)
 
         # check that there is no recursion among functions invoked using 'call'
         find_cycles(call_graph)
@@ -2036,7 +2036,7 @@ class KSPCompiler(object):
                 if self.original2short[v] in self.short2original:
                     raise Exception('This is your unlucky day! Even though the chance is only 0.32%%, two variable names were compacted to the same short name: %s and %s.' % (v, self.short2original[self.original2short[v]]))
                 self.short2original[self.original2short[v]] = v
-        ASTModifierIDSubstituter(self.original2short, force_lower_case=True).modify(self.module)
+        ASTModifierIDSubstituter(self.original2short, force_lower_case = True).modify(self.module)
 
     def init_extra_syntax_checks(self):
         comp_extras.clear_symbol_table()
@@ -2046,7 +2046,7 @@ class KSPCompiler(object):
         '''Generate compiled code from AST'''
 
         buffer = StringIO()
-        emitter = ksp_ast.Emitter(buffer, compact=self.compact)
+        emitter = ksp_ast.Emitter(buffer, compact = self.compact)
         self.module.emit(emitter)
         self.compiled_code = buffer.getvalue()
 
@@ -2064,7 +2064,7 @@ class KSPCompiler(object):
                 return s
         return varname_re.sub(sub_func, compiled_code)
 
-    def compile(self, callback=None):
+    def compile(self, callback = None):
         global variables
 
         init_globals()
@@ -2190,7 +2190,7 @@ if __name__ == "__main__":
     '''Using the compiler as command line tool'''
     import sys
     import os.path
-    import codecs
+    import io
     import argparse
     from time import strftime, localtime
     from datetime import datetime
@@ -2233,47 +2233,54 @@ if __name__ == "__main__":
     arg_parser = argparse.ArgumentParser()
 
     arg_parser.add_argument('-f', '--force',
-                            dest='force_compiler_arguments', action='store_true', default=False,
-                            help='force all specified compiler options, overriding any compile_with pragma directives from the script')
+                            dest = 'force_compiler_arguments', action = 'store_true', default = False,
+                            help = 'force all specified compiler options, overriding any compile_with pragma directives from the script')
     arg_parser.add_argument('-c', '--compact',
-                            dest='compact', action='store_true', default=False,
-                            help='remove indents and empty lines in compiled code')
+                            dest = 'compact', action = 'store_true', default = False,
+                            help = 'remove indents and empty lines in compiled code')
     arg_parser.add_argument('-v', '--compact_variables',
-                            dest='compact_variables', action='store_true', default=False,
-                            help='shorten and obfuscate variable names in compiled code')
+                            dest = 'compact_variables', action = 'store_true', default = False,
+                            help = 'shorten and obfuscate variable names in compiled code')
     arg_parser.add_argument('-d', '--combine_callbacks',
-                            dest='combine_callbacks', action='store_true', default=False,
-                            help='combines duplicate callbacks - but not functions or macros')
+                            dest = 'combine_callbacks', action = 'store_true', default = False,
+                            help = 'combines duplicate callbacks - but not functions or macros')
     arg_parser.add_argument('-e', '--extra_syntax_checks',
-                            dest='extra_syntax_checks', action='store_true', default=False,
-                            help='additional syntax checks during compilation')
+                            dest = 'extra_syntax_checks', action = 'store_true', default = False,
+                            help = 'additional syntax checks during compilation')
     arg_parser.add_argument('-o', '--optimize',
-                            dest='optimize', action='store_true', default=False,
-                            help='optimize the compiled code')
+                            dest = 'optimize', action = 'store_true', default = False,
+                            help = 'optimize the compiled code')
     arg_parser.add_argument('-t', '--add_compile_date',
-                            dest='add_compile_date', action='store_true', default=False,
-                            help='adds the date and time comment atop the compiled code')
+                            dest = 'add_compile_date', action = 'store_true', default = False,
+                            help = 'adds the date and time comment atop the compiled code')
     arg_parser.add_argument('-x', '--sanitize_exit_command',
-                            dest='sanitize_exit_command', action='store_true', default=False,
-                            help='adds a dummy no-op command before every exit function call')
-    arg_parser.add_argument('source_file', type=FileType('r', encoding='latin-1'))
-    arg_parser.add_argument('output_file', type=FileType('w', encoding='latin-1'), nargs='?')
+                            dest = 'sanitize_exit_command', action = 'store_true', default = False,
+                            help = 'adds a dummy no-op command before every exit function call')
+    arg_parser.add_argument('source_file', type = FileType('r', encoding = 'latin-1'))
+    arg_parser.add_argument('output_file', type = FileType('w', encoding = 'latin-1'), nargs = '?')
 
     args = arg_parser.parse_args()
 
     # determine the base directory of the source file
+    base_path = None
+
     if args.source_file.name != '<stdin>':
-        basedir = os.path.dirname(args.source_file.name)
-    else:
-        basedir = None
+        base_path = os.path.dirname(args.source_file.name)
 
     # function for reading imported modules
     def read_file_func(filepath):
+        if filepath.startswith('http://') or filepath.startswith('https://'):
+            from urllib.request import urlopen
+
+            s = urlopen(filepath, timeout = 5).read().decode('utf-8')
+
+            return re.sub('\r+\n*', '\n', s)
+
         if not os.path.isabs(filepath):
-            if basedir is None:
+            if base_path is None:
                 raise Exception('Relative import paths are not supported when the base path of the source file is unknown!')
             else:
-                filepath = os.path.join(basedir, filepath)
+                filepath = os.path.join(base_path, filepath)
 
         path = os.path.abspath(filepath)
 
@@ -2287,10 +2294,10 @@ if __name__ == "__main__":
                 if split[1] == '.ksp':
                     paths.append(os.path.join(path, f))
         elif os.path.isfile(path):
-            paths.append(os.path.abspath(path))
+            paths.append(path)
 
         for p in paths:
-            s = codecs.open(p, 'r', 'utf-8').read()
+            s = io.open(p, 'r', encoding = 'utf-8').read()
             out += '\n' + re.sub('\r+\n*', '\n', s)
 
         return out
@@ -2304,20 +2311,18 @@ if __name__ == "__main__":
 
     t1 = datetime.now()
 
-    compiler = KSPCompiler(
-        code,
-        basedir,
-        compact=args.compact,
-        combine_callbacks=args.combine_callbacks,
-        compact_variables=args.compact_variables,
-        read_file_func=read_file_func,
-        extra_syntax_checks=args.extra_syntax_checks,
-        optimize=args.optimize,
-        sanitize_exit_command=args.sanitize_exit_command,
-        add_compiled_date_comment=(args.add_compile_date),
-        force_compiler_arguments=(args.force_compiler_arguments))
+    compiler = KSPCompiler(code, base_path,
+                           compact                   = args.compact,
+                           combine_callbacks         = args.combine_callbacks,
+                           compact_variables         = args.compact_variables,
+                           read_file_func            = read_file_func,
+                           extra_syntax_checks       = args.extra_syntax_checks,
+                           optimize                  = args.optimize,
+                           sanitize_exit_command     = args.sanitize_exit_command,
+                           add_compiled_date_comment = (args.add_compile_date),
+                           force_compiler_arguments  = (args.force_compiler_arguments))
 
-    compiler.compile(callback=utils.compile_on_progress)
+    compiler.compile(callback = utils.compile_on_progress)
 
     # write the compiled code to output
     code = compiler.compiled_code.replace('\r', '')
@@ -2331,7 +2336,7 @@ if __name__ == "__main__":
         if not os.path.isabs(f):
             f = os.path.join(basedir, f)
 
-        codecs.open(f, 'w', encoding='latin-1').write(code)
+        io.open(f, 'w', encoding = 'latin-1').write(code)
         paths.append(f)
 
     delta = utils.calc_time_diff(datetime.now() - t1)
