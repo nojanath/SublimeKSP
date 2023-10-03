@@ -1,0 +1,7 @@
+macro foo
+  message("macro with no arguments")
+end macro
+
+macro foo(a, b)
+  message("macro with 2 arguments")
+end macro

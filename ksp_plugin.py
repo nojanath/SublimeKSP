@@ -244,7 +244,9 @@ class CompileKspThread(threading.Thread):
                             if not os.path.isabs(f):
                                 f = os.path.join(self.base_path, f)
 
-                            io.open(f, 'w', encoding = 'latin-1').write(code)
+                            with io.open(f, 'w', encoding = 'latin-1') as o:
+                                o.write(code)
+
                             paths.append(f)
 
                         utils.log_message('Successfully compiled in %s! Compiled code was saved to:' % delta)
@@ -740,17 +742,19 @@ class KspFixLineEndings(sublime_plugin.EventListener):
 
     def on_load(self, view):
         if self.is_probably_ksp_file(view):
-            s = io.open(view.file_name(), 'r', encoding = 'latin-1').read()
-            mixed_line_endings = re.search(r'\r(?!\n)', s) and '\r\n' in s
+            with io.open(view.file_name(), 'r', encoding = 'latin-1') as s:
+                s.read()
 
-            if mixed_line_endings:
-                s, changes = re.subn(r'\r+\n', '\n', s) # normalize line endings
+                mixed_line_endings = re.search(r'\r(?!\n)', s) and '\r\n' in s
 
-                if changes:
-                    # strip trailing whitespace too while we're at it
-                    s = '\n'.join(x.rstrip() for x in s.split('\n'))
+                if mixed_line_endings:
+                    s, changes = re.subn(r'\r+\n', '\n', s) # normalize line endings
 
-                    view.run_command('replace_text_with', {'new_text': s})
-                    sublime.set_timeout(lambda: utils.log_message('EOL characters automatically fixed! Please save to keep the changes.'), 100)
+                    if changes:
+                        # strip trailing whitespace too while we're at it
+                        s = '\n'.join(x.rstrip() for x in s.split('\n'))
 
-            self.set_ksp_syntax(view)
+                        view.run_command('replace_text_with', {'new_text': s})
+                        sublime.set_timeout(lambda: utils.log_message('EOL characters automatically fixed! Please save to keep the changes.'), 100)
+
+                self.set_ksp_syntax(view)

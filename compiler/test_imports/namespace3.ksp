@@ -1,0 +1,3 @@
+macro declare_var(var)
+  declare var
+end macro

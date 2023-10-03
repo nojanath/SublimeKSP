@@ -407,7 +407,7 @@ def parse_lines_and_handle_imports(basepath, source, compiler_import_cache, file
 
         path = os.path.abspath(os.path.join(basepath, filepath))
 
-        # list of paths to import (in case of importing a folder)
+        # list of paths to import (covers the case of importing a folder)
         paths = []
         out  = ''
 
@@ -426,10 +426,10 @@ def parse_lines_and_handle_imports(basepath, source, compiler_import_cache, file
 
         # actually open everything in paths list sequentially
         for p in paths:
-            s = io.open(p, 'r', encoding = 'utf-8').read()
-            src = '\n' + re.sub('\r+\n*', '\n', s)
+            with io.open(p, 'r', encoding = 'utf-8') as s:
+                src = '\n' + re.sub('\r+\n*', '\n', s.read())
 
-            out_data.append((p, src))
+                out_data.append((p, src))
 
         return out_data
 
@@ -2347,7 +2347,9 @@ if __name__ == "__main__":
         if not os.path.isabs(file):
             file = os.path.join(basepath, file)
 
-        io.open(file, 'w', encoding = 'latin-1').write(code)
+        with io.open(file, 'w', encoding = 'latin-1') as o:
+            o.write(code)
+
         paths.append(file)
 
     delta = utils.calc_time_diff(datetime.now() - t1)

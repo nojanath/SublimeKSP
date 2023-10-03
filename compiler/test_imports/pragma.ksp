@@ -1,0 +1,4 @@
+function declare_variables()
+  { #pragma preserve_names K }
+  declare global K
+end function

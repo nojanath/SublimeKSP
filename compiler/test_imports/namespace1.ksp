@@ -1,0 +1,8 @@
+function sort_ascendingly(x, y)
+  declare tmp
+  if x < y
+	  tmp := x
+	  x := y
+	  y := tmp
+  end if
+end function

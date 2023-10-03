@@ -13,48 +13,64 @@
 # GNU General Public License for more details.
 
 from ksp_compiler import ParseException, KSPCompiler
+import os.path
 import unittest
 
-# To use cmd line: python3 -m unittest
-# To test classes: python3 -m unittest -k Callbacks
-# Cmd+B to run in IDE
+# To use cmd line: python -m unittest
+# To test classes: python -m unittest -k Callbacks
+# Ctrl/Cmd+B to run in IDE
 
-def default_read_file_func(filepath):
-    return open(filepath, 'r').read()
 
-def do_compile(code, remove_preprocessor_vars=False, compact=True, compact_variables=False, combine_callbacks=True, comments_on_expansion=True, read_file_func=default_read_file_func, extra_syntax_checks=True, optimize=False, add_compiled_date_comment=False):
-    #line_map = {}
-    compiler = KSPCompiler(code, None,compact=compact,compact_variables=compact_variables, combine_callbacks=combine_callbacks, read_file_func=read_file_func, extra_syntax_checks=extra_syntax_checks, optimize=optimize, add_compiled_date_comment=add_compiled_date_comment)
+def do_compile(code,
+               remove_preprocessor_vars  = False,
+               compact                   = True,
+               compact_variables         = False,
+               combine_callbacks         = True,
+               extra_syntax_checks       = True,
+               optimize                  = False,
+               add_compiled_date_comment = False):
+
+    compiler = KSPCompiler(code,
+                           os.path.dirname(__file__),
+                           compact                   = compact,
+                           compact_variables         = compact_variables,
+                           combine_callbacks         = combine_callbacks,
+                           extra_syntax_checks       = extra_syntax_checks,
+                           optimize                  = optimize,
+                           add_compiled_date_comment = add_compiled_date_comment)
     compiler.compile()
     output_code = compiler.compiled_code
+
     if remove_preprocessor_vars and optimize == False:
         output_code = output_code.split('\n')
-        del output_code[1:6] # Remove pre-processor variables
+        del output_code[1:6]
         output_code = '\n'.join(output_code)
 
     output_code = output_code.replace('\r', '')
+
     return output_code
 
 class Callbacks(unittest.TestCase):
 
     def testUIControlCallbackWithinOnInit(self):
             code = '''
-                on init
-                    do_declare(5) { this callback should be moved out to the top-level }
-                end on
+            on init
+                do_declare(5) { this callback should be moved out to the top-level }
+            end on
 
-                macro do_declare(param)
-                    declare ui_button b
-                    on ui_control(b)
-                        message(param)
-                    end on
-                end macro'''
-            expected_output = '''on init
-    declare ui_button $b
-end on
-on ui_control($b)
-    message(5)
-end on'''
+            macro do_declare(param)
+                declare ui_button b
+                on ui_control(b)
+                    message(param)
+                end on
+            end macro'''
+            expected_output = '''
+            on init
+                declare ui_button $b
+            end on
+            on ui_control($b)
+                message(5)
+            end on'''
 
             output = do_compile(code, remove_preprocessor_vars=True)
             output = [l.strip() for l in output.split('\n') if l]
@@ -63,27 +79,27 @@ end on'''
 
     def testUIControlCallbackWithinOnInitNestedMacros(self):
             code = '''
-                on init
-                    do_declare(b) { this callback should be moved out to the top-level }
+            on init
+                do_declare(b) { this callback should be moved out to the top-level }
+            end on
+
+            macro nested(name)
+                declare ui_button name
+                on ui_control(name)
+                    message(name)
                 end on
+            end macro
 
-                macro nested(name)
-                    declare ui_button name
-                    on ui_control(name)
-                        message(name)
-                    end on
-                end macro
-
-                macro do_declare(name)
-                    nested(name)
-                end macro
-                '''
-            expected_output = '''on init
-declare ui_button $b
-end on
-on ui_control($b)
-message($b)
-end on'''
+            macro do_declare(name)
+                nested(name)
+            end macro'''
+            expected_output = '''
+            on init
+                declare ui_button $b
+            end on
+            on ui_control($b)
+                message($b)
+            end on'''
             output = do_compile(code, remove_preprocessor_vars=True)
             output = [l.strip() for l in output.split('\n') if l]
             expected_output = [l.strip() for l in expected_output.split('\n') if l]
@@ -133,20 +149,8 @@ end on'''
         self.assertEqual(output, expected_output)
 
     def testCombineCallbackWithImportedFiles(self):
-        def default_read_file_func(filepath):
-            assert(filepath == 'ui_cb_test_import.ksp')
-            return '''
-            on init
-                declare ui_switch mySwitch
-            end on
-            on ui_control (mySwitch)
-                message("imported")
-            end on
-            on midi_in
-                message("midi on imported")
-            end on'''
         code = '''
-        import "ui_cb_test_import.ksp" as f
+        import "test_imports/ui_cb_test_import.ksp" as f
         on init
             {If imported without namespace, then should throw error 'redeclaration of $mySwitch'}
             declare ui_switch mySwitch
@@ -162,17 +166,15 @@ end on'''
           declare ui_switch $f__mySwitch
           declare ui_switch $mySwitch
         end on
-
         on ui_control($f__mySwitch)
           message("imported")
           message("switch")
         end on
-
         on midi_in
           message("midi on imported")
           message("midi in main")
         end on'''
-        output = do_compile(code, combine_callbacks=True, remove_preprocessor_vars=True, read_file_func=default_read_file_func)
+        output = do_compile(code, combine_callbacks=True, remove_preprocessor_vars=True)
         output = [l.strip() for l in output.split('\n') if l]
         expected_output = [l.strip() for l in expected_output.split('\n') if l]
         self.assertEqual(output, expected_output)
@@ -1417,20 +1419,8 @@ class FunctionInvocationUsingCall(unittest.TestCase):
 class NamespacePrefixing(unittest.TestCase):
 
     def testNamespacePrefixing(self):
-        def default_read_file_func(filepath):
-            assert(filepath == 'mymodule.txt')
-            return '''
-                function sort_ascendingly(x, y)
-                  declare tmp
-                  if x < y
-                      tmp := x
-                      x := y
-                      y := tmp
-                  end if
-                end function
-                '''
         code = '''
-            import 'mymodule.txt' as mymodule
+            import 'test_imports/namespace1.ksp' as mymodule
 
             on init
                 declare x := 10
@@ -1438,84 +1428,47 @@ class NamespacePrefixing(unittest.TestCase):
                 mymodule.sort_ascendingly(x, y)
             end on'''
 
-        output = do_compile(code, optimize=True, read_file_func=default_read_file_func)
+        output = do_compile(code, optimize=True)
         self.assertTrue('_mymodule__tmp' in output)
 
     def testFunctionReturnValuesNotPrefixed(self):
-        def default_read_file_func(filepath):
-            assert(filepath == 'mymodule.txt')
-            return '''
-                function max(x, y) -> result
-                  if x > y
-                    result := x
-                  else
-                    result := y
-                  end if
-                end function
-                '''
         code = '''
-            import 'mymodule.txt' as mymodule
+            import 'test_imports/namespace2.ksp' as mymodule
 
             on init
                 declare x
                 x := mymodule.max(8, 3)
             end on'''
-        output = do_compile(code, optimize=True, read_file_func=default_read_file_func)
+        output = do_compile(code, optimize=True)
         self.assertTrue('x := 8' in output)
 
     def testMacroImportedPrefixed(self):
-        def default_read_file_func(filepath):
-            assert(filepath == 'mymodule.txt')
-            return '''
-                macro declare_var(var)
-                  declare var
-                end macro
-                '''
         code = '''
-            import 'mymodule.txt' as mymodule
+            import 'test_imports/namespace3.ksp' as mymodule
 
             on init
                 mymodule.declare_var(variable)
             end on'''
-        output = do_compile(code, read_file_func=default_read_file_func)
+        output = do_compile(code)
         self.assertTrue('declare $mymodule__variable' in output)
 
     def testOverloadedMacroImportedPrefixed(self):
-        def default_read_file_func(filepath):
-            assert(filepath == 'mymodule.txt')
-            return '''
-                macro foo
-                  message("macro with no arguments")
-                end macro
-                macro foo(a,b)
-                  message("macro with 2 arguments")
-                end macro
-                '''
         code = '''
-            import 'mymodule.txt' as mymodule
+            import 'test_imports/namespace4.ksp' as mymodule
 
             on init
                 mymodule.foo
-                mymodule.foo(0,0)
+                mymodule.foo(0, 0)
             end on'''
-        output = do_compile(code, read_file_func=default_read_file_func)
+        output = do_compile(code)
         self.assertTrue('message("macro with no arguments")' in output)
         self.assertTrue('message("macro with 2 arguments")' in output)
 
 class PragmaTests(unittest.TestCase):
     def testPragma(self):
-        def default_read_file_func(filepath):
-            assert(filepath == 'mymodule.txt')
-            return '''
-                function declare_variables
-                  {#pragma preserve_names K}
-                  declare global K
-                end function
-                '''
-
         code = '''
-            import 'mymodule.txt' as mymodule
-            {#pragma preserve_names x, Y}
+            import 'test_imports/pragma.ksp' as mymodule
+            { #pragma preserve_names X, Y }
 
             on init
                 declare X
@@ -1523,7 +1476,7 @@ class PragmaTests(unittest.TestCase):
                 declare Z
                 mymodule.declare_variables
             end on'''
-        output = do_compile(code, remove_preprocessor_vars=True, compact_variables=True, read_file_func=default_read_file_func)
+        output = do_compile(code, remove_preprocessor_vars=True, compact_variables=True)
         self.assertTrue('declare $mymodule__K' in output)
         self.assertTrue('declare $X' in output)
         self.assertTrue('declare $Y' in output)
@@ -2367,7 +2320,7 @@ end on
                 message(~x)
             end on'''
             #output = do_compile(code, optimize=True, extra_syntax_checks=True)
-            #print (output)
+            #testCompactOutputPrefixesTakenIntoAccount (output)
             self.assertRaises(ParseException, do_compile, code, optimize=True, extra_syntax_checks=True)
 
     def testFunctionWithMultipleArgTypes(self):
