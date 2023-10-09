@@ -13,6 +13,7 @@
 # GNU General Public License for more details.
 
 import re
+import io
 import os
 import copy
 import collections
@@ -391,15 +392,53 @@ def convert_strings_to_placeholders(lines):
     else:
         lines.command = string_re.sub(replace_func, lines.command)
 
-def parse_lines_and_handle_imports(code, filename = None, namespaces = None, read_file_func = None, preprocessor_func = None):
+def parse_lines_and_handle_imports(basepath, source, compiler_import_cache, filename = None, namespaces = None, preprocessor_func = None):
     '''parses lines into Line objects and imports all files. preprocessor_func does not mean preprocessor_plugins'''
 
+    def read_path(basepath, filepath):
+        # import from URL
+        if filepath.startswith('http://') or filepath.startswith('https://'):
+            from urllib.request import urlopen
+
+            s = urlopen(filepath, timeout = 5).read().decode('utf-8')
+            src = re.sub('\r+\n*', '\n', s)
+
+            return [(filepath, src)]
+
+        path = os.path.abspath(os.path.join(basepath, filepath))
+
+        # list of paths to import (covers the case of importing a folder)
+        paths = []
+        out  = ''
+
+        # see if we're importing a folder or a file
+        if os.path.isdir(path):
+            for root, dirs, files in os.walk(path):
+                for f in files:
+                    split = os.path.splitext(f)
+
+                    if split[1] == '.ksp':
+                        paths.append(os.path.join(root, f))
+        elif os.path.isfile(path):
+            paths.append(path)
+
+        out_data = []
+
+        # actually open everything in paths list sequentially
+        for p in paths:
+            with io.open(p, 'r', encoding = 'utf-8') as s:
+                src = '\n' + re.sub('\r+\n*', '\n', s.read())
+
+                out_data.append((p, src))
+
+        return out_data
+
     if preprocessor_func:
-        code = preprocessor_func(code, namespaces)
+        source = preprocessor_func(source, namespaces)
 
-    lines = parse_lines(code, filename, namespaces)
-
+    lines = parse_lines(source, filename, namespaces)
     new_lines = collections.deque()
+
     while lines:
         line = lines.popleft()
 
@@ -409,6 +448,7 @@ def parse_lines_and_handle_imports(code, filename = None, namespaces = None, rea
 
             # check if it matches a more elaborate syntax
             m = import_re.match(str(line))
+
             if not m:
                 raise ParseException(line, "Syntax error in import statement!")
 
@@ -417,21 +457,28 @@ def parse_lines_and_handle_imports(code, filename = None, namespaces = None, rea
             namespace = m.group('asname')
 
             try:
-                code = read_file_func(filename)
+                new_sources = read_path(basepath, filename)
             except IOError:
                 raise ParseException(line, \
                       "File does not exist or could not be read! '%s' "
                       "\nTry saving the files before compiling in order to make relative paths work." % filename)
 
-            # parse code and add an extra namespace if applicable
-            namespaces = line.namespaces
-            if namespace:
-                namespaces = namespaces + [namespace]
+            for path, source in new_sources:
+                if path not in compiler_import_cache:
+                    compiler_import_cache.append(path)
 
-            if preprocessor_func:
-                code = preprocessor_func(code, namespaces)
+                    # parse code and add an extra namespace if applicable
+                    namespaces = line.namespaces
 
-            new_lines.extend(parse_lines_and_handle_imports(code, filename, namespaces, read_file_func))
+                    if namespace:
+                        namespaces = namespaces + [namespace]
+
+                    preproc_s = source
+
+                    if preprocessor_func:
+                        preproc_s = preprocessor_func(source, namespaces)
+
+                    new_lines.extend(parse_lines_and_handle_imports(basepath, preproc_s, compiler_import_cache, filename, namespaces))
         # non-import line so just add it to result line list:
         else:
             new_lines.append(line)
@@ -1668,9 +1715,6 @@ def compress_variable_name(name):
     hash.update(name.encode('utf-8'))
     return ''.join((symbols[ch & 0x1F] for ch in hash.digest()[:5]))
 
-def default_read_file_func(filepath):
-    return open(filepath, 'r').read()
-
 def parse_nckp(path):
     '''
     The prefix list is ordered to match the integer number representing each ui_control:
@@ -1783,7 +1827,6 @@ class KSPCompiler(object):
                  compact = True,
                  compact_variables = False,
                  combine_callbacks = False,
-                 read_file_func = default_read_file_func,
                  extra_syntax_checks = False,
                  optimize = False,
                  sanitize_exit_command = False,
@@ -1794,7 +1837,6 @@ class KSPCompiler(object):
         self.basedir = basedir
         self.compact = compact
         self.compact_variables = compact_variables
-        self.read_file_func = read_file_func
         self.optimize = optimize
         self.sanitize_exit_command = sanitize_exit_command
         self.combine_callbacks = combine_callbacks
@@ -1817,10 +1859,13 @@ class KSPCompiler(object):
         self.variable_names_to_preserve = set()
         self.compiler_options_to_override = dict()
 
+        self.compiler_import_cache = []
+
     def do_imports_and_convert_to_line_objects(self):
         # Import files
-        self.lines = parse_lines_and_handle_imports(self.source,
-                                                    read_file_func = self.read_file_func,
+        self.lines = parse_lines_and_handle_imports(self.basedir,
+                                                    self.source,
+                                                    self.compiler_import_cache,
                                                     preprocessor_func = self.examine_pragmas)
 
         # Parse conditionals and remove lines if appropriate
@@ -1845,9 +1890,10 @@ class KSPCompiler(object):
 
         # Add TCM code if tcm.init() is found
         if re.search(r'(?m)^\s*tcm.init', check_source):
-            self.lines += parse_lines_and_handle_imports(taskfunc_code,
-                                            read_file_func = self.read_file_func,
-                                            preprocessor_func = self.examine_pragmas)
+            self.lines += parse_lines_and_handle_imports(self.basedir,
+                                                         taskfunc_code,
+                                                         self.compiler_import_cache,
+                                                         preprocessor_func = self.examine_pragmas)
 
         # Run conditional stage a second time to catch the new source additions.
         handle_conditional_lines(self.lines)
@@ -2189,8 +2235,6 @@ class KSPCompiler(object):
 if __name__ == "__main__":
     '''Using the compiler as command line tool'''
     import sys
-    import os.path
-    import io
     import argparse
     from time import strftime, localtime
     from datetime import datetime
@@ -2257,50 +2301,15 @@ if __name__ == "__main__":
                             dest = 'sanitize_exit_command', action = 'store_true', default = False,
                             help = 'adds a dummy no-op command before every exit function call')
     arg_parser.add_argument('source_file', type = FileType('r', encoding = 'latin-1'))
-    arg_parser.add_argument('output_file', type = FileType('w', encoding = 'latin-1'), nargs = '?')
+    arg_parser.add_argument('output_file')
 
     args = arg_parser.parse_args()
 
     # determine the base directory of the source file
-    base_path = None
+    basepath = None
 
     if args.source_file.name != '<stdin>':
-        base_path = os.path.dirname(args.source_file.name)
-
-    # function for reading imported modules
-    def read_file_func(filepath):
-        if filepath.startswith('http://') or filepath.startswith('https://'):
-            from urllib.request import urlopen
-
-            s = urlopen(filepath, timeout = 5).read().decode('utf-8')
-
-            return re.sub('\r+\n*', '\n', s)
-
-        if not os.path.isabs(filepath):
-            if base_path is None:
-                raise Exception('Relative import paths are not supported when the base path of the source file is unknown!')
-            else:
-                filepath = os.path.join(base_path, filepath)
-
-        path = os.path.abspath(filepath)
-
-        paths = []
-        out  = ''
-
-        if os.path.isdir(path):
-            for f in os.listdir(path):
-                split = os.path.splitext(f)
-
-                if split[1] == '.ksp':
-                    paths.append(os.path.join(path, f))
-        elif os.path.isfile(path):
-            paths.append(path)
-
-        for p in paths:
-            s = io.open(p, 'r', encoding = 'utf-8').read()
-            out += '\n' + re.sub('\r+\n*', '\n', s)
-
-        return out
+        basepath = os.path.dirname(args.source_file.name)
 
     # make sure that extra syntax checks are enabled if --optimize argument is used
     if args.optimize == True and args.extra_syntax_checks == False:
@@ -2311,11 +2320,11 @@ if __name__ == "__main__":
 
     t1 = datetime.now()
 
-    compiler = KSPCompiler(code, base_path,
+    compiler = KSPCompiler(code,
+                           basepath,
                            compact                   = args.compact,
                            combine_callbacks         = args.combine_callbacks,
                            compact_variables         = args.compact_variables,
-                           read_file_func            = read_file_func,
                            extra_syntax_checks       = args.extra_syntax_checks,
                            optimize                  = args.optimize,
                            sanitize_exit_command     = args.sanitize_exit_command,
@@ -2330,14 +2339,18 @@ if __name__ == "__main__":
 
     # append the argument to possibly already defined output files via save_compiled_source pragma
     if args.output_file:
-        compiler.output_files.append(args.output_file.name)
+        compiler.output_files.append(args.output_file)
 
     for f in compiler.output_files:
-        if not os.path.isabs(f):
-            f = os.path.join(basedir, f)
+        file = f
 
-        io.open(f, 'w', encoding = 'latin-1').write(code)
-        paths.append(f)
+        if not os.path.isabs(file):
+            file = os.path.join(basepath, file)
+
+        with io.open(file, 'w', encoding = 'latin-1') as o:
+            o.write(code)
+
+        paths.append(file)
 
     delta = utils.calc_time_diff(datetime.now() - t1)
 

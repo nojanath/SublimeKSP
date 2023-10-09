@@ -1,0 +1,7 @@
+function max(x, y) -> result
+  if x > y
+    result := x
+  else
+    result := y
+  end if
+end function

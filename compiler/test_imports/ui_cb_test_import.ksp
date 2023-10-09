@@ -1,0 +1,11 @@
+on init
+	declare ui_switch mySwitch
+end on
+
+on ui_control (mySwitch)
+	message("imported")
+end on
+
+on midi_in
+	message("midi on imported")
+end on

@@ -170,37 +170,6 @@ class CompileKspThread(threading.Thread):
         sublime.error_message(error_msg)
         sublime.status_message('')
 
-    def read_file_function(self, filepath):
-        if filepath.startswith('http://') or filepath.startswith('https://'):
-            from urllib.request import urlopen
-
-            s = urlopen(filepath, timeout = 5).read().decode('utf-8')
-
-            return re.sub('\r+\n*', '\n', s)
-
-        if self.base_path:
-            filepath = os.path.join(self.base_path, filepath)
-
-        path = os.path.abspath(filepath)
-
-        paths = []
-        out  = ''
-
-        if os.path.isdir(path):
-            for f in os.listdir(path):
-                split = os.path.splitext(f)
-
-                if split[1] == '.ksp':
-                    paths.append(os.path.join(path, f))
-        elif os.path.isfile(path):
-            paths.append(path)
-
-        for p in paths:
-            s = io.open(p, 'r', encoding = 'utf-8').read()
-            out += '\n' + re.sub('\r+\n*', '\n', s)
-
-        return out
-
     def run(self):
         global last_compiler
 
@@ -250,12 +219,12 @@ class CompileKspThread(threading.Thread):
 
                     utils.log_message('Compiling \'%s\'...' % filepath)
 
-                self.compiler = ksp_compiler.KSPCompiler(code, self.base_path,
+                self.compiler = ksp_compiler.KSPCompiler(code,
+                                                         self.base_path,
                                                          compact                   = compact,
                                                          compact_variables         = compact_variables,
                                                          extra_syntax_checks       = check,
                                                          combine_callbacks         = combine_callbacks,
-                                                         read_file_func            = self.read_file_function,
                                                          optimize                  = optimize and check,
                                                          sanitize_exit_command     = sanitize_exit_command,
                                                          add_compiled_date_comment = add_compiled_date_comment)
@@ -275,7 +244,9 @@ class CompileKspThread(threading.Thread):
                             if not os.path.isabs(f):
                                 f = os.path.join(self.base_path, f)
 
-                            io.open(f, 'w', encoding = 'latin-1').write(code)
+                            with io.open(f, 'w', encoding = 'latin-1') as o:
+                                o.write(code)
+
                             paths.append(f)
 
                         utils.log_message('Successfully compiled in %s! Compiled code was saved to:' % delta)
@@ -287,7 +258,7 @@ class CompileKspThread(threading.Thread):
                         sublime.set_clipboard(code)
 
             except ksp_ast.ParseException as e:
-                error_msg = unicode(e)
+                error_msg = str(e)
                 line_object = self.compiler.lines[e.lineno]
 
                 if line_object:
@@ -771,17 +742,19 @@ class KspFixLineEndings(sublime_plugin.EventListener):
 
     def on_load(self, view):
         if self.is_probably_ksp_file(view):
-            s = io.open(view.file_name(), 'r', encoding = 'latin-1').read()
-            mixed_line_endings = re.search(r'\r(?!\n)', s) and '\r\n' in s
+            with io.open(view.file_name(), 'r', encoding = 'latin-1') as s:
+                s.read()
 
-            if mixed_line_endings:
-                s, changes = re.subn(r'\r+\n', '\n', s) # normalize line endings
+                mixed_line_endings = re.search(r'\r(?!\n)', s) and '\r\n' in s
 
-                if changes:
-                    # strip trailing whitespace too while we're at it
-                    s = '\n'.join(x.rstrip() for x in s.split('\n'))
+                if mixed_line_endings:
+                    s, changes = re.subn(r'\r+\n', '\n', s) # normalize line endings
 
-                    view.run_command('replace_text_with', {'new_text': s})
-                    sublime.set_timeout(lambda: utils.log_message('EOL characters automatically fixed! Please save to keep the changes.'), 100)
+                    if changes:
+                        # strip trailing whitespace too while we're at it
+                        s = '\n'.join(x.rstrip() for x in s.split('\n'))
 
-            self.set_ksp_syntax(view)
+                        view.run_command('replace_text_with', {'new_text': s})
+                        sublime.set_timeout(lambda: utils.log_message('EOL characters automatically fixed! Please save to keep the changes.'), 100)
+
+                self.set_ksp_syntax(view)
