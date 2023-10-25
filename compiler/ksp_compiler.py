@@ -411,16 +411,21 @@ def parse_lines_and_handle_imports(basepath, source, compiler_import_cache, file
         paths = []
         out  = ''
 
-        # see if we're importing a folder or a file
-        if os.path.isdir(path):
-            for root, dirs, files in os.walk(path):
-                for f in files:
-                    split = os.path.splitext(f)
+        if os.path.exists(path):
+            # see if we're importing a folder or a file
+            if os.path.isdir(path):
+                for root, dirs, files in os.walk(path):
+                    for f in files:
+                        split = os.path.splitext(f)
 
-                    if split[1] == '.ksp':
-                        paths.append(os.path.join(root, f))
-        elif os.path.isfile(path):
-            paths.append(path)
+                        if split[1] == '.ksp':
+                            paths.append(os.path.join(root, f))
+            elif os.path.isfile(path):
+                paths.append(path)
+        else:
+            raise ParseException(line, 'Imported path does not exist or could not be read!\n\n'
+                                       'Try saving .ksp files before compiling in order to make relative paths work, '
+                                       'or check existence of the following path:\n\n%s' % path)
 
         out_data = []
 
@@ -450,18 +455,13 @@ def parse_lines_and_handle_imports(basepath, source, compiler_import_cache, file
             m = import_re.match(str(line))
 
             if not m:
-                raise ParseException(line, "Syntax error in import statement!")
+                raise ParseException(line, 'Syntax error in import statement!')
 
             # load the code in the given file
             filename = m.group('filename')
             namespace = m.group('asname')
 
-            try:
-                new_sources = read_path(basepath, filename)
-            except IOError:
-                raise ParseException(line, \
-                      "File does not exist or could not be read! '%s' "
-                      "\nTry saving the files before compiling in order to make relative paths work." % filename)
+            new_sources = read_path(basepath, filename)
 
             for path, source in new_sources:
                 if path not in compiler_import_cache:
