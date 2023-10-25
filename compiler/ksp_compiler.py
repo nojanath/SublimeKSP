@@ -409,7 +409,6 @@ def parse_lines_and_handle_imports(basepath, source, compiler_import_cache, file
 
         # list of paths to import (covers the case of importing a folder)
         paths = []
-        out  = ''
 
         if os.path.exists(path):
             # see if we're importing a folder or a file

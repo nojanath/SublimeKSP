@@ -1,11 +1,14 @@
-Version 1.12.1
+Version 1.17.2
 ---------------------------------------------------
 
-This release is a very quick fix for the unfortunate issue that arose while fixing the
-"real arrays could be arguments for load/save_array() commands" issue.
+This is a minor update with the following changes:
+
+- Fixes an issue introduced in 1.17.1, where import paths wouldn't be checked if they exist before compilation continued. Now works again!
+
+- Option "Play sound when compilation finishes" now finally works even for SublimeKSP installations done viaPackage Control!
 
 
-Apologies!
+Have fun!
 
 
 ---------------------------------------------------
