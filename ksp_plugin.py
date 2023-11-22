@@ -318,13 +318,26 @@ def plugin_loaded():
     except:
         pass
 
+    settings = sublime.load_settings('KSP.sublime-settings')
+    enable_vanilla_builtins = bool(settings.get('ksp_add_completions_for_vanilla_builtins', False))
+
     if sublime_version >= 4000:
         builtin_compl_vars.extend(sublime.CompletionItem(trigger = v[1:],
                                                          annotation = 'variable',
                                                          completion = v[1:],
                                                          kind = sublime.KIND_VARIABLE) for v in variables)
+
+        if enable_vanilla_builtins:
+            builtin_compl_vars.extend(sublime.CompletionItem(trigger = v,
+                                                             annotation = 'variable',
+                                                             completion = v,
+                                                             kind = sublime.KIND_VARIABLE) for v in variables)
     else:
         builtin_compl_vars.extend(('%s\tvariable' % v[1:], v[1:]) for v in variables)
+
+        if enable_vanilla_builtins:
+            builtin_compl_vars.extend(('%s\tvariable' % v, v) for v in variables)
+
         builtin_compl_vars.sort()
 
     for f in functions:
@@ -374,7 +387,7 @@ def plugin_loaded():
             completion.append(('%s\tui param' % v, v))
             name = 'ui param'
 
-        if re.search(r'^\$EVENT_PAR_[0|1|2|3]', v):
+        if re.search(r'^\$EVENT_PAR_[0-3]', v):
             v = v.replace('$EVENT_', '').lower()
             completion.append(('%s\tevent param' % v, v))
             name = 'event param'
@@ -412,7 +425,7 @@ def plugin_loaded():
                                                                               snippet = content,
                                                                               annotation = name))
 
-class KSPCompletions(sublime_plugin.EventListener):
+class KspCompletions(sublime_plugin.EventListener):
     '''Handles KSP autocompletions'''
 
     def _extract_completions(self, view, prefix, point):
@@ -549,35 +562,37 @@ class KspGlobalSettingToggleCommand(sublime_plugin.ApplicationCommand):
 
     def run(self, setting, default):
         sksp_options_dict = {
-            "ksp_compact_output"            : "Remove Indents and Empty Lines",
-            "ksp_compact_variables"         : "Compact Variables",
-            "ksp_extra_checks"              : "Extra Syntax Checks",
-            "ksp_optimize_code"             : "Optimize Compiled Code",
-            "ksp_combine_callbacks"         : "Combine Duplicate Callbacks",
-            "ksp_add_compiled_date"         : "Add Compilation Date/Time Comment",
-            "ksp_sanitize_exit_command"     : "Sanitize Behavior of 'exit' Command",
-            "ksp_comment_inline_functions"  : "Insert Comments When Expanding Functions",
-            "ksp_play_sound"                : "Play Sound When Compilation Finishes"
+            'ksp_compact_output'                       : 'Remove Indents and Empty Lines',
+            'ksp_compact_variables'                    : 'Compact Variables',
+            'ksp_extra_checks'                         : 'Extra Syntax Checks',
+            'ksp_optimize_code'                        : 'Optimize Compiled Code',
+            'ksp_combine_callbacks'                    : 'Combine Duplicate Callbacks',
+            'ksp_add_compiled_date'                    : 'Add Compilation Date/Time Comment',
+            'ksp_sanitize_exit_command'                : 'Sanitize Behavior of \'exit\' Command',
+            'ksp_comment_inline_functions'             : 'Insert Comments When Expanding Functions',
+            'ksp_play_sound'                           : 'Play Sound When Compilation Finishes',
+            'ksp_add_completions_for_vanilla_builtins' : 'Enable Completions for Vanilla KSP Built-ins',
         }
 
-        s = sublime.load_settings("KSP.sublime-settings")
-        s.set(setting, not s.get(setting, default))
-        sublime.save_settings("KSP.sublime-settings")
+        settings = sublime.load_settings('KSP.sublime-settings')
+        settings.set(setting, not settings.get(setting, default))
+        sublime.save_settings('KSP.sublime-settings')
 
-        if s.get(setting, default):
-            option_toggle = "enabled!"
+        if settings.get(setting, default):
+            option_toggle = 'enabled!'
         else:
-            option_toggle = "disabled!"
+            option_toggle = 'disabled!'
 
         utils.log_message('SublimeKSP option %s is %s' % (sksp_options_dict[setting], option_toggle))
 
     def is_checked(self, setting, default):
-        return bool(sublime.load_settings("KSP.sublime-settings").get(setting, default))
+        return bool(sublime.load_settings('KSP.sublime-settings').get(setting, default))
 
     def is_enabled(self, setting, default):
-        extra_checks = bool(sublime.load_settings("KSP.sublime-settings").get("ksp_extra_checks", True))
+        settings = sublime.load_settings('KSP.sublime-settings')
+        extra_checks = bool(settings.get('ksp_extra_checks', True))
 
-        if setting == "ksp_optimize_code":
+        if setting == 'ksp_optimize_code':
             return extra_checks
         else:
             return True
@@ -701,7 +716,6 @@ class KspUncompressCode(sublime_plugin.TextCommand):
     def is_enabled(self):
         # only show the command when a file with KSP syntax highlighting is visible
         return 'KSP.sublime-syntax' in self.view.settings().get('syntax', '')
-
 
 class KspAboutCommand(sublime_plugin.ApplicationCommand):
     def run(self):

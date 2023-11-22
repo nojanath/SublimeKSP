@@ -1,0 +1,109 @@
+{
+    "name": "SublimeKSP Dark Theme",
+    "author": "EvilDragon",
+    "globals":
+    {
+        "foreground": "#999",
+        "background": "#191919",
+        "caret": "#999",
+        "invisibles": "#444",
+        "line_highlight": "#222",
+        "selection": "#333",
+        "gutter_foreground": "#999",
+        "brackets_options": "foreground underline bold",
+        "brackets_foreground": "#F00",
+        "bracket_contents_options": "foreground bold",
+        "bracket_contents_foreground": "#F00"
+    },
+    "rules":
+    [
+        {
+            "name": "Keyword",
+            "scope": "keyword",
+            "foreground": "#069",
+            "font_style": "bold"
+        },
+        {
+            "name": "Operator",
+            "scope": "operator",
+            "foreground": "#888"
+        },
+        {
+            "name": "Arithmetic Operator",
+            "scope": "arithmetic",
+            "foreground": "#888"
+        },
+        {
+            "name": "Identifier",
+            "scope": "variable",
+            "foreground": "#963996"
+        },
+        {
+            "name": "Family name",
+            "scope": "entity.name.type",
+            "foreground": "#939",
+            "font_style": "italic"
+        },
+        {
+            "name": "Function parameter",
+            "scope": "variable.parameter",
+            "foreground": "#C96"
+        },
+        {
+            "name": "Function argument",
+            "scope": "meta.function-call.arguments",
+            "foreground": "#939"
+        },
+        {
+            "name": "Built-in variable or constant",
+            "scope": "support.variable",
+            "foreground": "#C9C"
+        },
+        {
+            "name": "User function definition",
+            "scope": "entity.name.function",
+            "foreground": "#F60",
+            "font_style": "bold"
+        },
+        {
+            "name": "User function call",
+            "scope": "meta.function-call -function.ksp",
+            "foreground": "#F60"
+        },
+        {
+            "name": "Built-in function call",
+            "scope": "support.function",
+            "foreground": "#A70"
+        },
+        {
+            "name": "Number",
+            "scope": "constant.numeric",
+            "foreground": "#09C"
+        },
+        {
+            "name": "String single quoted",
+            "scope": "string.quoted.single",
+            "foreground": "#966"
+        },
+        {
+            "name": "String double quoted",
+            "scope": "string.quoted.double",
+            "foreground": "#966"
+        },
+        {
+            "name": "Comment",
+            "scope": "comment",
+            "foreground": "#074"
+        },
+        {
+            "name": "Punctuation",
+            "scope": "punctuation",
+            "foreground": "#888"
+        },
+        {
+            "name": "Parentheses",
+            "scope": "parentheses -begin.source.ksp -end.source.ksp",
+            "foreground": "#888"
+        }
+    ]
+}
