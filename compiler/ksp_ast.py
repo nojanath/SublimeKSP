@@ -20,16 +20,17 @@ from ksp_builtins import functions_with_forced_parentheses
 
 precedence = {  '&' :  0,
                 'or':  1,
-                'and': 2,
-                'not': 3,
-                '=': 4, '<': 4, '>': 4, '<=': 4, '>=': 4, '#': 4,
-                '.xor.': 5,
+                'xor': 2,
+                'and': 3,
+                'not': 4,
+                '=': 5, '<': 5, '>': 5, '<=': 5, '>=': 5, '#': 5,
                 '.or.': 6,
-                '.and.': 7,
-                '.not.': 8,
-                '+': 9, '-': 9,
-                '*': 10, '/': 10, 'mod': 10,
-                'unary-': 11,
+                '.xor.': 7,
+                '.and.': 8,
+                '.not.': 9,
+                '+': 10, '-': 10,
+                '*': 11, '/': 11, 'mod': 11,
+                'unary-': 12,
                 }
 
 def toint(i, bits=32):
