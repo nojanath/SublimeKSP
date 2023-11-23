@@ -134,7 +134,7 @@ def evaluate_expression(expr):
                 return a & b
             elif op == '.or.':
                 return a | b
-            elif op == '.xor.':
+            else:
                 return a ^ b
         elif op == 'mod':
             # we don't have to check if b is int type, since we already check for type mismatches in visitBinOp function
@@ -150,13 +150,15 @@ def evaluate_expression(expr):
                 return Decimal(math.fmod(a, b))
         elif op == '&':
             return str(a) + str(b)
-        elif op in ['and', 'or']:
+        elif op in ['and', 'xor', 'or']:
             a, b = bool(a), bool(b)
 
             if op == 'and':
                 return a and b
-            else:
+            elif op == 'or':
                 return a or b
+            else:
+                return a ^ b
     elif isinstance(expr, UnaryOp):
         a = evaluate_expression(expr.right)
 
