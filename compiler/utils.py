@@ -14,6 +14,9 @@
 
 import sys
 from time import strftime, localtime
+from platform import system
+import os.path
+import ctypes
 
 try:
     from sublime import status_message
@@ -85,3 +88,13 @@ def calc_time_diff(timedelta):
 
     return fmt
 
+def is_symlink(path):
+    '''Replacement for os.path.islink() so that it properly recognizes directory junctions on Windows'''
+    if os.path.isdir(path):
+        if system() == 'Windows':
+            REPARSE_POINT_TAG = 0x0400
+            return (ctypes.windll.kernel32.GetFileAttributesW(str(path)) & REPARSE_POINT_TAG) or os.path.islink(path)
+        else:
+            return os.path.islink(path)
+    else:
+        return os.path.islink(path)

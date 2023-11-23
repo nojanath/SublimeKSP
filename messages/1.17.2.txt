@@ -5,7 +5,7 @@ This is a minor update with the following changes:
 
 - Fixes an issue introduced in 1.17.1, where import paths wouldn't be checked if they exist before compilation continued. Now works again!
 
-- Option "Play sound when compilation finishes" now finally works even for SublimeKSP installations done viaPackage Control!
+- Option "Play sound when compilation finishes" now finally works even for SublimeKSP installations done via Package Control!
 
 
 Have fun!

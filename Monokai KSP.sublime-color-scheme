@@ -1,0 +1,106 @@
+{
+    "name": "SublimeKSP Monokai Theme",
+    "author": "EvilDragon",
+    "globals":
+    {
+        "foreground": "#E3E3E3",
+        "background": "#272822",
+        "caret": "#F8F8F0",
+        "invisibles": "#3B3A32",
+        "line_highlight": "#3E3D32",
+        "selection": "#49483E",
+        "gutter_foreground": "#5C5B4C",
+        "brackets_options": "foreground underline bold",
+        "brackets_foreground": "#F00",
+        "bracket_contents_options": "foreground bold",
+        "bracket_contents_foreground": "#F00"
+    },
+    "rules":
+    [
+        {
+            "name": "Keyword",
+            "scope": "keyword",
+            "foreground": "#FF4C4C"
+        },
+        {
+            "name": "Operator",
+            "scope": "operator",
+            "foreground": "#587ED1"
+        },
+        {
+            "name": "Arithmetic Operator",
+            "scope": "arithmetic",
+            "foreground": "#A3A0A0"
+        },
+        {
+            "name": "Identifier",
+            "scope": "variable",
+            "foreground": "#E3E3E3"
+        },
+        {
+            "name": "Family name",
+            "scope": "entity.name.type",
+            "foreground": "#7ED694",
+            "font_style": "italic"
+        },
+        {
+            "name": "Function parameter",
+            "scope": "variable.parameter",
+            "foreground": "#FCA841",
+            "font_style": "italic"
+        },
+        {
+            "name": "Function argument",
+            "scope": "meta.function-call.arguments",
+            "foreground": "#FFA538",
+            "font_style": "italic"
+        },
+        {
+            "name": "Built-in variable or constant",
+            "scope": "support.variable",
+            "foreground": "#90D8E0"
+        },
+        {
+            "name": "User function definition",
+            "scope": "entity.name.function",
+            "foreground": "#95C43F",
+            "font_style": "bold"
+        },
+        {
+            "name": "User function call",
+            "scope": "meta.function-call -function.ksp",
+            "foreground": "#95A6BA"
+        },
+        {
+            "name": "Built-in function call",
+            "scope": "support.function",
+            "foreground": "#84DAEB"
+        },
+        {
+            "name": "Number",
+            "scope": "constant.numeric",
+            "foreground": "#B891FA"
+        },
+        {
+            "name": "String single quoted",
+            "scope": "string.quoted.single",
+            "foreground": "#FFDF5E"
+        },
+        {
+            "name": "String double quoted",
+            "scope": "string.quoted.double",
+            "foreground": "#FFDF5E"
+        },
+        {
+            "name": "Comment",
+            "scope": "comment",
+            "foreground": "#75715E",
+            "font_style": "italic"
+        },
+        {
+            "name": "Parentheses",
+            "scope": "parentheses -begin.source.ksp -end.source.ksp",
+            "foreground": "#E3E3E3"
+        }
+    ]
+}
