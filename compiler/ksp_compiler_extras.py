@@ -171,6 +171,9 @@ def evaluate_expression(expr):
     elif isinstance(expr, VarRef):
         name = str(expr.identifier)
 
+        if name in ksp_builtins.constants:
+            return name
+
         if name.lower() not in symbol_table:
             raise ParseException(expr, 'Variable not declared: %s!' % name)
 
@@ -585,7 +588,7 @@ class ASTVisitorCheckDeclarations(ASTVisitor):
             init_expr = node.initial_value
 
             # First need to check if the initial value is an NI constant
-            if not (isinstance(init_expr, VarRef) and (str(init_expr.identifier).upper() in ksp_builtins.variables)                        \
+            if not (isinstance(init_expr, VarRef) and (str(init_expr.identifier).upper() in ksp_builtins.all_builtins)                     \
                or ("function_name" in init_expr.__dict__  and str(init_expr.function_name) in ksp_builtins.functions_with_constant_return) \
                and str(init_expr.function_name) not in ksp_builtins.functions_evaluated_with_optimize_code):
 
@@ -604,7 +607,7 @@ class ASTVisitorCheckDeclarations(ASTVisitor):
                 # VALUE_EDIT_MODE_NOTE_NAMES is used in declare statements, but don't force a known value to evaluate to when it's used as a param
                 if True or isinstance(param, VarRef) \
                    and (param.identifier.prefix + param.identifier.identifier in ['VALUE_EDIT_MODE_NOTE_NAMES', '$VALUE_EDIT_MODE_NOTE_NAMES']
-                   or param.identifier.prefix + param.identifier.identifier in ksp_builtins.variables):
+                   or param.identifier.prefix + param.identifier.identifier in ksp_builtins.all_builtins):
 
                     params.append(param)
                 else:
@@ -633,8 +636,8 @@ class ASTVisitorCheckDeclarations(ASTVisitor):
         name = str(node)
         special_names = ['NO_SYS_SCRIPT_RLS_TRIG', 'NO_SYS_SCRIPT_PEDAL', 'NO_SYS_SCRIPT_GROUP_START', 'NO_SYS_SCRIPT_ALL_NOTES_OFF']
 
-        if not name in ksp_builtins.variables and not name in ksp_builtins.functions \
-           and not name in user_defined_functions and not name in special_names      \
+        if not name in ksp_builtins.all_builtins and not name in ksp_builtins.functions \
+           and not name in user_defined_functions and not name in special_names         \
            and not name.lower() in symbol_table and not name.lower() in nckp_table:
 
             raise ParseException(node, 'Undeclared variable or function: %s!' % name)

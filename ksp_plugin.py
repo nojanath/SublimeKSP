@@ -290,10 +290,10 @@ class CompileKspThread(threading.Thread):
 # **********************************************************************************************
 
 
-from compiler.ksp_builtins import keywords, variables, functions, function_signatures, functions_with_forced_parentheses
+from compiler.ksp_builtins import keywords, all_builtins, functions, function_signatures, functions_with_forced_parentheses
 
-all_builtins = set(functions.keys()) | set([v[1:] for v in variables]) | variables | keywords
-functions, variables = set(functions), set(variables)
+all_builtins = set(functions.keys()) | set([x[1:] for x in all_builtins]) | all_builtins | keywords
+functions, all_builtins = set(functions), set(all_builtins)
 
 builtin_compl_funcs = []
 builtin_compl_vars = []
@@ -322,21 +322,21 @@ def plugin_loaded():
     enable_vanilla_builtins = bool(settings.get('ksp_add_completions_for_vanilla_builtins', False))
 
     if sublime_version >= 4000:
-        builtin_compl_vars.extend(sublime.CompletionItem(trigger = v[1:],
+        builtin_compl_vars.extend(sublime.CompletionItem(trigger = x[1:],
                                                          annotation = 'variable',
-                                                         completion = v[1:],
-                                                         kind = sublime.KIND_VARIABLE) for v in variables)
+                                                         completion = x[1:],
+                                                         kind = sublime.KIND_VARIABLE) for x in all_builtins)
 
         if enable_vanilla_builtins:
-            builtin_compl_vars.extend(sublime.CompletionItem(trigger = v,
+            builtin_compl_vars.extend(sublime.CompletionItem(trigger = x,
                                                              annotation = 'variable',
-                                                             completion = v,
-                                                             kind = sublime.KIND_VARIABLE) for v in variables)
+                                                             completion = x,
+                                                             kind = sublime.KIND_VARIABLE) for x in all_builtins)
     else:
-        builtin_compl_vars.extend(('%s\tvariable' % v[1:], v[1:]) for v in variables)
+        builtin_compl_vars.extend(('%s\tvariable' % x[1:], x[1:]) for x in all_builtins)
 
         if enable_vanilla_builtins:
-            builtin_compl_vars.extend(('%s\tvariable' % v, v) for v in variables)
+            builtin_compl_vars.extend(('%s\tvariable' % x, x) for x in all_builtins)
 
         builtin_compl_vars.sort()
 
@@ -376,31 +376,31 @@ def plugin_loaded():
     # control par references that can be used as control -> x, or control -> value
     remap_control_pars = {'POS_X': 'x', 'POS_Y': 'y', 'MAX_VALUE': 'MAX', 'MIN_VALUE': 'MIN', 'DEFAULT_VALUE': 'DEFAULT'}
 
-    for v in variables:
+    for x in all_builtins:
         completion = []
         name = None
-        original_variable = v
+        original_variable = x
 
-        if v.startswith('$CONTROL_PAR_'):
-            v = v.replace('$CONTROL_PAR_', '')
-            v = remap_control_pars.get(v, v).lower()
-            completion.append(('%s\tui param' % v, v))
+        if x.startswith('$CONTROL_PAR_'):
+            x = x.replace('$CONTROL_PAR_', '')
+            x = remap_control_pars.get(x, x).lower()
+            completion.append(('%s\tui param' % x, x))
             name = 'ui param'
 
-        if re.search(r'^\$EVENT_PAR_[0-3]', v):
-            v = v.replace('$EVENT_', '').lower()
-            completion.append(('%s\tevent param' % v, v))
+        if re.search(r'^\$EVENT_PAR_[0-3]', x):
+            x = x.replace('$EVENT_', '').lower()
+            completion.append(('%s\tevent param' % x, x))
             name = 'event param'
-        elif v.startswith('$EVENT_PAR_'):
-            v = v.replace('$EVENT_PAR_', '').lower()
-            completion.append(('%s\tevent param' % v, v))
+        elif x.startswith('$EVENT_PAR_'):
+            x = x.replace('$EVENT_PAR_', '').lower()
+            completion.append(('%s\tevent param' % x, x))
             name = 'event param'
 
         if completion:
             if sublime_version >= 4000:
-                magic_control_and_event_pars.append(sublime.CompletionItem(trigger = v,
+                magic_control_and_event_pars.append(sublime.CompletionItem(trigger = x,
                                                                            annotation = name,
-                                                                           completion = v,
+                                                                           completion = x,
                                                                            details = original_variable ,
                                                                            completion_format = sublime.COMPLETION_FORMAT_SNIPPET,
                                                                            kind = sublime.KIND_VARIABLE))

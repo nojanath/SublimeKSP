@@ -16,7 +16,9 @@ import re
 import os.path
 import pkgutil
 
+constants = set()
 variables = set()
+all_builtins = set()
 functions = set()
 keywords = set()
 control_parameters = set()
@@ -31,7 +33,9 @@ ui_control_signatures = {}
 
 sKSP_preprocessor_variables = ("sksp_dummy", "string_it", "list_it", "concat_it", "concat_offset", "preproc_i")
 
-data = {'variables': variables,
+data = {'constants': constants,
+        'variables': variables,
+        'all_builtins': all_builtins,
         'functions': functions,
         'keywords':  keywords,
         'control_parameters': control_parameters,
@@ -73,7 +77,7 @@ for line in lines:
             if name not in functions_with_constant_return and (return_type == "real" or return_type == "integer"):
                 functions_with_constant_return.add(name)
 
-        if section == 'variables':
+        if section == 'constants':
             m = re.match(r'(?P<control_par>\$CONTROL_PAR_\w+?)|(?P<engine_par>\$ENGINE_PAR_\w+?)|(?P<event_par>\$EVENT_PAR_\w+?)', line)
 
             if m:
@@ -99,4 +103,6 @@ for line in lines:
 
 # mapping from function_name to descriptive string
 functions = dict([(x.split('(')[0], x) for x in functions])
-variables_unprefixed = set([v[1:] for v in variables])
+
+all_builtins = constants.union(variables)
+all_builtins_unprefixed = set([x[1:] for x in all_builtins])

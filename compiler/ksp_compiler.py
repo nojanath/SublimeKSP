@@ -179,7 +179,7 @@ def prefix_with_ns(name, namespaces, function_parameter_names = None, force_pref
     first_name_part = name.split('.')[0]
 
     # if built-in name or function parameter
-    if (unprefixed_name in ksp_builtins.variables_unprefixed or
+    if (unprefixed_name in ksp_builtins.all_builtins_unprefixed or
           name in ksp_builtins.functions and not name in functions_before_prefix or
           name in ksp_builtins.keywords or
           first_name_part in function_parameter_names or
@@ -1086,7 +1086,7 @@ class ASTModifierFixPrefixes(ASTModifierBase):
                                       (parent_function and (first_part in parent_function.parameters or
                                                             parent_function.return_value and first_part == parent_function.return_value.identifier))):
             possible_prefixes = [prefix for prefix in '$%@!?~'
-                                 if prefix + name.lower() in variables or prefix + name in ksp_builtins.variables]
+                                 if prefix + name.lower() in variables or prefix + name in ksp_builtins.all_builtins]
 
             # if there is a subscript then only array types are possible
             if parent_varref and parent_varref.subscripts:
@@ -1099,7 +1099,7 @@ class ASTModifierFixPrefixes(ASTModifierBase):
             node.prefix = possible_prefixes[0]
             return node
 
-        elif node.prefix and not (name.lower() in variables or name in ksp_builtins.variables):
+        elif node.prefix and not (name.lower() in variables or name in ksp_builtins.all_builtins):
             raise ksp_ast.ParseException(node, "%s has not been declared!" % name)
         else:
             return node
@@ -2074,9 +2074,9 @@ class KSPCompiler(object):
         for v in variables:
             if self.variable_names_to_preserve and preserve_pattern.match(v):
                 continue
-            elif v not in self.original2short and v not in ksp_builtins.variables:
+            elif v not in self.original2short and v not in ksp_builtins.all_builtins:
                 self.original2short[v] = '%s%s' % (v[0], compress_variable_name(v))
-                if self.original2short[v] in ksp_builtins.variables:
+                if self.original2short[v] in ksp_builtins.all_builtins:
                     raise Exception('This is your unlucky day! Even though the chance is only 0.32%%, the variable %s was mapped to the same hash as that of a builtin KSP variable.' % (v))
                 if self.original2short[v] in self.short2original:
                     raise Exception('This is your unlucky day! Even though the chance is only 0.32%%, two variable names were compacted to the same short name: %s and %s.' % (v, self.short2original[self.original2short[v]]))
