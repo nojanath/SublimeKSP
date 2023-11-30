@@ -50,10 +50,14 @@ def do_compile(code,
 
     return output_code
 
-class Callbacks(unittest.TestCase):
+def assert_equal(self, output, expected_output):
+    output = [l.strip() for l in output.split('\n') if l]
+    expected_output = [l.strip() for l in expected_output.split('\n') if l]
+    self.assertEqual(output, expected_output)
 
+class Callbacks(unittest.TestCase):
     def testUIControlCallbackWithinOnInit(self):
-            code = '''
+        code = '''
             on init
                 do_declare(5) { this callback should be moved out to the top-level }
             end on
@@ -64,21 +68,21 @@ class Callbacks(unittest.TestCase):
                     message(param)
                 end on
             end macro'''
-            expected_output = '''
+
+        expected_output = '''
             on init
                 declare ui_button $b
             end on
+
             on ui_control($b)
                 message(5)
             end on'''
 
-            output = do_compile(code, remove_preprocessor_vars=True)
-            output = [l.strip() for l in output.split('\n') if l]
-            expected_output = [l.strip() for l in expected_output.split('\n') if l]
-            self.assertEqual(output, expected_output)
+        output = do_compile(code, remove_preprocessor_vars = True)
+        assert_equal(self, output, expected_output)
 
     def testUIControlCallbackWithinOnInitNestedMacros(self):
-            code = '''
+        code = '''
             on init
                 do_declare(b) { this callback should be moved out to the top-level }
             end on
@@ -93,120 +97,126 @@ class Callbacks(unittest.TestCase):
             macro do_declare(name)
                 nested(name)
             end macro'''
-            expected_output = '''
+
+        expected_output = '''
             on init
                 declare ui_button $b
             end on
             on ui_control($b)
                 message($b)
             end on'''
-            output = do_compile(code, remove_preprocessor_vars=True)
-            output = [l.strip() for l in output.split('\n') if l]
-            expected_output = [l.strip() for l in expected_output.split('\n') if l]
-            self.assertEqual(output, expected_output)
+
+        output = do_compile(code, remove_preprocessor_vars = True)
+        assert_equal(self, output, expected_output)
 
     def testCombineCallbacks(self):
         code = '''
-        on init
-            declare x := 1
-        end on
-        on init
-            declare y := 1
-        end on'''
+            on init
+                declare x := 1
+            end on
+
+            on init
+                declare y := 1
+            end on'''
+
         expected_output = '''
-        on init
-            declare $x := 1
-            declare $y := 1
-        end on'''
-        output = do_compile(code, combine_callbacks=True, remove_preprocessor_vars=True)
-        output = [l.strip() for l in output.split('\n') if l]
-        expected_output = [l.strip() for l in expected_output.split('\n') if l]
-        self.assertEqual(output, expected_output)
+            on init
+                declare $x := 1
+                declare $y := 1
+            end on'''
+
+        output = do_compile(code, combine_callbacks = True, remove_preprocessor_vars = True)
+        assert_equal(self, output, expected_output)
 
     def testCombineUICallbacks(self):
         code = '''
-        on init
-            declare ui_button test
-        end on
-        on ui_control (test)
-            message("Callback One")
-        end on
-        on ui_control (test)
-            message("Callback Two")
-        end on'''
-        expected_output = '''
-        on init
-          declare ui_button $test
-        end on
+            on init
+                declare ui_button test
+            end on
 
-        on ui_control($test)
-          message("Callback One")
-          message("Callback Two")
-        end on'''
-        output = do_compile(code, combine_callbacks=True, remove_preprocessor_vars=True)
-        output = [l.strip() for l in output.split('\n') if l]
-        expected_output = [l.strip() for l in expected_output.split('\n') if l]
-        self.assertEqual(output, expected_output)
+            on ui_control (test)
+                message("Callback One")
+            end on
+
+            on ui_control (test)
+                message("Callback Two")
+            end on'''
+
+        expected_output = '''
+            on init
+              declare ui_button $test
+            end on
+
+            on ui_control($test)
+              message("Callback One")
+              message("Callback Two")
+            end on'''
+
+        output = do_compile(code, combine_callbacks = True, remove_preprocessor_vars = True)
+        assert_equal(self, output, expected_output)
 
     def testCombineCallbackWithImportedFiles(self):
         code = '''
-        import "test_imports/ui_cb_test_import.ksp" as f
-        on init
-            {If imported without namespace, then should throw error 'redeclaration of $mySwitch'}
-            declare ui_switch mySwitch
-        end on
-        on ui_control (mySwitch)
-            message("switch")
-        end on
-        on midi_in
-            message("midi in main")
-        end on'''
+            import "test_imports/ui_cb_test_import.ksp" as f
+
+            on init
+                {If imported without namespace, then should throw error 'redeclaration of $mySwitch'}
+                declare ui_switch mySwitch
+            end on
+
+            on ui_control (mySwitch)
+                message("switch")
+            end on
+
+            on midi_in
+                message("midi in main")
+            end on'''
+
         expected_output = '''
-        on init
-          declare ui_switch $f__mySwitch
-          declare ui_switch $mySwitch
-        end on
-        on ui_control($f__mySwitch)
-          message("imported")
-          message("switch")
-        end on
-        on midi_in
-          message("midi on imported")
-          message("midi in main")
-        end on'''
-        output = do_compile(code, combine_callbacks=True, remove_preprocessor_vars=True)
-        output = [l.strip() for l in output.split('\n') if l]
-        expected_output = [l.strip() for l in expected_output.split('\n') if l]
-        self.assertEqual(output, expected_output)
+            on init
+              declare ui_switch $f__mySwitch
+              declare ui_switch $mySwitch
+            end on
+            on ui_control($f__mySwitch)
+              message("imported")
+              message("switch")
+            end on
+            on midi_in
+              message("midi on imported")
+              message("midi in main")
+            end on'''
+
+        output = do_compile(code, combine_callbacks = True, remove_preprocessor_vars = True)
+        assert_equal(self, output, expected_output)
 
     def testCombineCallbacksWithEmptyFunction(self):
         code = '''
-        on init
-            declare ui_button Button
-        end on
+            on init
+                declare ui_button Button
+            end on
 
-        function foo()
-        end function
+            function foo()
+            end function
 
-        on ui_control (Button)
-            call foo()
-        end on
-        '''
+            on ui_control (Button)
+                call foo()
+            end on
+            '''
+
         expected_output = '''
-        on init
-          declare ui_button $Button
-        end on
+            on init
+              declare ui_button $Button
+            end on
 
-        function foo
-        end function
+            function foo
+            end function
 
-        on ui_control($Button)
-          call foo
-        end on'''
-        output = do_compile(code, combine_callbacks=True, remove_preprocessor_vars=True)
-        output = [l.strip() for l in output.split('\n') if l]
-        expected_output = [l.strip() for l in expected_output.split('\n') if l]
-        self.assertEqual(output, expected_output)
+            on ui_control($Button)
+              call foo
+            end on'''
+
+        output = do_compile(code, combine_callbacks = True, remove_preprocessor_vars = True)
+        assert_equal(self, output, expected_output)
 
 class Precedence(unittest.TestCase):
     def testBinaryPrecedence1(self):
@@ -217,35 +227,17 @@ class Precedence(unittest.TestCase):
                 declare z
                 message((x .or. y) .and. z)
             end on'''
-        expected_output = '''on init
-declare $x
-declare $y
-declare $z
-message(($x .or. $y) .and. $z)
-end on
-'''
-        output = do_compile(code, remove_preprocessor_vars=True)
-        output = [l.strip() for l in output.split('\n') if l]
-        expected_output = [l.strip() for l in expected_output.split('\n') if l]
-        self.assertEqual(output, expected_output)
 
-#     def testBinaryPrecedence2(self):
-#         code = '''
-#             on init
-#                 declare x
-#                 declare y
-#                 declare z
-#                 message(x .or. (y .and. z))
-#             end on'''
-#         expected_output = '''on init
-# declare $x
-# declare $y
-# declare $z
-# message($x .or. ($y .and. $z))
-# end on
-# '''
-        #output = do_compile(code)
-        #self.assertEqual(expected_output, output)
+        expected_output = '''
+            on init
+            declare $x
+            declare $y
+            declare $z
+            message(($x .or. $y) .and. $z)
+            end on'''
+
+        output = do_compile(code, remove_preprocessor_vars = True)
+        assert_equal(self, output, expected_output)
 
 class VariableNotDeclared(unittest.TestCase):
     def testUndeclaredVariableInOnInit(self):
@@ -254,14 +246,16 @@ class VariableNotDeclared(unittest.TestCase):
                 declare x
                 y := x
             end on'''
+
         self.assertRaises(ParseException, do_compile, code)
 
     def testVariableUsedBeforeDeclaration(self):
         code = '''
-            on init
-                x := 5
-                declare x
-            end on'''
+        on init
+            x := 5
+            declare x
+        end on'''
+
         self.assertRaises(ParseException, do_compile, code)
 
     def testFirstParamOfPGSFunctionsNotSeenAsUndeclared(self):
@@ -282,7 +276,8 @@ class VariableNotDeclared(unittest.TestCase):
                     pgs_set_str_key_val(PG, pgs_get_str_key_val(PG))
                 end if
             end on'''
-        do_compile(code, compact_variables=True)
+
+        do_compile(code, compact_variables = True)
 
     def testFirstParamOfConditionNotSeenAsUndeclared(self):
         code = '''
@@ -290,7 +285,8 @@ class VariableNotDeclared(unittest.TestCase):
                 SET_CONDITION(my_condition)
                 RESET_CONDITION(my_condition)
             end on'''
-        do_compile(code, compact_variables=True)
+
+        do_compile(code, compact_variables = True)
 
     def testFirstParamOfUseCodeIfNotSeenAsUndeclared(self):
         code = '''
@@ -311,7 +307,8 @@ class VariableNotDeclared(unittest.TestCase):
                     message(8)
                 END_USE_CODE
             end on'''
-        output = do_compile(code, compact_variables=True)
+
+        output = do_compile(code, compact_variables = True)
         self.assertTrue('5' in output)
         self.assertTrue('6' not in output)
         self.assertTrue('7' not in output)
@@ -329,15 +326,16 @@ class VariableRedeclaration(unittest.TestCase):
                 foo
                 declare x
             end on'''
+
         self.assertRaises(ParseException, do_compile, code)
 
 class VariableModifiersTest(unittest.TestCase):
-
     def testPersistenceModifier(self):
         code = '''
             on init
                 declare pers foo := 4
             end on'''
+
         output = do_compile(code)
         self.assertTrue('declare $foo := 4'     in output)
         self.assertTrue('make_persistent($foo)' in output)
@@ -347,13 +345,13 @@ class VariableModifiersTest(unittest.TestCase):
             on init
                 declare read ui_button bar
             end on'''
+
         output = do_compile(code)
         self.assertTrue('declare ui_button $bar'    in output)
         self.assertTrue('make_persistent($bar)'     in output)
         self.assertTrue('read_persistent_var($bar)' in output)
 
 class ConstBlockTests(unittest.TestCase):
-
     def testConstBlock(self):
         code = '''
             on init
@@ -361,8 +359,8 @@ class ConstBlockTests(unittest.TestCase):
                     foo := 0
                     bar := 1
                 end const
-            end on
-        '''
+            end on'''
+
         output = do_compile(code)
         self.assertTrue('declare %VARS[2] := (0, 1)'     in output)
         self.assertTrue('declare const $VARS__SIZE := 2' in output)
@@ -377,6 +375,7 @@ class Family(unittest.TestCase):
                   declare x
                 end family
             end on'''
+
         output = do_compile(code)
         self.assertTrue('declare $myfamily__x' in output)
 
@@ -389,6 +388,7 @@ class Family(unittest.TestCase):
                   end family
                 end family
             end on'''
+
         output = do_compile(code)
         self.assertTrue('declare $myfamily__mysubfamily__x' in output)
 
@@ -399,6 +399,7 @@ class AutomaticAddingOfParenthesis(unittest.TestCase):
                 if 10*2=20
                 end if
             end on'''
+
         output = do_compile(code)
         self.assertTrue('if (10*2=20)' in output)
 
@@ -408,6 +409,7 @@ class AutomaticAddingOfParenthesis(unittest.TestCase):
                 while 10*2=20
                 end while
             end on'''
+
         output = do_compile(code)
         self.assertTrue('while (10*2=20)' in output)
 
@@ -420,6 +422,7 @@ class AutomaticAddingOfParenthesis(unittest.TestCase):
                     message("here")
                 end select
             end on'''
+
         output = do_compile(code)
         self.assertTrue('select ($x)' in output)
 
@@ -432,18 +435,19 @@ class ForLoop(unittest.TestCase):
                   message(i)
                 end for
             end on'''
-        expected_output = '''on init
-declare $i
-$i := 0
-while ($i<=10)
-message($i)
-inc($i)
-end while
-end on'''
-        output = do_compile(code, remove_preprocessor_vars=True)
-        output = [l.strip() for l in output.split('\n') if l]
-        expected_output = [l.strip() for l in expected_output.split('\n') if l]
-        self.assertEqual(output, expected_output)
+
+        expected_output = '''
+            on init
+            declare $i
+            $i := 0
+            while ($i<=10)
+            message($i)
+            inc($i)
+            end while
+            end on'''
+
+        output = do_compile(code, remove_preprocessor_vars = True)
+        assert_equal(self, output, expected_output)
 
     def testForLoopBasicDown(self):
         code = '''
@@ -453,18 +457,19 @@ end on'''
                   message(i)
                 end for
             end on'''
-        expected_output = '''on init
-declare $i
-$i := 10
-while ($i>=0)
-message($i)
-dec($i)
-end while
-end on'''
-        output = do_compile(code, remove_preprocessor_vars=True)
-        output = [l.strip() for l in output.split('\n') if l]
-        expected_output = [l.strip() for l in expected_output.split('\n') if l]
-        self.assertEqual(output, expected_output)
+
+        expected_output = '''
+            on init
+            declare $i
+            $i := 10
+            while ($i>=0)
+            message($i)
+            dec($i)
+            end while
+            end on'''
+
+        output = do_compile(code, remove_preprocessor_vars = True)
+        assert_equal(self, output, expected_output)
 
     def testForLoopStep(self):
         code = '''
@@ -474,16 +479,19 @@ end on'''
                   message(i)
                 end for
             end on'''
-        expected_output = '''on init
-declare $i
-$i := 0
-while ($i<=10)
-message($i)
-$i := $i+2
-end while
-end on'''
-        output = do_compile(code, remove_preprocessor_vars=True)
-        self.assertTrue(expected_output in output)
+
+        expected_output = '''
+            on init
+            declare $i
+            $i := 0
+            while ($i<=10)
+            message($i)
+            $i := $i+2
+            end while
+            end on'''
+
+        output = do_compile(code, remove_preprocessor_vars = True)
+        assert_equal(self, output, expected_output)
 
     def testOptimizationWhenLastValueContainsMinusOne(self):
         code = '''
@@ -492,17 +500,18 @@ end on'''
                 for i := 0 to NUM_GROUPS-1
                 end for
             end on'''
-        expected_output = '''on init
-declare $i
-$i := 0
-while ($i<$NUM_GROUPS)
-inc($i)
-end while
-end on'''
-        output = do_compile(code, remove_preprocessor_vars=True)
-        output = [l.strip() for l in output.split('\n') if l]
-        expected_output = [l.strip() for l in expected_output.split('\n') if l]
-        self.assertEqual(output, expected_output)
+
+        expected_output = '''
+            on init
+            declare $i
+            $i := 0
+            while ($i<$NUM_GROUPS)
+            inc($i)
+            end while
+            end on'''
+
+        output = do_compile(code, remove_preprocessor_vars = True)
+        assert_equal(self, output, expected_output)
 
 class IfElse(unittest.TestCase):
     def testIfElse(self):
@@ -516,21 +525,22 @@ class IfElse(unittest.TestCase):
                     message("lots of groups")
                 end if
             end on'''
-        expected_output = '''on init
-if ($NUM_GROUPS<10)
-message("very few groups")
-else
-if ($NUM_GROUPS<20)
-message("quite few groups")
-else
-message("lots of groups")
-end if
-end if
-end on'''
-        output = do_compile(code, remove_preprocessor_vars=True)
-        output = [l.strip() for l in output.split('\n') if l]
-        expected_output = [l.strip() for l in expected_output.split('\n') if l]
-        self.assertEqual(output, expected_output)
+
+        expected_output = '''
+            on init
+            if ($NUM_GROUPS<10)
+            message("very few groups")
+            else
+            if ($NUM_GROUPS<20)
+            message("quite few groups")
+            else
+            message("lots of groups")
+            end if
+            end if
+            end on'''
+
+        output = do_compile(code, remove_preprocessor_vars = True)
+        assert_equal(self, output, expected_output)
 
 class CompactOutput(unittest.TestCase):
     def testCompactOutput(self):
@@ -539,89 +549,105 @@ class CompactOutput(unittest.TestCase):
                 declare myVar
                 message(myVar)
             end on'''
-        output = do_compile(code, compact_variables=True)
+
+        output = do_compile(code, compact_variables = True)
         self.assertTrue('declare $najav' in output)
         self.assertTrue('message($najav)' in output)
 
     def testCompactOutputPrefixesTakenIntoAccount(self):
+        # if the variables have different prefixes they shouldn't create a clash after compacting
         code = '''
             on init
                 declare $var
                 declare %var[10]
             end on'''
-        do_compile(code, compact_variables=True)
-        # if the variables have different prefixes they shouldn't create a clash after compaction
+
+        do_compile(code, compact_variables = True)
 
 class VariableDeclarationCheck(unittest.TestCase):
     def testVariableDeclaredOutsideInit(self):
-        code = '''on note
-            declare x := 5
-        end on
-        '''
+        code = '''
+            on note
+                declare x := 5
+            end on
+            '''
+
         self.assertRaises(ParseException, do_compile, code)
 
     def testVariableIntDeclaration(self):
-        code = '''on init
-            declare x := 5
-        end on
-        '''
+        code = '''
+            on init
+                declare x := 5
+            end on
+            '''
+
         output = do_compile(code)
         self.assertTrue('declare $x := 5' in output)
 
     def testVariableRealDeclaration(self):
-        code = '''on init
-            declare ~x := 5.0
-        end on
-        '''
+        code = '''
+            on init
+                declare ~x := 5.0
+            end on
+            '''
+
         output = do_compile(code)
         self.assertTrue('declare ~x := 5.0' in output)
 
     def testVariableStringDeclaration(self):
-        code = '''on init
-            declare @s := "test"
-        end on
-        '''
+        code = '''
+            on init
+                declare @s := "test"
+            end on
+            '''
+
         output = do_compile(code)
         self.assertTrue('declare @s' in output)
         self.assertTrue('@s := "test"' in output)
 
     def testVariableIntArrayDeclaration(self):
-        code = '''on init
-            declare int_array[10] := (0)
-        end on
-        '''
+        code = '''
+            on init
+                declare int_array[10] := (0)
+            end on
+            '''
+
         output = do_compile(code)
         self.assertTrue('declare %int_array[10] := (0)' in output)
 
     def testVariableRealArrayDeclaration(self):
-        code = '''on init
-            declare ?real_array[10] := (0.0)
-        end on
-        '''
+        code = '''
+            on init
+                declare ?real_array[10] := (0.0)
+            end on
+            '''
+
         output = do_compile(code)
         self.assertTrue('declare ?real_array[10] := (0.0)' in output)
 
     def testVariableStringArrayDeclaration(self):
-        code = '''on init
-            declare !string_array[5] := ("a", "b", "c", "d", "e")
-        end on
-        '''
-        output = do_compile(code)
+        code = '''
+            on init
+                declare !string_array[5] := ("a", "b", "c", "d", "e")
+            end on
+            '''
+
         expected_output = '''on init
-        declare !string_array[5]
-        !string_array[0] := "a"
-        !string_array[1] := "b"
-        !string_array[2] := "c"
-        !string_array[3] := "d"
-        !string_array[4] := "e"
-        end on'''
-        output = do_compile(code, remove_preprocessor_vars=True)
-        output = [l.strip() for l in output.split('\n') if l]
-        expected_output = [l.strip() for l in expected_output.split('\n') if l]
-        self.assertEqual(output, expected_output)
+            declare !string_array[5]
+            !string_array[0] := "a"
+            !string_array[1] := "b"
+            !string_array[2] := "c"
+            !string_array[3] := "d"
+            !string_array[4] := "e"
+            end on'''
+
+        output = do_compile(code, remove_preprocessor_vars = True)
+        assert_equal(self, output, expected_output)
 
 class LocalVariableCheck(unittest.TestCase):
     def testLocalVariableDeclaration(self):
+        # make sure that each local variable is separate from other with the same name in other functions
+
         code = '''
             function foo
               declare x
@@ -640,11 +666,12 @@ class LocalVariableCheck(unittest.TestCase):
             end on'''
 
         output = do_compile(code)
-        # make sure that each local variable is separate from other with the same name in other functions
-        self.assertTrue('message($_x+1)' in output)
+        self.assertTrue('message($_x+1)'  in output)
         self.assertTrue('message($_x2+2)' in output)
 
     def testLocalVariableDeclaration2(self):
+        # make sure that each local variable is separate from other with the same name in other functions
+
         code = '''
             function foo
               declare const X := 1
@@ -662,16 +689,16 @@ class LocalVariableCheck(unittest.TestCase):
               message(X*2)
               foo
             end on'''
-        expected_output = '''on init
-message(0)
-message(2)
-message(4)
-end on'''
-        output = do_compile(code, optimize=True)
-        output = [l.strip() for l in output.split('\n') if l]
-        expected_output = [l.strip() for l in expected_output.split('\n') if l]
-        # make sure that each local variable is separate from other with the same name in other functions
-        self.assertEqual(output, expected_output)
+
+        expected_output = '''
+            on init
+            message(0)
+            message(2)
+            message(4)
+            end on'''
+
+        output = do_compile(code, optimize = True)
+        assert_equal(self, output, expected_output)
 
     def testLocalVariableDeclaration3(self):
         code = '''
@@ -683,6 +710,7 @@ end on'''
             on init
               foo
             end on'''
+
         output = do_compile(code)
         self.assertTrue('declare %_myarray[5] := (1, 2, 3, 4, 5)' in output)
         self.assertTrue('message(%_myarray[0])' in output)
@@ -704,16 +732,17 @@ end on'''
               end for
             end function
             '''
+
         output = do_compile(code)
         self.assertTrue('message(%_x[$_n])' in output)
 
 class UIArrayCheck(unittest.TestCase):
-
     def testUIArrayDeclaration(self):
         code = '''
             on init
                 declare ui_slider volumeSliders[3] (0, 100)
             end on'''
+
         expected_output = '''
             on init
               declare $concat_it
@@ -731,10 +760,9 @@ class UIArrayCheck(unittest.TestCase):
                 inc($preproc_i)
               end while
             end on'''
+
         output = do_compile(code)
-        output = [l.strip() for l in output.split('\n') if l]
-        expected_output = [l.strip() for l in expected_output.split('\n') if l]
-        self.assertEqual(output, expected_output)
+        assert_equal(self, output, expected_output)
 
 class GlobalVariableCheck(unittest.TestCase):
     def testGlobalVariableDeclaration(self):
@@ -751,11 +779,15 @@ class GlobalVariableCheck(unittest.TestCase):
               bar
               foo
             end on'''
+
         output = do_compile(code)
         self.assertTrue('message($x+1)' in output)
 
 class LocalKeywordCheck(unittest.TestCase):
     def testLocalKeyword(self):
+        # verify that the automatic global modifier in functions with 'on_init' in their name
+        # can be overriden by using "declare local ..."
+
         code = '''
             function on_init_foo
               declare local x
@@ -767,8 +799,6 @@ class LocalKeywordCheck(unittest.TestCase):
               on_init_foo
             end on'''
 
-        # verify that the automatic global modifier in functions with 'on_init' in their name
-        # can be overriden by using "declare local ..."
         output = do_compile(code)
         self.assertTrue('message($_x+1)' in output)
 
@@ -779,6 +809,7 @@ class AutomaticVariablePrefixing(unittest.TestCase):
                 declare a
                 declare b[10]
             end on'''
+
         output = do_compile(code)
         self.assertTrue('$a' in output)
         self.assertTrue('%b' in output)
@@ -790,6 +821,7 @@ class AutomaticVariablePrefixing(unittest.TestCase):
                 declare var[10]
                 message(var[1])
             end on'''
+
         output = do_compile(code)
         self.assertTrue('message(%var[1])' in output)
 
@@ -800,6 +832,7 @@ class AutomaticVariablePrefixing(unittest.TestCase):
                 declare var[10]
                 message(var)
             end on'''
+
         self.assertRaises(ParseException, do_compile, code)
 
 class HexNumberCheck(unittest.TestCase):
@@ -808,6 +841,7 @@ class HexNumberCheck(unittest.TestCase):
             on init
               message(0x12f)
             end on'''
+
         output = do_compile(code)
         self.assertTrue('message(303)' in output)
 
@@ -816,6 +850,7 @@ class HexNumberCheck(unittest.TestCase):
             on init
               message(012fh)
             end on'''
+
         output = do_compile(code)
         self.assertTrue('message(303)' in output)
 
@@ -825,6 +860,7 @@ class TypeChecks(unittest.TestCase):
             on init
                 declare x := 'test'
             end on'''
+
         self.assertRaises(ParseException, do_compile, code, extra_syntax_checks=True)
 
     def testAssignStringToIntVar2(self):
@@ -833,6 +869,7 @@ class TypeChecks(unittest.TestCase):
                 declare x
                 x := 'test'
             end on'''
+
         self.assertRaises(ParseException, do_compile, code)
 
     def testAssignIntToStringVar(self):
@@ -841,6 +878,7 @@ class TypeChecks(unittest.TestCase):
                 declare @x
                 x := 5
             end on'''
+
         do_compile(code)  # make sure this doesn't throw an exception
 
     def testAssignArrayToIntVar1(self):
@@ -849,6 +887,7 @@ class TypeChecks(unittest.TestCase):
                 declare myarray[10]
                 declare x := myarray
             end on'''
+
         self.assertRaises(ParseException, do_compile, code)
 
     def testAssignArrayToIntVar2(self):
@@ -858,6 +897,7 @@ class TypeChecks(unittest.TestCase):
                 declare x
                 x := myarray
             end on'''
+
         self.assertRaises(ParseException, do_compile, code)
 
     def testAssignStringArrayToIntVar1(self):
@@ -866,6 +906,7 @@ class TypeChecks(unittest.TestCase):
                 declare !myarray[10]
                 declare x := myarray
             end on'''
+
         self.assertRaises(ParseException, do_compile, code)
 
     def testAssignStringArrayToIntVar2(self):
@@ -875,6 +916,7 @@ class TypeChecks(unittest.TestCase):
                 declare x
                 x := myarray
             end on'''
+
         self.assertRaises(ParseException, do_compile, code)
 
     def testAddIntAndString(self):
@@ -884,6 +926,7 @@ class TypeChecks(unittest.TestCase):
                 declare x
                 message(x + mystring)
             end on'''
+
         self.assertRaises(ParseException, do_compile, code)
 
     def testConcatenateIntAndString(self):
@@ -893,6 +936,7 @@ class TypeChecks(unittest.TestCase):
                 declare x
                 message(x & mystring)
             end on'''
+
         do_compile(code)
 
     def testParameterTypeForBuiltinFunction(self):
@@ -901,6 +945,7 @@ class TypeChecks(unittest.TestCase):
                 declare x
                 message(num_elements(x))
             end on'''
+
         self.assertRaises(ParseException, do_compile, code)
 
     def testParametersWithDifferentTypesToMessage(self):
@@ -909,6 +954,7 @@ class TypeChecks(unittest.TestCase):
                 message(1)
                 message('test string')
             end on'''
+
         do_compile(code)
 
     def testLogicOperatorWithIntOperand(self):
@@ -919,63 +965,83 @@ class TypeChecks(unittest.TestCase):
                    { ... }
                 end if
             end on'''
+
         self.assertRaises(ParseException, do_compile, code)
+
+    def testUseBuiltinConstantsAsVarRefs(self):
+        code = '''
+            on init
+                set_engine_par(ENGINE_PAR_STEREO, 500000, -1, 4, NI_BUS_OFFSET + 5)
+            end on'''
+
+        expected_output = '''
+            on init
+            set_engine_par($ENGINE_PAR_STEREO,500000,-1,4,$NI_BUS_OFFSET+5)
+            end on'''
+
+        output = do_compile(code, optimize = True)
+        assert_equal(self, output, expected_output)
 
 class MacroDefineChecks(unittest.TestCase):
     def testBasicMacroDefine(self):
         code = '''
-        define TEST := 5
-        on init
-            message(TEST)
-        end on
-        '''
+            define TEST := 5
+            on init
+                message(TEST)
+            end on
+            '''
+
         output = do_compile(code)
         self.assertTrue('message(5)' in output)
 
     def testMacroDefineInString(self):
         code = '''
-        define MYDEFINE := 5
-        on init
-            message("MYDEFINE")
-        end on
-        '''
+            define MYDEFINE := 5
+            on init
+                message("MYDEFINE")
+            end on
+            '''
+
         output = do_compile(code)
         self.assertTrue('message("MYDEFINE")' in output)
 
 class MacroOverloading(unittest.TestCase):
     def testOverloadedWithNumArgs(self):
         code = '''
-        on init
-            test_macro()
-            test_macro(a)
-            test_macro(a,b,c)
-        end on
-        macro test_macro
-            message("macro with 0 arguments")
-        end macro
-        macro test_macro(#name#)
-            message("macro with 1 argument")
-        end macro
-        macro test_macro(#name#, #x#, #y#)
-            message("macro with 3 arguments")
-        end macro
-        '''
+            on init
+                test_macro()
+                test_macro(a)
+                test_macro(a,b,c)
+            end on
+            macro test_macro
+                message("macro with 0 arguments")
+            end macro
+            macro test_macro(#name#)
+                message("macro with 1 argument")
+            end macro
+            macro test_macro(#name#, #x#, #y#)
+                message("macro with 3 arguments")
+            end macro
+            '''
+
         output = do_compile(code)
         self.assertTrue('message("macro with 0 arguments")' in output)
         self.assertTrue('message("macro with 1 argument")' in output)
         self.assertTrue('message("macro with 3 arguments")' in output)
+
     def testOverloadedNestedWithNumArgs(self):
         code = '''
-        on init
-            test_macro()
-        end on
-        macro test_macro
-            message("macro with 0 arguments")
-            test_macro(a,b,c)
-        end macro
-        macro test_macro(#name#, #x#, #y#)
-            message("macro with 3 arguments")
-        end macro'''
+            on init
+                test_macro()
+            end on
+            macro test_macro
+                message("macro with 0 arguments")
+                test_macro(a,b,c)
+            end macro
+            macro test_macro(#name#, #x#, #y#)
+                message("macro with 3 arguments")
+            end macro'''
+
         output = do_compile(code)
         self.assertTrue('message("macro with 0 arguments")' in output)
         self.assertTrue('message("macro with 3 arguments")' in output)
@@ -990,9 +1056,11 @@ class MacroInlining(unittest.TestCase):
             on init
                 foo(10+1)
             end on'''
-        output = do_compile(code, remove_preprocessor_vars=False)
-        self.assertTrue('message(10+1*5)' in output or
-                        'message(10+(1*5))' in output)    # parenthesis is not added around the 10+1 like it would have been if foo had been a function
+
+        output = do_compile(code, remove_preprocessor_vars = False)
+        # parenthesis is not added around the 10+1 like it would have been if foo had been a function
+        self.assertTrue('message(10+1*5)'   in output or
+                        'message(10+(1*5))' in output)
 
     def testBasicMacroInliningPartOfParameterName(self):
         code = '''
@@ -1003,6 +1071,7 @@ class MacroInlining(unittest.TestCase):
             on init
                 declare_label(mylabel)
             end on'''
+
         output = do_compile(code)
         self.assertTrue('declare ui_label $lb_mylabel(1,' in output)
 
@@ -1016,11 +1085,14 @@ class MacroInlining(unittest.TestCase):
                 declare y := 5
                 show_value(y)
             end on'''
-        output = do_compile(code, remove_preprocessor_vars=False)
+
+        output = do_compile(code, remove_preprocessor_vars = False)
         self.assertTrue('''message("the value of y is: " & $y)''' in output)
 
     def testMacroExpansionWithDefineInExpandedString(self):
-        code = '''define MYDEFINE := 5
+        code = '''
+            define MYDEFINE := 5
+
             macro test(#string#)
                 message("#string#, keeping MYDEFINE unreplaced")
             end macro
@@ -1028,6 +1100,7 @@ class MacroInlining(unittest.TestCase):
             on init
                 test(Hello)
             end on'''
+
         output = do_compile(code)
         self.assertTrue('message("Hello, keeping MYDEFINE unreplaced")' in output)
 
@@ -1044,22 +1117,8 @@ class MacroInlining(unittest.TestCase):
             on init
                 foo(1+2)
             end on'''
-        self.assertRaises(ParseException, do_compile, code)
 
-##    def testMacrosInvokingEachOtherNotSupported(self):
-##        code = '''
-##            macro foo(x)
-##              bar(x+1)
-##            end macro
-##
-##            macro bar(y)
-##              message(y*5)
-##            end macro
-##
-##            on init
-##                foo(1+2)   { since bar invocation is not expanded it will be seen as an undefined function }
-##            end on'''
-##        self.assertRaises(ParseException, do_compile, code)
+        self.assertRaises(ParseException, do_compile, code)
 
     def testWrongNumberOfParameters(self):
         code = '''
@@ -1070,10 +1129,10 @@ class MacroInlining(unittest.TestCase):
             on init
                 foo(1, 2)
             end on'''
+
         self.assertRaises(ParseException, do_compile, code)
 
 class MacroIterChecks(unittest.TestCase):
-
     def testMacrosIterate(self):
         code = '''
             on init
@@ -1082,8 +1141,8 @@ class MacroIterChecks(unittest.TestCase):
 
             macro foo(#n#)
                 declare var_#n# := #n#
-            end macro
-        '''
+            end macro'''
+
         output = do_compile(code)
         self.assertTrue('declare $var_0' in output)
         self.assertTrue('declare $var_1' in output)
@@ -1092,13 +1151,14 @@ class MacroIterChecks(unittest.TestCase):
 
     def testMacrosLiterate(self):
         code = '''
-        on init
-            literate_macro(foo) on banana, pineapple, kiwi
+            on init
+                literate_macro(foo) on banana, pineapple, kiwi
             end on
 
-        macro foo(#g#)
-            declare #g#
-        end macro'''
+            macro foo(#g#)
+                declare #g#
+            end macro'''
+
         output = do_compile(code)
         self.assertTrue('declare $banana' in output)
         self.assertTrue('declare $pineapple' in output)
@@ -1106,9 +1166,10 @@ class MacroIterChecks(unittest.TestCase):
 
     def testPostIterateMacro(self):
         code = '''
-        on init
-            iterate_post_macro(declare ui_button mySwitch_#n#) := 0 to 3
-        end on'''
+            on init
+                iterate_post_macro(declare ui_button mySwitch_#n#) := 0 to 3
+            end on'''
+
         output = do_compile(code)
         self.assertTrue('declare ui_button $mySwitch_0' in output)
         self.assertTrue('declare ui_button $mySwitch_1' in output)
@@ -1117,35 +1178,35 @@ class MacroIterChecks(unittest.TestCase):
 
     def testDefinesInIterateMacros(self):
         code = '''
-        on init
-            define NUM_MENUS := 3
-            declare ui_menu menus[NUM_MENUS]
-            iterate_macro(add_menu_item(menus#n#, "Item", 0)) := 0 to NUM_MENUS - 1
-        end on'''
+            on init
+                define NUM_MENUS := 3
+                declare ui_menu menus[NUM_MENUS]
+                iterate_macro(add_menu_item(menus#n#, "Item", 0)) := 0 to NUM_MENUS - 1
+            end on'''
+
         expected_output = '''
-        on init
-          declare $concat_it
-          declare $concat_offset
-          declare $string_it
-          declare $list_it
-          declare $preproc_i
-          declare %menus[3]
-          declare ui_menu $menus0
-          declare ui_menu $menus1
-          declare ui_menu $menus2
-          $preproc_i := 0
-          while ($preproc_i<=2)
-            %menus[$preproc_i] := get_ui_id($menus0)+$preproc_i
-            inc($preproc_i)
-          end while
-          add_menu_item($menus0,"Item",0)
-          add_menu_item($menus1,"Item",0)
-          add_menu_item($menus2,"Item",0)
-        end on'''
+            on init
+              declare $concat_it
+              declare $concat_offset
+              declare $string_it
+              declare $list_it
+              declare $preproc_i
+              declare %menus[3]
+              declare ui_menu $menus0
+              declare ui_menu $menus1
+              declare ui_menu $menus2
+              $preproc_i := 0
+              while ($preproc_i<=2)
+                %menus[$preproc_i] := get_ui_id($menus0)+$preproc_i
+                inc($preproc_i)
+              end while
+              add_menu_item($menus0,"Item",0)
+              add_menu_item($menus1,"Item",0)
+              add_menu_item($menus2,"Item",0)
+            end on'''
+
         output = do_compile(code)
-        output = [l.strip() for l in output.split('\n') if l]
-        expected_output = [l.strip() for l in expected_output.split('\n') if l]
-        self.assertEqual(output, expected_output)
+        assert_equal(self, output, expected_output)
 
 class LineContinuation(unittest.TestCase):
     def testMacrosInvokingEachOtherNotSupported(self):
@@ -1156,6 +1217,7 @@ class LineContinuation(unittest.TestCase):
                         'so it is broken up into multiple lines. x=' & ...
                         x)
             end on'''
+
         output = do_compile(code)
         self.assertTrue('''message("this is a really long line ... " & "so it is broken up into multiple lines. x=" & $x)''' in output)
 
@@ -1173,6 +1235,7 @@ class FunctionInlining(unittest.TestCase):
             on init
                 foo(10)
             end on'''
+
         output = do_compile(code)
         self.assertTrue('message((10+1)*5)' in output)
 
@@ -1186,6 +1249,7 @@ class FunctionInlining(unittest.TestCase):
               declare mylist[10]
               foo(mylist[2])
             end on'''
+
         self.assertRaises(ParseException, do_compile, code)
 
     def testRecursion(self):
@@ -1201,6 +1265,7 @@ class FunctionInlining(unittest.TestCase):
             on init
                 foo(10)
             end on'''
+
         self.assertRaises(ParseException, do_compile, code)
 
     def testWrongNumberOfParameters(self):
@@ -1212,6 +1277,7 @@ class FunctionInlining(unittest.TestCase):
             on init
                 foo(1, 2)
             end on'''
+
         self.assertRaises(ParseException, do_compile, code)
 
     def testFunctionWithReturnValueOneLiner(self):
@@ -1228,6 +1294,7 @@ class FunctionInlining(unittest.TestCase):
                 message(scale_up(5+4))
                 message(scale_down(scale_up(1)))
             end on'''
+
         output = do_compile(code)
         self.assertTrue('message((5+4)*100)' in output)
         self.assertTrue('message(1*100/100)' in output)
@@ -1241,6 +1308,7 @@ class FunctionInlining(unittest.TestCase):
             on init
                 message(last_group_index())    { for this type of function one has to use () after the function name }
             end on'''
+
         output = do_compile(code)
         self.assertTrue('message($NUM_GROUPS-1)' in output)
 
@@ -1255,6 +1323,7 @@ class FunctionInlining(unittest.TestCase):
                 declare x
                 x := scale_up(5)
             end on'''
+
         output = do_compile(code)
         self.assertTrue('$x := 5*10' in output)
         self.assertTrue('$x := $x*10' in output)
@@ -1269,6 +1338,7 @@ class FunctionInlining(unittest.TestCase):
             on init
                 message(scale_up(5+4))    { scale_up needs to be a one-liner when invoked like this }
             end on'''
+
         self.assertRaises(ParseException, do_compile, code)
 
     def testFamilyPassedAsParameter(self):
@@ -1283,6 +1353,7 @@ class FunctionInlining(unittest.TestCase):
                 end family
                 setxmember(myfamily, 5)
             end on'''
+
         output = do_compile(code)
         self.assertTrue('$myfamily__x := 5' in output)
 
@@ -1300,6 +1371,7 @@ class FunctionInlining(unittest.TestCase):
                 end family
                 setxmember(fam1.fam2, 5)
             end on'''
+
         output = do_compile(code)
         self.assertTrue('$fam1__fam2__x := 5' in output)
 
@@ -1314,6 +1386,7 @@ class FunctionInlining(unittest.TestCase):
             on init
                 foo
             end on'''
+
         self.assertRaises(ParseException, do_compile, code)
 
     def testFunctionWithSameNameAsParameter(self):
@@ -1325,11 +1398,13 @@ class FunctionInlining(unittest.TestCase):
             on init
                 foo(5)    { only the parameter should be replaced by 5, not the function name }
             end on'''
+
         output = do_compile(code)
         self.assertTrue('message(5)' in output)
 
     def testSubstitutionOfBothArrayNameAndIndex(self):
-        code = '''function set_value_at(array, index, value)
+        code = '''
+            function set_value_at(array, index, value)
               array[index] := value
             end function
 
@@ -1337,6 +1412,7 @@ class FunctionInlining(unittest.TestCase):
               declare my_array[100]
               set_value_at(my_array, 0, 10)
             end on'''
+
         output = do_compile(code)
         self.assertTrue('%my_array[0] := 10' in output)
 
@@ -1350,6 +1426,7 @@ class FunctionInvocationUsingCall(unittest.TestCase):
             on init
                 call foo
             end on'''
+
         self.assertRaises(ParseException, do_compile, code)
 
     def testCallFunctionWithParameters(self):
@@ -1361,6 +1438,7 @@ class FunctionInvocationUsingCall(unittest.TestCase):
             on init
                 call foo(5)
             end on'''
+
         self.assertRaises(ParseException, do_compile, code)
 
     def testCallFunctionWithReturnValue(self):
@@ -1372,6 +1450,7 @@ class FunctionInvocationUsingCall(unittest.TestCase):
             on init
                 call foo
             end on'''
+
         self.assertRaises(ParseException, do_compile, code)
 
     def testWrongNumberOfParameters(self):
@@ -1383,6 +1462,7 @@ class FunctionInvocationUsingCall(unittest.TestCase):
             on init
                 foo(1, 2)
             end on'''
+
         self.assertRaises(ParseException, do_compile, code)
 
     def testRecursion(self):
@@ -1398,6 +1478,7 @@ class FunctionInvocationUsingCall(unittest.TestCase):
             on init
                 foo(10)
             end on'''
+
         self.assertRaises(ParseException, do_compile, code)
 
     def testTopologicalSortOfFunctionDefs(self):
@@ -1413,11 +1494,11 @@ class FunctionInvocationUsingCall(unittest.TestCase):
             on note
                 call foo
             end on'''
+
         output = do_compile(code)
         self.assertTrue(output.index('function bar') < output.index('function foo'), 'Functions should be reordered so that they are always defined before they are used')
 
 class NamespacePrefixing(unittest.TestCase):
-
     def testNamespacePrefixing(self):
         code = '''
             import 'test_imports/namespace1.ksp' as mymodule
@@ -1428,7 +1509,7 @@ class NamespacePrefixing(unittest.TestCase):
                 mymodule.sort_ascendingly(x, y)
             end on'''
 
-        output = do_compile(code, optimize=True)
+        output = do_compile(code, optimize = True)
         self.assertTrue('_mymodule__tmp' in output)
 
     def testFunctionReturnValuesNotPrefixed(self):
@@ -1439,7 +1520,8 @@ class NamespacePrefixing(unittest.TestCase):
                 declare x
                 x := mymodule.max(8, 3)
             end on'''
-        output = do_compile(code, optimize=True)
+
+        output = do_compile(code, optimize = True)
         self.assertTrue('x := 8' in output)
 
     def testMacroImportedPrefixed(self):
@@ -1449,6 +1531,7 @@ class NamespacePrefixing(unittest.TestCase):
             on init
                 mymodule.declare_var(variable)
             end on'''
+
         output = do_compile(code)
         self.assertTrue('declare $mymodule__variable' in output)
 
@@ -1460,6 +1543,7 @@ class NamespacePrefixing(unittest.TestCase):
                 mymodule.foo
                 mymodule.foo(0, 0)
             end on'''
+
         output = do_compile(code)
         self.assertTrue('message("macro with no arguments")' in output)
         self.assertTrue('message("macro with 2 arguments")' in output)
@@ -1476,7 +1560,8 @@ class PragmaTests(unittest.TestCase):
                 declare Z
                 mymodule.declare_variables
             end on'''
-        output = do_compile(code, remove_preprocessor_vars=True, compact_variables=True)
+
+        output = do_compile(code, remove_preprocessor_vars = True, compact_variables = True)
         self.assertTrue('declare $mymodule__K' in output)
         self.assertTrue('declare $X' in output)
         self.assertTrue('declare $Y' in output)
@@ -1489,7 +1574,8 @@ class OptimizationModeChecks(unittest.TestCase):
                 declare const FACTOR := 5
                 message(FACTOR * (3 + 7))
             end on'''
-        output = do_compile(code, optimize=True)
+
+        output = do_compile(code, optimize = True)
         self.assertTrue('message(50)' in output)
 
     def testNegativeDivisionTruncation(self):
@@ -1497,10 +1583,11 @@ class OptimizationModeChecks(unittest.TestCase):
             on init
                 message(-10/9)
             end on'''
-        output = do_compile(code, optimize=True)
+
+        output = do_compile(code, optimize = True)
         self.assertTrue('message(-1)' in output)
 
-    def testMOD(self):
+    def testModulo(self):
         code = '''
             on init
                 message(11 mod 5)
@@ -1508,7 +1595,8 @@ class OptimizationModeChecks(unittest.TestCase):
                 message(13 mod -5)
                 message(-14 mod -5)
             end on'''
-        output = do_compile(code, optimize=True)
+
+        output = do_compile(code, optimize = True)
         self.assertTrue('message(1)' in output)
         self.assertTrue('message(-2)' in output)
         self.assertTrue('message(3)' in output)
@@ -1519,7 +1607,8 @@ class OptimizationModeChecks(unittest.TestCase):
             on init
                 message(5555555 * 555555)
             end on'''
-        output = do_compile(code, optimize=True)
+
+        output = do_compile(code, optimize = True)
         self.assertTrue('message(-1665127799)' in output)
 
     def testRemoveUnusedVariablesAndFunctions(self):
@@ -1538,7 +1627,8 @@ class OptimizationModeChecks(unittest.TestCase):
                   call funcA
                 end if
             end on'''
-        output = do_compile(code, optimize=True)
+
+        output = do_compile(code, optimize = True)
         self.assertTrue('declare' not in output)
         self.assertTrue('call' not in output)
         self.assertTrue('func' not in output)
@@ -1565,9 +1655,9 @@ class OptimizationModeChecks(unittest.TestCase):
             function fn2
               declare global xyz
               xyz := 55
-            end function
-            '''
-        output = do_compile(code, optimize=True)
+            end function'''
+
+        output = do_compile(code, optimize = True)
         self.assertTrue('declare $abc' in output)
         self.assertTrue('declare $xyz' not in output)
         self.assertTrue('fn2' not in output)
@@ -1579,9 +1669,9 @@ class OptimizationModeChecks(unittest.TestCase):
                 if 1 # 0 or x = 9
                     message('test')
                 end if
-            end on
-        '''
-        output = do_compile(code, optimize=True)
+            end on'''
+
+        output = do_compile(code, optimize = True)
         self.assertTrue('2 # 0' not in output)
 
     def testBinaryExpressions2(self):
@@ -1591,9 +1681,9 @@ class OptimizationModeChecks(unittest.TestCase):
                 if 1 = 0 and x = 9
                     message('test')
                 end if
-            end on
-        '''
-        output = do_compile(code, optimize=True)
+            end on'''
+
+        output = do_compile(code, optimize = True)
         self.assertTrue('message' not in output)
 
     def testBinaryExpressions3(self):
@@ -1601,9 +1691,9 @@ class OptimizationModeChecks(unittest.TestCase):
             on init
                 declare x
                 message(0*x)
-            end on
-        '''
-        output = do_compile(code, optimize=True)
+            end on'''
+
+        output = do_compile(code, optimize = True)
         self.assertTrue('message(0)' in output)
 
     def testBinaryExpressions4(self):
@@ -1611,9 +1701,9 @@ class OptimizationModeChecks(unittest.TestCase):
             on init
                 declare x
                 message(x*1)
-            end on
-        '''
-        output = do_compile(code, optimize=True)
+            end on'''
+
+        output = do_compile(code, optimize = True)
         self.assertTrue('message($x)' in output)
 
     def testBinaryExpressions5(self):
@@ -1621,9 +1711,9 @@ class OptimizationModeChecks(unittest.TestCase):
             on init
                 declare x
                 message(0+x)
-            end on
-        '''
-        output = do_compile(code, optimize=True)
+            end on'''
+
+        output = do_compile(code, optimize = True)
         self.assertTrue('message($x)' in output)
 
     def testIfOneEqualsOne(self):
@@ -1635,146 +1725,58 @@ class OptimizationModeChecks(unittest.TestCase):
                 if 2=2
                     message("test2")
                 end if
-            end on
-        '''
-        output = do_compile(code, optimize=True)
+            end on'''
+
+        output = do_compile(code, optimize = True)
         self.assertTrue('if (1=1)' in output)
         self.assertTrue('2=2' not in output)
 
 class PropertyTests(unittest.TestCase):
     def testAlias1(self):
         code = '''
-        on init
-          declare a
-          property b -> a
-          message(b)
-        end on
-        '''
+            on init
+              declare a
+              property b -> a
+              message(b)
+            end on'''
+
         output = do_compile(code)
         self.assertTrue('message($a)' in output)
 
     def testAlias2(self):
         code = '''
-        on init
-          declare _list[100]
-          property list[a,b] -> _list[a*10+b]
-          list[3,5] := 99
-        end on
-        '''
-        output = do_compile(code, optimize=True)
+            on init
+              declare _list[100]
+              property list[a,b] -> _list[a*10+b]
+              list[3,5] := 99
+            end on'''
+
+        output = do_compile(code, optimize = True)
         self.assertTrue('%_list[35] := 99' in output)
 
     def testPropertyWithMultilineGet(self):
         code = '''
-        on init
-            property has_many_groups
-                function get() -> result
-                    if NUM_GROUPS > 100
-                        result := 1
-                    else
-                        result := 0
-                    end if
-                end function
-            end property
-            declare x
-            x := has_many_groups
-        end on
-        '''
+            on init
+                property has_many_groups
+                    function get() -> result
+                        if NUM_GROUPS > 100
+                            result := 1
+                        else
+                            result := 0
+                        end if
+                    end function
+                end property
+                declare x
+                x := has_many_groups
+            end on'''
+
         output = do_compile(code)
         self.assertTrue('if ($NUM_GROUPS' in output)
 
     def testPropertyWithoutIndex(self):
         code = '''
-        on init
-            declare _data
-            property myprop
-
-              function get() -> result
-                result := _data*_data
-              end function
-
-              function set(value)
-                _data := value
-              end function
-
-            end property
-
-            myprop := 1
-            message(myprop)
-            test(myprop)
-        end on
-
-        function test(prop)
-          prop := 2
-        end function
-        '''
-        output = do_compile(code)
-        self.assertTrue('$_data := 1' in output)
-        self.assertTrue('message($_data*$_data)' in output)
-        self.assertTrue('$_data := 2' in output)
-
-    def testPropertyUsingMacro(self):
-        code = '''
-        macro GET(expression)
-          function get() -> result
-            result := expression
-          end function
-        end macro
-        macro SET(lhs)
-          function set(value)
-            lhs := value
-          end function
-        end macro
-
-        on init
-            declare _data
-            property myprop
-              GET(_data*_data)
-              SET(_data)
-            end property
-
-            myprop := 1
-            message(myprop)
-        end on
-        '''
-        output = do_compile(code)
-        self.assertTrue('$_data := 1' in output)
-        self.assertTrue('message($_data*$_data)' in output)
-
-    def testPropertyUsingMacro2(self):
-        code = '''
-        macro add_engine_par(#prop#, engine_par)
-            property group.slot.generic.#prop#
-                function get(group, slot, generic) -> result
-                    result := get_engine_par(engine_par, group, slot, generic)
-                end function
-
-                function set(group, slot, generic, value)
-                    set_engine_par(engine_par, value, group, slot, generic)
-                end function
-            end property
-
-            property group.slot.generic.#prop#.disp
-                function get(group, slot, generic) -> result
-                    result := get_engine_par_disp(engine_par, group, slot, generic)
-                end function
-            end property
-        end macro
-
-        on init
-            add_engine_par(volume, ENGINE_PAR_VOLUME)
-            declare ui_slider Vol (0, 1000000)
-            Vol := group[-1].slot[-1].generic[-1].volume
-        end on'''
-        output = do_compile(code)
-        self.assertTrue('$Vol := get_engine_par($ENGINE_PAR_VOLUME,-1,-1,-1)' in output)
-
-    def testPropertyWithinFamily(self):
-        code = '''
-
-        function on_init_func
-            declare _data
-            family myfamily
+            on init
+                declare _data
                 property myprop
 
                   function get() -> result
@@ -1786,20 +1788,110 @@ class PropertyTests(unittest.TestCase):
                   end function
 
                 end property
-            end family
-        end function
 
-        on init
-            on_init_func
-            myfamily.myprop := 1
-            message(myfamily.myprop)
-            test(myfamily.myprop)
-        end on
+                myprop := 1
+                message(myprop)
+                test(myprop)
+            end on
 
-        function test(prop)
-          prop := 2
-        end function
-        '''
+            function test(prop)
+              prop := 2
+            end function
+            '''
+
+        output = do_compile(code)
+        self.assertTrue('$_data := 1' in output)
+        self.assertTrue('message($_data*$_data)' in output)
+        self.assertTrue('$_data := 2' in output)
+
+    def testPropertyUsingMacro(self):
+        code = '''
+            macro GET(expression)
+              function get() -> result
+                result := expression
+              end function
+            end macro
+            macro SET(lhs)
+              function set(value)
+                lhs := value
+              end function
+            end macro
+
+            on init
+                declare _data
+                property myprop
+                  GET(_data*_data)
+                  SET(_data)
+                end property
+
+                myprop := 1
+                message(myprop)
+            end on'''
+
+        output = do_compile(code)
+        self.assertTrue('$_data := 1' in output)
+        self.assertTrue('message($_data*$_data)' in output)
+
+    def testPropertyUsingMacro2(self):
+        code = '''
+            macro add_engine_par(#prop#, engine_par)
+                property group.slot.generic.#prop#
+                    function get(group, slot, generic) -> result
+                        result := get_engine_par(engine_par, group, slot, generic)
+                    end function
+
+                    function set(group, slot, generic, value)
+                        set_engine_par(engine_par, value, group, slot, generic)
+                    end function
+                end property
+
+                property group.slot.generic.#prop#.disp
+                    function get(group, slot, generic) -> result
+                        result := get_engine_par_disp(engine_par, group, slot, generic)
+                    end function
+                end property
+            end macro
+
+            on init
+                add_engine_par(volume, ENGINE_PAR_VOLUME)
+                declare ui_slider Vol (0, 1000000)
+                Vol := group[-1].slot[-1].generic[-1].volume
+            end on'''
+
+        output = do_compile(code)
+        self.assertTrue('$Vol := get_engine_par($ENGINE_PAR_VOLUME,-1,-1,-1)' in output)
+
+    def testPropertyWithinFamily(self):
+        code = '''
+            function on_init_func
+                declare _data
+                family myfamily
+                    property myprop
+
+                      function get() -> result
+                        result := _data*_data
+                      end function
+
+                      function set(value)
+                        _data := value
+                      end function
+
+                    end property
+                end family
+            end function
+
+            on init
+                on_init_func
+                myfamily.myprop := 1
+                message(myfamily.myprop)
+                test(myfamily.myprop)
+            end on
+
+            function test(prop)
+              prop := 2
+            end function
+            '''
+
         output = do_compile(code)
         self.assertTrue('$_data := 1' in output)
         self.assertTrue('message($_data*$_data)' in output)
@@ -1807,29 +1899,30 @@ class PropertyTests(unittest.TestCase):
 
     def testPropertyWithIndex(self):
         code = '''
-        on init
-            declare _data[10]
-            property myprop
+            on init
+                declare _data[10]
+                property myprop
 
-              function get(index) -> result
-                result := _data[index]
-              end function
+                  function get(index) -> result
+                    result := _data[index]
+                  end function
 
-              function set(index, value)
-                _data[index] := value
-              end function
+                  function set(index, value)
+                    _data[index] := value
+                  end function
 
-            end property
+                end property
 
-            myprop[1] := 1
-            message(myprop[3])
-            test(myprop)
-        end on
+                myprop[1] := 1
+                message(myprop[3])
+                test(myprop)
+            end on
 
-        function test(prop)
-          prop[0] := 2
-        end function
-        '''
+            function test(prop)
+              prop[0] := 2
+            end function
+            '''
+
         output = do_compile(code)
         self.assertTrue('%_data[1] := 1' in output)
         self.assertTrue('message(%_data[3])' in output)
@@ -1838,103 +1931,106 @@ class PropertyTests(unittest.TestCase):
 class FunctionAsArgumentTest(unittest.TestCase):
     def testFunctionAsArgument(self):
         code = '''
-        on init
-            execute(show_value)
-        end on
+            on init
+                execute(show_value)
+            end on
 
-        function execute(func)
-          func(5)
-        end function
+            function execute(func)
+              func(5)
+            end function
 
-        function show_value(x)
-          message(x)
-        end function
-        '''
+            function show_value(x)
+              message(x)
+            end function
+            '''
+
         output = do_compile(code)
         self.assertTrue('message(5)' in output)
 
     def testParameterlessFunctionAsArgument(self):
         code = '''
-        on init
-            execute(show_value)
-        end on
+            on init
+                execute(show_value)
+            end on
 
-        function execute(func)
-          func
-        end function
+            function execute(func)
+              func
+            end function
 
-        function show_value
-          message(5)
-        end function
-        '''
+            function show_value
+              message(5)
+            end function
+            '''
+
         output = do_compile(code)
         self.assertTrue('message(5)' in output)
 
     def testCalledFunctionAsArgument(self):
         code = '''
-        on note
-            execute(show_value)
-        end on
+            on note
+                execute(show_value)
+            end on
 
-        function execute(func)
-          call func
-        end function
+            function execute(func)
+              call func
+            end function
 
-        function show_value
-          message(5)
-        end function
-        '''
+            function show_value
+              message(5)
+            end function
+            '''
+
         output = do_compile(code)
         self.assertTrue('function show_value' in output)
         self.assertTrue('message(5)' in output)
 
 class ControlParTest(unittest.TestCase):
     def testGetUiIDWrapping(self):
-        code = '''
-        on init
-            declare ui_knob myknob(0, 100, 1)
-            set_control_par(myknob, CONTROL_PAR_POS_X, 100)
-        end on
-        '''
-        output = do_compile(code)
         # ensure that get_ui_id is added:
+
+        code = '''
+            on init
+                declare ui_knob myknob(0, 100, 1)
+                set_control_par(myknob, CONTROL_PAR_POS_X, 100)
+            end on'''
+
+        output = do_compile(code)
         self.assertTrue('set_control_par(get_ui_id($myknob),$CONTROL_PAR_POS_X,100)' in output)
 
     def testControlPar(self):
         code = '''
-        on init
-            family myfam
-              declare ui_knob myknob (0, 100, 1)
-            end family
+            on init
+                family myfam
+                  declare ui_knob myknob (0, 100, 1)
+                end family
 
-            make_settings(myfam)
+                make_settings(myfam)
 
-            declare ui_value_edit myvalue (0, 100, 1)
-            declare control_reference
-            control_reference := get_ui_id(myvalue)
-            control_reference->value := 10
-            CONTROL_REFERENCE->value := 10   { test case-sensitivity }
+                declare ui_value_edit myvalue (0, 100, 1)
+                declare control_reference
+                control_reference := get_ui_id(myvalue)
+                control_reference->value := 10
+                CONTROL_REFERENCE->value := 10   { test case-sensitivity }
 
-            declare ui_label Engine.label (1, 1)
-            declare ui_knob  Engine.knob (0, 128, 1)
-            declare ui_panel Engine.panel
-            Engine.label -> picture_state := Engine.knob
-            Engine.label -> parent_panel := Engine.panel
+                declare ui_label Engine.label (1, 1)
+                declare ui_knob  Engine.knob (0, 128, 1)
+                declare ui_panel Engine.panel
+                Engine.label -> picture_state := Engine.knob
+                Engine.label -> parent_panel := Engine.panel
 
-            declare ui_button A[5]
-            declare ui_panel Panel[2]
+                declare ui_button A[5]
+                declare ui_panel Panel[2]
 
-            A0 -> parent_panel := Panel0
-        end on
+                A0 -> parent_panel := Panel0
+            end on
 
-        function make_settings(fam)
-          fam.myknob->x := 10
-          fam.myknob->text := 'text'
-          message(fam.myknob->x)
-          message(fam.myknob->text)
-        end function
+            function make_settings(fam)
+              fam.myknob->x := 10
+              fam.myknob->text := 'text'
+              message(fam.myknob->x)
+              message(fam.myknob->text)
+            end function'''
 
-        '''
         output = do_compile(code)
 
         # get_ui_id should automatically be inserted on these lines:
@@ -1951,30 +2047,31 @@ class ControlParTest(unittest.TestCase):
 
     def testEventPars(self):
         '''Make sure that set_event_par can deal with functions that return a constant in the first param'''
+
         code = '''
-        on init
-            declare const GRAIN_BLIP_EVT_STORAGE := 1
-            declare const EVENT_STATE.RELEASE := 2
-            declare const GRAIN_EVENT_PAR0 := 4
-        end on
-        on note
-            if get_event_par_arr(EVENT_ID, EVENT_PAR_CUSTOM,GRAIN_BLIP_EVT_STORAGE) # 0
-                set_event_par(get_event_par_arr(EVENT_ID, EVENT_PAR_CUSTOM,GRAIN_BLIP_EVT_STORAGE), EVENT_PAR_3, ENGINE_UPTIME) //PROBLEM
-                set_event_par_arr(get_event_par_arr(EVENT_ID, EVENT_PAR_CUSTOM,GRAIN_BLIP_EVT_STORAGE), EVENT_PAR_CUSTOM, EVENT_STATE.RELEASE, GRAIN_EVENT_PAR0)
-            end if
-        end on
-        '''
+            on init
+                declare const GRAIN_BLIP_EVT_STORAGE := 1
+                declare const EVENT_STATE.RELEASE := 2
+                declare const GRAIN_EVENT_PAR0 := 4
+            end on
+            on note
+                if get_event_par_arr(EVENT_ID, EVENT_PAR_CUSTOM,GRAIN_BLIP_EVT_STORAGE) # 0
+                    set_event_par(get_event_par_arr(EVENT_ID, EVENT_PAR_CUSTOM,GRAIN_BLIP_EVT_STORAGE), EVENT_PAR_3, ENGINE_UPTIME) //PROBLEM
+                    set_event_par_arr(get_event_par_arr(EVENT_ID, EVENT_PAR_CUSTOM,GRAIN_BLIP_EVT_STORAGE), EVENT_PAR_CUSTOM, EVENT_STATE.RELEASE, GRAIN_EVENT_PAR0)
+                end if
+            end on'''
+
         output = do_compile(code)
         self.assertTrue('set_event_par(get_event_par_arr($EVENT_ID,$EVENT_PAR_CUSTOM,$GRAIN_BLIP_EVT_STORAGE),$EVENT_PAR_3,$ENGINE_UPTIME)' in output)
         self.assertTrue('set_event_par_arr(get_event_par_arr($EVENT_ID,$EVENT_PAR_CUSTOM,$GRAIN_BLIP_EVT_STORAGE),$EVENT_PAR_CUSTOM,$EVENT_STATE__RELEASE,$GRAIN_EVENT_PAR0)' in output)
 
     def testEventParsWithArrowNotation(self):
         code = '''
-        on note
-            get_event_par_arr(EVENT_ID, EVENT_PAR_CUSTOM,5) -> par_3 := ENGINE_UPTIME
-            by_marks(MARK_3) -> volume := random(-100000,0)
-        end on
-        '''
+            on note
+                get_event_par_arr(EVENT_ID, EVENT_PAR_CUSTOM,5) -> par_3 := ENGINE_UPTIME
+                by_marks(MARK_3) -> volume := random(-100000,0)
+            end on'''
+
         output = do_compile(code)
         self.assertTrue('set_event_par(get_event_par_arr($EVENT_ID,$EVENT_PAR_CUSTOM,5),$EVENT_PAR_3,$ENGINE_UPTIME)' in output)
         self.assertTrue('set_event_par(by_marks($MARK_3),$EVENT_PAR_VOLUME,random(-100000,0))' in output)
@@ -1982,74 +2079,72 @@ class ControlParTest(unittest.TestCase):
 class TestSubscripts(unittest.TestCase):
     def testSubscripts1(self):
         code = '''
-        on init
-          declare data[100]
-          property prop
-            function get(index1, index2) -> result
-              result := data[index1*10 + index2]
-            end function
-            function set(index1, index2, value)
-              data[index1*10 + index2] := value
-            end function
-          end property
+            on init
+              declare data[100]
+              property prop
+                function get(index1, index2) -> result
+                  result := data[index1*10 + index2]
+                end function
+                function set(index1, index2, value)
+                  data[index1*10 + index2] := value
+                end function
+              end property
 
-          prop[3,4] := 99
-          message(prop[3,4])
-        end on
-        '''
-        output = do_compile(code, optimize=True)
+              prop[3,4] := 99
+              message(prop[3,4])
+            end on'''
+
+        output = do_compile(code, optimize = True)
         self.assertTrue('%data[34] := 99' in output)
         self.assertTrue('message(%data[34])' in output)
 
     def testFamilyWithSubscriptAsParameter(self):
         code = '''
-        function show_point(p)
-            message(p.x & ', ' & p.y)
-        end function
+            function show_point(p)
+                message(p.x & ', ' & p.y)
+            end function
 
-        on init
-          family points
-            declare x[100]
-            declare y[100]
-          end family
-          show_point(points[4])   { verify that the index can be added here and is propagated to the x, y members }
-        end on
-        '''
+            on init
+              family points
+                declare x[100]
+                declare y[100]
+              end family
+              show_point(points[4])   { verify that the index can be added here and is propagated to the x, y members }
+            end on'''
+
         output = do_compile(code)
         self.assertTrue('message(%points__x[4] & ", " & %points__y[4])' in output)
 
     def testTooManySubscripts(self):
         code = '''
-        function modify_first_element(array_var)
-          array_var[0] := 99
-        end function
+            function modify_first_element(array_var)
+              array_var[0] := 99
+            end function
 
-        on init
-          declare x[100]
-          modify_first_element(x[0])    { the index is incorrectly added here too }
-        end on
-        '''
-        #output = do_compile(code)
+            on init
+              declare x[100]
+              modify_first_element(x[0])    { the index is incorrectly added here too }
+            end on'''
+
         self.assertRaises(ParseException, do_compile, code)
 
 class TestTaskfunc(unittest.TestCase):
     def testTaskfunc(self):
         code = '''
-        on init
-          SET_CONDITION(TCM_DEBUG)
-          tcm.init(100)
-          declare x
-        end on
+            on init
+              SET_CONDITION(TCM_DEBUG)
+              tcm.init(100)
+              declare x
+            end on
 
-        taskfunc randomize(min, max) -> result
-          declare r := random(min, max)
-          result := r
-        end taskfunc
+            taskfunc randomize(min, max) -> result
+              declare r := random(min, max)
+              result := r
+            end taskfunc
 
-        on note
-          x := randomize(44, 88)
-        end on
-        '''
+            on note
+              x := randomize(44, 88)
+            end on'''
 
         expected_output = '''
             on init
@@ -2094,30 +2189,26 @@ class TestTaskfunc(unittest.TestCase):
             call randomize
             $x := %p[$sp-1]
             end on'''
-        #expected_output = '\n'.join(x.strip() for x in expected_output.strip().split('\n')) # remove indent
-        output = do_compile(code, optimize=True)
-        output = [l.strip() for l in output.split('\n') if l]
-        expected_output = [l.strip() for l in expected_output.split('\n') if l]
-        self.assertEqual(output, expected_output)
-        #self.assertTrue(expected_output in output)
+
+        output = do_compile(code, optimize = True)
+        assert_equal(self, output, expected_output)
 
     def testTaskfuncWithTWaitAndOutParam(self):
         code = '''
-        on init
-          tcm.init(100)
-          declare x
-        end on
+            on init
+              tcm.init(100)
+              declare x
+            end on
 
-        taskfunc randomize(min, max, out result)
-          declare r := random(min, max)
-          tcm.wait(1000)
-          result := r
-        end taskfunc
+            taskfunc randomize(min, max, out result)
+              declare r := random(min, max)
+              tcm.wait(1000)
+              result := r
+            end taskfunc
 
-        on note
-          randomize(44, 88, x)
-        end on
-        '''
+            on note
+              randomize(44, 88, x)
+            end on'''
 
         expected_output = '''
             on init
@@ -2181,199 +2272,218 @@ class TestTaskfunc(unittest.TestCase):
             call randomize
             $x := %p[$sp-1]
             end on'''
-        #expected_output = '\n'.join(x.strip() for x in expected_output.strip().split('\n')) # remove indent
-        output = do_compile(code, optimize=True)
-        output = [l.strip() for l in output.split('\n') if l]
-        expected_output = [l.strip() for l in expected_output.split('\n') if l]
-        self.assertEqual(output, expected_output)
-        #self.assertTrue(expected_output in output)
+
+        output = do_compile(code, optimize = True)
+        assert_equal(self, output, expected_output)
 
     def testInliningTaskfuncForbidden(self):
         code = '''
-        on init
-          tcm.init(100)
-          declare x
-        end on
+            on init
+              tcm.init(100)
+              declare x
+            end on
 
-        taskfunc randomize(min, max) -> result
-          declare r := random(min, max)
-          result := r
-        end taskfunc
+            taskfunc randomize(min, max) -> result
+              declare r := random(min, max)
+              result := r
+            end taskfunc
 
-        on note
-          x := call randomize(44, 88)  { not allowed, one must not use "call" }
-        end on
-        '''
-        self.assertRaises(ParseException, do_compile, code, optimize=True)
+            on note
+              x := call randomize(44, 88)  { not allowed, one must not use "call" }
+            end on'''
+
+        self.assertRaises(ParseException, do_compile, code, optimize = True)
 
     def testCallInsideGeneralExpressionsForbidden1(self):
         code = '''
-        on init
-          tcm.init(100)
-          declare x
-        end on
+            on init
+              tcm.init(100)
+              declare x
+            end on
 
-        taskfunc randomize(min, max) -> result
-          result := random(min, max)
-        end taskfunc
+            taskfunc randomize(min, max) -> result
+              result := random(min, max)
+            end taskfunc
 
-        on note
-          x := randomize(44, 88) + randomize(44, 88)
-        end on
-        '''
-        self.assertRaises(ParseException, do_compile, code, optimize=True)
+            on note
+              x := randomize(44, 88) + randomize(44, 88)
+            end on'''
+
+        self.assertRaises(ParseException, do_compile, code, optimize = True)
 
     def testCallInsideGeneralExpressionsForbidden2(self):
         code = '''
-        on init
-          tcm.init(100)
-          declare x
-        end on
+            on init
+              tcm.init(100)
+              declare x
+            end on
 
-        taskfunc randomize(min, max) -> result
-          result := random(min, max)
-        end taskfunc
+            taskfunc randomize(min, max) -> result
+              result := random(min, max)
+            end taskfunc
 
-        on note
-          x := randomize(44, 88) + 1
-        end on
-        '''
-        self.assertRaises(ParseException, do_compile, code, optimize=True)
+            on note
+              x := randomize(44, 88) + 1
+            end on'''
+
+        self.assertRaises(ParseException, do_compile, code, optimize = True)
 
     def testNestedCallsForbidden1(self):
         code = '''
-        on init
-          tcm.init(100)
-          declare x
-        end on
+            on init
+              tcm.init(100)
+              declare x
+            end on
 
-        taskfunc square(x) -> result
-          result := x*x
-        end taskfunc
+            taskfunc square(x) -> result
+              result := x*x
+            end taskfunc
 
-        on note
-          x := square(square(2))
-        end on
-        '''
-        self.assertRaises(ParseException, do_compile, code, optimize=True)
+            on note
+              x := square(square(2))
+            end on'''
+
+        self.assertRaises(ParseException, do_compile, code, optimize = True)
 
 class K5_6Features(unittest.TestCase):
-
     def testDeclaration(self):
-            code = '''on init
+        code = '''
+            on init
                 declare ~x := 1.0e6
                 declare ?y[10]
                 y[5] := 3.3
             end on'''
-            expected_output = '''on init
-declare ~x := 1000000.0
-declare ?y[10]
-?y[5] := 3.3
-end on
-'''
-            output = do_compile(code, remove_preprocessor_vars=True)
-            self.assertEqual(expected_output, output)
+
+        expected_output = '''
+            on init
+            declare ~x := 1000000.0
+            declare ?y[10]
+            ?y[5] := 3.3
+            end on'''
+
+        output = do_compile(code, remove_preprocessor_vars = True)
+        assert_equal(self, output, expected_output)
 
     def testRealArithmetics(self):
-            code = '''on init
+        code = '''
+            on init
                 declare ~x := 1.1 * 2.2 * NI_MATH_PI
             end on'''
-            expected_output = '''on init
-declare ~x
-~x := 1.1*2.2*~NI_MATH_PI
-end on
-'''
-            output = do_compile(code, remove_preprocessor_vars=True)
-            self.assertEqual(expected_output, output)
+
+        expected_output = '''
+            on init
+            declare ~x
+            ~x := 1.1*2.2*~NI_MATH_PI
+            end on'''
+
+        output = do_compile(code, remove_preprocessor_vars = True)
+        assert_equal(self, output, expected_output)
 
     def testNegativeReal(self):
-        code = '''on init
+        code = '''
+            on init
+                declare ~x := -0.001
+                message(x)
+            end on'''
+
+        expected_output = '''
+            on init
             declare ~x := -0.001
-            message(x)
-        end on'''
-        expected_output = '''on init
-declare ~x := -0.001
-message(~x)
-end on
-'''
-        output = do_compile(code, remove_preprocessor_vars=True, optimize=True)
-        self.assertEqual(expected_output, output)
+            message(~x)
+            end on'''
+
+        output = do_compile(code, remove_preprocessor_vars = True, optimize = True)
+        assert_equal(self, output, expected_output)
 
     def testAssignRealToString(self):
-            code = '''on init
+        code = '''
+            on init
                 declare ~x := 9.9
                 declare @y
                 y := x
             end on'''
-            expected_output = '''on init
-declare ~x := 9.9
-declare @y
-@y := ~x
-end on
-'''
-            output = do_compile(code, remove_preprocessor_vars=True)
-            self.assertEqual(expected_output, output)
+
+        expected_output = '''
+            on init
+            declare ~x := 9.9
+            declare @y
+            @y := ~x
+            end on'''
+
+        output = do_compile(code, remove_preprocessor_vars = True)
+        assert_equal(self, output, expected_output)
 
     def testIncorrectlyMixedRealAndInteger(self):
-            code = '''on init
+        code = '''
+            on init
                 declare ~x := 5 * 2.333
                 message(~x)
             end on'''
-            #output = do_compile(code, optimize=True, extra_syntax_checks=True)
-            #testCompactOutputPrefixesTakenIntoAccount (output)
-            self.assertRaises(ParseException, do_compile, code, optimize=True, extra_syntax_checks=True)
+
+        self.assertRaises(ParseException, do_compile, code, extra_syntax_checks = True, optimize = True)
 
     def testFunctionWithMultipleArgTypes(self):
-            code = '''on init
+        code = '''
+            on init
                 message(abs(-4.1))
                 message(abs(-4))
             end on'''
-            expected_output = '''on init
-message(abs(-4.1))
-message(abs(-4))
-end on
-'''
-            output = do_compile(code, remove_preprocessor_vars=True)
-            self.assertEqual(expected_output, output)
+
+        expected_output = '''
+            on init
+            message(abs(-4.1))
+            message(abs(-4))
+            end on'''
+
+        output = do_compile(code, remove_preprocessor_vars = True)
+        assert_equal(self, output, expected_output)
 
     def testRealArithmeticsOptimization1(self):
-            code = '''on init
+        code = '''
+            on init
                 message(1.1 * 2.2)
             end on'''
-            expected_output = '''on init
-message(2.42)
-end on
-'''
-            output = do_compile(code, extra_syntax_checks=True, optimize=True)
-            self.assertEqual(expected_output, output)
+
+        expected_output = '''
+            on init
+            message(2.42)
+            end on'''
+
+        output = do_compile(code, extra_syntax_checks = True, optimize = True)
+        assert_equal(self, output, expected_output)
 
     def testRealArithmeticsOptimization2(self):
-            code = '''on init
+        code = '''
+            on init
                 declare const ~x := 2.5
                 message(3.0*~x)
             end on'''
-            expected_output = '''on init
-message(7.5)
-end on
-'''
-            output = do_compile(code, extra_syntax_checks=True, optimize=True)
-            self.assertEqual(expected_output, output)
+
+        expected_output = '''
+            on init
+            message(7.5)
+            end on'''
+
+        output = do_compile(code, extra_syntax_checks = True, optimize = True)
+        assert_equal(self, output, expected_output)
 
     def testRealConversionOptimized(self):
-            code = '''on init
+        code = '''
+            on init
                 declare const x := real_to_int(3.7)
                 declare const ~y := int_to_real(3)
                 message(x)
                 message(y)
             end on'''
-            expected_output = '''on init
-message(3)
-message(3.0)
-end on
-'''
-            output = do_compile(code, extra_syntax_checks=True, optimize=True)
-            self.assertEqual(expected_output, output)
 
+        expected_output = '''
+            on init
+            message(3)
+            message(3.0)
+            end on'''
+
+        output = do_compile(code, extra_syntax_checks = True, optimize = True)
+        assert_equal(self, output, expected_output)
 
 if __name__ == '__main__':
     unittest.main()
