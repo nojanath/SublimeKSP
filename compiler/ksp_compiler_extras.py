@@ -172,7 +172,7 @@ def evaluate_expression(expr):
         name = str(expr.identifier)
 
         if name in ksp_builtins.constants:
-            return name
+            return expr.identifier
 
         if name in ksp_builtins.variables:
             raise ParseException(expr, 'Built-in variables cannot be used in this context!')
