@@ -174,6 +174,9 @@ def evaluate_expression(expr):
         if name in ksp_builtins.constants:
             return name
 
+        if name in ksp_builtins.variables:
+            raise ParseException(expr, 'Built-in variables cannot be used in this context!')
+
         if name.lower() not in symbol_table:
             raise ParseException(expr, 'Variable not declared: %s!' % name)
 
@@ -204,8 +207,17 @@ def evaluate_expression(expr):
     elif isinstance(expr, FunctionCall):
         name = str(expr.function_name)
         parameters = [evaluate_expression(param) for param in expr.parameters]
-        funcs2numparameters = \
-            {'abs': 1, 'in_range': 3, 'sh_left': 2, 'sh_right': 2, 'by_marks': 1, 'int_to_real': 1, 'real_to_int': 1, 'int': 1, 'real': 1}
+        funcs2numparameters = {
+            'abs': 1,
+            'in_range': 3,
+            'sh_left': 2,
+            'sh_right': 2,
+            'by_marks': 1,
+            'int_to_real': 1,
+            'real_to_int': 1,
+            'int': 1,
+            'real': 1
+            }
 
         if name in list(funcs2numparameters.keys()):
             if len(parameters) != funcs2numparameters[name]:
