@@ -292,8 +292,8 @@ class CompileKspThread(threading.Thread):
 
 from compiler.ksp_builtins import keywords, all_builtins, functions, function_signatures, functions_with_forced_parentheses
 
-all_builtins = set(functions.keys()) | set([x[1:] for x in all_builtins]) | all_builtins | keywords
-functions, all_builtins = set(functions), set(all_builtins)
+builtins = set(functions.keys()) | set([x[1:] for x in all_builtins]) | all_builtins | keywords
+functions, builtins = set(functions), set(builtins)
 
 builtin_compl_funcs = []
 builtin_compl_vars = []
@@ -336,7 +336,8 @@ def plugin_loaded():
         builtin_compl_vars.extend(('%s\tvariable' % x[1:], x[1:]) for x in all_builtins)
 
         if enable_vanilla_builtins:
-            builtin_compl_vars.extend(('%s\tvariable' % x, x) for x in all_builtins)
+            # $ needs to be prepended by \ else executing completion will remove it as if it were a snippet variable
+            builtin_compl_vars.extend(('%s\tvariable' % x, '\\' + x if x[0] == '$' else x) for x in all_builtins)
 
         builtin_compl_vars.sort()
 
@@ -376,7 +377,7 @@ def plugin_loaded():
     # control par references that can be used as control -> x, or control -> value
     remap_control_pars = {'POS_X': 'x', 'POS_Y': 'y', 'MAX_VALUE': 'MAX', 'MIN_VALUE': 'MIN', 'DEFAULT_VALUE': 'DEFAULT'}
 
-    for x in all_builtins:
+    for x in builtins:
         completion = []
         name = None
         original_variable = x
@@ -470,7 +471,7 @@ class KspCompletions(sublime_plugin.EventListener):
             compl = self._extract_completions(view, prefix, pt)
             compl = [(item + "\tdefault", item.replace('$', '\\$', 1))
                      for item in compl
-                         if len(item) > 3 and item not in all_builtins
+                         if len(item) > 3 and item not in builtins
                     ]
 
             if '.' not in prefix:
