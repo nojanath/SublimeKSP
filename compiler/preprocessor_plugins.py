@@ -1651,6 +1651,14 @@ def handleDefineConstants(lines, define_cache = None):
 			newLines.append(l)
 			continue
 
+		# count number of string replacement token openers to figure out if we're defining literals
+		num_literals = m.group("val").count("{")
+
+		if num_literals > 0:
+			# add define for amount of entries in a literal define (.SIZE suffix)
+			defineSizeObj = DefineConstant(m.group("whole") + '.SIZE', str(num_literals), None, l)
+			defineConstants.append(defineSizeObj)
+
 		# Create define and evaluate if legitimate
 		defineObj = DefineConstant(m.group("whole"), m.group("val").strip(), m.group("args"), l)
 
