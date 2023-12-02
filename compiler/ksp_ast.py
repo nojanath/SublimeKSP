@@ -36,8 +36,10 @@ precedence = {  '&' :  0,
 def toint(i, bits=32):
     ' converts to a signed integer with <bits> bits '
     i &= (1 << bits) - 1       # get last "bits" bits, as unsigned
+
     if i & (1 << (bits - 1)):  # if negative in N-bit 2's comp
         i -= 1 << bits         # ... make it negative
+
     return int(i)
 
 class Emitter:
@@ -57,15 +59,19 @@ class Emitter:
 
     def _write_string(self, s):
         lines = s.split('\n')
+
         if self.compact:
             indent = ''
         else:
             indent = ' ' * self.indent_num
         for (i, line) in enumerate(lines):
+
             if line:
                 if self.beginning_of_line:
                     self.out.write(indent)
+
                 self.out.write(line)
+
             if i < len(lines)-1:
                 self.out.write('\n')
                 self.beginning_of_line = True
@@ -74,6 +80,7 @@ class Emitter:
 
     def write(self, *args, **kwargs):
         indented = kwargs.get('indented', False)
+
         if indented:
             self.indent()
         try:
@@ -100,15 +107,19 @@ class ParseException(SyntaxError):
     def __init__(self, node, msg=None):
         if msg is None:
             msg = 'Syntax Error'
+
         lineno = node.lineno
+
         if lineno == 0 and hasattr(node, 'get_childnodes'):
             for child in node.get_childnodes():
                 if child.lineno != 0:
                     lineno = child.lineno
                     break
+
         self.lineno = lineno
         self.node = node
         self.msg = msg
+
         SyntaxError.__init__(self, msg)
 
 class ASTNode:
@@ -117,12 +128,14 @@ class ASTNode:
     def __init__(self, lexinfo):
         self.lexinfo = None
         self.env = None
+
         if lexinfo:
             if type(lexinfo) is tuple:
                 self.lexinfo = lexinfo
             else:
                 line_filename = lexinfo.lexer.lines[lexinfo.lineno(1)].locations[0][0]
                 line_namespaces = lexinfo.lexer.lines[lexinfo.lineno(1)].namespaces # Add namespaces as lexinfo
+
                 if line_filename is None:
                     # the penultimate element is a list of function nodes related to inlining of functions
                     self.lexinfo = (lexinfo.lexer.filename, lexinfo.lineno(1), [], None)
@@ -147,8 +160,13 @@ class ASTNode:
     def __str__(self):
         children = [c.__class__.__name__ for c in self.get_childnodes()]
         s = str(self.__class__.__name__)
-        if children and not isinstance(self, CompoundStmt) and not isinstance(self, Expr) and not isinstance(self, Module) and not isinstance(self, TopLevelBlock):
+
+        if children and not isinstance(self, CompoundStmt) \
+                    and not isinstance(self, Expr)         \
+                    and not isinstance(self, Module)       \
+                    and not isinstance(self, TopLevelBlock):
             s = s + '(%s)' % ','.join(children)
+
         return s
 
     def __repr__(self):
@@ -167,6 +185,7 @@ class Module(ASTNode):
     def emit(self, out):
         for block in self.blocks:
             block.emit(out)
+
             if not out.compact:
                 out.write('\n')
 
@@ -182,6 +201,7 @@ class TopLevelBlock(ASTNode):
     def __init__(self, lexinfo, name, lines=None):
         ASTNode.__init__(self, lexinfo)
         self.name = name
+
         if lines is None:
             self.lines = []
         else:
@@ -200,8 +220,10 @@ class Import(TopLevelBlock):
 
     def emit(self, out):
         out.write("import '%s'" % self.filename)
+
         if self.alias:
             out.write('as %s' % self.alias)
+
         out.writeln()
 
     def get_childnodes(self):
@@ -215,6 +237,7 @@ class FunctionDef(TopLevelBlock):
         self.name = name
         self.parameters = []
         self.parameter_types = []
+
         for p in parameters:
             if type(p) is tuple:
                 param = p[1]
@@ -222,10 +245,13 @@ class FunctionDef(TopLevelBlock):
             else:
                 param = p
                 param_type = ''
+
             self.parameters.append(param)
             self.parameter_types.append(param_type)
+
         if return_value:
             self.parameter_types.append('out')
+
         self.return_value = return_value
 
         self.is_taskfunc = is_taskfunc
@@ -235,12 +261,15 @@ class FunctionDef(TopLevelBlock):
         children = []
         children.append(self.name)
         children.extend(self.lines)
+
         return children
 
     def emit(self, out):
         out.write('function ', self.name)
+
         if self.parameters:
             out.write('(%s)' % ', '.join((str(p) for p in self.parameters)))
+
         out.writeln()
         out.write(self.lines, indented=True)
         out.writeln('end function')
@@ -251,14 +280,18 @@ class Callback(TopLevelBlock):
     def __init__(self, lexinfo, name, lines=None, variable=None):
         TopLevelBlock.__init__(self, lexinfo, name, lines)
         self.variable = None
+
         if variable:
             self.variable = ID(lexinfo, variable)
 
     def get_childnodes(self):
         children = []
+
         if self.variable:
             children.append(self.variable)
+
         children.extend(self.lines)
+
         return children
 
     def emit(self, out):
@@ -266,6 +299,7 @@ class Callback(TopLevelBlock):
             out.writeln('on %s(%s)' % (self.name, str(self.variable)))
         else:
             out.writeln('on %s' % self.name)
+
         out.write(self.lines, indented=True)
         out.writeln('end on')
 
@@ -284,6 +318,7 @@ class PropertyDef(Stmt):
     def __init__(self, lexinfo, name, indices=None, functions=None, alias_varref=None):
         Stmt.__init__(self, lexinfo)
         self.name = name
+
         if alias_varref is not None:
             # if there is an alias varref automatically add get/set functions and use the indices as parameters
             functions = []
@@ -301,8 +336,10 @@ class PropertyDef(Stmt):
         for func in functions:
             function_name = str(func.name)
             self.functiondefs[function_name] = func
+
             if function_name == 'get':
                 self.get_func_def = func
+
             if function_name == 'set':
                 self.set_func_def = func
 
@@ -325,13 +362,18 @@ class DeclareStmt(Stmt):
 
     def emit(self, out):
         out.write('declare ')
+
         if self.modifiers:
             out.write(' '.join(self.modifiers), ' ')
+
         out.write(str(self.variable))
+
         if self.size:
             out.write('[%s]' % self.size)
+
         if self.parameters:
             out.write('(%s)' % ','.join((str(p) for p in self.parameters)))
+
         if self.initial_value:
             out.write(' := ')
 
@@ -339,11 +381,13 @@ class DeclareStmt(Stmt):
                 initial_value = self.initial_value.raw_text.split(',')
             else:
                 initial_value = self.initial_value
+
             if type(initial_value) is list:
                 out.write('(')
 
                 for i, value in enumerate(initial_value):
                     out.write(str(value))
+
                     if i != len(initial_value) - 1:  # unless last element
                         # emit comma or newline+comma
                         values_per_line = 40
@@ -352,22 +396,28 @@ class DeclareStmt(Stmt):
                             out.write(', ...\n')
                         else:
                             out.write(', ')
+
                 out.write(')')
             else:
                 out.write(str(initial_value))
+
         out.writeln()
 
     def get_childnodes(self):
         children = []
         children.append(self.variable)
+
         if self.size:
             children.append(self.size)
+
         if self.initial_value:
             if type(self.initial_value) is list:
                 children.extend(self.initial_value)
             else:
                 children.append(self.initial_value)
+
         children.extend(self.parameters)
+
         return children
 
     def map_expr(self, func):
@@ -428,15 +478,19 @@ class FunctionCall(Stmt):
 
     def __str__(self):
         s = str(self.function_name)
+
         if self.parameters or not self.is_procedure or s in functions_with_forced_parentheses:
             s += '(%s)' % ','.join((str(p) for p in self.parameters))
+
         if self.is_procedure:
             s += '\n'
+
         return s
 
     def emit(self, out):
         if self.using_call_keyword:
             out.write('call ')
+
         out.write(str(self))
 
     def map_expr(self, func):
@@ -446,6 +500,7 @@ class FunctionCall(Stmt):
         children = []
         children.extend(self.parameters)
         children.append(self.function_name)
+
         return children
 
 class CompoundStmt(Stmt):
@@ -488,6 +543,7 @@ class ForStmt(CompoundStmt):
             toword = 'downto'
         else:
             toword = 'to'
+
         out.writeln('for %s := %s %s %s' % (self.loopvar, self.start, toword, self.end))
         out.write(self.statements, indented=True)
         out.writeln('end for')
@@ -496,6 +552,7 @@ class ForStmt(CompoundStmt):
         self.loopvar = func(self.loopvar)
         self.start = func(self.start)
         self.end = func(self.end)
+
         if self.step:
             self.step = func(self.step)
 
@@ -504,9 +561,12 @@ class ForStmt(CompoundStmt):
         children.append(self.loopvar)
         children.append(self.start)
         children.append(self.end)
+
         if self.step:
             children.append(self.step)
+
         children.extend(self.statements)
+
         return children
 
 class FamilyStmt(CompoundStmt):
@@ -536,6 +596,7 @@ class IfStmt(CompoundStmt):
 
     def emit(self, out):
         num_ends = 0
+
         for (i, (condition, stmts)) in enumerate(self.condition_stmts_tuples):
             if condition and i == 0:
                 out.writeln('if (', condition, ')')
@@ -544,16 +605,21 @@ class IfStmt(CompoundStmt):
                 out.writeln('else if (', condition, ')')
             else:
                 out.writeln('else')
+
             out.write(stmts, indented=True)
+
         for i in range(num_ends):
             out.writeln('end if')
 
     def get_childnodes(self):
         children = []
+
         for (condition, stmts) in self.condition_stmts_tuples:
             if condition:
                 children.append(condition)
+
             children.extend(stmts)
+
         return children
 
     def map_expr(self, func):
@@ -571,26 +637,34 @@ class SelectStmt(CompoundStmt):
 
     def emit(self, out):
         out.writeln('select (', self.expression, ')')
+
         for ((start, stop), stmts) in self.range_stmts_tuples:
             try:
                 out.indent()
+
                 if stop is None:
                     out.writeln('case %s' % start)
                 else:
                     out.writeln('case %s to %s' % (start, stop))
+
                 out.write(stmts, indented=True)
             finally:
                 out.dedent()
+
         out.writeln('end select')
 
     def get_childnodes(self):
         children = []
         children.append(self.expression)
+
         for ((start, stop), stmts) in self.range_stmts_tuples:
             children.append(start)
+
             if stop:
                 children.append(stop)
+
             children.extend(stmts)
+
         return children
 
     def map_expr(self, func):
@@ -618,6 +692,7 @@ class BinOp(Expr):
 
         if isinstance(self.left, BinOp) and precedence[self.op] > precedence[self.left.op]:
             l = '(%s)' % l
+
         if isinstance(self.right, BinOp) and not (self.right.op == self.op and self.op in '+&'):
             r = '(%s)' % r
 
@@ -759,6 +834,7 @@ class ID(Expr):
         else:
             self.identifier_first_part = identifier
             self.identifier_last_part = ''
+
     identifier = property(get_identifier, set_identifier)
 
     def copy(self, different_name=None):
@@ -784,8 +860,10 @@ class ID(Expr):
 class VarRef(Expr):
     def __init__(self, lexinfo, identifier, subscripts=None):
         Expr.__init__(self, lexinfo)
+
         if subscripts is None:
             subscripts = []
+
         self.identifier = identifier
         self.subscripts = subscripts
 
@@ -799,6 +877,7 @@ class VarRef(Expr):
         children = []
         children.append(self.identifier)
         children.extend(self.subscripts)
+
         return children
 
 class RawArrayInitializer(Expr):

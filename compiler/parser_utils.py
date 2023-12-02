@@ -18,6 +18,7 @@ from ksp_ast import ParseException
 def ReturnParam(i=1):
     def func(p):
         return p[i]
+
     return func
 
 def ReturnNone(p):
@@ -32,6 +33,7 @@ def AddToList(item_index=1, list_index=2, dont_add_none=False):
             return p[list_index]
         else:
             return [p[item_index]] + p[list_index]
+
     return func
 
 def AddToEmptyList(item_index=1, dont_add_none=False):
@@ -40,6 +42,7 @@ def AddToEmptyList(item_index=1, dont_add_none=False):
             return []
         else:
             return [p[item_index]]
+
     return func
 
 def raise_parse_exception(p, msg, error_token=-1):
@@ -52,13 +55,16 @@ def raise_parse_exception(p, msg, error_token=-1):
 def RaiseParseException(msg='Syntax error!', error_token=-1):
     def func(p):
         emsg = msg
+
         if error_token:
             try:
                 token = p[error_token]
             except TypeError:
                 token = p
             #emsg = emsg + '\nat line: %d' % token.lineno
+
         raise ParseException(token, emsg)
+
     return func
 
 last_rule = None
@@ -80,13 +86,16 @@ def g(rule, func):
 
     if not ':' in rule and not rule.lstrip()[0] == '|':
         raise Exception("Error in rule, it doesn't begin with | and contains no :!")
+
     # make it possible to write several | on the same line
     if rule.count('\n') == 0:
         rule = rule.replace('|', '\n|')
+
     if not ':' in rule:
         rule = rule.replace('|', '%s :' % last_rule, 1)
     else:
         last_rule = rule[:rule.index(' ')]
+
     name = 'p_' + last_rule
 
     def new_func(p):
@@ -95,19 +104,25 @@ def g(rule, func):
 
     #dict = sys.modules[__name__].__dict__
     dict = module.__dict__  # access namespace of calling module
+
     if name in dict:
         # change name of earlier func (eg. test -> test_1)
         dict[name].__name__ = '%s_1' % name
         dict['%s_1' % name] = dict[name]     # link new name (test_1) to the earlier func
+
         del dict[name]                       # delete the link to the earlier name (test)
+
     if '%s_1' % name in dict:
         # find unused name for new func (eg. test_2, test_3 or test_4 ...)
         i = 2
+
         while '%s_%d' % (name, i) in dict:
             i += 1
+
         name = '%s_%d' % (name, i)
+
     dict[name] = new_func
     new_func.__name__ = name
     new_func.__doc__ = rule
-    return new_func
 
+    return new_func

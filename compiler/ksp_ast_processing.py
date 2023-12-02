@@ -34,6 +34,7 @@ def flatten(L):
     # for efficiency reasons, return the list itself it it doesn't contain any nested lists
     if not any([type(x) is list for x in L]):
         return L
+
     return list(flatten_iter(L))
 
 def handle_set_par(control, parameter, value):
@@ -46,23 +47,32 @@ def handle_set_par(control, parameter, value):
     remap = {'X': 'POS_X', 'Y': 'POS_Y', 'MAX': 'MAX_VALUE', 'MIN': 'MIN_VALUE', 'DEFAULT': 'DEFAULT_VALUE'}
     cp = parameter.identifier.upper()
     cp = '$CONTROL_PAR_%s' % remap.get(cp, cp)
+
     if cp in control_parameters:
         control_par = VarRef(parameter.lexinfo, ID(parameter.lexinfo, cp))
+
         if cp in string_typed_control_parameters:
             func_name = 'set_control_par_str'
         else:
             func_name = 'set_control_par'
-        return FunctionCall(control.lexinfo, ID(control.lexinfo, func_name),
-                            parameters=[control, control_par, value], is_procedure=True)
+
+        return FunctionCall(control.lexinfo,
+                            ID(control.lexinfo, func_name),
+                            parameters = [control, control_par, value],
+                            is_procedure = True)
 
     remap = {'PAR_0': '0', 'PAR_1': '1', 'PAR_2': '2', 'PAR_3': '3'}
     event_p = parameter.identifier.upper()
     event_p = '$EVENT_PAR_%s' % remap.get(event_p, event_p)
+
     if event_p in event_parameters:
         event_par = VarRef(parameter.lexinfo, ID(parameter.lexinfo, event_p))
         func_name = 'set_event_par'
-        return FunctionCall(control.lexinfo, ID(control.lexinfo, func_name),
-                            parameters=[control, event_par, value], is_procedure=True)
+
+        return FunctionCall(control.lexinfo,
+                            ID(control.lexinfo, func_name),
+                            parameters = [control, event_par, value],
+                            is_procedure = True)
 
     raise Exception("%s is not a valid control_par/event_par" % parameter.identifier)
 
@@ -75,23 +85,32 @@ def handle_get_par(control, parameter):
     remap = {'X': 'POS_X', 'Y': 'POS_Y', 'MAX': 'MAX_VALUE', 'MIN': 'MIN_VALUE', 'DEFAULT': 'DEFAULT_VALUE'}
     cp = parameter.identifier.upper()
     cp = '$CONTROL_PAR_%s' % remap.get(cp, cp)
+
     if cp in control_parameters:
         control_par = VarRef(parameter.lexinfo, ID(parameter.lexinfo, cp))
+
         if cp in string_typed_control_parameters:
             func_name = 'get_control_par_str'
         else:
             func_name = 'get_control_par'
-        return FunctionCall(control.lexinfo, ID(control.lexinfo, func_name),
-                            parameters=[control, control_par], is_procedure=False)
+
+        return FunctionCall(control.lexinfo,
+                            ID(control.lexinfo, func_name),
+                            parameters = [control, control_par],
+                            is_procedure = False)
 
     remap = {'PAR_0': '0', 'PAR_1': '1', 'PAR_2': '2', 'PAR_3': '3'}
     event_p = parameter.identifier.upper()
     event_p = '$EVENT_PAR_%s' % remap.get(event_p, event_p)
+
     if event_p in event_parameters:
         event_par = VarRef(parameter.lexinfo, ID(parameter.lexinfo, event_p))
         func_name = 'get_event_par'
-        return FunctionCall(control.lexinfo, ID(control.lexinfo, func_name),
-                            parameters=[control, event_par], is_procedure=False)
+
+        return FunctionCall(control.lexinfo,
+                            ID(control.lexinfo, func_name),
+                            parameters = [control, event_par],
+                            is_procedure = False)
 
     raise Exception("%s is not a valid control_par/event_par" % parameter.identifier)
 
@@ -110,14 +129,18 @@ class ASTVisitor(object):
     def dispatch(self, parent, node, *args, **kwargs):
         if not self._visit_expressions and isinstance(node, Expr):
             return
+
         self.node = node
-        klass = node.__class__
-        meth = self._cache.get(klass, None)
+        node_class = node.__class__
+        meth = self._cache.get(node_class, None)
+
         if meth is None:
-            className = klass.__name__
+            className = node_class.__name__
             meth = getattr(self, 'visit' + className, self.visit_default)
-            self._cache[klass] = meth
+            self._cache[node_class] = meth
+
         self.depth += 1
+
         try:
             result = meth(parent, node, *args, **kwargs)
 
@@ -125,6 +148,7 @@ class ASTVisitor(object):
                 self.visit_children(parent, node, *args, **kwargs)
         finally:
             self.depth -= 1
+
         return
 
     def indent(self):
@@ -159,13 +183,13 @@ class ASTModifier(object):
             return node
 
         self.node = node
-        klass = node.__class__
-        meth = self._cache.get(klass, None)
+        node_class = node.__class__
+        meth = self._cache.get(node_class, None)
 
         if meth is None:
-            className = klass.__name__
+            className = node_class.__name__
             meth = getattr(self, 'modify' + className, None)
-            self._cache[klass] = meth
+            self._cache[node_class] = meth
 
         if meth is None:
             return node
@@ -188,21 +212,25 @@ class ASTModifier(object):
     def modifyCallback(self, node, *args, **kwargs):
         node.variable = self.modify(node.variable, *args, **kwargs)
         node.lines = flatten([self.modify(l, *args, **kwargs) for l in node.lines])
+
         return node
 
     def modifyFunctionDef(self, node, *args, **kwargs):
         node.name = self.modify(node.name, *args, **kwargs)
         node.lines = flatten([self.modify(l, *args, **kwargs) for l in node.lines])
+
         return node
 
     def modifyFamilyStmt(self, node, *args, **kwargs):
         node.name = self.modify(node.name, *args, **kwargs)
         node.statements = flatten([self.modify(l, *args, **kwargs) for l in node.statements])
+
         return [node]
 
     def modifyAssignStmt(self, node, *args, **kwargs):
         node.varref = self.modify(node.varref, *args, **kwargs)
         node.expression = self.modify(node.expression, *args, **kwargs)
+
         return [node]
 
     def modifyPreprocessorCondition(self, node, *args, **kwargs):
@@ -211,6 +239,7 @@ class ASTModifier(object):
     def modifyFunctionCall(self, node, *args, **kwargs):
         node.function_name = self.modify(node.function_name, *args, **kwargs)
         node.parameters = [self.modify(p, *args, **kwargs) for p in node.parameters]
+
         if node.is_procedure:
             return [node]
         else:
@@ -218,51 +247,65 @@ class ASTModifier(object):
 
     def modifyPropertyDef(self, node, *args, **kwargs):
         node.name = self.modify(node.name, *args, **kwargs)
+
         if node.get_func_def:
             node.get_func_def = self.modify(node.get_func_def, *args, **kwargs)
+
         if node.set_func_def:
             node.set_func_def = self.modify(node.set_func_def, *args, **kwargs)
+
         return [node]
 
     def modifyWhileStmt(self, node, *args, **kwargs):
         node.statements = stripFalse(flatten([self.modify(s, *args, **kwargs) for s in node.statements]))
         node.condition = self.modify(node.condition, *args, **kwargs)
+
         return [node]
 
     def modifyIfStmt(self, node, *args, **kwargs):
         temp = []
+
         for (condition, stmts) in node.condition_stmts_tuples:
             condition = self.modify(condition, *args, **kwargs)
             stmts = flatten([self.modify(s, *args, **kwargs) for s in stmts])
             temp.append((condition, stmts))
+
         if not temp:
             return []
         else:
             node.condition_stmts_tuples = temp
+
             return [node]
 
     def modifyDeclareStmt(self, node, *args, **kwargs):
         if not (node.size is None):
             node.size = self.modify(node.size, *args, **kwargs)
+
         if type(node.initial_value) is list:
             node.initial_value = [self.modify(v, *args, **kwargs) for v in node.initial_value]
         elif node.initial_value:
             node.initial_value = self.modify(node.initial_value, *args, **kwargs)
+
         node.variable = self.modify(node.variable, *args, **kwargs)
         node.parameters = [self.modify(p, *args, **kwargs) for p in node.parameters]
+
         return [node]
 
     def modifySelectStmt(self, node, *args, **kwargs):
         node.expression = self.modify(node.expression, *args, **kwargs)
         range_stmts_tuples = []
+
         for ((start, stop), stmts) in node.range_stmts_tuples:
             start = self.modify(start, *args, **kwargs)
             stop = self.modify(stop, *args, **kwargs)
             stmts = flatten([self.modify(s, *args, **kwargs) for s in stmts])
+
             if stmts:
                 range_stmts_tuples.append(((start, stop), stmts))
+
         if range_stmts_tuples:
             node.range_stmts_tuples = range_stmts_tuples
+
             return [node]
         else:
             return []
@@ -270,15 +313,18 @@ class ASTModifier(object):
     def modifyBinOp(self, node, *args, **kwargs):
         node.left = self.modify(node.left, *args, **kwargs)
         node.right = self.modify(node.right, *args, **kwargs)
+
         return node
 
     def modifyUnaryOp(self, node, *args, **kwargs):
         node.right = self.modify(node.right, *args, **kwargs)
+
         return node
 
     def modifyVarRef(self, node, *args, **kwargs):
         node.subscripts = [self.modify(s, *args, **kwargs) for s in node.subscripts]
         node.identifier = self.modify(node.identifier, *args, **kwargs)
+
         return node
 
     def modifyModule(self, node, *args, **kwargs):

@@ -29,6 +29,7 @@ reserved = (
     'UI_LABEL', 'UI_BUTTON', 'UI_SWITCH', 'UI_SLIDER', 'UI_MENU', 'UI_VALUE_EDIT', 'UI_WAVEFORM', 'UI_WAVETABLE', 'UI_KNOB', 'UI_TABLE', 'UI_XY', 'CALL', 'STEP',
     'UI_TEXT_EDIT', 'UI_LEVEL_METER', 'UI_FILE_SELECTOR', 'UI_PANEL', 'UI_MOUSE_AREA', 'OVERRIDE',
 )
+
 reserved_map = dict(((r.lower(), r) for r in reserved))
 reserved_map['SET_CONDITION'] = 'SET_CONDITION'
 reserved_map['RESET_CONDITION'] = 'RESET_CONDITION'
@@ -84,20 +85,25 @@ def t_BEGIN_CALLBACK(t):
     variable = None
     parts = t.value.split()
     name = parts[1]
+
     if name.startswith('ui_control'):
         name, variable = re.match(r'on\s+(ui_control)\s*?\((.+)\)', t.value).groups()
         name, variable = name.strip(), variable.strip()
+
     t.value = {'name': name, 'variable': variable}
+
     return t
 
 def t_END_CALLBACK(t):
     r'end\s+on'
     t.type = 'END_CALLBACK'
+
     return t
 
 def t_RIGHTARROW(t):
     r'->'
     t.type = 'RIGHTARROW'
+
     return t
 
 def t_REAL(t):
@@ -106,6 +112,7 @@ def t_REAL(t):
 
 def t_ID(t):
     r'[$%!@~?][A-Za-z0-9_.]+|[A-Za-z_][A-Za-z0-9_.]*|\d+[A-Za-z_][A-Za-z0-9_]*'
+
     if t.value == 'mod': # modulo operator
         t.type = 'MOD'
     elif t.value.lower().startswith('0x') and hex_number_re1.match(t.value): # hex number, eg. 0x10
@@ -122,6 +129,7 @@ def t_ID(t):
         t.value = int(t.value.lower().replace('b',''), 2)
     else:
         t.type = reserved_map.get(t.value, "ID")
+
     return t
 
 def t_INTEGER(t):
@@ -134,11 +142,13 @@ def t_INTEGER(t):
     except ValueError:
         print("Line %d: integer or real %s is too large!" % (t.lineno, t.value))
         t.value = 0
+
     return t
 
 def t_INIT_ARRAY(t):
     r'\(\s*-?\d+\s*(,(\s*\.\.\.)?\s*-?\d+\s*)+\)'
     t.value = re.sub(r'[^-0-9,]', '', t.value)
+
     return t
 
 def InitArrayToList(lexinfo, init_array_token):
@@ -157,6 +167,7 @@ t_ignore  = ' \t'
 def t_NEWLINE(t):
     r'\n'
     t.lexer.lineno += 1
+
     return t
 
 def t_COMMENT(t):
@@ -197,7 +208,7 @@ precedence = (
 
 def p_script(p):
     'script               : newlines-opt toplevels'
-    p[0] = Module(p, blocks=p[2])
+    p[0] = Module(p, blocks = p[2])
 
 def p_script_error(p):
     'script               : newlines-opt error'
@@ -236,11 +247,11 @@ def p_import_as(p):
 
 def p_functiondef(p):
     'functiondef           : FUNCTION ident params-opt          return-value-opt override-opt NEWLINE stmts-opt END FUNCTION'
-    p[0] = FunctionDef(p, p[2], p[3], p[4], p[7], override=p[5])
+    p[0] = FunctionDef(p, p[2], p[3], p[4], p[7], override = p[5])
 
 def p_taskfuncdef(p):
     'functiondef           : TASKFUNC ident taskfunc-params-opt return-value-opt override-opt NEWLINE stmts-opt END TASKFUNC'
-    p[0] = FunctionDef(p, p[2], p[3], p[4], p[7], override=p[5], is_taskfunc=True)
+    p[0] = FunctionDef(p, p[2], p[3], p[4], p[7], override = p[5], is_taskfunc = True)
 
 def p_return_value_opt(p):
     'return-value-opt      : RIGHTARROW ident'
@@ -268,6 +279,7 @@ def p_stmts_opt_empty(p):
 
 def p_stmts(p):
     'stmts                 : stmt'
+
     if p[1] is None:
         p[0] = []
     else:
@@ -275,6 +287,7 @@ def p_stmts(p):
 
 def p_stmts_more(p):
     'stmts                 : stmt stmts'
+
     if p[1] is None:
         p[0] = p[2]
     else:
@@ -309,7 +322,7 @@ def p_preprocessor_stmt_reset_condition(p):
 
 def p_if_stmt(p):
     'if-stmt               : IF expression NEWLINE stmts-opt else-if-opt END IF'
-    p[0] = IfStmt(p, condition_stmts_tuples=[(p[2], p[4])] + p[5])
+    p[0] = IfStmt(p, condition_stmts_tuples = [(p[2], p[4])] + p[5])
 
 def p_if_stmt_error(p):
     'if-stmt               : IF expression NEWLINE stmts-opt else-if-opt error'
@@ -341,11 +354,11 @@ def p_while_stmt_error(p):
 
 def p_for_stmt(p):
     'for-stmt              : FOR varref ASSIGN expression updownto expression NEWLINE stmts-opt END FOR'
-    p[0] = ForStmt(p, p[2], p[4], p[6], p[8], downto=p[5])
+    p[0] = ForStmt(p, p[2], p[4], p[6], p[8], downto = p[5])
 
 def p_for_stmt_with_step(p):
     'for-stmt              : FOR varref ASSIGN expression updownto expression STEP expression NEWLINE stmts-opt END FOR'
-    p[0] = ForStmt(p, p[2], p[4], p[6], p[10], downto=p[5], step=p[8])
+    p[0] = ForStmt(p, p[2], p[4], p[6], p[10], downto = p[5], step = p[8])
 
 def p_for_stmt_error(p):
     'for-stmt              : FOR varref ASSIGN expression updownto expression NEWLINE stmts-opt error'
@@ -474,30 +487,31 @@ def p_more_args_opt_empty(p):
 
 def p_function_call(p):
     'function-call         : ident args'
-    p[0] = FunctionCall(p, function_name=p[1], parameters=p[2])
+    p[0] = FunctionCall(p, function_name = p[1], parameters = p[2])
 
 def p_function_call_with_call(p):
     'function-call         : CALL ident args-opt'
-    p[0] = FunctionCall(p, function_name=p[2], parameters=p[3], is_procedure=False, using_call_keyword=True)
+    p[0] = FunctionCall(p, function_name = p[2], parameters = p[3], is_procedure = False, using_call_keyword = True)
 
 def p_procedure_call(p):
     'procedure-call        : ident args-opt'
-    p[0] = FunctionCall(p, function_name=p[1], parameters=p[2], is_procedure=True)
+    p[0] = FunctionCall(p, function_name = p[1], parameters = p[2], is_procedure = True)
 
 def p_procedure_call_with_call(p):
     'procedure-call        : CALL ident args-opt'
-    p[0] = FunctionCall(p, function_name=p[2], parameters=p[3], is_procedure=True, using_call_keyword=True)
+    p[0] = FunctionCall(p, function_name = p[2], parameters = p[3], is_procedure = True, using_call_keyword = True)
 
 def p_propertydef(p):
     'propertydef           : PROPERTY ident NEWLINE newlines-opt functiondefs END PROPERTY'
-    p[0] = PropertyDef(p, p[2], functions=p[5])
+    p[0] = PropertyDef(p, p[2], functions = p[5])
 
 def p_propertydef_simplified(p):
     'propertydef           : PROPERTY ident id-subscripts-opt RIGHTARROW varref'
-    p[0] = PropertyDef(p, p[2], indices=p[3], alias_varref=p[5])
+    p[0] = PropertyDef(p, p[2], indices = p[3], alias_varref = p[5])
 
 def p_functiondefs1(p):
     'functiondefs          : functiondef newlines-opt'
+
     if p[1] is None:
         p[0] = []
     else:
@@ -505,6 +519,7 @@ def p_functiondefs1(p):
 
 def p_functiondefs2(p):
     'functiondefs          : functiondef newlines-opt functiondefs'
+
     if p[1] is None:
         p[0] = p[3]
     else:
@@ -512,15 +527,15 @@ def p_functiondefs2(p):
 
 def p_declaration1(p):
     'declaration           : DECLARE global-modifier-opt decl-modifier-opt ident args-opt initial-value-opt'
-    p[0] = DeclareStmt(p, variable=p[4], modifiers=p[2] + p[3], size=None, parameters=p[5], initial_value=p[6])
+    p[0] = DeclareStmt(p, variable = p[4], modifiers = p[2] + p[3], size = None, parameters = p[5], initial_value = p[6])
 
 def p_declaration2(p):
     'declaration           : DECLARE global-modifier-opt decl-modifier-opt ident array-size args-opt initial-array-opt'
-    p[0] = DeclareStmt(p, variable=p[4], modifiers=p[2] + p[3], size=p[5], parameters=p[6], initial_value=p[7])
+    p[0] = DeclareStmt(p, variable = p[4], modifiers = p[2] + p[3], size = p[5], parameters = p[6], initial_value = p[7])
 
 def p_family_declaration(p):
     'family-declaration    : FAMILY ident NEWLINE stmts-opt END FAMILY'
-    p[0] = FamilyStmt(p, name=p[2], statements=p[4])
+    p[0] = FamilyStmt(p, name = p[2], statements = p[4])
 
 def p_family_declaration_error(p):
     'family-declaration    : FAMILY ident NEWLINE stmts-opt error'
@@ -632,11 +647,11 @@ def p_more_id_subscripts_opt_empty(p):
 
 def p_basic_varref1(p):
     'basic-varref          : ident'
-    p[0] = VarRef(p, identifier=p[1])
+    p[0] = VarRef(p, identifier = p[1])
 
 def p_basic_varref2(p):
     'basic-varref          : ident subscripts'
-    p[0] = VarRef(p, identifier=p[1], subscripts=p[2])
+    p[0] = VarRef(p, identifier = p[1], subscripts = p[2])
 
 def p_varref(p):
     'varref                : basic-varref'
@@ -644,7 +659,7 @@ def p_varref(p):
 
 def p_varref_with_dot(p):
     'varref                : basic-varref DOT varref'
-    p[0] = VarRef(p, ID(p, identifier='%s.%s' % (p[1].identifier, p[3].identifier)), subscripts=p[1].subscripts + p[3].subscripts)
+    p[0] = VarRef(p, ID(p, identifier = '%s.%s' % (p[1].identifier, p[3].identifier)), subscripts = p[1].subscripts + p[3].subscripts)
 
 def p_assignment(p):
     'assignment            : varref ASSIGN expression'
@@ -712,16 +727,16 @@ def p_error(p):
     'error                 :'
     raise_parse_exception(p, 'Syntax error!')
 
-def init(outputdir=None):
+def init(outputdir = None):
     outputdir = outputdir or os.path.dirname(__file__)
     current_module = sys.modules[__name__]
     debug = 0
     optimize = 0
-    lexer = lex.lex(optimize=0, debug=debug)
+    lexer = lex.lex(optimize = 0, debug = debug)
 
-    return yacc.yacc(method="LALR", optimize=optimize, debug=debug,
-                     write_tables=0, module=current_module, start='script',
-                     outputdir=outputdir, tabmodule='ksp_parser_tab')
+    return yacc.yacc(method = "LALR", optimize = optimize, debug = debug,
+                     write_tables = 0, module = current_module, start = 'script',
+                     outputdir = outputdir, tabmodule = 'ksp_parser_tab')
 
 parser = init()
 
@@ -730,5 +745,6 @@ def parse(script_code, lines):
     lex.lexer.lines = lines
     lex.lexer.filename = 'current file'
     data = script_code.replace('\r', '')
-    result = parser.parse(data, tracking=True)
+    result = parser.parse(data, tracking = True)
+
     return result

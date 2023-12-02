@@ -325,7 +325,7 @@ class ASTVisitorDetermineExpressionTypes(ASTVisitor):
 
             if matches_param_count == False:
                 if len(ksp_builtins.function_signatures[function_name]) > 1:
-                    raise ParseException(node, \
+                    raise ParseException(node,                                                                                                     \
                         'Wrong number of parameters for %s()! This function has multiple overloads, neither of which expect %d parameter%s given!' \
                         % (function_name, len(passed_params), 's that were' if len(passed_params) > 1 else ' that was' ))
                 else:
@@ -492,10 +492,12 @@ class ASTVisitorFindUsedFunctions(ASTVisitor):
 
     def visitFunctionDef(self, parent, node):
         self.visit_children(parent, node, node.name.identifier)
+
         return False
 
     def visitCallback(self, parent, node):
         self.visit_children(parent, node, None)
+
         return False
 
     def visitFunctionCall(self, parent, node, top_level):
@@ -732,6 +734,7 @@ class ASTModifierSimplifyExpressions(ASTModifier):
     def modifyUnaryOp(self, node):
         node = ASTModifier.modifyUnaryOp(self, node)
         node.right = self.evaluate_expression_or_same(node.right)
+
         return self.evaluate_expression_or_same(node)
 
     def modifyVarRef(self, node):
@@ -773,6 +776,7 @@ class ASTModifierSimplifyExpressions(ASTModifier):
             return []
         else:
             node.condition_stmts_tuples = temp
+
             return [node]
 
 class ASTModifierRemoveUnusedBranches(ASTModifier):
@@ -822,6 +826,7 @@ class ASTModifierRemoveUnusedBranches(ASTModifier):
                 return []
             else:
                 node.condition_stmts_tuples = condition_stmts_tuples
+
                 return [node]
         else:
             return flatten([self.modify(stmt) for stmt in statements])
