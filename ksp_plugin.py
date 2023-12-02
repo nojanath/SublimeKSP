@@ -757,8 +757,8 @@ class KspFixLineEndings(sublime_plugin.EventListener):
 
     def on_load(self, view):
         if self.is_probably_ksp_file(view):
-            with io.open(view.file_name(), 'r', encoding = 'latin-1') as s:
-                s.read()
+            with io.open(view.file_name(), 'r', encoding = 'latin-1') as file:
+                s = file.read()
 
                 mixed_line_endings = re.search(r'\r(?!\n)', s) and '\r\n' in s
 
