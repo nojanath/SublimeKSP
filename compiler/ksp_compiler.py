@@ -1414,18 +1414,31 @@ class ASTModifierFunctionExpander(ASTModifierBase):
 
         prologue = []
         epilogue = []
+
+        num_params = len(parameters)
+
+        # "virtually" increase parameter count so that if taskfunc has a return value,
+        # but upon calling is not assigned to a variable to store the return into,
+        # it would still use the correct stack pointer offset.
+        # See issue #217 on GitHub!
+        if func.return_value is not None and not assign_stmt_lhs:
+            num_params = num_params + 1
+
         for i, param in enumerate(parameters):
-            idx = len(parameters)-i
+            idx = num_params - i
+
             if func.parameter_types[i] not in ('out', 'ref'):
                 li = param.lexinfo
                 p_ref = ksp_ast.VarRef(li, ksp_ast.ID(li, '%p'),
                                        [ksp_ast.BinOp(li, ksp_ast.VarRef(li, ksp_ast.ID(li, '$sp')), '-', ksp_ast.Integer(li, idx))])
                 prologue.append(ksp_ast.AssignStmt(li, p_ref, param))
+
             if isinstance(param, ksp_ast.VarRef) and func.parameter_types[i] in ('out', 'var'):
                 li = param.lexinfo
                 p_ref = ksp_ast.VarRef(li, ksp_ast.ID(li, '%p'),
                                        [ksp_ast.BinOp(li, ksp_ast.VarRef(li, ksp_ast.ID(li, '$sp')), '-', ksp_ast.Integer(li, idx))])
                 epilogue.append(ksp_ast.AssignStmt(li, param, p_ref))
+
         return (prologue, epilogue)
 
     def modifyFunctionCall(self, node, parent_toplevel = None, function_stack = None, assign_stmt_lhs = None):
@@ -1516,6 +1529,7 @@ class ASTModifierTaskfuncFunctionHandler(ASTModifierBase):
     def modifyFunctionDef(self, node, parent_taskfunc_function = None, assign_stmt_lhs = None):
         # Add to context info about which taskfunc function we are currently inside
         ID, BinOp, Integer, VarRef, AssignStmt, FunctionCall = ksp_ast.ID, ksp_ast.BinOp, ksp_ast.Integer, ksp_ast.VarRef, ksp_ast.AssignStmt, ksp_ast.FunctionCall
+
         if not node.is_taskfunc:
             return node
 
@@ -1527,8 +1541,10 @@ class ASTModifierTaskfuncFunctionHandler(ASTModifierBase):
         # build a substitution dictionary that maps parameters to arguments
         name_subst_dict = {}
         li = node.lexinfo
+
         for i, param in enumerate(params):
             frame_offset = i + len(node.taskfunc_declaration_statements) + 1
+
             # replace locally declared 'x' with '%p[$fp + <var_index>'
             p_ref = VarRef(li, ID(li, '%p'), [BinOp(li, VarRef(li, ID(li, '$fp')), '+', Integer(li, frame_offset))])
             name_subst_dict[str(param)] = p_ref
