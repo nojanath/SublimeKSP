@@ -607,8 +607,8 @@ def handleMultidimensionalArrays(lines):
 			newLines.append(lines[lineIdx])
 		else: # Multidimensional arrays are only allowed in the init callback.
 			if re.search(endOnRe, line):
-				newLines.extend(lines[lineIdx:])
-				break
+				initFlag = False # In case there are other init CBs (Combine Duplciate Callbacks)
+				newLines.append(lines[lineIdx])
 			else:
 				# If a multidim array is found, if necessary the family prefix is added and the lines needed for the property are added.
 				famCount = countFamily(line, famCount)
