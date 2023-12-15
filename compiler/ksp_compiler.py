@@ -2437,7 +2437,7 @@ if __name__ == "__main__":
                             dest = 'sanitize_exit_command', action = 'store_true', default = False,
                             help = 'adds a dummy no-op command before every exit function call')
     arg_parser.add_argument('source_file', type = FileType('r', encoding = 'latin-1'))
-    arg_parser.add_argument('output_file')
+    arg_parser.add_argument('output_file', nargs = '?')
 
     args = arg_parser.parse_args()
 
@@ -2472,28 +2472,36 @@ if __name__ == "__main__":
     # write the compiled code to output
     code = compiler.compiled_code.replace('\r', '')
     paths = []
+    out_is_dir = False
 
-    # append the argument to possibly already defined output files via save_compiled_source pragma
     if args.output_file:
+        # we don't care about any paths from save_compiled_source pragmas in case we specified an output file argument
+        compiler.output_files.clear()
         compiler.output_files.append(args.output_file)
 
-    for f in compiler.output_files:
-        file = f
+    for p in compiler.output_files:
+        path = p
 
-        if not os.path.isabs(file):
-            file = os.path.join(basepath, file)
+        if not os.path.isabs(path):
+            path = os.path.join(basepath, path)
 
-        with io.open(file, 'w', encoding = 'latin-1') as o:
-            o.write(code)
+        if os.path.isdir(path):
+            out_is_dir = True
+        else:
+            with io.open(path, 'w', encoding = 'latin-1') as o:
+                o.write(code)
 
-        paths.append(file)
+            paths.append(path)
 
     delta = utils.calc_time_diff(datetime.now() - t1)
 
-    if len(paths) > 0:
+    if len(paths) > 0 and out_is_dir == False:
         utils.log_message("Successfully compiled in %s! Compiled code was saved to:" % delta)
 
         for p in paths:
             utils.log_message("    %s" % p)
     else:
-        utils.log_message("The output file for the compiled code was not defined, but compilation ended successfully in %s!" % delta)
+        if out_is_dir:
+            utils.log_message("The output path for the compiled code cannot be a folder, however compilation ended successfully in %s!" % delta)
+        else:
+            utils.log_message("The output file for the compiled code was not defined, however compilation ended successfully in %s!" % delta)
