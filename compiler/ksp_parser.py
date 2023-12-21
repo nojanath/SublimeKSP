@@ -80,13 +80,13 @@ def t_BITWISE_NOT(t):
     return t
 
 def t_BEGIN_CALLBACK(t):
-    r'on\s+(init|note|release|midi_in|controller|(n)?rpn|ui_update|(_)?pgs_changed|poly_at|listener|async_complete|persistence_changed|(ui_control\s*?\(.+?\)))'
+    r'on\s+(init|note|release|midi_in|controller|(n)?rpn|ui_update|(_)?pgs_changed|poly_at|listener|async_complete|persistence_changed|ui_controls|(ui_control\s*?\(.+?\))|)'
     t.type = 'BEGIN_CALLBACK'
     variable = None
     parts = t.value.split()
     name = parts[1]
 
-    if name.startswith('ui_control'):
+    if name.startswith('ui_control') and not name.startswith('ui_controls'):
         name, variable = re.match(r'on\s+(ui_control)\s*?\((.+)\)', t.value).groups()
         name, variable = name.strip(), variable.strip()
 

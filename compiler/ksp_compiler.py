@@ -606,7 +606,7 @@ def extract_callback_lines(lines):
     inside_callback = False
 
     for line in lines:
-        if re.match(r'\s*on\s+(ui_control) *\(', line.command):
+        if re.match(r'\s*on\s+(ui_control(s\s*$)?)', line.command):
             inside_callback = True
             callback_lines.append(line)
         elif re.match(r'\s*end on\b', line.command):
