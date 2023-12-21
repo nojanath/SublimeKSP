@@ -734,23 +734,30 @@ class KspFixLineEndingsAndSetSyntax(sublime_plugin.EventListener):
         if ext == '.ksp' or ext == '.b3s' or ext == '.nbsc':
             return True
         elif ext == '.txt' or ext == '':
-            code = view.substr(sublime.Region(0, view.size()))
-            score = sum(sc for (pat, sc) in [(r'^on init\b', 1),
-                                             (r'^on note\b', 1),
-                                             (r'^on release\b', 1),
-                                             (r'^on controller\b', 1),
-                                             ('^end function', 1),
-                                             ('EVENT_ID', 2),
-                                             ('EVENT_NOTE', 2),
-                                             ('EVENT_VELOCITY', 2),
-                                             ('^on ui_control', 3),
+            code = view.substr(sublime.Region(0, 5000))
+            score = sum(sc for (pat, sc) in [(r'on\s*init\b', 1),
+                                             (r'on\s*note\b', 1),
+                                             (r'on\s*release\b', 1),
+                                             (r'on\s*controller\b', 1),
+                                             (r'on\s*listener', 2),
+                                             (r'on\s*persistence', 2),
+                                             (r'on\s*ui_control', 3),
+                                             (r'end\s*function', 1),
+                                             (r'end\s*macro', 1),
+                                             (r'end\s*on', 1),
+                                             (r'EVENT_ID', 2),
+                                             (r'EVENT_NOTE', 2),
+                                             (r'EVENT_VELOCITY', 2),
+                                             (r'declare\s*\w+\[\w+\]', 2),
+                                             (r'define\s*', 2),
+                                             (r'import\s*[\"\']', 1),
+                                             (r'instpers', 2),
+                                             (r'make_perfview', 3),
                                              (r'make_persistent', 2),
-                                             ('^end on', 1),
-                                             (r'-> result', 2),
-                                             (r'declare \w+\[\w+\]', 2)]
+                                             (r'make_instr', 2),
+                                             (r'message\s*\(', 1)]
                             if re.search('(?m)' + pat, code)
                         )
-
             return score >= 2
         else:
             return False
@@ -764,10 +771,10 @@ class KspFixLineEndingsAndSetSyntax(sublime_plugin.EventListener):
         if view.settings().get('syntax') == "KSP.sublime-syntax":
             is_ksp_syntax = True
 
-        if self.is_probably_ksp_file(view) and not is_ksp_syntax:
+        if self.is_probably_ksp_file(view):
             fn = view.file_name()
 
-            if fn:
+            if fn and not is_ksp_syntax:
                 with io.open(view.file_name(), 'r', encoding = 'latin-1') as file:
                     s = file.read()
 
@@ -800,5 +807,5 @@ class KspFixLineEndingsAndSetSyntax(sublime_plugin.EventListener):
     def on_modified_async(self, view):
         self.test_and_set_syntax_to_ksp(view)
 
-    def on_activated(self, view):
+    def on_activated_async(self, view):
         self.test_and_set_syntax_to_ksp(view)
