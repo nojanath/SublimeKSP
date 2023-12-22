@@ -62,7 +62,8 @@ def move_on_init_first(module):
         module.blocks.insert(0, on_init)
 
 def toint(i, bits=32):
-    ' converts to a signed integer with bits bits '
+    ''' converts to a signed integer with "bits" bits '''
+
     i &= (1 << bits) - 1       # get last "bits" bits, as unsigned
 
     if i & (1 << (bits - 1)):  # is negative in N-bit 2's comp
@@ -128,6 +129,9 @@ def evaluate_expression(expr):
             elif op == '#':
                 return a != b
         elif op in ['.and.', '.or.', '.xor.']:
+            assert_numeric(a)
+            assert_numeric(b)
+
             a, b = toint(a), toint(b)
 
             if op == '.and.':

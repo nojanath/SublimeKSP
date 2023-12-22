@@ -324,7 +324,7 @@ class PropertyDef(Stmt):
             functions = []
 
             # result := alias_varref
-            functions.append(FunctionDef(lexinfo, ID(lexinfo, 'get'),parameters=indices, return_value=ID(lexinfo, 'result'),
+            functions.append(FunctionDef(lexinfo, ID(lexinfo, 'get'), parameters=indices, return_value=ID(lexinfo, 'result'),
                                          lines=[AssignStmt(lexinfo, VarRef(lexinfo, ID(lexinfo, 'result')), alias_varref)]))
             # alias_varref := value_to_set
             functions.append(FunctionDef(lexinfo, ID(lexinfo, 'set'), parameters=indices + [ID(lexinfo, 'value_to_set')], return_value=None,
