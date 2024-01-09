@@ -50,12 +50,13 @@ contexts:
       comment: Operator
       scope: keyword.operator.source.ksp
 
-    - match: '(on\s+ui_control)(\s*\(([a-zA-Z0-9$%@?_.]+)\))?'
+    - match: '(on\s+ui_control(s)?)(\s*\(([a-zA-Z0-9$%@?_.]+)\))?'
       comment: UI callback
       captures:
         0: entity.name.callback.source.ksp
         1: keyword.other.source.ksp
-        3: variable.source.ksp
+        2: keyword.other.source.ksp
+        4: variable.source.ksp
 
     - match: '(?x)
                \b(on\s+
@@ -70,7 +71,7 @@ contexts:
                   persistence_changed|
                   (_)?pgs_changed|
                   poly_at|
-                  ui_update
+                  ui_(controls|update)
                  )|
                  on_pgs_changed|on_post_init|on_release)
                \b'
@@ -281,10 +282,11 @@ contexts:
         DURATION_(BAR|EIGHTH(_TRIPLET)?|QUARTER(_TRIPLET)?|SIXTEENTH(_TRIPLET)?)|
         EFFECT_TYPE_(
                      ACBOX|AET_FILTER|
-                     BASSINVADER|BASSPRO|BITE|BUS_COMP|
+                     BASSINVADER|BASSPRO|BIGFUZZ|BITE|BUS_COMP|
                      CABINET|CAT|CHORAL|CHORUS|COMPRESSOR|CRYWAH|
                      DELAY|DIRT|DISTORTION|DSTORTION|
-                     FB_COMP|FILTER|FLAIR|FLANGER|FREAK|
+                     EP_PREAMPS|
+                     FB_COMP|FILTER|FLAIR|FLANGER|FREAK|FUZZ|
                      GAINER|
                      HOTSOLO|
                      INVERTER|IRC|
@@ -292,8 +294,8 @@ contexts:
                      LIMITER|LOFI|
                      NONE|
                      PHASER|PHASIS|PLATEREVERB|PSYCHEDELAY|
-                     RAUM|REPLIKA|REVERB|REVERB2|RINGMOD|ROTATOR|
-                     SEND_LEVELS|SHAPER|SKREAMER|SOLID_GEQ|STEREO|SUPERGT|SURROUND_PANNER|
+                     RAUM|REPLIKA|REVERB(2)?|RINGMOD|ROTATOR|
+                     SEND_LEVELS|SHAPER|SKREAMER|SOLID_GEQ|STEREO(_TUNE)?|SUPERGT|SURROUND_PANNER|
                      TAPE_SAT|TRANS_MASTER|TRANSLIM|TWANG|TWINDELAY|
                      VAN51|VIBRATO_CHORUS|
                      WOWFLUTTER
@@ -305,6 +307,7 @@ contexts:
                     BANDWIDTH|
                     BASSINVADER_(BASS|BOOST|HI_BOOST|HI_MID|LO_CUT|LO_MID|MASTER|MID_CONTOUR|TREBLE|VOLUME)|
                     BASSPRO_(BASS|BRIGHT|DRIVE|GAIN|GEQ(_10K|_180|_1K|_2K|_300|_40|_4K|_500|_90|_VOLUME)?|MASTER|MID|MIDFREQ|MONO|TREBLE|ULTRA(HI|LO))|
+                    BIGFUZZ_(BASS|MONO|SUSTAIN|TONE|TREBLE)|
                     BITE_(BITS|CRUNCH|DC_QUANT|DITHER|EXPAND|FREQUENCY|HPF|JITTER|MIX|(POST|PRE)FILTER|SATURATE)|
                     BITS|BREAK|BW[1-3]|
                     CABINET_TYPE|CB_(AIR|BASS|SIZE|TREBLE)|
@@ -323,6 +326,7 @@ contexts:
                     (SEND_)?EFFECT_(BYPASS||TYPE)|EFFECT_SUBTYPE|
                     ENV_(AHD|DBD_EASY)|ENVELOPE_ORDER|
                     ENVF_(ADAPTION|ATTACK|GAIN_BOOST|RELEASE)|
+                    EPP_(DRIVE(_MODE)?|EQ_(MODE|BASS|MID|TREBLE)|PASSIVE_BASS|TREMOLO_(MODE|WAVE|RATE(_UNIT)?|AMOUNT|WIDTH)|MONO)|
                     EXP_FILTER_(AMOUNT|MORPH)|
                     EXTMOD_INTENSITY|
                     FCOMP_(ATTACK|HQ_MODE|INPUT|LINK|MAKEUP|MIX|RATIO|RELEASE)|
@@ -333,6 +337,7 @@ contexts:
                     FORMANT(_(SHARP|SHIFT|SIZE|TALK))?|
                     FREAK_(ANTIFOLD|BP_(FILTER|FREQ)|CARRIER|CONTOUR|DEMOD|FEEDBACK|FREQUENCY|GATE|HARMONICS|MIX|MODE|RELEASE|STEREO|TUNING|TYPE|WIDE_RANGE|WIDTH)|
                     FREQ[1-3]|FREQUENCY|
+                    FUZZ_(AMOUNT|BASS|MONO|TREBLE)|
                     GAIN([1-3])?|
                     GLIDE_COEF(_UNIT)?|
                     GN_GAIN|GRAIN_LENGTH|GROUP_DYNAMICS|
@@ -377,6 +382,7 @@ contexts:
                     START_CRITERIA_(CC_(MAX|MIN)|CONTROLLER|CYCLE_CLASS|KEY_(MAX|MIN)|MODE|NEXT_CRIT|SEQ_ONLY|(SLICE|ZONE)_IDX)|
                     STEPSEQ_(NUM_STEPS|ONESHOT|STEP_VALUE)|
                     STEREO(_PAN|_PSEUDO)?|
+                    STEREOTUNE_(DRIFT|MIX|SPLIT|SPREAD)|
                     SUPERGT_(ATTACK|(CHANNEL_LINK|CHAR|HPF|SAT)_MODE|CHARACTER|COMPRESS|MIX|RELEASE|SATURATION|TRIM)|
                     SUSTAIN|
                     TDL_(CROSS_FEEDBACK|FEEDBACK_(L|R)|LEVEL_(L|R)|PREDELAY_(L|R)(_UNIT)?|TIME_(L|R)(_UNIT)?|WIDTH)|
@@ -448,7 +454,7 @@ contexts:
             BUS_OFFSET|
             BITE_HPF_MODE_(5|100|200)|
             CALLBACK_(ID|TYPE)|
-            CB_TYPE_(ASYNC_COMPLETE|CONTROLLER|INIT|LISTENER|MIDI_IN|NOTE|NRPN|PERSISTENCE_CHANGED|PGS|POLY_AT|RELEASE|RPN|UI_CONTROL|UI_UPDATE)|
+            CB_TYPE_(ASYNC_COMPLETE|CONTROLLER|INIT|LISTENER|MIDI_IN|NOTE|NRPN|PERSISTENCE_CHANGED|PGS|POLY_AT|RELEASE|RPN|UI_CONTROL(S)?|UI_UPDATE)|
             CHORAL_MODE_(DIMENSION|ENSEMBLE|SYNTH|UNIVERSAL)|
             COMP_TYPE_(CLASSIC|ENHANCED|PRO)|
             CONTROL_PAR_IDX|CONTROL_TYPE_(BUTTON|FILE_SELECTOR|KNOB|LABEL|LEVEL_METER|MENU|MOUSE_AREA|NONE|PANEL|SLIDER|SWITCH|TABLE|TEXT_EDIT|VALUE_EDIT|WAVEFORM|WAVETABLE|XY)|
@@ -460,6 +466,7 @@ contexts:
             DIRT_(MODE_(I){1,3}|ROUTING_(ATOB|BTOA|PARALLEL))|
             DISTORTION_TYPE_(TRANS|TUBE)|
             DND_ACCEPT_(MULTIPLE|NONE|ONE)|
+            EPP_(DRIVE_MODE_(BYPASS|(DE|US)_TUBE|TAPE|TRANSISTOR)|EQ_MODE_(70S|80S|BYPASS|PASSIVE)|TREMOLO_(MODE_(70S|80S|BYPASS|GUITAR|SYNTH)|WAVE_(SAW_(DOWN|UP)|SINE|SQUARE|TRIANGLE)))|
             FILE_(EXTENSION|FULL_PATH|FULL_PATH_OS|NAME)|
             FILE_TYPE_(ARRAY|AUDIO|MIDI)|
             FLAIR_(MODE_(SCAN|STANDARD|THRU_ZERO)|SCANMODE_(SAW_DOWN|SAW_UP|TRIANGLE))|
