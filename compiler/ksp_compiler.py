@@ -903,6 +903,10 @@ class ASTModifierNodesToNativeKSP(ASTModifierBase):
         # as we visit the function definition, pass along information to nodes further down the tree of the function parameter names
         params = function_params + node.parameters
 
+        # verify that there are no duplicate argument names in the function definition
+        if len(set(params)) < len(params):
+            raise ksp_ast.ParseException(node, "Function contains duplicate argument names!")
+
         if node.return_value:
             params.append(node.return_value.identifier)
 
