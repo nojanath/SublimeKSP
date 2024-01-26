@@ -99,6 +99,14 @@
 						"id": "optimize_compiled",
 						"checkbox": true
 					},
+					{
+						"command": "ksp_global_setting_toggle",
+						"args": {"setting": "ksp_additional_branch_optimization", "default": false},
+						"caption": "Additional Branch Optimization Steps",
+						"mnemonic": "B",
+						"id": "additional_branch_optimization",
+						"checkbox": true
+					},
 					{"caption": "-"}, //separator
 					{
 						"command": "ksp_global_setting_toggle",

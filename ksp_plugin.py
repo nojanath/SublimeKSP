@@ -191,6 +191,7 @@ class CompileKspThread(threading.Thread):
             optimize = settings.get('ksp_optimize_code', False)
             combine_callbacks = settings.get('ksp_combine_callbacks', False)
             sanitize_exit_command = settings.get('ksp_sanitize_exit_command', True)
+            additional_branch_optimization = settings.get('ksp_additional_branch_optimization', True)
             add_compiled_date_comment = settings.get('ksp_add_compiled_date', True)
             should_play_sound = settings.get('ksp_play_sound', False)
 
@@ -221,13 +222,14 @@ class CompileKspThread(threading.Thread):
 
                 self.compiler = ksp_compiler.KSPCompiler(code,
                                                          self.base_path,
-                                                         compact                   = compact,
-                                                         compact_variables         = compact_variables,
-                                                         extra_syntax_checks       = check,
-                                                         combine_callbacks         = combine_callbacks,
-                                                         optimize                  = optimize and check,
-                                                         sanitize_exit_command     = sanitize_exit_command,
-                                                         add_compiled_date_comment = add_compiled_date_comment)
+                                                         compact                        = compact,
+                                                         compact_variables              = compact_variables,
+                                                         extra_syntax_checks            = check,
+                                                         combine_callbacks              = combine_callbacks,
+                                                         optimize                       = check and optimize,
+                                                         additional_branch_optimization = check and additional_branch_optimization,
+                                                         sanitize_exit_command          = sanitize_exit_command,
+                                                         add_compiled_date_comment      = add_compiled_date_comment)
 
                 if self.compiler.compile(callback = utils.compile_on_progress):
                     last_compiler = self.compiler
@@ -567,6 +569,7 @@ class KspGlobalSettingToggleCommand(sublime_plugin.ApplicationCommand):
             'ksp_compact_variables'                    : 'Compact Variables',
             'ksp_extra_checks'                         : 'Extra Syntax Checks',
             'ksp_optimize_code'                        : 'Optimize Compiled Code',
+            'ksp_additional_branch_optimization'       : 'Additional Branch Optimization Steps',
             'ksp_combine_callbacks'                    : 'Combine Duplicate Callbacks',
             'ksp_add_compiled_date'                    : 'Add Compilation Date/Time Comment',
             'ksp_sanitize_exit_command'                : 'Sanitize Behavior of \'exit\' Command',

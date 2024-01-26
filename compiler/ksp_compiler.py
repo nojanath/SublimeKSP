@@ -95,7 +95,7 @@ varname_dot_re = re.compile(r'''
     \.                       # a literal dot
 ''', re.VERBOSE)
 
-compiler_options = '(remove_whitespace|compact_variables|combine_callbacks|extra_syntax_checks|optimize_code|add_compile_date|sanitize_exit_command)'
+compiler_options = '(remove_whitespace|compact_variables|combine_callbacks|extra_syntax_checks|optimize_code|additional_branch_optimization|add_compile_date|sanitize_exit_command)'
 
 pragma_compile_with_re = re.compile(r'\{\s*\#pragma\s+compile_with\s+%s\s*\}' % compiler_options)
 pragma_compile_without_re = re.compile(r'\{\s*\#pragma\s+compile_without\s+%s\s*\}' % compiler_options)
@@ -1963,6 +1963,7 @@ class KSPCompiler(object):
                  combine_callbacks = False,
                  extra_syntax_checks = False,
                  optimize = False,
+                 additional_branch_optimization = False,
                  sanitize_exit_command = False,
                  add_compiled_date_comment = False,
                  force_compiler_arguments = False):
@@ -1972,6 +1973,7 @@ class KSPCompiler(object):
         self.compact = compact
         self.compact_variables = compact_variables
         self.optimize = optimize
+        self.additional_branch_optimization = additional_branch_optimization
         self.sanitize_exit_command = sanitize_exit_command
         self.combine_callbacks = combine_callbacks
         self.add_compiled_date_comment = add_compiled_date_comment
@@ -2281,9 +2283,9 @@ class KSPCompiler(object):
                         self.combine_callbacks = value
                     if option == 'extra_syntax_checks':
                         self.extra_syntax_checks = value
-                    if option == 'optimize_code':
+                    if option == 'extra_branch_optimization':
                         self.extra_syntax_checks = value
-                        self.optimize = value
+                        self.additional_branch_optimization = value
                     if option == 'add_compile_date':
                         self.add_compiled_date_comment = value
                     if option == 'sanitize_exit_command':
@@ -2291,6 +2293,7 @@ class KSPCompiler(object):
 
             do_extra = self.extra_syntax_checks
             do_optim = do_extra and self.optimize
+            do_abo = do_extra and self.additional_branch_optimization
             do_sanitize_exit = self.sanitize_exit_command
 
             #      description                        function                                                                           condition     time-weight
@@ -2311,6 +2314,7 @@ class KSPCompiler(object):
 
                  ('parsing code',                     lambda: self.parse_code(),                                                         True,                   1),
                  ('combining callbacks',              lambda: ASTModifierCombineCallbacks(self.module, self.combine_callbacks),          True,                   1),
+                 ('removing unused branches',         lambda: comp_extras.ASTModifierRemoveUnusedBranches(self.module),                  do_abo,                 1),
                  ('modifying nodes to native KSP',    lambda: ASTModifierNodesToNativeKSP(self.module, self.lines),                      True,                   1),
                  ('adding variable name prefixes',    lambda: ASTModifierFixPrefixesIncludingLocalVars(self.module),                     True,                   1),
                  ('inlining functions',               lambda: ASTModifierFunctionExpander(self.module),                                  True,                   1),
@@ -2322,6 +2326,7 @@ class KSPCompiler(object):
                  ('initializing extra syntax checks', lambda: self.init_extra_syntax_checks(),                                           do_extra,               1),
                  ('checking expression types',        lambda: comp_extras.ASTVisitorDetermineExpressionTypes(self.module, functions),    do_extra,               1),
                  ('checking statement types',         lambda: comp_extras.ASTVisitorCheckStatementExprTypes(self.module),                do_extra,               1),
+                 ('removing unused branches',         lambda: comp_extras.ASTModifierRemoveUnusedBranches(self.module),                  do_abo,                 1),
                  ('checking declarations',            lambda: comp_extras.ASTVisitorCheckDeclarations(self.module),                      do_extra,               1),
                  ('simplying expressions',            lambda: comp_extras.ASTModifierSimplifyExpressions(self.module, True),             do_optim,               1),
                  ('removing unused branches',         lambda: comp_extras.ASTModifierRemoveUnusedBranches(self.module),                  do_optim,               1),
@@ -2434,6 +2439,9 @@ if __name__ == "__main__":
     arg_parser.add_argument('-o', '--optimize',
                             dest = 'optimize', action = 'store_true', default = False,
                             help = 'optimize the compiled code')
+    arg_parser.add_argument('-b', '--extra_branch_optimization',
+                            dest = 'additional_branch_optimization', action = 'store_true', default = False,
+                            help = 'adds branch optimization checks earlier in compile process, allowing define constant based branching etc.')
     arg_parser.add_argument('-t', '--add_compile_date',
                             dest = 'add_compile_date', action = 'store_true', default = False,
                             help = 'adds the date and time comment atop the compiled code')
@@ -2451,8 +2459,8 @@ if __name__ == "__main__":
     if args.source_file.name != '<stdin>':
         basepath = os.path.dirname(args.source_file.name)
 
-    # make sure that extra syntax checks are enabled if --optimize argument is used
-    if args.optimize == True and args.extra_syntax_checks == False:
+    # make sure that extra syntax checks are enabled if --optimize or --extra_branch_optimization arguments are used
+    if (args.optimize == True or args.additional_branch_optimization) and args.extra_syntax_checks == False:
         args.extra_syntax_checks = True
 
     # read the source and compile it
@@ -2462,14 +2470,15 @@ if __name__ == "__main__":
 
     compiler = KSPCompiler(code,
                            basepath,
-                           compact                   = args.compact,
-                           combine_callbacks         = args.combine_callbacks,
-                           compact_variables         = args.compact_variables,
-                           extra_syntax_checks       = args.extra_syntax_checks,
-                           optimize                  = args.optimize,
-                           sanitize_exit_command     = args.sanitize_exit_command,
+                           compact = args.compact,
+                           combine_callbacks = args.combine_callbacks,
+                           compact_variables = args.compact_variables,
+                           extra_syntax_checks = args.extra_syntax_checks,
+                           optimize = args.optimize,
+                           additional_branch_optimization = args.additional_branch_optimization,
+                           sanitize_exit_command = args.sanitize_exit_command,
                            add_compiled_date_comment = (args.add_compile_date),
-                           force_compiler_arguments  = (args.force_compiler_arguments))
+                           force_compiler_arguments = (args.force_compiler_arguments))
 
     compiler.compile(callback = utils.compile_on_progress)
 
