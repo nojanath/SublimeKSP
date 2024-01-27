@@ -687,7 +687,7 @@ contexts:
       comment: Identifier
       scope: variable.source.ksp
 
-    - match: ':=|&|<=|>=|<|>|#|=|->|\.\.\.'
+    - match: '[:+]=|[=][+]|&|<=|>=|<|>|#|=|->|\.\.\.'
       comment: Operator
       scope: operator.source.ksp
 
