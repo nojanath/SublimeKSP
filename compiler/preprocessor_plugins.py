@@ -1628,6 +1628,8 @@ class DefineConstant(object):
 
 def handleDefineConstants(lines, define_cache = None):
 	defineRe = r"^define\s+%s\s*(?:\((?P<args>.+)\))?\s*:=(?P<val>.+)$" % variableNameRe
+	defineAppendRe = r"^define\s+%s\s*(?:\((?P<args>.+)\))?\s*\+=(?P<val>.+)$" % variableNameRe
+	definePrependRe = r"^define\s+%s\s*(?:\((?P<args>.+)\))?\s*=\+(?P<val>.+)$" % variableNameRe
 
 	if define_cache is not None:
 		defineConstants = define_cache
@@ -1645,9 +1647,22 @@ def handleDefineConstants(lines, define_cache = None):
 			newLines.append(l)
 			continue
 
+		define_type = 'none'
 		m = re.search(defineRe, command)
+		if m:
+			define_type = 'new'
 
-		if not m:
+		if define_type == 'none':
+			m = re.search(defineAppendRe, command)
+			if m:
+				define_type = 'append'
+
+		if define_type == 'none':
+			m = re.search(definePrependRe, command)
+			if m:
+				define_type = 'prepend'
+
+		if define_type == 'none':
 			newLines.append(l)
 			continue
 
@@ -1660,17 +1675,27 @@ def handleDefineConstants(lines, define_cache = None):
 			defineConstants.append(defineSizeObj)
 
 		# Create define and evaluate if legitimate
-		defineObj = DefineConstant(m.group("whole"), m.group("val").strip(), m.group("args"), l)
+		defineObj = None
+		existing = list(filter(lambda d: d.name == m.group("name"), defineConstants))\
 
-		existing = list(filter(lambda d: d.name == m.group("name"), defineConstants))
-
-		if len(existing) > 0:
-			if existing[0].value == m.group("val").strip():
-				continue
-			else:
+		if define_type == 'append' and len(existing) > 0:
+			# If appending to existing, remove existing and concatente
+			defineObj = DefineConstant(m.group("whole"), existing[0].value + ', ' + m.group("val").strip(), m.group("args"), l)
+			defineConstants.remove(existing[0])
+		elif define_type == 'prepend' and len(existing) > 0:
+			# If appending to existing, remove existing and concatente
+			defineObj = DefineConstant(m.group("whole"), m.group("val").strip() + ', ' + existing[0].value, m.group("args"), l)
+			defineConstants.remove(existing[0])
+		elif define_type == 'new' and len(existing) > 0:
+			# If new and exists already, raise Exception
+			if existing[0].value != m.group("val").strip():
 				raise ParseException(l, "Define constant was already declared!")
+		else:
+			# All other cases, create a new define
+			defineObj = DefineConstant(m.group("whole"), m.group("val").strip(), m.group("args"), l)
 
-		defineConstants.append(defineObj)
+		if defineObj:
+			defineConstants.append(defineObj)
 
 	if defineConstants:
 		# Replace all occurences where other defines are used in define values - do it a few times to catch some deeper nested defines.
