@@ -596,7 +596,7 @@ class KspGlobalSettingToggleCommand(sublime_plugin.ApplicationCommand):
         settings = sublime.load_settings('KSP.sublime-settings')
         extra_checks = bool(settings.get('ksp_extra_checks', True))
 
-        if setting == 'ksp_optimize_code':
+        if setting == 'ksp_optimize_code' or setting == 'ksp_additional_branch_optimization':
             return extra_checks
         else:
             return True
@@ -769,7 +769,7 @@ class KspFixLineEndingsAndSetSyntax(sublime_plugin.EventListener):
         view.set_syntax_file("KSP.sublime-syntax")
 
     def test_and_set_syntax_to_ksp(self, view):
-        if view.element() == None:
+        if not view.settings().get('is_widget', False):
             is_ksp_syntax = False
 
             if view.settings().get('syntax') == "KSP.sublime-syntax":
