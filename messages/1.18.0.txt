@@ -1,0 +1,54 @@
+Version 1.18.0
+---------------------------------------------------
+
+This update adds support for new engine parameters and callback type introduced with Kontakt 7.8, along with the following changes:
+
+- Added an option which enables completions for vanilla KSP built-in constants and variables (with $, %, etc. type prefixes)
+
+- Added .SIZE define for literal defines (issue #99)
+
+- Added an error message if function declaration has duplicate argument names
+
+- Added a compiler option to enable additional branch optimization steps - this allows using if-else with defines, which can be used in many interesting ways
+
+- Added += and =+ operators to defines, which allows appending or prepending a literal define to the existing list of literals - see Wiki for more info!
+
+- Improved internal structure of built-ins data file, which enables using vanilla KSP built-in constants as they were supposed to be used
+  (previously you couldn't use these to, for example, specify array size upon declaration)
+
+- Improved automatic syntax detection (SublimeKSP will automatically switch syntax to KSP if enough keywords have been detected in the first 5000 characters of currently focused document)
+
+- Improved syntax coloring of pers, instpers and read keywords when they are placed after the UI widget specifier
+
+- Further improved command line interface: output_file argument is now completely optional; save_compiled_source pragmas are now disregarded if output_file argument is specified
+
+- Fixed operator precedence for or, xor, .or. and .xor. operators
+
+- Fixed task function return and out parameters not working correctly (issue #217)
+
+- Fixed an issue where multi-dimensional arrays clashed with Combine Callbacks feature (issue #389)
+
+- Fixed "Optimize Compiled Code" option breaking with bitwise operators (issue #423)
+
+- Fixed $CONTROL_PAR_CUSTOM_ID missing from syntax coloring
+
+
+Have fun!
+
+
+---------------------------------------------------
+
+If you would like to roll back a version of SublimeKSP for time critical work prevented by a new bug:
+
+First, remove SublimeKSP from Sublime Package Control:
+1. Press `Ctrl + Shift + P` on Windows and Linux, or `Cmd + Shift + P` on Mac.
+2. Type "Remove Package" and select it, then select the "KSP (Kontakt Script Processor)" entry.
+
+Next, download the version you'd like [here](https://github.com/nojanath/SublimeKSP/releases).
+
+After the download, you can install it as a user package in Sublime following these instructions:
+
+1. Open the Preferences menu in Sublime Text and click Browse Packages. A folder will open up.
+2. Extract the ZIP archive you have downloaded and place it into this folder.
+3. IMPORTANT: Rename the unpacked folder to `KSP (Kontakt Script Processor)` (this is important so that your settings from Package Control version are retained)!
+4. Restart Sublime Text. Alternatively, make sure you have [Automatic​Package​Reloader](https://packagecontrol.io/packages/AutomaticPackageReloader) package installed.
