@@ -95,7 +95,7 @@ varname_dot_re = re.compile(r'''
     \.                       # a literal dot
 ''', re.VERBOSE)
 
-compiler_options = '(remove_whitespace|compact_variables|combine_callbacks|extra_syntax_checks|optimize_code|additional_branch_optimization|add_compile_date|sanitize_exit_command)'
+compiler_options = '(remove_whitespace|compact_variables|combine_callbacks|extra_syntax_checks|optimize_code|extra_branch_optimization|add_compile_date|sanitize_exit_command)'
 
 pragma_compile_with_re = re.compile(r'\{\s*\#pragma\s+compile_with\s+%s\s*\}' % compiler_options)
 pragma_compile_without_re = re.compile(r'\{\s*\#pragma\s+compile_without\s+%s\s*\}' % compiler_options)
