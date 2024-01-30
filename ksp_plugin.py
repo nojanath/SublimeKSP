@@ -191,7 +191,7 @@ class CompileKspThread(threading.Thread):
             optimize = settings.get('ksp_optimize_code', False)
             combine_callbacks = settings.get('ksp_combine_callbacks', False)
             sanitize_exit_command = settings.get('ksp_sanitize_exit_command', True)
-            additional_branch_optimization = settings.get('ksp_additional_branch_optimization', True)
+            additional_branch_optimization = settings.get('ksp_additional_branch_optimization', False)
             add_compiled_date_comment = settings.get('ksp_add_compiled_date', True)
             should_play_sound = settings.get('ksp_play_sound', False)
 
@@ -561,7 +561,7 @@ class ReplaceTextWithCommand(sublime_plugin.TextCommand):
 
 
 class KspGlobalSettingToggleCommand(sublime_plugin.ApplicationCommand):
-    '''Handles toggeled sublime settings'''
+    '''Handles SublimeKSP setting toggles'''
 
     def run(self, setting, default):
         sksp_options_dict = {
