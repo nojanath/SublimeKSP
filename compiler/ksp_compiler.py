@@ -2314,7 +2314,6 @@ class KSPCompiler(object):
 
                  ('parsing code',                     lambda: self.parse_code(),                                                         True,                   1),
                  ('combining callbacks',              lambda: ASTModifierCombineCallbacks(self.module, self.combine_callbacks),          True,                   1),
-                 ('removing unused branches',         lambda: comp_extras.ASTModifierRemoveUnusedBranches(self.module),                  do_abo,                 1),
                  ('modifying nodes to native KSP',    lambda: ASTModifierNodesToNativeKSP(self.module, self.lines),                      True,                   1),
                  ('adding variable name prefixes',    lambda: ASTModifierFixPrefixesIncludingLocalVars(self.module),                     True,                   1),
                  ('inlining functions',               lambda: ASTModifierFunctionExpander(self.module),                                  True,                   1),
