@@ -2193,6 +2193,72 @@ class TestTaskfunc(unittest.TestCase):
         output = do_compile(code, optimize = True)
         assert_equal(self, output, expected_output)
 
+    def testTaskfuncWithAdditionalBranchOptimization(self):
+        code = '''
+            { pragma compile_with extra_branch_optimization }
+
+            on init
+              SET_CONDITION(TCM_DEBUG)
+              tcm.init(100)
+              declare x
+            end on
+
+            taskfunc randomize(min, max) -> result
+              declare r := random(min, max)
+              result := r
+            end taskfunc
+
+            on note
+              x := randomize(44, 88)
+            end on'''
+
+        expected_output = '''
+            on init
+            declare %p[32768]
+            declare $sp
+            $sp := 268
+            declare $fp
+            $fp := 268
+            declare $tx
+            declare %tstate__id[326]
+            declare %tstate__fs[326]
+            $tx := 0
+            while ($tx<326)
+            %tstate__fs[$tx] := 168+($tx*100)
+            inc($tx)
+            end while
+            $tx := 0
+            %tstate__id[0] := -1
+            pgs_create_key(TCM_EXCEPTION,5)
+            pgs_set_key_val(TCM_EXCEPTION,$CURRENT_SCRIPT_SLOT,0)
+            declare $x
+            end on
+            function check_full
+            if ($sp<(%tstate__fs[$tx]+2))
+            pgs_set_key_val(TCM_EXCEPTION,$CURRENT_SCRIPT_SLOT,2)
+            end if
+            end function
+            function randomize
+            %p[$sp-5] := $fp
+            $fp := $sp-5
+            $sp := $fp
+            call check_full
+            %p[$fp+1] := random(%p[$fp+2],%p[$fp+3])
+            %p[$fp+4] := %p[$fp+1]
+            $sp := $fp
+            $fp := %p[$fp]
+            $sp := $sp+5
+            end function
+            on note
+            %p[$sp-3] := 44
+            %p[$sp-2] := 88
+            call randomize
+            $x := %p[$sp-1]
+            end on'''
+
+        output = do_compile(code, optimize = True)
+        assert_equal(self, output, expected_output)
+
     def testTaskfuncWithTWaitAndOutParam(self):
         code = '''
             on init
