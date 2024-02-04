@@ -303,6 +303,12 @@ builtin_snippets = []
 
 magic_control_and_event_pars = []
 
+color_schemes = [
+'KScript Dark',
+'KScript Light',
+'Monokai KSP',
+]
+
 def plugin_loaded():
     # copy our built in sound to the unmanaged packages folder, so we can io.open it at runtime
     try:
@@ -322,6 +328,15 @@ def plugin_loaded():
 
     settings = sublime.load_settings('KSP.sublime-settings')
     enable_vanilla_builtins = bool(settings.get('ksp_add_completions_for_vanilla_builtins', False))
+
+    # fix up color scheme from .tmTheme files to .sublime-color-scheme files, if used
+    cs = settings.get('color_scheme')
+
+    for c in color_schemes:
+        if cs.endswith(c + '.tmTheme'):
+            settings.set('color_scheme', c + '.sublime-color-scheme')
+            sublime.save_settings('KSP.sublime-settings')
+            break
 
     if sublime_version >= 4000:
         builtin_compl_vars.extend(sublime.CompletionItem(trigger = x[1:],
@@ -738,6 +753,8 @@ class KspFixLineEndingsAndSetSyntax(sublime_plugin.EventListener):
             return True
         elif ext == '.txt' or ext == '':
             code = view.substr(sublime.Region(0, 5000))
+            varRe = preprocessor_plugins.variableNameRe
+
             score = sum(sc for (pat, sc) in [(r'on\s*init\b', 1),
                                              (r'on\s*note\b', 1),
                                              (r'on\s*release\b', 1),
@@ -751,17 +768,17 @@ class KspFixLineEndingsAndSetSyntax(sublime_plugin.EventListener):
                                              (r'EVENT_ID', 2),
                                              (r'EVENT_NOTE', 2),
                                              (r'EVENT_VELOCITY', 2),
-                                             (r'declare\s*\w+\[\w+\]', 2),
-                                             (r'define\s*', 2),
+                                             (r'declare\s+%s' % varRe, 2),
+                                             (r'define\s+%s\s*(?:\((.+)\))?\s*:=(.+)' % varRe, 1),
                                              (r'import\s*[\"\']', 1),
                                              (r'instpers', 2),
                                              (r'make_perfview', 3),
                                              (r'make_persistent', 2),
                                              (r'make_instr', 2),
-                                             (r'message\s*\(', 1)]
+                                             (r'message\s*\(.+\)', 1)]
                             if re.search('(?m)' + pat, code)
                         )
-            return score >= 2
+            return score > 2
         else:
             return False
 

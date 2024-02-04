@@ -251,7 +251,6 @@ contexts:
       scope: string.quoted.single.source.ksp
 
     - match: '(?x)
-
       (\$)?
       \b(
         ALL_(EVENTS|GROUPS)|
