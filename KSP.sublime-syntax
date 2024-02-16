@@ -50,7 +50,7 @@ contexts:
       comment: Operator
       scope: keyword.operator.source.ksp
 
-    - match: '(on\s+ui_control(s)?)(\s*\(([a-zA-Z0-9$%@?_.]+)\))?'
+    - match: '(on\s+ui_control(s)?)(\s*\(([$%@?]?[a-zA-Z0-9_#.]+)\))?'
       comment: UI callback
       captures:
         0: entity.name.callback.source.ksp
