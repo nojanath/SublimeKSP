@@ -115,16 +115,16 @@ def t_ID(t):
 
     if t.value == 'mod': # modulo operator
         t.type = 'MOD'
-    elif t.value.lower().startswith('0x') and hex_number_re1.match(t.value): # hex number, eg. 0x10
+    elif t.value.lower().startswith('0x') and hex_number_re1.match(t.value): # hexadecimal number, e.g. 0x10
         t.type = 'INTEGER'
         t.value = int(t.value, 16)
-    elif t.value.lower().endswith('h') and hex_number_re2.match(t.value): # hex number, eg. 010h
+    elif t.value.lower().endswith('h') and hex_number_re2.match(t.value): # hexadecimal number, e.g. 010h
         t.type = 'INTEGER'
         t.value = int(t.value[1:-1], 16)
-    elif t.value.lower().startswith('b') and lsb_left_bin_re1.match(t.value): # hex number, eg. 010h
+    elif t.value.lower().startswith('b') and lsb_left_bin_re1.match(t.value): # binary number, LSB first, e.g. b010
         t.type = 'INTEGER'
         t.value = int(t.value.lower().replace('b','')[::-1], 2)
-    elif t.value.lower().endswith('b') and lsb_right_bin_re1.match(t.value): # hex number, eg. 010h
+    elif t.value.lower().endswith('b') and lsb_right_bin_re1.match(t.value): # binary number, LSB last, e.g. 010b
         t.type = 'INTEGER'
         t.value = int(t.value.lower().replace('b',''), 2)
     else:
