@@ -334,7 +334,7 @@ def plugin_loaded():
 
     for c in color_schemes:
         if cs is not None and cs.endswith(c + '.tmTheme'):
-            settings.set('color_scheme', c + '.sublime-color-scheme')
+            settings.set('color_scheme', 'Packages/KSP (Kontakt Script Processor)/' + c + '.sublime-color-scheme')
             sublime.save_settings('KSP.sublime-settings')
             break
 
