@@ -217,7 +217,14 @@ class ParseException(ExceptionWithMessage):
         if no_traceback:
             utils.disable_traceback()
 
-        msg = "%s\n\n%s\n\n%s" % (message, str(line).strip(), line.get_locations_string())
+        if line.calling_lines:
+            macro_chain = '\n'.join(['=>{}'.format(l.command.strip()) for l in line.calling_lines])
+            line_content = 'Macro traceback:\n{}'.format(macro_chain, str(line).strip())
+        else:
+            line_content = str(line).strip()
+
+        msg = "%s\n\n%s\n\n%s" % (message, line_content, line.get_locations_string())
+
         Exception.__init__(self, msg)
         self.line = line
         self.message = msg
@@ -225,12 +232,14 @@ class ParseException(ExceptionWithMessage):
 class Line:
     '''Line object used for handling lines before AST lex/yacc parsing'''
 
-    def __init__(self, s, locations = None, namespaces = None, placeholders = placeholders):
+    def __init__(self, s, locations = None, namespaces = None, placeholders = placeholders, calling_lines = None):
         # locations should be a list of (filename, lineno) tuples
         self.command = s # current line returned as string
         self.locations = locations or [(None, -1)] # filename and line number
         self.namespaces = namespaces or []   # a list of the namespaces (each import appends the as-name onto the stack)
         self.placeholders = placeholders
+        self.source_locations = None
+        self.calling_lines = calling_lines
 
     def get_lineno(self):
         return self.locations[0][1]
@@ -242,14 +251,14 @@ class Line:
     filename = property(get_filename)
 
     def get_locations_string(self):
-        return '\n'.join(('%s%s:%d \r\n' % (' ' * (i * 4), filename or '<main script>', lineno)) \
+        return '\n'.join(('%s%s: %d' % (' ' * (i * 4), filename or '<main script>', lineno)) \
                          for (i, (filename, lineno)) in enumerate(reversed(self.locations)))
 
     def copy(self, new_command = None, add_location = None):
         ''' Returns a copy of the line.
             If the new_command parameter is specified, that will be the command of the new line
             and it will get the same indentation as the old line. '''
-        line = Line(self.command, self.locations, self.namespaces)
+        line = Line(self.command, self.locations, self.namespaces, calling_lines = self.calling_lines)
 
         if add_location:
             line.locations = line.locations + [add_location]
@@ -498,7 +507,7 @@ def parse_lines_and_handle_imports(basepath, source, compiler_import_cache, file
                     if preprocessor_func:
                         preproc_s = preprocessor_func(source, namespaces)
 
-                    new_lines.extend(parse_lines_and_handle_imports(basepath, preproc_s, compiler_import_cache, filename, namespaces))
+                    new_lines.extend(parse_lines_and_handle_imports(basepath, preproc_s, compiler_import_cache, path, namespaces))
         # non-import line so just add it to result line list:
         else:
             new_lines.append(line)
@@ -621,8 +630,27 @@ def extract_callback_lines(lines):
 
     return (normal_lines, callback_lines)
 
+def sub_defines(lines, cur_line, define_cache):
+    from preprocessor_plugins import macro_iter_functions, post_macro_iter_functions, substituteDefines
 
-def expand_macros(lines, macros, level = 0, replace_raw = True):
+    convert_strings_to_placeholders(lines)
+    substituteDefines(lines, define_cache)
+
+    while macro_iter_functions(lines, placeholders):
+        convert_strings_to_placeholders(lines)
+        substituteDefines(lines, define_cache)
+
+    while post_macro_iter_functions(lines, placeholders):
+        convert_strings_to_placeholders(lines)
+        substituteDefines(lines, define_cache)
+
+    for c in lines:
+        if not cur_line.calling_lines:
+            c.calling_lines = [cur_line]
+        else:
+            c.calling_lines = cur_line.calling_lines + [cur_line]
+
+def expand_macros(lines, macros, level = 0, replace_raw = True, define_cache = None):
     '''Inline macro invocations by the body of the macro definition (with parameters properly replaced)
         returns tuple (normal_lines, callback_lines) where the latter are callbacks'''
     macro_call_re = re.compile(r'(?ms)^\s*([\w_.]+)\s*(\(.*\))?%s$' % white_space_re)
@@ -687,13 +715,17 @@ def expand_macros(lines, macros, level = 0, replace_raw = True):
                 # erase any inner comments to not disturb outer
                 macro_call_str = re.sub(white_space, '', macro_call_str)
                 normal_lines, callback_lines = extract_callback_lines(macro.lines[1:-1])
+
+                sub_defines(normal_lines, line, define_cache)
+                sub_defines(callback_lines, line, define_cache)
+
                 new_lines.extend(normal_lines)
                 new_callback_lines.extend(callback_lines)
 
                 num_substitutions += 1
 
     if num_substitutions:
-        return expand_macros(new_lines + new_callback_lines, macros, level+1, replace_raw)
+        return expand_macros(new_lines + new_callback_lines, macros, level + 1, replace_raw, define_cache)
     else:
         return (new_lines, new_callback_lines)
 
@@ -2075,35 +2107,20 @@ class KSPCompiler(object):
     def expand_macros(self):
         from preprocessor_plugins import macro_iter_functions, post_macro_iter_functions, substituteDefines
 
-        # initial expansion. Macro strings are expanded
-        normal_lines, callback_lines = expand_macros(self.lines, self.macros, 0, True)
+        normal_lines, callback_lines = expand_macros(self.lines, self.macros, 0, True, self.define_cache)
         self.lines = normal_lines + callback_lines
 
-        # convert any strings from the macro expansion back into placeholders to prevent defines with identical names within strings being replaced
         convert_strings_to_placeholders(self.lines)
 
-
-        # nested expansion, supports now using macros to further specify define constants used for iterate and literate macros
         while macro_iter_functions(self.lines, placeholders):
-            normal_lines, callback_lines = expand_macros(self.lines, self.macros, 0, True)
+            normal_lines, callback_lines = expand_macros(self.lines, self.macros, 0, True, self.define_cache)
             self.lines = normal_lines + callback_lines
 
-        # convert any strings from the macro expansion back into placeholders to allow iter_macros to substitute strings
         convert_strings_to_placeholders(self.lines)
-
-        # run define subs a second time, catch returned cache just as a formality
-        self.define_cache = substituteDefines(self.lines, self.define_cache)
 
         while post_macro_iter_functions(self.lines, placeholders):
-            normal_lines, callback_lines = expand_macros(self.lines, self.macros, 0, True)
+            normal_lines, callback_lines = expand_macros(self.lines, self.macros, 0, True, self.define_cache)
             self.lines = normal_lines + callback_lines
-
-        # convert any strings from the macro expansion back into placeholders to allow iter_macros to substitute strings
-        convert_strings_to_placeholders(self.lines)
-
-        # run define subs a final time, catch returned cache just as a formality
-        self.define_cache = substituteDefines(self.lines, self.define_cache)
-
 
     def examine_pragmas(self, code, namespaces):
         '''Examine pragmas within code'''
