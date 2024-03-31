@@ -9,6 +9,10 @@ file_extensions:
 
 scope: source.ksp
 
+variables:
+  varchars: '[a-zA-Z0-9_.]'
+  macrotoken: '\#{1}{{varchars}}+\#{1}'
+
 contexts:
   main:
     - match: '\{\{'
@@ -49,6 +53,10 @@ contexts:
     - match: '\band\b|\bor\b|\bxor\b|\bnot\b|[.]and[.]|[.]or[.]|[.]xor[.]|[.]not[.]|\bmod\b'
       comment: Operator
       scope: keyword.operator.source.ksp
+
+    - match: '{{macrotoken}}'
+      comment: Macro replacement token
+      scope: variable.parameter.source.ksp
 
     - match: '(on\s+ui_control(s)?)(\s*\(([$%@?]?[a-zA-Z0-9_#.]+)\))?'
       comment: UI callback
@@ -161,7 +169,7 @@ contexts:
           scope: variable.parameter.function.source.ksp
         - include: main
 
-    - match: '^\s*(const +)([a-zA-Z_.0-9]+)'
+    - match: '^\s*(const +)({{varchars}}+)'
       comment: Const block definition
       scope: constblock.ksp
       captures:
@@ -169,7 +177,7 @@ contexts:
         1: keyword.other.source.ksp
         2: entity.name.type.source.ksp
 
-    - match: '^\s*(family +)([a-zA-Z_.0-9]+)'
+    - match: '^\s*(family +)({{varchars}}+)'
       comment: Family definition
       scope: family.ksp
       captures:
@@ -177,7 +185,7 @@ contexts:
         1: keyword.other.source.ksp
         2: entity.name.type.source.ksp
 
-    - match: '^\s*(list +)([a-zA-Z_.0-9]+)'
+    - match: '^\s*(list +)({{varchars}}+)'
       comment: List definition
       scope: list.ksp
       captures:
@@ -185,7 +193,7 @@ contexts:
         1: keyword.other.source.ksp
         2: entity.name.type.source.ksp
 
-    - match: '^\s*(struct +)([a-zA-Z_.0-9]+)'
+    - match: '^\s*(struct +)({{varchars}}+)'
       comment: Struct definition
       scope: struct.ksp
       captures:
@@ -193,7 +201,7 @@ contexts:
         1: keyword.other.source.ksp
         2: entity.name.type.source.ksp
 
-    - match: '\b(call) +([A-Za-z0-9_.]+)?'
+    - match: '\b(call) +({{varchars}}+)?'
       comment: Function call using 'call'
       captures:
         1: keyword.other.source.ksp
@@ -220,7 +228,7 @@ contexts:
                 ui_wavetable
               )\s*
               ((inst)?pers|read)?\s*
-              (([a-zA-Z0-9_.]+)?(\#(.+?)\#)?([a-zA-Z0-9_.]+)?)\s*\('
+              (({{varchars}}+)?(\#(.+?)\#)?({{varchars}}+)?)\s*\('
       comment: Variable declaration
       captures:
         1: keyword.other.source.ksp
@@ -670,7 +678,7 @@ contexts:
       comment: Builtin function with arguments
       scope: support.function.source.ksp
 
-    - match: '([a-zA-Z_0-9.]*)\s*(\()'
+    - match: '({{varchars}}*)\s*(\()'
       comment: Function call
       captures:
         1: meta.function-call.source.ksp meta.function-name
@@ -682,7 +690,7 @@ contexts:
           pop: true
         - include: main
 
-    - match: '(\b|[~?$%!@&])[A-Za-z0-9_.]+|\b\d+[A-Za-z_][A-Za-z0-9_]*\b'
+    - match: '(\b|[~?$%!@&]){{varchars}}+|\b\d+[A-Za-z_][A-Za-z0-9_]*\b'
       comment: Identifier
       scope: variable.source.ksp
 
@@ -693,3 +701,4 @@ contexts:
     - match: "[-+*/]"
       comment: Arithmetic Operator
       scope: arithmetic.source.ksp
+
