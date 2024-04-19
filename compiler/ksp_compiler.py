@@ -2300,6 +2300,8 @@ class KSPCompiler(object):
                         self.combine_callbacks = value
                     if option == 'extra_syntax_checks':
                         self.extra_syntax_checks = value
+                    if option == 'optimize_code':
+                        self.optimize = value
                     if option == 'extra_branch_optimization':
                         self.extra_syntax_checks = value
                         self.additional_branch_optimization = value
