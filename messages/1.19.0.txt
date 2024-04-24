@@ -1,0 +1,42 @@
+Version 1.19.0
+---------------------------------------------------
+
+This update adds support for new engine parameters introduced with Kontakt 7.10, along with the following changes:
+
+- Define substitutions have been optimized to only run on new code generations, rather than multiple steps repeated over the entire compiled output, which improves compile times greatly in some cases
+
+- Macro arguments can now spell defines to then be re-substituted at practically endless levels (until macros themselves crash at 40 levels). post_iterate_macro()/post_literate_macro() commands are thus deprecated now
+
+- Macro expansion now records the top-level "calling line" into expanded lines, which allows the developer to see the line of the macro invoked in the error message
+
+- Fixed file associations to code lines imported via recursive directory imports
+
+- Fixed optimize_code pragma directive did not work
+
+- Symbol list (Ctrl/Cmd+R) will now show the whole UI callback properly if the name of UI control contains macro #tokens#
+
+- Macro #tokens# are now syntax colored in most cases (some edge cases where this doesn't work exist still)
+
+
+Thanks to Nabeel from Impact Soundworks (@eitherys) for the define/macro/directory import fixes and improvements!
+
+
+Have fun!
+
+
+---------------------------------------------------
+
+If you would like to roll back a version of SublimeKSP for time critical work prevented by a new bug:
+
+First, remove SublimeKSP from Sublime Package Control:
+1. Press `Ctrl + Shift + P` on Windows and Linux, or `Cmd + Shift + P` on Mac.
+2. Type "Remove Package" and select it, then select the "KSP (Kontakt Script Processor)" entry.
+
+Next, download the version you'd like [here](https://github.com/nojanath/SublimeKSP/releases).
+
+After the download, you can install it as a user package in Sublime following these instructions:
+
+1. Open the Preferences menu in Sublime Text and click Browse Packages. A folder will open up.
+2. Extract the ZIP archive you have downloaded and place it into this folder.
+3. IMPORTANT: Rename the unpacked folder to `KSP (Kontakt Script Processor)` (this is important so that your settings from Package Control version are retained)!
+4. Restart Sublime Text. Alternatively, make sure you have [Automatic​Package​Reloader](https://packagecontrol.io/packages/AutomaticPackageReloader) package installed.
