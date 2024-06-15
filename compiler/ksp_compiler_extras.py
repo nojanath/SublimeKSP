@@ -295,8 +295,8 @@ class ASTVisitorDetermineExpressionTypes(ASTVisitor):
                     is_text = 'text' in param_descriptor or param_descriptor.endswith('name') or param_descriptor.endswith('path')
 
                     if not is_text:
-                        # special case: the abs function returns an integer or real depending on what param type it's given
-                        if function_name == 'abs' and passed_param.type in ('integer', 'real'):
+                        # special case: these three functions return an integer or real depending on what param type is given
+                        if function_name in ('abs', 'sgn', 'signbit') and passed_param.type in ('integer', 'real'):
                             node.type = passed_param.type
                         elif 'any-array-variable' in param_descriptor:
                             if not passed_param.type in ('integer array', 'real array', 'string array'):
