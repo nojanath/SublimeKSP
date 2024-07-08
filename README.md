@@ -10,7 +10,7 @@ However, there are a number of additions and changes:
 * Updates to the syntax highlighting
 * Support for Creator Tools GUI Designer
 * Numerous additions to the preprocessor, allowing for UI arrays, new macro types and much more
-* See the [Added Features](https://github.com/nojanath/SublimeKSP/wiki/SublimeKSP-Added-Features) section of the [Wiki](https://github.com/nojanath/SublimeKSP/wiki) for more information
+* See the [SublimeKSP Added Features](https://github.com/nojanath/SublimeKSP/wiki/SublimeKSP-Added-Features) section of the [Wiki](https://github.com/nojanath/SublimeKSP/wiki) for more information
 
 ### Installation
 
