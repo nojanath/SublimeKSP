@@ -362,11 +362,70 @@ def merge_lines(lines):
 
 def parse_lines(s, filename = None, namespaces = None):
     '''converts a source code string to a list of Line objects'''
+    def process_f_string(line):
+        in_string = False
+        in_f_string = False
+        f_connect = False
+        escaping = False
+        
+        all_args = []
+        arg_content = ''
+        record_arg = False
+        f_spots = []
+        
+        for i, c in enumerate(line):
+            if record_arg == True:
+                if c == '>':
+                    record_arg = False
+                    escaping = False
+                    all_args.append(arg_content)
+                    arg_content = ''
+                    continue
+                else:
+                    arg_content += c
+                
+            if c == 'f' and not in_string:
+                escaping = False
+                f_connect = True
+            elif in_string and c == '\\':
+                escaping = True
+                f_connect = False
+            elif c == "'" and not escaping:
+                in_string = not in_string
+                in_f_string = f_connect and in_string
+                
+                if in_f_string:
+                    f_spots.append(i - 1)
+                    
+                escaping = False
+                f_connect = False
+            elif in_f_string and not escaping:
+                if c == '<':
+                    record_arg = True
+                escaping = False
+                f_connect = False
+            else:
+                escaping = False
+                f_connect = False
+        
+        new_line = line
+        deleted = 0
+        for s in f_spots:
+            index = s - deleted
+            new_line = new_line[:index] + new_line[index+1:]
+            deleted += 1
+            
+        for a in all_args:
+            new_line = new_line.replace("<{}>".format(a), "\' & {} & \'".format(a))
+        
+        return new_line
 
     if namespaces is None:
         namespaces = []
 
     lines = s.replace('\r\n', '\n').replace('\r', '\n').split('\n')
+    lines = [process_f_string(l) for l in lines]
+    
     # encode lines numbers as '[[[lineno]]]' at the beginning of each line
     lines = ['[[[%.5d]]]%s' % (lineno+1, x) for (lineno, x) in enumerate(lines)]
 
