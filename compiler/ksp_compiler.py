@@ -2301,9 +2301,14 @@ class KSPCompiler(object):
                     if option == 'extra_syntax_checks':
                         self.extra_syntax_checks = value
                     if option == 'optimize_code':
+                        if self.extra_syntax_checks == False and value:
+                            self.extra_syntax_checks = value
+
                         self.optimize = value
                     if option == 'extra_branch_optimization':
-                        self.extra_syntax_checks = value
+                        if self.extra_syntax_checks == False and value:
+                            self.extra_syntax_checks = value
+
                         self.additional_branch_optimization = value
                     if option == 'add_compile_date':
                         self.add_compiled_date_comment = value
@@ -2478,7 +2483,7 @@ if __name__ == "__main__":
         basepath = os.path.dirname(args.source_file.name)
 
     # make sure that extra syntax checks are enabled if --optimize or --extra_branch_optimization arguments are used
-    if (args.optimize == True or args.additional_branch_optimization) and args.extra_syntax_checks == False:
+    if (args.optimize or args.additional_branch_optimization) and args.extra_syntax_checks == False:
         args.extra_syntax_checks = True
 
     # read the source and compile it
