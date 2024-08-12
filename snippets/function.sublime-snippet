@@ -5,6 +5,6 @@ function ${1:name}
 end function
 ]]></content>
 	<description>function</description>
-    <tabTrigger>fun</tabTrigger>
+    <tabTrigger>function</tabTrigger>
     <scope>source.ksp</scope>
 </snippet>

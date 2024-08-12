@@ -5,6 +5,6 @@ taskfunc ${1:name}
 end taskfunc
 ]]></content>
     <description>taskfunc</description>
-    <tabTrigger>task</tabTrigger>
+    <tabTrigger>taskfunc</tabTrigger>
     <scope>source.ksp</scope>
 </snippet>
