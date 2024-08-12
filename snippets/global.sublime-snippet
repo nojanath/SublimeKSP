@@ -1,6 +1,6 @@
 <snippet>
 	<content><![CDATA[declare global ${1:name}]]></content>
 	<description>global variable</description>
-	<tabTrigger>glo</tabTrigger>
+	<tabTrigger>global</tabTrigger>
 	<scope>source.ksp</scope>
 </snippet>

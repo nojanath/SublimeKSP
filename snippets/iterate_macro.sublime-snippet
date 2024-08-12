@@ -3,6 +3,6 @@
 iterate_macro(${1:macro}) := ${2:0} to ${3:max}
 ]]></content>
 	<description>iterate macro</description>
-    <tabTrigger>iter</tabTrigger>
+    <tabTrigger>iterate_macro</tabTrigger>
     <scope>source.ksp</scope>
 </snippet>
