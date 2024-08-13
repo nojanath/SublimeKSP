@@ -375,7 +375,7 @@ def parse_lines(s, filename = None, namespaces = None):
         
         for i, c in enumerate(line):
             if record_arg == True:
-                if c == '>':
+                if c == '>' and not escaping:
                     record_arg = False
                     escaping = False
                     all_args.append(arg_content)
@@ -416,7 +416,7 @@ def parse_lines(s, filename = None, namespaces = None):
             deleted += 1
             
         for a in all_args:
-            new_line = new_line.replace("<{}>".format(a), "\' & {} & \'".format(a))
+            new_line = new_line.replace("<{}>".format(a), "\' & {} & \'".format(a.replace('\\>', '>').replace(('\\<', '<'))))
         
         return new_line
 
