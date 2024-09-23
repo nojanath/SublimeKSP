@@ -1,0 +1,10 @@
+<snippet>
+	<content><![CDATA[
+on note_controller
+	${0}
+end on
+]]></content>
+	<description>note controller callback</description>
+	<tabTrigger>nccb</tabTrigger>
+	<scope>source.ksp</scope>
+</snippet>

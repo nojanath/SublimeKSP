@@ -99,6 +99,8 @@ $EFFECT_TYPE_ACBOX
 $EFFECT_TYPE_AET_FILTER
 $EFFECT_TYPE_BASSINVADER
 $EFFECT_TYPE_BASSPRO
+$EFFECT_TYPE_BEATMASHER
+$EFFECT_TYPE_BEATSLICER
 $EFFECT_TYPE_BIGFUZZ
 $EFFECT_TYPE_BITE
 $EFFECT_TYPE_BUS_COMP
@@ -120,6 +122,7 @@ $EFFECT_TYPE_FLANGER
 $EFFECT_TYPE_FREAK
 $EFFECT_TYPE_FUZZ
 $EFFECT_TYPE_GAINER
+$EFFECT_TYPE_GATER
 $EFFECT_TYPE_HOTSOLO
 $EFFECT_TYPE_INVERTER
 $EFFECT_TYPE_IRC
@@ -135,6 +138,7 @@ $EFFECT_TYPE_RAUM
 $EFFECT_TYPE_REPLIKA
 $EFFECT_TYPE_REVERB
 $EFFECT_TYPE_REVERB2
+$EFFECT_TYPE_REVGRAIN
 $EFFECT_TYPE_RINGMOD
 $EFFECT_TYPE_ROTATOR
 $EFFECT_TYPE_SEND_LEVELS
@@ -147,6 +151,7 @@ $EFFECT_TYPE_SUPERGT
 $EFFECT_TYPE_SURROUND_PANNER
 $EFFECT_TYPE_TAPE_SAT
 $EFFECT_TYPE_TRANS_MASTER
+$EFFECT_TYPE_TRANS_STRETCH
 $EFFECT_TYPE_TRANSLIM
 $EFFECT_TYPE_TWANG
 $EFFECT_TYPE_TWINDELAY
@@ -201,6 +206,20 @@ $ENGINE_PAR_BASSPRO_MONO
 $ENGINE_PAR_BASSPRO_TREBLE
 $ENGINE_PAR_BASSPRO_ULTRAHI
 $ENGINE_PAR_BASSPRO_ULTRALO
+$ENGINE_PAR_BEATMASHER_GATE
+$ENGINE_PAR_BEATMASHER_LENGTH
+$ENGINE_PAR_BEATMASHER_MASH
+$ENGINE_PAR_BEATMASHER_MIX
+$ENGINE_PAR_BEATMASHER_REVERSE
+$ENGINE_PAR_BEATMASHER_ROTATE
+$ENGINE_PAR_BEATMASHER_WRAP
+$ENGINE_PAR_BEATSLICER_BUZZ
+$ENGINE_PAR_BEATSLICER_GATE
+$ENGINE_PAR_BEATSLICER_MIX
+$ENGINE_PAR_BEATSLICER_PATTERN
+$ENGINE_PAR_BEATSLICER_SLICE
+$ENGINE_PAR_BEATSLICER_STYLE
+$ENGINE_PAR_BEATSLICER_TWOBARS
 $ENGINE_PAR_BIGFUZZ_BASS
 $ENGINE_PAR_BIGFUZZ_MONO
 $ENGINE_PAR_BIGFUZZ_SUSTAIN
@@ -404,6 +423,14 @@ $ENGINE_PAR_GAIN
 $ENGINE_PAR_GAIN1
 $ENGINE_PAR_GAIN2
 $ENGINE_PAR_GAIN3
+$ENGINE_PAR_GATER_GATE
+$ENGINE_PAR_GATER_MIX
+$ENGINE_PAR_GATER_MUTE_INPUT
+$ENGINE_PAR_GATER_NOISE
+$ENGINE_PAR_GATER_RATE
+$ENGINE_PAR_GATER_RATE_SYNC
+$ENGINE_PAR_GATER_SHAPE
+$ENGINE_PAR_GATER_STUTTER
 $ENGINE_PAR_GLIDE_COEF
 $ENGINE_PAR_GLIDE_COEF_UNIT
 $ENGINE_PAR_GN_GAIN
@@ -463,6 +490,7 @@ $ENGINE_PAR_LIM_IN_GAIN
 $ENGINE_PAR_LIM_RELEASE
 $ENGINE_PAR_LP_CUTOFF
 $ENGINE_PAR_LR_SWAP
+$ENGINE_PAR_MIDI_CHANNEL
 $ENGINE_PAR_MOD_TARGET_INTENSITY
 $ENGINE_PAR_MOD_TARGET_MP_INTENSITY
 $ENGINE_PAR_NOISECOLOR
@@ -520,30 +548,47 @@ $ENGINE_PAR_RAUM_REVERB
 $ENGINE_PAR_RAUM_SIZE
 $ENGINE_PAR_RAUM_SPARSE
 $ENGINE_PAR_RAUM_TYPE
+$ENGINE_PAR_RDL_ACCENT
 $ENGINE_PAR_RDL_AMOUNT
 $ENGINE_PAR_RDL_BBDTYPE
 $ENGINE_PAR_RDL_DENSE
 $ENGINE_PAR_RDL_DEPTH
+$ENGINE_PAR_RDL_DUCKING_AMOUNT
+$ENGINE_PAR_RDL_DUCKING_RELEASE
+$ENGINE_PAR_RDL_DUCKING_SENSE
 $ENGINE_PAR_RDL_FEEDBACK
+$ENGINE_PAR_RDL_FEEL
 $ENGINE_PAR_RDL_FLUTTER
 $ENGINE_PAR_RDL_HIGHCUT
 $ENGINE_PAR_RDL_LOWCUT
+$ENGINE_PAR_RDL_LR_OFFSET
 $ENGINE_PAR_RDL_MODULATION
 $ENGINE_PAR_RDL_NOISE
+$ENGINE_PAR_RDL_PAN
 $ENGINE_PAR_RDL_PINGPONG
+$ENGINE_PAR_RDL_PINGPONG_FLIP
 $ENGINE_PAR_RDL_QUALITY
 $ENGINE_PAR_RDL_RATE
 $ENGINE_PAR_RDL_SATURATION
+$ENGINE_PAR_RDL_SHUFFLE
 $ENGINE_PAR_RDL_SIZE
 $ENGINE_PAR_RDL_STEREO
 $ENGINE_PAR_RDL_TAPEAGE
 $ENGINE_PAR_RDL_TIME
 $ENGINE_PAR_RDL_TIME_UNIT
 $ENGINE_PAR_RDL_TYPE
+$ENGINE_PAR_RDL_WIDTH
 $ENGINE_PAR_RELEASE
 $ENGINE_PAR_RELEASE_TRIGGER
 $ENGINE_PAR_RELEASE_UNIT
 $ENGINE_PAR_RESONANCE
+$ENGINE_PAR_RG_FORWARD
+$ENGINE_PAR_RG_GRAIN
+$ENGINE_PAR_RG_INVERT_GRAINS
+$ENGINE_PAR_RG_MIX
+$ENGINE_PAR_RG_PITCH
+$ENGINE_PAR_RG_REVERSE
+$ENGINE_PAR_RG_SPEED
 $ENGINE_PAR_RINGMOD_EDGE
 $ENGINE_PAR_RINGMOD_FAST_MODE
 $ENGINE_PAR_RINGMOD_FM
@@ -701,6 +746,13 @@ $ENGINE_PAR_TRANSIENT_SIZE
 $ENGINE_PAR_TRANSLIM_CEILING
 $ENGINE_PAR_TRANSLIM_RELEASE
 $ENGINE_PAR_TRANSLIM_THRESHOLD
+$ENGINE_PAR_TS_AMOUNT
+$ENGINE_PAR_TS_GRAIN
+$ENGINE_PAR_TS_KEY
+$ENGINE_PAR_TS_MIX
+$ENGINE_PAR_TS_SIZE
+$ENGINE_PAR_TS_STRETCH
+$ENGINE_PAR_TS_TWOBARS
 $ENGINE_PAR_TUNE
 $ENGINE_PAR_TW_BASS
 $ENGINE_PAR_TW_BRIGHT
@@ -727,6 +779,7 @@ $ENGINE_PAR_VC_DEPTH
 $ENGINE_PAR_VC_MIX
 $ENGINE_PAR_VC_RATE
 $ENGINE_PAR_VC_WIDTH
+$ENGINE_PAR_VOICE_GROUP
 $ENGINE_PAR_VOLUME
 $ENGINE_PAR_WOWFLUTTER_AGE
 $ENGINE_PAR_WOWFLUTTER_FLUTTER
@@ -739,8 +792,15 @@ $ENGINE_PAR_WOWFLUTTER_STEREO
 $ENGINE_PAR_WOWFLUTTER_WOW
 $ENGINE_PAR_WT_FORM
 $ENGINE_PAR_WT_FORM_MODE
+$ENGINE_PAR_WT_FORM2
+$ENGINE_PAR_WT_FORM2_MODE
 $ENGINE_PAR_WT_INHARMONIC
 $ENGINE_PAR_WT_INHARMONIC_MODE
+$ENGINE_PAR_WT_MOD_AMOUNT
+$ENGINE_PAR_WT_MOD_TUNE
+$ENGINE_PAR_WT_MOD_TUNE_UNIT
+$ENGINE_PAR_WT_MOD_TYPE
+$ENGINE_PAR_WT_MOD_WAVE
 $ENGINE_PAR_WT_PHASE
 $ENGINE_PAR_WT_PHASE_RAND
 $ENGINE_PAR_WT_POSITION
@@ -753,7 +813,9 @@ $EVENT_PAR_1
 $EVENT_PAR_2
 $EVENT_PAR_3
 $EVENT_PAR_ALLOW_GROUP
+$EVENT_PAR_ALLOW_KEY_TYPE
 $EVENT_PAR_CUSTOM
+$EVENT_PAR_DISALLOW_KEY_TYPE
 $EVENT_PAR_ID
 $EVENT_PAR_MIDI_BYTE_1
 $EVENT_PAR_MIDI_BYTE_2
@@ -771,6 +833,7 @@ $EVENT_PAR_SOURCE
 $EVENT_PAR_TRACK_NR
 $EVENT_PAR_TUNE
 $EVENT_PAR_VELOCITY
+$EVENT_PAR_VELOCITY_2
 $EVENT_PAR_VOLUME
 $EVENT_PAR_ZONE_ID
 $EVENT_STATUS_INACTIVE
@@ -841,6 +904,7 @@ $GET_FOLDER_FACTORY_DIR
 $GET_FOLDER_INSTALL_DIR
 $GET_FOLDER_LIBRARY_DIR
 $GET_FOLDER_PATCH_DIR
+$GET_FOLDER_RC_DIR
 $HIDE_PART_BG
 $HIDE_PART_CURSOR
 $HIDE_PART_MOD_LIGHT
@@ -941,9 +1005,21 @@ $MIDI_COMMAND_POLY_AT
 $MIDI_COMMAND_PROGRAM_CHANGE
 $MIDI_COMMAND_RPN
 $MOD_TARGET_INVERT_SOURCE
+$NC_NOTE
+$NC_NUM
+$NC_VALUE
+$NI_BEATMASHER_LENGTH_32ND
+$NI_BEATMASHER_LENGTH_16TH
+$NI_BEATMASHER_LENGTH_8TH
+$NI_BEATMASHER_LENGTH_8TH_DOTTED
+$NI_BEATMASHER_LENGTH_QUARTER
+$NI_BEATMASHER_LENGTH_QUARTER_DOTTED
+$NI_BEATMASHER_LENGTH_HALF
+$NI_BEATMASHER_LENGTH_HALF_DOTTED
+$NI_BEATMASHER_LENGTH_BAR
+$NI_BITE_HPF_MODE_5
 $NI_BITE_HPF_MODE_100
 $NI_BITE_HPF_MODE_200
-$NI_BITE_HPF_MODE_5
 $NI_BUS_OFFSET
 $NI_CB_TYPE_ASYNC_COMPLETE
 $NI_CB_TYPE_CONTROLLER
@@ -951,6 +1027,7 @@ $NI_CB_TYPE_INIT
 $NI_CB_TYPE_LISTENER
 $NI_CB_TYPE_MIDI_IN
 $NI_CB_TYPE_NOTE
+$NI_CB_TYPE_NOTE_CONTROLLER
 $NI_CB_TYPE_NRPN
 $NI_CB_TYPE_PERSISTENCE_CHANGED
 $NI_CB_TYPE_PGS
@@ -1011,6 +1088,31 @@ $NI_DETECT_INSTRUMENT_TYPE_PLUCKED_STRING
 $NI_DETECT_INSTRUMENT_TYPE_REED
 $NI_DETECT_INSTRUMENT_TYPE_SYNTH
 $NI_DETECT_INSTRUMENT_TYPE_VOCAL
+$NI_DETECT_KEY_C_MAJOR
+$NI_DETECT_KEY_CSHARP_MAJOR
+$NI_DETECT_KEY_D_MAJOR
+$NI_DETECT_KEY_DSHARP_MAJOR
+$NI_DETECT_KEY_E_MAJOR
+$NI_DETECT_KEY_F_MAJOR
+$NI_DETECT_KEY_FSHARP_MAJOR
+$NI_DETECT_KEY_G_MAJOR
+$NI_DETECT_KEY_GSHARP_MAJOR
+$NI_DETECT_KEY_A_MAJOR
+$NI_DETECT_KEY_ASHARP_MAJOR
+$NI_DETECT_KEY_B_MAJOR
+$NI_DETECT_KEY_C_MINOR
+$NI_DETECT_KEY_CSHARP_MINOR
+$NI_DETECT_KEY_D_MINOR
+$NI_DETECT_KEY_DSHARP_MINOR
+$NI_DETECT_KEY_E_MINOR
+$NI_DETECT_KEY_F_MINOR
+$NI_DETECT_KEY_FSHARP_MINOR
+$NI_DETECT_KEY_G_MINOR
+$NI_DETECT_KEY_GSHARP_MINOR
+$NI_DETECT_KEY_A_MINOR
+$NI_DETECT_KEY_ASHARP_MINOR
+$NI_DETECT_KEY_B_MINOR
+$NI_DETECT_KEY_INVALID
 $NI_DETECT_SAMPLE_TYPE_DRUM
 $NI_DETECT_SAMPLE_TYPE_INSTRUMENT
 $NI_DETECT_SAMPLE_TYPE_INVALID
@@ -1062,6 +1164,8 @@ $NI_FLAIR_SCANMODE_TRIANGLE
 $NI_FREAK_MODE_OSCILLATOR
 $NI_FREAK_MODE_RADIO
 $NI_FREAK_MODE_SIDECHAIN
+$NI_GLOBAL_KEY
+$NI_GLOBAL_SCALE
 $NI_GROUP_PAR_COLOR
 $NI_GROUP_PAR_HIGH_KEY
 $NI_GROUP_PAR_LOW_KEY
@@ -1070,9 +1174,13 @@ $NI_HQI_MODE_HIGH
 $NI_HQI_MODE_PERFECT
 $NI_HQI_MODE_STANDARD
 $NI_INSERT_BUS
+$NI_INST_NAME
+$NI_INTERNAL_MARK
 $NI_KEY_TYPE_CONTROL
 $NI_KEY_TYPE_DEFAULT
 $NI_KEY_TYPE_NONE
+$NI_LEAP_KEYBOARD_TONALITY
+$NI_LEAP_DEFAULT_START_KEY
 $NI_LEVEL_METER_GROUP
 $NI_LEVEL_METER_INSERT
 $NI_LEVEL_METER_MAIN
@@ -1085,6 +1193,7 @@ $NI_MOUSE_EVENT_TYPE_DROP
 $NI_MOUSE_EVENT_TYPE_LEFT_BUTTON_DOWN
 $NI_MOUSE_EVENT_TYPE_LEFT_BUTTON_UP
 $NI_MOUSE_OVER_CONTROL
+$NI_NKS_STYLE_DEFAULT
 $NI_NKS_STYLE_FILTERTYPE
 $NI_NKS_STYLE_KNOB
 $NI_NKS_STYLE_MENU
@@ -1098,6 +1207,7 @@ $NI_NKS_TYPE_DISCRETE_BI
 $NI_NKS_TYPE_DISCRETE_UNI
 $NI_NKS_TYPE_TOGGLE
 $NI_NOT_FOUND
+$NI_NUM_SCALES
 $NI_RAUM_TYPE_AIRY
 $NI_RAUM_TYPE_COSMIC
 $NI_RAUM_TYPE_GROUNDED
@@ -1124,6 +1234,8 @@ $NI_SIGNAL_TIMER_MS
 $NI_SIGNAL_TRANSP_START
 $NI_SIGNAL_TRANSP_STOP
 $NI_SIGNAL_TYPE
+$NI_SLOT_IDX
+$NI_SLOT_MIDI_CHANNEL
 $NI_SOURCE_MODE_BEAT_MACHINE
 $NI_SOURCE_MODE_DFD
 $NI_SOURCE_MODE_MP60_MACHINE
@@ -1214,6 +1326,27 @@ $NI_WT_FORM_SYNC4
 $NI_WT_FORM_SYNC5
 $NI_WT_FORM_SYNC6
 $NI_WT_FORM_WRAP
+$NI_WT_MOD_TUNE_UNIT_SEMITONES
+$NI_WT_MOD_TUNE_UNIT_RATIO
+$NI_WT_MOD_TUNE_UNIT_HZ
+$NI_WT_MOD_TYPE_OFF
+$NI_WT_MOD_TYPE_FM1
+$NI_WT_MOD_TYPE_FM2
+$NI_WT_MOD_TYPE_FM3
+$NI_WT_MOD_TYPE_PM1
+$NI_WT_MOD_TYPE_PM2
+$NI_WT_MOD_TYPE_PM3
+$NI_WT_MOD_TYPE_RM
+$NI_WT_MOD_TYPE_MIX
+$NI_WT_MOD_WAVE_SINE
+$NI_WT_MOD_WAVE_TRIANGLE
+$NI_WT_MOD_WAVE_TX2
+$NI_WT_MOD_WAVE_TX3
+$NI_WT_MOD_WAVE_TX4
+$NI_WT_MOD_WAVE_TX5
+$NI_WT_MOD_WAVE_TX6
+$NI_WT_MOD_WAVE_TX7
+$NI_WT_MOD_WAVE_TX8
 $NI_WT_QUALITY_BEST
 $NI_WT_QUALITY_HIGH
 $NI_WT_QUALITY_LOFI
@@ -1228,6 +1361,9 @@ $OUTPUT_TYPE_AUX_OUT
 $OUTPUT_TYPE_BUS_OUT
 $OUTPUT_TYPE_DEFAULT
 $OUTPUT_TYPE_MASTER_OUT
+$SLOT_TYPE_BANK
+$SLOT_TYPE_EMPTY
+$SLOT_TYPE_INSTRUMENT
 $START_CRITERIA_AND_NEXT
 $START_CRITERIA_AND_NOT_NEXT
 $START_CRITERIA_CYCLE_RANDOM
@@ -1249,6 +1385,7 @@ $UI_WF_PROP_TABLE_VAL
 $VALUE_EDIT_MODE_NOTE_NAMES
 $VCC_MONO_AT
 $VCC_PITCH_BEND
+$VNC_PITCH_BEND
 $ZONE_PAR_BPM
 $ZONE_PAR_FADE_HIGH_KEY
 $ZONE_PAR_FADE_HIGH_VELO
@@ -1272,6 +1409,7 @@ $ZONE_PAR_VOLUME
 ~NI_DETECT_PEAK_INVALID
 ~NI_DETECT_PITCH_INVALID
 ~NI_DETECT_RMS_INVALID
+~NI_DETECT_TEMPO_INVALID
 ~NI_MATH_E
 ~NI_MATH_PI
 
@@ -1291,6 +1429,7 @@ $ENGINE_UPTIME
 $EVENT_ID
 $EVENT_NOTE
 $EVENT_VELOCITY
+$EVENT_VELOCITY_2
 $KSP_TIMER
 $MIDI_BYTE_1
 $MIDI_BYTE_2
@@ -1298,6 +1437,10 @@ $MIDI_CHANNEL
 $MIDI_COMMAND
 $NI_ASYNC_EXIT_STATUS
 $NI_ASYNC_ID
+$NI_ASYNC_VALUE
+$NI_ASYNC_PAR_1
+$NI_ASYNC_PAR_2
+$NI_ASYNC_TYPE
 $NI_BAR_START_POSITION
 $NI_CALLBACK_ID
 $NI_CALLBACK_TYPE
@@ -1306,6 +1449,7 @@ $NI_KONTAKT_IS_HEADLESS
 $NI_KONTAKT_IS_STANDALONE
 $NI_MOUSE_EVENT_TYPE
 $NI_SONG_POSITION
+$NI_TRANSPORT_ACTIVE
 $NI_TRANSPORT_RUNNING
 $NI_UI_ID
 $NOTE_HELD
@@ -1316,6 +1460,7 @@ $PLAYED_VOICES_INST
 $PLAYED_VOICES_TOTAL
 $POLY_AT_NUM
 $REF_GROUP_IDX
+$REF_SLOT_IDX
 $RPN_ADDRESS
 $RPN_VALUE
 $SIGNATURE_DENOM
@@ -1330,6 +1475,7 @@ $SIGNATURE_NUM
 %NI_USER_ZONE_IDS
 %NOTE_DURATION
 %POLY_AT
+@NI_ASYNC_STR_VALUE
 !NI_DND_ITEMS_ARRAY
 !NI_DND_ITEMS_AUDIO
 !NI_DND_ITEMS_MIDI
@@ -1373,6 +1519,7 @@ by_marks(<bit-mark>):integer
 by_track(<track-idx>):integer
 cc_delivery_request(<controller-number>)
 ceil(<real-value>):real
+circle_of_fifths_distance(<tonality-1>, <tonality-2>):integer
 change_listener_par(<signal-type>, <parameter>)
 change_note(<event-id>, <new-note-number>)
 change_pan(<event-id>, <panorama>, <relative-bit>)
@@ -1384,14 +1531,16 @@ cbrt(<real-value>):real
 continue
 cos(<real-value>):real
 dec(<expression>):integer
+detect_drum_type(<zone-id>, <return-variable>):integer
 delete_event_mark(<event-id>, <bit-mark>)
+detect_instrument_type(<zone-id>, <return-variable>):integer
+detect_key(<zone-id>, <return-variable>):integer
+detect_tempo(<zone-id>, <return-variable>):integer
+detect_loudness(<zone-id>, <return-variable>):integer
+detect_peak(<zone-id>, <return-variable>):integer
 detect_pitch(<zone-id>, <return-variable>):integer
 detect_rms(<zone-id>, <return-variable>):integer
-detect_peak(<zone-id>, <return-variable>):integer
-detect_loudness(<zone-id>, <return-variable>):integer
 detect_sample_type(<zone-id>, <return-variable>):integer
-detect_instrument_type(<zone-id>, <return-variable>):integer
-detect_drum_type(<zone-id>, <return-variable>):integer
 disable_logging(<log-type>)
 disallow_group(<group-idx>)
 dont_use_machine_mode(<event-id>)
@@ -1409,6 +1558,7 @@ find_zone(<sample-name>):integer
 floor(<real-value>):real
 fs_get_filename(<ui-id>, <return-parameter>):string
 fs_navigate(<ui-id>, <direction>)
+get_connected_slots(<int-array>):integer
 get_control_par(<ui-id>, <control-parameter>):integer
 get_control_par_arr(<ui-id>, <control-parameter>, <index>):integer
 get_control_par_real_arr(<ui-id>, <control-parameter>, <index>):real
@@ -1416,6 +1566,7 @@ get_control_par_str(<ui-id>, <control-parameter>):string
 get_control_par_str_arr(<ui-id>, <control-parameter>, <index>):string
 get_engine_par(<parameter>, <group>, <slot>, <generic>):integer
 get_engine_par_disp(<parameter>, <group>, <slot>, <generic>):string
+get_engine_par_disp_ext(<parameter>, <value>, <group>, <slot>, <generic>):string
 get_engine_par_disp_m(<parameter>, <instr-slot-idx>, <slot>, <generic>):string
 get_engine_par_m(<parameter>, <instr-slot-idx>, <slot>, <generic>):integer
 get_event_ids(<int-array>)
@@ -1442,6 +1593,8 @@ get_nks_nav_name(<par-group-idx>, <index>):string
 get_nks_nav_par(<par-group-idx>, <index>):integer
 get_num_zones():integer
 get_purge_state(<group-idx>):integer
+get_scale(<scale-id>,<int-array>)
+get_scale_name(<scale-id>):string
 get_sample(<zone-id>,<return-parameter>):string
 get_sample_length(<zone-id>):integer
 get_sel_zones_idx(<int-array>)
@@ -1472,6 +1625,7 @@ load_array(<any-array-variable>, <mode>):integer
 load_array_str(<any-array-variable>, <file-path>):integer
 load_ir_sample(<file-name>, <slot>, <generic>):integer
 load_ir_sample_m(<file-name>, <output-idx>, <slot>, <generic>):integer
+load_komplete_ui(<file-path>)
 load_native_ui(<file-path>)
 load_midi_file(<file-path>):integer
 load_patch(<file-path>, <instr-slot-idx>)
@@ -1527,6 +1681,7 @@ move_control_px(<variable>, <x-pos-px>, <y-pos-px>)
 ms_to_ticks(<microseconds>):integer
 msb(<value>):integer
 note_off(<event-id>)
+note_off(<event-id>, <time-offset>)
 num_elements(<any-array-variable>):integer
 num_slices(<group-idx>):integer
 num_slices_zone(<zone-id>):integer
@@ -1548,7 +1703,8 @@ real(<integer>):real
 real_to_int(<real-value>):integer
 redirect_midi(<event-id>, <instr-slot-idx>, <instr-bank-slot-idx>)
 redirect_output(<event-id>, <output-type>, <output-idx>)
-remove_keyrange(<key-number>)
+remove_keyrange(<note-number>)
+request_value_async(<data-type>, <par-1>, <par-2>)
 reset_engine(<instr-slot-idx>)
 reset_ksp_timer
 reset_nks_nav()
@@ -1575,11 +1731,11 @@ set_event_par(<event-id>, <parameter>, <value>)
 set_event_par_arr(<event-id>, <parameter>, <value>, <group-idx>)
 set_group_dyn_par_name(<group-dyn-par>, <name>)
 set_key_color(<note-number>, <key-color-constant>)
-set_key_name(<key-number>, <key-name>)
-set_key_pressed(<key-number>, <value>)
+set_key_name(<note-number>, <key-name>)
+set_key_pressed(<note-number>, <value>)
 set_key_pressed_support(<value>)
 set_key_type(<note-number>, key-type-constant>)
-set_keyrange(<key-number1>, <key-number2>, <range-name>)
+set_keyrange(<note-number1>, <note-number2>, <range-name>)
 set_kill_priority(<event-id>, <value>)
 set_knob_defval(<knob-variable>, <value>)
 set_knob_label(<knob-variable>, <text>)
@@ -1597,8 +1753,10 @@ set_menu_properties(<menu>, <picture>, <font-type>, <text-alignment>, <textpos-y
 set_midi(<channel>, <command>, <byte1>, <byte2>)
 set_nks_nav_name(<par-group-idx>, <index>, <name>)
 set_nks_nav_par(<par-group-idx>, <index>, <par-auto-id>)
+set_note_controller(<controller-number>, <note-number>, <value>)
 set_nrpn(<address>, <value>)
 set_num_user_zones(<size>)
+set_poly_at(<note-number>, <value>)
 set_rpn(<address>, <value>)
 set_sample(<zone-id>, <file-path>):integer
 set_script_title(<text>)
@@ -1615,6 +1773,8 @@ set_ui_height(<height>)
 set_ui_height_px(<value>)
 set_ui_wf_property(<waveform>, <property>, <index>, <value>)
 set_ui_width_px(<value>)
+set_value_async(<data-type>, <par-1>, <par-2>, <value>):integer
+set_value_async_str(<data-type>, <par-1>, <par-2>, <text>):integer
 set_value_edit_properties(<value-edit>, <text>, <font-type>, <textpos-y>, <show-arrows>)
 set_voice_limit(<voice-type>,<value>)
 set_waveform_properties(<waveform>, <bar-color>, <zero-line-color>, <bg-color>, <bg-alpha>, <wave-color>, <wave-cursor-color>, <slice-marker-color>, <wf-vis-mode>)
@@ -1637,6 +1797,7 @@ sort(<int-or-real-array>, <direction>)
 sort(<int-or-real-array>, <direction>, <from>, <to>)
 sqrt(<real-value>):real
 stop_wait(<callback-id>, <par>)
+subscribe_async(<data-type>, <par-1>, <par-2>)
 tan(<real-value>):real
 ticks_to_ms(<ticks>):integer
 unload_slot(<instr-slot-idx>)
@@ -1718,6 +1879,7 @@ on init
 on listener
 on midi_in
 on note
+on note_controller
 on nrpn
 on persistence_changed
 on pgs_changed
