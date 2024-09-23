@@ -80,7 +80,7 @@ def t_BITWISE_NOT(t):
     return t
 
 def t_BEGIN_CALLBACK(t):
-    r'on\s+(init|note|release|midi_in|controller|(n)?rpn|ui_update|(_)?pgs_changed|poly_at|listener|async_complete|persistence_changed|ui_controls|(ui_control\s*?\(.+?\))|)'
+    r'on\s+(init|note(_controller)?|release|midi_in|controller|(n)?rpn|ui_update|(_)?pgs_changed|poly_at|listener|async_complete|persistence_changed|ui_controls|(ui_control\s*?\(.+?\))|)'
     t.type = 'BEGIN_CALLBACK'
     variable = None
     parts = t.value.split()

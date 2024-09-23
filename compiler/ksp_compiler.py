@@ -368,12 +368,12 @@ def parse_lines(s, filename = None, namespaces = None):
         f_connect = False
         hyphen_connect = False
         escaping = False
-        
+
         all_args = []
         arg_content = ''
         record_arg = False
         f_spots = []
-        
+
         for i, c in enumerate(line):
             if record_arg == True:
                 if c == '>' and not escaping and not hyphen_connect:
@@ -394,30 +394,30 @@ def parse_lines(s, filename = None, namespaces = None):
             elif c == "'" and not escaping:
                 in_string = not in_string
                 in_f_string = f_connect and in_string
-                
+
                 if in_f_string:
                     f_spots.append(i - 1)
             elif in_f_string and not escaping:
                 if c == '<':
                     record_arg = True
-            
+
             if c != 'f':
                 f_connect = False
             if c != '-':
                 hyphen_connect = False
             if c != '\\':
                 escaping = False
-        
+
         new_line = line
         deleted = 0
         for s in f_spots:
             index = s - deleted
             new_line = new_line[:index] + new_line[index+1:]
             deleted += 1
-            
+
         for a in all_args:
             new_line = new_line.replace("<{}>".format(a), "\' & {} & \'".format(a.replace('\\>', '>').replace('\\<', '<')))
-        
+
         return new_line
 
     if namespaces is None:
@@ -425,7 +425,7 @@ def parse_lines(s, filename = None, namespaces = None):
 
     lines = s.replace('\r\n', '\n').replace('\r', '\n').split('\n')
     lines = [process_f_string(l) for l in lines]
-    
+
     # encode lines numbers as '[[[lineno]]]' at the beginning of each line
     lines = ['[[[%.5d]]]%s' % (lineno+1, x) for (lineno, x) in enumerate(lines)]
 
@@ -2198,10 +2198,10 @@ class KSPCompiler(object):
 
             dir_path = os.path.dirname(dir_check)
 
-            if not os.path.exists(dir_path):
-                raise Exception('The filepath specified in save_compiled_source does not exist!\n' + dir_path)
-            else:
+            if os.path.exists(dir_path) or (dir_path == '' and dir_check.endswith('.txt')):
                 self.output_files.append(dir_check)
+            else:
+                raise Exception('The filepath specified in save_compiled_source does not exist!\n' + dir_path)
 
         # find info about which variable names not to compact
         pragma_re = re.compile(r'\{\s*\#pragma\s+preserve_names\s+(.*?)\s*\}')
