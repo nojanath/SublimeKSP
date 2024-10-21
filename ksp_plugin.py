@@ -309,7 +309,14 @@ color_schemes = [
 'Monokai KSP',
 ]
 
+plugin_loaded_state = False
+
+def plugin_unloaded():
+    plugin_loaded_state = False
+
 def plugin_loaded():
+    plugin_loaded_state = True
+
     # copy our built in sound to the unmanaged packages folder, so we can io.open it at runtime
     try:
         res = sublime.load_binary_resource('Packages/KSP (Kontakt Script Processor)/sounds/finished.wav')
@@ -814,19 +821,25 @@ class KspFixLineEndingsAndSetSyntax(sublime_plugin.EventListener):
                 self.set_ksp_syntax(view)
 
     def on_load_async(self, view):
-        self.test_and_set_syntax_to_ksp(view)
+        if plugin_loaded_state:
+            self.test_and_set_syntax_to_ksp(view)
 
     def on_reload_async(self, view):
-        self.test_and_set_syntax_to_ksp(view)
+        if plugin_loaded_state:
+            self.test_and_set_syntax_to_ksp(view)
 
     def on_post_save_async(self, view):
-        self.test_and_set_syntax_to_ksp(view)
+        if plugin_loaded_state:
+            self.test_and_set_syntax_to_ksp(view)
 
     def on_clone_async(self, view):
-        self.test_and_set_syntax_to_ksp(view)
+        if plugin_loaded_state:
+            self.test_and_set_syntax_to_ksp(view)
 
     def on_modified_async(self, view):
-        self.test_and_set_syntax_to_ksp(view)
+        if plugin_loaded_state:
+            self.test_and_set_syntax_to_ksp(view)
 
     def on_activated_async(self, view):
-        self.test_and_set_syntax_to_ksp(view)
+        if plugin_loaded_state:
+            self.test_and_set_syntax_to_ksp(view)
