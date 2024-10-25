@@ -5,5 +5,3 @@ If you like this plugin go to Nils' site at http://nilsliberg.se/ksp/ and leave 
 If you have any problems or suggestions please open an issue or, even better, a pull request at https://github.com/nojanath/SublimeKSP.
 
 Happy scripting!
-
-JT
