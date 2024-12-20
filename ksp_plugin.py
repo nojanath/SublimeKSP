@@ -28,6 +28,7 @@ import preprocessor_plugins
 import utils
 
 last_compiler = None
+sksp_plugin_loaded = False
 sublime_version = int(sublime.version())
 
 pragma_save_src_re = r'\{\s*\#pragma\s+save_compiled_source\s+(.*)\}'
@@ -309,13 +310,15 @@ color_schemes = [
 'Monokai KSP',
 ]
 
-plugin_loaded_state = False
-
 def plugin_unloaded():
-    plugin_loaded_state = False
+    global sksp_plugin_loaded
+
+    sksp_plugin_loaded = False
 
 def plugin_loaded():
-    plugin_loaded_state = True
+    global sksp_plugin_loaded
+
+    sksp_plugin_loaded = True
 
     # copy our built in sound to the unmanaged packages folder, so we can io.open it at runtime
     try:
@@ -821,25 +824,25 @@ class KspFixLineEndingsAndSetSyntax(sublime_plugin.EventListener):
                 self.set_ksp_syntax(view)
 
     def on_load_async(self, view):
-        if plugin_loaded_state:
+        if sksp_plugin_loaded:
             self.test_and_set_syntax_to_ksp(view)
 
     def on_reload_async(self, view):
-        if plugin_loaded_state:
+        if sksp_plugin_loaded:
             self.test_and_set_syntax_to_ksp(view)
 
     def on_post_save_async(self, view):
-        if plugin_loaded_state:
+        if sksp_plugin_loaded:
             self.test_and_set_syntax_to_ksp(view)
 
     def on_clone_async(self, view):
-        if plugin_loaded_state:
+        if sksp_plugin_loaded:
             self.test_and_set_syntax_to_ksp(view)
 
     def on_modified_async(self, view):
-        if plugin_loaded_state:
+        if sksp_plugin_loaded:
             self.test_and_set_syntax_to_ksp(view)
 
     def on_activated_async(self, view):
-        if plugin_loaded_state:
+        if sksp_plugin_loaded:
             self.test_and_set_syntax_to_ksp(view)
