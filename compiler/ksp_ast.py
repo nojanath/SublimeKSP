@@ -45,17 +45,18 @@ def toint(i, bits=32):
 class Emitter:
     '''Class for converting Nodes to native KSP'''
 
-    def __init__(self, out=sys.stdout, compact=False):
+    def __init__(self, out=sys.stdout, compact=False, compiled_code_tab_size=2):
         self.out = out
         self.indent_num = 0
         self.beginning_of_line = True
         self.compact = compact
+        self.compiled_code_tab_size = compiled_code_tab_size
 
     def indent(self):
-        self.indent_num += 2
+        self.indent_num += self.compiled_code_tab_size
 
     def dedent(self):
-        self.indent_num -= 2
+        self.indent_num -= self.compiled_code_tab_size
 
     def _write_string(self, s):
         lines = s.split('\n')

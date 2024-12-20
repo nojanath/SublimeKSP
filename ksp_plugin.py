@@ -195,6 +195,7 @@ class CompileKspThread(threading.Thread):
             additional_branch_optimization = settings.get('ksp_additional_branch_optimization', False)
             add_compiled_date_comment = settings.get('ksp_add_compiled_date', True)
             should_play_sound = settings.get('ksp_play_sound', False)
+            compiled_code_tab_size = settings.get('ksp_compiled_code_tab_size', 2)
 
             error_msg = None
             error_lineno = None
@@ -230,7 +231,8 @@ class CompileKspThread(threading.Thread):
                                                          optimize                       = check and optimize,
                                                          additional_branch_optimization = check and additional_branch_optimization,
                                                          sanitize_exit_command          = sanitize_exit_command,
-                                                         add_compiled_date_comment      = add_compiled_date_comment)
+                                                         add_compiled_date_comment      = add_compiled_date_comment,
+                                                         compiled_code_tab_size         = compiled_code_tab_size)
 
                 if self.compiler.compile(callback = utils.compile_on_progress):
                     last_compiler = self.compiler
