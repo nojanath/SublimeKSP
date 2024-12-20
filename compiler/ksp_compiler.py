@@ -2049,15 +2049,16 @@ class KSPCompiler(object):
     def __init__(self,
                  source,
                  basedir,
-                 compact = True,
-                 compact_variables = False,
-                 combine_callbacks = False,
-                 extra_syntax_checks = False,
-                 optimize = False,
+                 compact                        = True,
+                 compact_variables              = False,
+                 combine_callbacks              = False,
+                 extra_syntax_checks            = False,
+                 optimize                       = False,
                  additional_branch_optimization = False,
-                 sanitize_exit_command = False,
-                 add_compiled_date_comment = False,
-                 force_compiler_arguments = False):
+                 sanitize_exit_command          = False,
+                 add_compiled_date_comment      = False,
+                 force_compiler_arguments       = False,
+                 compiled_code_tab_size         = 2):
 
         self.source = source
         self.basedir = basedir
@@ -2069,6 +2070,7 @@ class KSPCompiler(object):
         self.combine_callbacks = combine_callbacks
         self.add_compiled_date_comment = add_compiled_date_comment
         self.force_compiler_arguments = force_compiler_arguments
+        self.compiled_code_tab_size = compiled_code_tab_size
         self.extra_syntax_checks = extra_syntax_checks or optimize
 
         self.abort_requested = False
@@ -2305,7 +2307,7 @@ class KSPCompiler(object):
         '''Generate compiled code from AST'''
 
         buffer = StringIO()
-        emitter = ksp_ast.Emitter(buffer, compact = self.compact)
+        emitter = ksp_ast.Emitter(buffer, compact = self.compact, compiled_code_tab_size = self.compiled_code_tab_size)
         self.module.emit(emitter)
         self.compiled_code = buffer.getvalue()
 
@@ -2524,6 +2526,9 @@ if __name__ == "__main__":
     arg_parser.add_argument('-b', '--extra_branch_optimization',
                             dest = 'additional_branch_optimization', action = 'store_true', default = False,
                             help = 'adds branch optimization checks earlier in compile process, allowing define constant based branching etc.')
+    arg_parser.add_argument('-i', '--indent-size',
+                            dest = 'num_spaces', action = 'store', type = int, default = 2,
+                            help = 'specifies how many spaces is used for indentation, if --compact compiler option is not used')
     arg_parser.add_argument('-t', '--add_compile_date',
                             dest = 'add_compile_date', action = 'store_true', default = False,
                             help = 'adds the date and time comment atop the compiled code')
@@ -2552,15 +2557,16 @@ if __name__ == "__main__":
 
     compiler = KSPCompiler(code,
                            basepath,
-                           compact = args.compact,
-                           combine_callbacks = args.combine_callbacks,
-                           compact_variables = args.compact_variables,
-                           extra_syntax_checks = args.extra_syntax_checks,
-                           optimize = args.optimize,
+                           compact                        = args.compact,
+                           combine_callbacks              = args.combine_callbacks,
+                           compact_variables              = args.compact_variables,
+                           extra_syntax_checks            = args.extra_syntax_checks,
+                           optimize                       = args.optimize,
                            additional_branch_optimization = args.additional_branch_optimization,
-                           sanitize_exit_command = args.sanitize_exit_command,
-                           add_compiled_date_comment = (args.add_compile_date),
-                           force_compiler_arguments = (args.force_compiler_arguments))
+                           sanitize_exit_command          = args.sanitize_exit_command,
+                           add_compiled_date_comment      = args.add_compile_date,
+                           force_compiler_arguments       = args.force_compiler_arguments,
+                           compiled_code_tab_size         = args.num_spaces)
 
     compiler.compile(callback = utils.compile_on_progress)
 
