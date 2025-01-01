@@ -853,6 +853,9 @@ class ASTModifierRemoveUnusedBranches(ASTModifier):
 
                     if (stop is not None and start <= value <= stop) or (start == value):
                         return stmts
+                
+                return []
+            
             except ParseException:
                 pass
 
