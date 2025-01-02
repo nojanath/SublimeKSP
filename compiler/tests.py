@@ -1512,6 +1512,22 @@ class NamespacePrefixing(unittest.TestCase):
         output = do_compile(code, optimize = True)
         self.assertTrue('_mymodule__tmp' in output)
 
+    def testFunctionReturnValuesNotPrefixedOrReadFrom(self):
+        code = '''
+            import 'test_imports/namespace2.ksp' as mymodule
+
+            on init
+                declare x
+                x := mymodule.max(8, 3)
+            end on'''
+
+        expected_output = '''
+            on init
+            end on'''
+
+        output = do_compile(code, optimize = True)
+        assert_equal(self, output, expected_output)
+
     def testFunctionReturnValuesNotPrefixed(self):
         code = '''
             import 'test_imports/namespace2.ksp' as mymodule
@@ -1519,6 +1535,7 @@ class NamespacePrefixing(unittest.TestCase):
             on init
                 declare x
                 x := mymodule.max(8, 3)
+                message(x)
             end on'''
 
         output = do_compile(code, optimize = True)
@@ -1650,6 +1667,7 @@ class OptimizationModeChecks(unittest.TestCase):
             function fn1
               declare global abc
               abc := 72
+              message(abc)
             end function
 
             function fn2
@@ -1749,6 +1767,7 @@ class PropertyTests(unittest.TestCase):
               declare _list[100]
               property list[a,b] -> _list[a*10+b]
               list[3,5] := 99
+              message(list[3,5])
             end on'''
 
         output = do_compile(code, optimize = True)
@@ -2144,6 +2163,7 @@ class TestTaskfunc(unittest.TestCase):
 
             on note
               x := randomize(44, 88)
+              message(x)
             end on'''
 
         expected_output = '''
@@ -2154,7 +2174,6 @@ class TestTaskfunc(unittest.TestCase):
             declare $fp
             $fp := 268
             declare $tx
-            declare %tstate__id[326]
             declare %tstate__fs[326]
             $tx := 0
             while ($tx<326)
@@ -2162,7 +2181,6 @@ class TestTaskfunc(unittest.TestCase):
             inc($tx)
             end while
             $tx := 0
-            %tstate__id[0] := -1
             pgs_create_key(TCM_EXCEPTION,5)
             pgs_set_key_val(TCM_EXCEPTION,$CURRENT_SCRIPT_SLOT,0)
             declare $x
@@ -2188,6 +2206,7 @@ class TestTaskfunc(unittest.TestCase):
             %p[$sp-2] := 88
             call randomize
             $x := %p[$sp-1]
+            message($x)
             end on'''
 
         output = do_compile(code, optimize = True)
@@ -2210,6 +2229,7 @@ class TestTaskfunc(unittest.TestCase):
 
             on note
               x := randomize(44, 88)
+              message(x)
             end on'''
 
         expected_output = '''
@@ -2220,7 +2240,6 @@ class TestTaskfunc(unittest.TestCase):
             declare $fp
             $fp := 268
             declare $tx
-            declare %tstate__id[326]
             declare %tstate__fs[326]
             $tx := 0
             while ($tx<326)
@@ -2228,7 +2247,6 @@ class TestTaskfunc(unittest.TestCase):
             inc($tx)
             end while
             $tx := 0
-            %tstate__id[0] := -1
             pgs_create_key(TCM_EXCEPTION,5)
             pgs_set_key_val(TCM_EXCEPTION,$CURRENT_SCRIPT_SLOT,0)
             declare $x
@@ -2254,6 +2272,7 @@ class TestTaskfunc(unittest.TestCase):
             %p[$sp-2] := 88
             call randomize
             $x := %p[$sp-1]
+            message($x)
             end on'''
 
         output = do_compile(code, optimize = True)
@@ -2274,6 +2293,7 @@ class TestTaskfunc(unittest.TestCase):
 
             on note
               randomize(44, 88, x)
+              message(x)
             end on'''
 
         expected_output = '''
@@ -2337,6 +2357,7 @@ class TestTaskfunc(unittest.TestCase):
             %p[$sp-2] := 88
             call randomize
             $x := %p[$sp-1]
+            message($x)
             end on'''
 
         output = do_compile(code, optimize = True)
