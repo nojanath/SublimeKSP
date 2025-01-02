@@ -2544,7 +2544,7 @@ if __name__ == "__main__":
     basepath = None
 
     if args.source_file.name != '<stdin>':
-        basepath = os.path.dirname(args.source_file.name)
+        basepath = os.path.dirname(os.path.abspath(args.source_file.name))
 
     # make sure that extra syntax checks are enabled if --optimize or --extra_branch_optimization arguments are used
     if (args.optimize or args.additional_branch_optimization) and args.extra_syntax_checks == False:
