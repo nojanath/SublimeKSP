@@ -1423,7 +1423,6 @@ class ASTModifierNameFixer(ASTModifierBase):
 
         return node
 
-
 class ASTModifierFunctionExpander(ASTModifierBase):
     '''Handle function usage'''
     def __init__(self, ast):
@@ -2302,6 +2301,7 @@ class KSPCompiler(object):
     def init_extra_syntax_checks(self):
         comp_extras.clear_symbol_table()
         self.used_variables = set()
+        self.var_assigns = {}
 
     def generate_compiled_code(self):
         '''Generate compiled code from AST'''
@@ -2335,6 +2335,7 @@ class KSPCompiler(object):
         try:
             used_functions = set()
             used_variables = set()
+            var_assigns = {}
 
             time_so_far = 0
 
@@ -2416,8 +2417,8 @@ class KSPCompiler(object):
                  ('removing unused branches',         lambda: comp_extras.ASTModifierRemoveUnusedBranches(self.module),                  do_optim,               1),
                  ('finding unused functions',         lambda: comp_extras.ASTVisitorFindUsedFunctions(self.module, used_functions),      do_optim,               1),
                  ('removing unused functions',        lambda: comp_extras.ASTModifierRemoveUnusedFunctions(self.module, used_functions), do_optim,               1),
-                 ('finding unused variables',         lambda: comp_extras.ASTVisitorFindUsedVariables(self.module, used_variables),      do_optim,               1),
-                 ('removing unused variables',        lambda: comp_extras.ASTModifierRemoveUnusedVariables(self.module, used_variables), do_optim,               1),
+                 ('finding unused variables',         lambda: comp_extras.ASTVisitorFindUsedVariables(self.module, used_variables, var_assigns),      do_optim,               1),
+                 ('removing unused variables',        lambda: comp_extras.ASTModifierRemoveUnusedVariables(self.module, used_variables, var_assigns), do_optim,               1),
 
                  ('compacting variable names',        self.compact_names,                                                                self.compact_variables, 1),
                  ('generating code',                  self.generate_compiled_code,                                                       True,                   1),
