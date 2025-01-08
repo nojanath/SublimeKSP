@@ -118,6 +118,7 @@ import_re = re.compile(r'''
 ''' % white_space_re, re.MULTILINE | re.DOTALL | re.VERBOSE)
 
 import_basic_re = re.compile(r'^\s*import ')
+import_ignore_re = re.compile(r'^\s*__IGNORE__')
 macro_start_re = re.compile(r'^\s*macro(?=\W)')
 macro_end_re = re.compile(r'^\s*end\s+macro')
 
@@ -536,7 +537,10 @@ def parse_lines_and_handle_imports(basepath, source, compiler_import_cache, file
         line = lines.popleft()
 
         # if line seems to be an import line
-        if import_basic_re.match(line.command):
+        if import_ignore_re.match(line.command):
+            new_lines.clear()
+            return new_lines
+        elif import_basic_re.match(line.command):
             line.replace_placeholders()
 
             # check if it matches a more elaborate syntax
