@@ -227,8 +227,7 @@ def handleStructs(lines):
                     isCurrentlyInAStructBlock = True
                     lines[lineIdx].command = ""
             # Find the end of a struct block
-            elif line.startswith("end"):
-                if re.search(r"^end\s+struct$", line):
+            elif re.search(r"^end\s+struct$", line):
                     isCurrentlyInAStructBlock = False
                     structs.append(structObj)
                     lines[lineIdx].command = ""
@@ -807,8 +806,7 @@ def handleConstBlock(lines):
                 constBlockObj = ConstBlock(m.group("name"))
                 inConstBlock = True
                 continue
-        elif line.startswith("end"):
-            if re.search(constBlockEndRe, line):
+        elif re.search(constBlockEndRe, line):
                 if constBlockObj.memberValues:
                     newLines.extend(constBlockObj.buildLines(lines[lineIdx]))
 
