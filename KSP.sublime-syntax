@@ -255,7 +255,7 @@ contexts:
       comment: Double-quoted string
       scope: string.quoted.double.source.ksp
 
-    - match: '''(?:[^''\\]|\\.)*'''
+    - match: '(?:f)?''(?:[^''\\]|\\.)*'''
       comment: Single-quoted string
       scope: string.quoted.single.source.ksp
 
