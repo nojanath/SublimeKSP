@@ -595,7 +595,7 @@ def handle_conditional_lines(lines):
             clear_this_line = True
 
         if not clear_this_line and 'SET_CONDITION(' in line:
-            m = re.search('\((.+?)\)', line)
+            m = re.search(r'\((.+?)\)', line)
 
             if m:
                 cond = m.group(1).strip()
@@ -613,7 +613,7 @@ def handle_conditional_lines(lines):
                         clear_this_line = True
 
         if 'USE_CODE_IF' in line:
-            m = re.search('\((.+?)\)', line)
+            m = re.search(r'\((.+?)\)', line)
 
             if m:
                 cond = m.group(1).strip()
