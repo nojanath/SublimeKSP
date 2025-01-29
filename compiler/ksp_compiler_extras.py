@@ -848,12 +848,11 @@ class ASTModifierRemoveUnusedBranches(ASTModifier):
                     if not self.is1equals1(condition):
                         condition = None
 
-                    if len(stmts) > 0:
-                        condition_stmts_tuples.append((condition, stmts))
+                    condition_stmts_tuples.append((condition, stmts))
 
                     break
 
-                if not (value is False or len(stmts) == 0):
+                if not (value is False):
                     condition_stmts_tuples.append((condition, stmts))
 
             # if there's just an else statement left, return its statement list
