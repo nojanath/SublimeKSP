@@ -1689,9 +1689,9 @@ def handleDefineConstants(lines, define_cache = None):
                 defineObj = DefineConstant(m.group("whole"), m.group("val").strip() + ', ' + existing[0].value, m.group("args"), l)
                 defineConstants.remove(existing[0])
             elif define_type == 'new' and len(existing) > 0:
-                # If new and exists already, raise Exception
+                # If new and exists already, warn
                 if existing[0].value != m.group("val").strip():
-                    raise ParseException(l, "Define constant was already declared!")
+                    utils.log_message("Warning: Define constant was already declared!\n%s" % str(l))
             else:
                 # All other cases, create a new define
                 defineObj = DefineConstant(m.group("whole"), m.group("val").strip(), m.group("args"), l)
