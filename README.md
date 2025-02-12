@@ -9,8 +9,7 @@ However, there are a number of additions and changes:
 * Available in Package Control, which supports automatic updates
 * Updates to the syntax highlighting
 * Support for Creator Tools GUI Designer
-* Numerous additions to the preprocessor, allowing for UI arrays, new macro types and much more
-* See the [SublimeKSP Added Features](https://github.com/nojanath/SublimeKSP/wiki/SublimeKSP-Added-Features) section of the [Wiki](https://github.com/nojanath/SublimeKSP/wiki) for more information
+* Numerous additions to the preprocessor, allowing for many new features; see the [Extended Script Syntax](https://github.com/nojanath/SublimeKSP/wiki#extended-script-syntax) section of the [Wiki](https://github.com/nojanath/SublimeKSP/wiki) for more information
 
 ### Installation
 
@@ -76,4 +75,4 @@ optional arguments:
 with pull requests, just open an issue [here](https://github.com/nojanath/SublimeKSP/issues).
 
 ### Documentation
-See the [Wiki](https://github.com/nojanath/SublimeKSP/wiki) on GitHub.
+See the [Wiki](https://github.com/nojanath/SublimeKSP/wiki).
