@@ -55,7 +55,7 @@ positional arguments:
 optional arguments:
   -h, --help                               show this help message and exit
   -f, --force                              force all specified compiler options, overriding any compile_with pragma directives from the script
-  -c, --compact                            remove indents and empty lines in compiled code
+  -c, --compact                            remove indents in compiled code
   -v, --compact_variables                  shorten and obfuscate variable names in compiled code
   -d, --combine_callbacks                  combines duplicate callbacks - but not functions or macros
   -e, --extra_syntax_checks                additional syntax checks during compilation
