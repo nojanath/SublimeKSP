@@ -750,6 +750,10 @@ class KspUncompressCode(sublime_plugin.TextCommand):
 
 class KspAboutCommand(sublime_plugin.ApplicationCommand):
     def run(self):
+        webbrowser.open('https://github.com/nojanath/SublimeKSP/blob/master/README.md')
+
+class KspDocsCommand(sublime_plugin.ApplicationCommand):
+    def run(self):
         webbrowser.open('https://github.com/nojanath/SublimeKSP/wiki')
 
 
