@@ -66,7 +66,7 @@
 	},
 	{
 		"command": "ksp_global_setting_toggle",
-		"caption": "SublimeKSP: Additional Branch Optimization Steps",
+		"caption": "SublimeKSP: Additional Branch Optimization",
 		"args":
 		{
 			"setting": "ksp_additional_branch_optimization",
