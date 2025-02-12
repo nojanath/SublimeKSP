@@ -102,7 +102,7 @@
 					{
 						"command": "ksp_global_setting_toggle",
 						"args": {"setting": "ksp_additional_branch_optimization", "default": false},
-						"caption": "Additional Branch Optimization Steps",
+						"caption": "Additional Branch Optimization",
 						"mnemonic": "B",
 						"id": "additional_branch_optimization",
 						"checkbox": true
