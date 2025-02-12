@@ -2021,7 +2021,7 @@ def open_nckp(lines, basedir):
                         ui_to_import = list(parse_nckp(nckp_path))
 
                         if not ui_to_import:
-                            raise ParseException(Line(line, [(None, index + 1)], None), 'No controls to import from the .nckp file!\n')
+                            utils.log_message("Note: No UI control declarations were found in %s!" % os.path.abspath(nckp_path))
 
                         for i, v in enumerate(ui_to_import):
                             variables.add(v.lower())
@@ -2034,9 +2034,9 @@ def open_nckp(lines, basedir):
                             comp_extras.add_nckp_var_to_nckp_table(v.replace('__', '.'))
 
                     else:
-                        raise ParseException(Line(line, [(None, index + 1)], None), '.nkcp file not found at: ' + os.path.abspath(nckp_path) + '!\n')
+                        raise ParseException(Line(line, [(None, index + 1)], None), '.nkcp file not found at: %s!' % os.path.abspath(nckp_path))
             else:
-                raise ParseException(Line(line, [(None, index + 1)], None), 'import_nckp was used, but load_performance_view was not found in the script!\n')
+                raise ParseException(Line(line, [(None, index + 1)], None), 'import_nckp was used, but \'load_performance_view\' was not found in the script!\n')
 
     return bool(ui_to_import)
 
