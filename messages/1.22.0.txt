@@ -1,0 +1,62 @@
+Version 1.22.0
+---------------------------------------------------
+
+This update adds support for everything that was newly introduced with Kontakt 8.2.0, along with the following changes:
+
+- ADDED New `__IGNORE__` directive, which, if found in a file, will disallow it from being imported into other scripts
+
+- ADDED Compiler option to specify the indentation size in compiled code (provided "Remove Indents" option is disabled)
+
+- ADDED "SublimeKSP Documentation" command was added to Tools > SublimeKSP menu, which links to the (now greatly updated!) Wiki of the official SublimeKSP repository
+
+- ADDED All actions and options of the SublimeKSP extension are now also available in Sublime Text's Command Palette (Ctrl+Shift+P on Windows/Linux, Cmd+Shift+P on macOS)
+
+- IMPROVED SublimeKSP will now use the Python 3.8 runtime in Sublime Text 4. You can expect some speedups in compilation times potentially!
+
+- IMPROVED F-strings are now properly syntax colored
+
+- IMPROVED Compiler now detects when variable references are used as lvalues and proposes their assign statements as deletable. An example: if we write `declare !arr[] := ("foo", "bar")` and we don't read from `!arr` elsewhere in code, the variable won't be _written_ to, which can save a significant amount of lines of code, for example if string arrays are declared and assigned to, but never referenced in code. Previously, the above example would always produce code with `!arr` declared and the string assignment statements, even if the array was never used.
+
+- CHANGED "Define constant was already declared" error was demoted to a warning (you can see this in Sublime Text's console log), which means that compilation can proceed normally
+
+- CHANGED Similar to the above change, when importing NCKP, and it was found that it contains no UI controls to import, demote this error to a note
+
+- CHANGED "Remove Indents and Empty Lines" action was renamed to just "Remove Indents", because empty lines are always removed during compilation, as a part of constructing the abstract syntax tree (AST)
+
+- CHANGED "Additional Branch Optimization Steps" action was renamed to just "Additional Branch Optimization", because it really only adds one additional compilation step, not more of them
+
+- CHANGED "About SublimeKSP" command was changed to open the README file from the official SublimeKSP repository
+
+- FIXED We were not tracking the Sublime Text plugin loaded/unloaded state, so automatic syntax detection did not work properly
+
+- FIXED Compiler did not optimize select-case statements if no branches matched the value expression
+
+- FIXED Empty if-else blocks were removed previously, which is incorrect, since this is valid boolean logic
+
+- FIXED When using structs or constant blocks, if any of their members started with "end", structs or constant blocks would not be closed properly
+
+- FIXED When compiling from command line, we did not resolve the absolute path for the source filename when getting the basepath
+
+
+Thanks to Nabeel from Impact Soundworks (@eitherys) for several of the gnarlier compiler fixes and improvements!
+
+
+That's all - have fun!
+
+
+---------------------------------------------------
+
+If you would like to roll back a version of SublimeKSP for time critical work prevented by a new bug:
+
+First, remove SublimeKSP from Sublime Package Control:
+1. Press `Ctrl + Shift + P` on Windows and Linux, or `Cmd + Shift + P` on Mac.
+2. Type "Remove Package" and select it, then select the "KSP (Kontakt Script Processor)" entry.
+
+Next, download the version you'd like [here](https://github.com/nojanath/SublimeKSP/releases).
+
+After the download, you can install it as a user package in Sublime following these instructions:
+
+1. Open the Preferences menu in Sublime Text and click Browse Packages. A folder will open up.
+2. Extract the ZIP archive you have downloaded and place it into this folder.
+3. IMPORTANT: Rename the unpacked folder to `KSP (Kontakt Script Processor)` (this is important so that your settings from Package Control version are retained)!
+4. Restart Sublime Text. Alternatively, make sure you have [Automatic​Package​Reloader](https://packagecontrol.io/packages/AutomaticPackageReloader) package installed.
