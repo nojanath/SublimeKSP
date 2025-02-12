@@ -112,7 +112,7 @@
 						"command": "ksp_global_setting_toggle",
 						"args": {"setting": "ksp_add_compiled_date", "default": true},
 						"caption": "Add Compilation Date/Time Comment",
-						"mnemonic": "D",
+						"mnemonic": "T",
 						"id": "add_compiled_date_comment",
 						"checkbox": true
 					},
@@ -145,6 +145,13 @@
 					},
 
 					{"caption":"-"}, //separator
+
+					{
+						"command": "ksp_docs",
+						"caption": "SublimeKSP Documentation...",
+						"mnemonic": "D",
+						"id": "documentation"
+					},
 
 					{
 						"command": "ksp_about",
