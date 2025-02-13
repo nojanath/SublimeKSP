@@ -28,7 +28,6 @@ import preprocessor_plugins
 import utils
 
 last_compiler = None
-sksp_plugin_loaded = False
 sublime_version = int(sublime.version())
 
 pragma_save_src_re = r'\{\s*\#pragma\s+save_compiled_source\s+(.*)\}'
@@ -807,6 +806,7 @@ class KspFixLineEndingsAndSetSyntax(sublime_plugin.EventListener):
 
             if view.settings().get('syntax') == "KSP.sublime-syntax":
                 is_ksp_syntax = True
+                return
 
             if self.is_probably_ksp_file(view):
                 fn = view.file_name()
