@@ -800,38 +800,36 @@ class KspFixLineEndingsAndSetSyntax(sublime_plugin.EventListener):
     def set_ksp_syntax(self, view):
         view.set_syntax_file("KSP.sublime-syntax")
 
+    def fix_mixed_line_endings(self, view):
+        if view.settings().get('syntax') == "KSP.sublime-syntax":
+            fn = view.file_name()
+
+            if fn:
+                with io.open(fn, 'r', encoding = 'latin-1', newline = '') as file:
+                    s = file.read()
+
+                    mixed_line_endings = re.search(r'\r(?!\n)', s) and '\r\n' in s
+
+                    if mixed_line_endings:
+                        s, changes = re.subn(r'\r+\n', '\n', s)
+
+                        if changes:
+                            view.run_command('replace_text_with', {'new_text': s})
+                            sublime.set_timeout(lambda: \
+                                utils.log_message('Note: End-of-line characters automatically fixed! Please save the file to keep the changes.'), 100)
+
     def test_and_set_syntax_to_ksp(self, view):
         if not view.settings().get('is_widget', False):
-            is_ksp_syntax = False
-
             if view.settings().get('syntax') == "KSP.sublime-syntax":
-                is_ksp_syntax = True
                 return
 
             if self.is_probably_ksp_file(view):
-                fn = view.file_name()
-
-                if fn and not is_ksp_syntax:
-                    with io.open(view.file_name(), 'r', encoding = 'latin-1') as file:
-                        s = file.read()
-
-                        mixed_line_endings = re.search(r'\r(?!\n)', s) and '\r\n' in s
-
-                        if mixed_line_endings:
-                            s, changes = re.subn(r'\r+\n', '\n', s) # normalize line endings
-
-                            if changes:
-                                # strip trailing whitespace too while we're at it
-                                s = '\n'.join(x.rstrip() for x in s.split('\n'))
-
-                                view.run_command('replace_text_with', {'new_text': s})
-                                sublime.set_timeout(lambda: utils.log_message('EOL characters automatically fixed! Please save to keep the changes.'), 100)
-
                 self.set_ksp_syntax(view)
 
     def on_load_async(self, view):
         if sksp_plugin_loaded:
             self.test_and_set_syntax_to_ksp(view)
+            self.fix_mixed_line_endings(view)
 
     def on_reload_async(self, view):
         if sksp_plugin_loaded:
