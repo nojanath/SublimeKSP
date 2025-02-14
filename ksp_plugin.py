@@ -589,41 +589,81 @@ class ReplaceTextWithCommand(sublime_plugin.TextCommand):
 class KspGlobalSettingToggleCommand(sublime_plugin.ApplicationCommand):
     '''Handles SublimeKSP setting toggles'''
 
+    global sksp_options_requiring_input
+    sksp_options_requiring_input = ['ksp_compiled_code_tab_size']
+
+    global sksp_options_dict
+    sksp_options_dict = {
+        'ksp_compact_output'                       : 'Remove Indents and Empty Lines',
+        'ksp_compact_variables'                    : 'Compact Variables',
+        'ksp_extra_checks'                         : 'Extra Syntax Checks',
+        'ksp_optimize_code'                        : 'Optimize Compiled Code',
+        'ksp_additional_branch_optimization'       : 'Additional Branch Optimization Steps',
+        'ksp_combine_callbacks'                    : 'Combine Duplicate Callbacks',
+        'ksp_add_compiled_date'                    : 'Add Compilation Date/Time Comment',
+        'ksp_sanitize_exit_command'                : 'Sanitize Behavior of \'exit\' Command',
+        'ksp_comment_inline_functions'             : 'Insert Comments When Expanding Functions',
+        'ksp_play_sound'                           : 'Play Sound When Compilation Finishes',
+        'ksp_add_completions_for_vanilla_builtins' : 'Enable Completions for Vanilla KSP Built-ins',
+        'ksp_compiled_code_tab_size'               : 'Indent Size in Compiled Code',
+    }
+
     def run(self, setting, default):
-        sksp_options_dict = {
-            'ksp_compact_output'                       : 'Remove Indents and Empty Lines',
-            'ksp_compact_variables'                    : 'Compact Variables',
-            'ksp_extra_checks'                         : 'Extra Syntax Checks',
-            'ksp_optimize_code'                        : 'Optimize Compiled Code',
-            'ksp_additional_branch_optimization'       : 'Additional Branch Optimization Steps',
-            'ksp_combine_callbacks'                    : 'Combine Duplicate Callbacks',
-            'ksp_add_compiled_date'                    : 'Add Compilation Date/Time Comment',
-            'ksp_sanitize_exit_command'                : 'Sanitize Behavior of \'exit\' Command',
-            'ksp_comment_inline_functions'             : 'Insert Comments When Expanding Functions',
-            'ksp_play_sound'                           : 'Play Sound When Compilation Finishes',
-            'ksp_add_completions_for_vanilla_builtins' : 'Enable Completions for Vanilla KSP Built-ins',
-        }
 
-        settings = sublime.load_settings('KSP.sublime-settings')
-        settings.set(setting, not settings.get(setting, default))
-        sublime.save_settings('KSP.sublime-settings')
+        self.setting = setting
+        self.default = default
 
-        if settings.get(setting, default):
-            option_toggle = 'enabled!'
+        def update_setting(setting, value = None):
+            settings = sublime.load_settings('KSP.sublime-settings')
+            if value == None:
+                settings.set(setting, not settings.get(self.setting, self.default))
+            else:
+                settings.set(setting, value)
+            sublime.save_settings('KSP.sublime-settings')
+
+            if setting in sksp_options_requiring_input:
+                utils.log_message('SublimeKSP option %s is set to %d!' % (sksp_options_dict[setting], value))
+            else:
+                if settings.get(setting, value):
+                    option_toggle = 'enabled!'
+                else:
+                    option_toggle = 'disabled!'
+
+                utils.log_message('SublimeKSP option %s is %s' % (sksp_options_dict[setting], option_toggle))
+
+        def on_select(input_str):
+            value = int(input_str)
+
+            if value > -1:
+                update_setting(self.setting, value)
+
+        if self.setting in sksp_options_requiring_input:
+            settings = sublime.load_settings('KSP.sublime-settings')
+            entries = []
+
+            if self.setting == 'ksp_compiled_code_tab_size':
+                entries = [str(i) for i in range(0, 9)]
+
+            window = sublime.active_window()
+            window.show_quick_panel(entries, on_select, selected_index = settings.get(self.setting, self.default))
         else:
-            option_toggle = 'disabled!'
-
-        utils.log_message('SublimeKSP option %s is %s' % (sksp_options_dict[setting], option_toggle))
+            update_setting(self.setting)
 
     def is_checked(self, setting, default):
-        return bool(sublime.load_settings('KSP.sublime-settings').get(setting, default))
+        if not setting in sksp_options_requiring_input:
+            return bool(sublime.load_settings('KSP.sublime-settings').get(setting, default))
+        else:
+            return False
 
     def is_enabled(self, setting, default):
         settings = sublime.load_settings('KSP.sublime-settings')
         extra_checks = bool(settings.get('ksp_extra_checks', True))
+        compact_output = bool(settings.get('ksp_compact_output', False))
 
         if setting == 'ksp_optimize_code' or setting == 'ksp_additional_branch_optimization':
             return extra_checks
+        elif setting == 'ksp_compiled_code_tab_size':
+            return not compact_output
         else:
             return True
 

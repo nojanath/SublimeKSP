@@ -74,6 +74,16 @@
 		}
 	},
 
+	{
+		"command": "ksp_global_setting_toggle",
+		"caption": "SublimeKSP: Indent Size in Compiled Code",
+		"args":
+		{
+			"setting": "ksp_compiled_code_tab_size",
+			"default": 2
+		}
+	},
+
 
 	{
 		"command": "ksp_global_setting_toggle",
