@@ -485,9 +485,21 @@ class ASTVisitorFindUsedVariables(ASTVisitor):
         return False
 
     def visitAssignStmt(self, parent, node, *args):
+        def children_have_function_calls(node):
+            children = node.get_childnodes()
+
+            if isinstance(node, FunctionCall):
+                return True
+            elif len(children) == 0:
+                return False
+
+            for c in children:
+                if children_have_function_calls(c):
+                    return True
+
         children = node.get_childnodes()
 
-        if isinstance(children[0], VarRef):
+        if isinstance(children[0], VarRef) and not children_have_function_calls(node):
             var_node = children[0].identifier
 
             name = str(var_node).lower()
