@@ -888,7 +888,7 @@ class ASTModifierRemoveUnusedBranches(ASTModifier):
             try:
                 value = evaluate_expression(node.expression)
 
-                if value is None:
+                if isinstance(value, ID) or (value is None):
                     return [node]
 
                 for ((start, stop), stmts) in node.range_stmts_tuples:
