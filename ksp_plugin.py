@@ -334,6 +334,21 @@ def plugin_loaded():
             if not os.path.exists(filepath):
                 with open(filepath, 'wb') as sound:
                     sound.write(res)
+                    print('[SublimeKSP] Copied finished.wav to the unmanaged packages folder!')
+    except:
+        pass
+
+    # copy the skins out so that they might be available while the package itself is being reloaded (fingers crossed)
+    try:
+        for c in color_schemes:
+            filename = c + '.sublime-color-scheme'
+            res = sublime.load_binary_resource('Packages/KSP (Kontakt Script Processor)/' + filename)
+            filepath = os.path.join(sublime.packages_path(), 'KSP (Kontakt Script Processor)', filename)
+
+            if not os.path.exists(filepath):
+                with open(filepath, 'wb') as cs:
+                    cs.write(res)
+                    print('[SublimeKSP] Copied ' + filename + ' to the unmanaged packages folder!')
     except:
         pass
 
