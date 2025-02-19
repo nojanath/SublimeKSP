@@ -1,0 +1,42 @@
+Version 1.22.1
+---------------------------------------------------
+
+This update fixes several issues which arose in previous release:
+
+- FIXED Checking if the package has been loaded was still not correct, so automatic syntax recognition did not work properly. Now it does!
+
+- FIXED Several built-in variables were set up as constants, so select-case on them would overly eagerly optimize away the whole statement (issue #490)
+
+- FIXED Select-case optimization now doesn't optimize if built-in constants are used, even though that doesn't make a whole lot of sense (issue #490)
+
+- FIXED Automatic end-of-line format fixer did not work for quite some time, resulting in compilation problems like in issue #447
+
+- FIXED Assign statement optimization introduced in 1.22.0 would overly eagerly optimize statements containing built-in or user functions
+
+- ADDED Previously "hidden" Indent Size in Compiled Code option is now in the Tools > SublimeKSP menu
+
+- IMPROVED Refactored how setting various SublimeKSP options works in the back end
+
+
+Thanks to Nabeel from Impact Soundworks (@eitherys) for assistance in fixing the compiler optimization bugs!
+
+
+That's all - have fun!
+
+
+---------------------------------------------------
+
+If you would like to roll back a version of SublimeKSP for time critical work prevented by a new bug:
+
+First, remove SublimeKSP from Sublime Package Control:
+1. Press `Ctrl + Shift + P` on Windows and Linux, or `Cmd + Shift + P` on Mac.
+2. Type "Remove Package" and select it, then select the "KSP (Kontakt Script Processor)" entry.
+
+Next, download the version you'd like [here](https://github.com/nojanath/SublimeKSP/releases).
+
+After the download, you can install it as a user package in Sublime following these instructions:
+
+1. Open the Preferences menu in Sublime Text and click Browse Packages. A folder will open up.
+2. Extract the ZIP archive you have downloaded and place it into this folder.
+3. IMPORTANT: Rename the unpacked folder to `KSP (Kontakt Script Processor)` (this is important so that your settings from Package Control version are retained)!
+4. Restart Sublime Text. Alternatively, make sure you have [Automatic​Package​Reloader](https://packagecontrol.io/packages/AutomaticPackageReloader) package installed.
