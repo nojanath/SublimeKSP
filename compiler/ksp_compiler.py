@@ -1162,7 +1162,10 @@ class ASTModifierNodesToNativeKSP(ASTModifierBase):
         # if no variable prefix used, add one automatically
         if not node.variable.prefix:
             if node.size is not None:
-                node.variable.prefix = '%'
+                if node.isUIDeclaration() and 'ui_xy' in node.modifiers:
+                    node.variable.prefix = '?'
+                else:
+                    node.variable.prefix = '%'
             else:
                 node.variable.prefix = '$'
 
@@ -1248,7 +1251,7 @@ class ASTModifierFixPrefixes(ASTModifierBase):
                                       name in properties or
                                       (parent_function and (first_part in parent_function.parameters or
                                                             parent_function.return_value and first_part == parent_function.return_value.identifier))):
-            possible_prefixes = [prefix for prefix in '$%@!?~'
+            possible_prefixes = [prefix for prefix in variable_prefixes
                                  if prefix + name.lower() in variables or prefix + name in ksp_builtins.all_builtins]
 
             # if there is a subscript then only array types are possible
