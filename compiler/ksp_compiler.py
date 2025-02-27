@@ -35,7 +35,6 @@ import utils
 
 variable_prefixes = '$%@!?~'
 
-
 # regular expressions:
 white_space_re = r'(\s*(\{[^\n]*?\})?\s*)'
 white_space = r'(?ms)%s' % white_space_re
@@ -1161,13 +1160,38 @@ class ASTModifierNodesToNativeKSP(ASTModifierBase):
 
         # if no variable prefix used, add one automatically
         if not node.variable.prefix:
+            from decimal import Decimal
+
             if node.size is not None:
                 if node.isUIDeclaration() and 'ui_xy' in node.modifiers:
                     node.variable.prefix = '?'
                 else:
-                    node.variable.prefix = '%'
+                    if node.initial_value is not None:
+
+                        expr_eval = comp_extras.evaluate_expression(node.initial_value[0])
+
+                        if isinstance(expr_eval, str):
+                            node.variable.prefix = '!'
+                        elif isinstance(expr_eval, Decimal):
+                            node.variable.prefix = '?'
+                        else:
+                            node.variable.prefix = '%'
+                    else:
+                        node.variable.prefix = '%'
+
             else:
-                node.variable.prefix = '$'
+                if 'const' not in node.modifiers:
+                    expr_eval = comp_extras.evaluate_expression(node.initial_value)
+
+                    # this won't work because of handleSameLineDeclaration() in the preprocessor, alas
+                    #if isinstance(expr_eval, str):
+                    #   node.variable.prefix = '@'
+                    if isinstance(expr_eval, Decimal):
+                        node.variable.prefix = '~'
+                    else:
+                        node.variable.prefix = '$'
+                else:
+                    node.variable.prefix = '$'
 
         # is this declaration made inside of a function?
         if kwargs['parent_function']:
