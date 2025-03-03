@@ -31,6 +31,13 @@ contexts:
       scope: string.quoted.single.source.ksp
 
   main:
+    - match: '\{\{'
+      comment: Double curly bracket section comment (symbol list only)
+      push:
+        - meta_scope: comment.block.source.ksp, section.comment.source.ksp
+        - match: '\}\}'
+          pop: true
+
     - match: "(f)(')"
       captures:
         1: keyword.other.source.ksp
