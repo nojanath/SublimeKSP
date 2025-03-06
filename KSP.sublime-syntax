@@ -26,7 +26,7 @@ contexts:
     - match: "'"
       scope: string.quoted.single.source.ksp
       pop: true
-    
+
     - match: '.'
       scope: string.quoted.single.source.ksp
 
@@ -50,7 +50,7 @@ contexts:
       escape: ">>"
       escape_captures:
         0: entity.name.function.source.ksp
-      
+
     - match: 'read\s*<<'
       embed: scope:source.python
       scope: entity.name.function.source.ksp
@@ -767,4 +767,4 @@ contexts:
 
     - match: "[-+*/]"
       comment: Arithmetic Operator
-      scope: arithmetic.source.ksp    
+      scope: arithmetic.source.ksp

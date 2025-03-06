@@ -423,7 +423,7 @@ def parse_lines(s, filename = None, namespaces = None):
     if namespaces is None:
         namespaces = []
 
-    s = handlePython(s)    
+    s = handlePython(s)
 
     lines = s.replace('\r\n', '\n').replace('\r', '\n').split('\n')
     lines = [process_f_string(l) for l in lines]
@@ -437,7 +437,7 @@ def parse_lines(s, filename = None, namespaces = None):
     s = comment_re.sub('', s)
 
     lines = s.split('\n')
-    
+
 
     # NOTE(Sam): Remove any occurances of the new comment type //
     for i in range(len(lines)):
@@ -465,9 +465,9 @@ def handlePython(code):
     # Use re.DOTALL to make '.' match newlines
     run_re = re.compile(r"run\s*<<(?P<code>.+?)>>", re.DOTALL)
     read_re = re.compile(r"read\s*<<(?P<code>.+?)>>", re.DOTALL)
-    
+
     namespace = {'__builtins__': __builtins__, **globals()}
-    
+
     import textwrap
     def trimmed(s: str) -> str:
         """
@@ -489,24 +489,24 @@ def handlePython(code):
 
             finished = False
             break
-        
+
         # Then process all read<< >> blocks
         for m in read_re.finditer(new_code):  # Process in reverse to maintain indices
             eval_code = trimmed(m.group('code'))
             final = eval(eval_code, namespace)
-            
+
             if isinstance(final, int):
                 final = str(final)
             elif isinstance(final, list):
                 final = '\n'.join(final)
             else:
                 final = str(final)
-                
+
             new_code = new_code[:m.start()] + final + new_code[m.end():]
 
             finished = False
             break
-    
+
     return new_code
 
 def convert_strings_to_placeholders(lines):
