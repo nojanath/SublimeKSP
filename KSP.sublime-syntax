@@ -14,6 +14,22 @@ variables:
   macrotoken: '\#{1}{{varchars}}+\#{1}'
 
 contexts:
+  f-string:
+    - match: '<'
+      scope: operator.source.ksp
+      embed: scope:source.ksp
+      escape: "(?:([^->])|(>>))(>)(?=[^>])"
+      escape_captures:
+        2: entity.name.function.source.ksp
+        3: operator.source.ksp
+
+    - match: "'"
+      scope: string.quoted.single.source.ksp
+      pop: true
+
+    - match: '.'
+      scope: string.quoted.single.source.ksp
+
   main:
     - match: '\{\{'
       comment: Double curly bracket section comment (symbol list only)
@@ -21,6 +37,26 @@ contexts:
         - meta_scope: comment.block.source.ksp, section.comment.source.ksp
         - match: '\}\}'
           pop: true
+
+    - match: "(f)(')"
+      captures:
+        1: keyword.other.source.ksp
+        2: string.quoted.single.source.ksp
+      push: f-string
+
+    - match: 'run\s*<<'
+      embed: scope:source.python
+      scope: entity.name.function.source.ksp
+      escape: ">>"
+      escape_captures:
+        0: entity.name.function.source.ksp
+
+    - match: 'read\s*<<'
+      embed: scope:source.python
+      scope: entity.name.function.source.ksp
+      escape: ">>"
+      escape_captures:
+        0: entity.name.function.source.ksp
 
     - match: '\{'
       comment: Curly bracket block comment
@@ -732,4 +768,3 @@ contexts:
     - match: "[-+*/]"
       comment: Arithmetic Operator
       scope: arithmetic.source.ksp
-
