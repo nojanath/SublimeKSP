@@ -2102,6 +2102,7 @@ def open_nckp(lines, basedir):
 
                         if not ui_to_import:
                             utils.log_message("Note: No UI control declarations were found in %s!" % os.path.abspath(nckp_path))
+                            strip_import_nckp_function_from_source(lines)
 
                         for i, v in enumerate(ui_to_import):
                             variables.add(v.lower())
