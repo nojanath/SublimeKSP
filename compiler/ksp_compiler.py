@@ -466,7 +466,8 @@ def handlePython(code):
     run_re = re.compile(r"run\s*<<(?P<code>.+?)>>", re.DOTALL)
     read_re = re.compile(r"read\s*<<(?P<code>.+?)>>", re.DOTALL)
 
-    namespace = {'__builtins__': __builtins__, **globals()}
+    namespace = {'__builtins__': __builtins__}
+    namespace.update(globals())
 
     import textwrap
     def trimmed(s: str) -> str:
