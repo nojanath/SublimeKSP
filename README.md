@@ -27,7 +27,7 @@ To use features of SublimeKSP before official package releases:
 
  * If you already had SublimeKSP installed via Package Control, uninstall it before continuing further!
  * Locate Sublime Text's `Packages`folder by selecting `Preferences > Browse Packages` from the main menu
- * Clone SublimeKSP repository into this folder via Git (`git clone https://github.com/nojanath/SublimeKSP.git "KSP (Kontakt Script Processor"`)
+ * Clone SublimeKSP repository into this folder via Git (`git clone https://github.com/nojanath/SublimeKSP.git "KSP (Kontakt Script Processor)"`)
  * After pulling the latest changes (`git pull`), reload Sublime Text
  * If you wish to pull in latest changes without restarting Sublime Text, we recommend installing [Automatic​Package​Reloader](https://packagecontrol.io/packages/AutomaticPackageReloader)
 
