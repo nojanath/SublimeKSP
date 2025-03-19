@@ -144,7 +144,7 @@
 			<key>name</key>
 			<string>User function call</string>
 			<key>scope</key>
-			<string>meta.function-call -function.ksp</string>
+			<string>meta.function-call</string>
 			<key>settings</key>
 			<dict>
 				<key>foreground</key>
@@ -223,13 +223,15 @@
 		</dict>
 		<dict>
 			<key>name</key>
-			<string>Parentheses</string>
+			<string>Invalid Syntax</string>
 			<key>scope</key>
-			<string>parentheses -begin.source.ksp -end.source.ksp</string>
+			<string>invalid.illegal</string>
 			<key>settings</key>
 			<dict>
+				<key>fontStyle</key>
+				<string>bold italic</string>
 				<key>foreground</key>
-				<string>#D4D4D4</string>
+				<string>#f00</string>
 			</dict>
 		</dict>
 	</array>
