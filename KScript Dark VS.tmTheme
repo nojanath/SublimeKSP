@@ -76,7 +76,7 @@
 			<key>settings</key>
 			<dict>
 				<key>foreground</key>
-				<string>#963996</string>
+				<string>#9CDCFE</string>
 			</dict>
 		</dict>
 		<dict>
@@ -89,7 +89,7 @@
 				<key>fontStyle</key>
 				<string>italic</string>
 				<key>foreground</key>
-				<string>#939</string>
+				<string>#9CDCFE</string>
 			</dict>
 		</dict>
 		<dict>
@@ -102,7 +102,7 @@
 				<key>fontStyle</key>
 				<string></string>
 				<key>foreground</key>
-				<string>#C96</string>
+				<string>#4EC9B0</string>
 			</dict>
 		</dict>
 		<dict>
@@ -115,7 +115,7 @@
 				<key>fontStyle</key>
 				<string></string>
 				<key>foreground</key>
-				<string>#939</string>
+				<string>#4EC9B0</string>
 			</dict>
 		</dict>
 		<dict>
@@ -126,7 +126,7 @@
 			<key>settings</key>
 			<dict>
 				<key>foreground</key>
-				<string>#C9C</string>
+				<string>#4FC1FF</string>
 			</dict>
 		</dict>
 		<dict>
@@ -136,10 +136,8 @@
 			<string>entity.name.function</string>
 			<key>settings</key>
 			<dict>
-				<key>fontStyle</key>
-				<string>bold</string>
 				<key>foreground</key>
-				<string>#F60</string>
+				<string>#DCDCAA</string>
 			</dict>
 		</dict>
 		<dict>
@@ -149,10 +147,8 @@
 			<string>meta.function-call -function.ksp</string>
 			<key>settings</key>
 			<dict>
-				<key>fontStyle</key>
-				<string></string>
 				<key>foreground</key>
-				<string>#F60</string>
+				<string>#DCDCAA</string>
 			</dict>
 		</dict>
 		<dict>
@@ -163,7 +159,7 @@
 			<key>settings</key>
 			<dict>
 				<key>foreground</key>
-				<string>#A70</string>
+				<string>#C586C0</string>
 			</dict>
 		</dict>
 		<dict>
@@ -174,7 +170,7 @@
 			<key>settings</key>
 			<dict>
 				<key>foreground</key>
-				<string>#09C</string>
+				<string>#B5CEA8</string>
 			</dict>
 		</dict>
 		<dict>
@@ -187,7 +183,7 @@
 				<key>fontStyle</key>
 				<string></string>
 				<key>foreground</key>
-				<string>#966</string>
+				<string>#CE9178</string>
 			</dict>
 		</dict>
 		<dict>
@@ -200,7 +196,7 @@
 				<key>fontStyle</key>
 				<string></string>
 				<key>foreground</key>
-				<string>#966</string>
+				<string>#CE9178</string>
 			</dict>
 		</dict>
 		<dict>
@@ -211,7 +207,7 @@
 			<key>settings</key>
 			<dict>
 				<key>foreground</key>
-				<string>#074</string>
+				<string>#6A9955</string>
 			</dict>
 		</dict>
 		<dict>
@@ -222,7 +218,7 @@
 			<key>settings</key>
 			<dict>
 				<key>foreground</key>
-				<string>#888</string>
+				<string>#D4D4D4</string>
 			</dict>
 		</dict>
 		<dict>
@@ -233,7 +229,7 @@
 			<key>settings</key>
 			<dict>
 				<key>foreground</key>
-				<string>#888</string>
+				<string>#D4D4D4</string>
 			</dict>
 		</dict>
 	</array>
