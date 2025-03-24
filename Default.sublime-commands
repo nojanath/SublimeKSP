@@ -15,6 +15,7 @@
 		"caption": "SublimeKSP: Uncompress Selected Compiled Code",
 		"command": "ksp_uncompress_code"
 	},
+
 	{
 		"caption": "SublimeKSP: Play Sound When Compilation Finishes",
 		"command": "ksp_global_setting_toggle",
@@ -24,7 +25,15 @@
 			"default": false
 		}
 	},
-
+	{
+		"caption": "SublimeKSP: Write Log on Failed Compilation",
+		"command": "ksp_global_setting_toggle",
+		"args":
+		{
+			"setting": "ksp_write_log_on_fail",
+			"default": false
+		}
+	},
 
 	{
 		"command": "ksp_global_setting_toggle",
