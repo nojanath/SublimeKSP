@@ -25,12 +25,10 @@ import ksp_compiler_extras as comp_extras
 import ksp_builtins
 from ksp_parser import parse
 from taskfunc import taskfunc_code
-from collections import OrderedDict
 import hashlib
 import ply.lex as lex
 import time
 import json
-import copy
 import utils
 
 variable_prefixes = '$%@!?~'
@@ -94,7 +92,7 @@ varname_dot_re = re.compile(r'''
     \.                       # a literal dot
 ''', re.VERBOSE)
 
-compiler_options = '(remove_whitespace|compact_variables|combine_callbacks|extra_syntax_checks|optimize_code|extra_branch_optimization|add_compile_date|sanitize_exit_command)'
+compiler_options = '(remove_whitespace|compact_variables|combine_callbacks|extra_syntax_checks|optimize_code|extra_branch_optimization|add_compile_date|sanitize_exit_command|write_log_on_fail)'
 
 pragma_compile_with_re = re.compile(r'\{\s*\#pragma\s+compile_with\s+%s\s*\}' % compiler_options)
 pragma_compile_without_re = re.compile(r'\{\s*\#pragma\s+compile_without\s+%s\s*\}' % compiler_options)
@@ -218,8 +216,8 @@ class ParseException(ExceptionWithMessage):
             utils.disable_traceback()
 
         if line.calling_lines:
-            macro_chain = '\n'.join(['=>{}'.format(l.command.strip()) for l in line.calling_lines])
-            line_content = 'Macro traceback:\n{}'.format(macro_chain, str(line).strip())
+            macro_chain = '\n'.join(['=> {}'.format(l.command.strip()) for l in line.calling_lines])
+            line_content = 'Macro traceback:\n{}\n{}'.format(macro_chain, str(line).strip())
         else:
             line_content = str(line).strip()
 
@@ -646,7 +644,7 @@ def handle_conditional_lines(lines):
             clear_this_line = True
 
         if not clear_this_line and 'SET_CONDITION(' in line:
-            m = re.search('\((.+?)\)', line)
+            m = re.search('\\((.+?)\\)', line)
 
             if m:
                 cond = m.group(1).strip()
@@ -664,7 +662,7 @@ def handle_conditional_lines(lines):
                         clear_this_line = True
 
         if 'USE_CODE_IF' in line:
-            m = re.search('\((.+?)\)', line)
+            m = re.search('\\((.+?)\\)', line)
 
             if m:
                 cond = m.group(1).strip()
@@ -1147,7 +1145,7 @@ class ASTModifierNodesToNativeKSP(ASTModifierBase):
             local_varname = node.variable.identifier
 
             if local_varname.lower() in func.locals:
-                raise ksp_ast.ParseException(node.variable, "Local variable %d redeclared!" % local_varname)
+                raise ksp_ast.ParseException(node.variable, "Local variable {} redeclared!".format(local_varname))
 
             func.locals.add(local_varname.lower())
 
@@ -2143,6 +2141,7 @@ class KSPCompiler(object):
                  sanitize_exit_command          = False,
                  add_compiled_date_comment      = False,
                  force_compiler_arguments       = False,
+                 write_log_on_fail              = False,
                  compiled_code_tab_size         = 2):
 
         self.source = source
@@ -2155,6 +2154,7 @@ class KSPCompiler(object):
         self.combine_callbacks = combine_callbacks
         self.add_compiled_date_comment = add_compiled_date_comment
         self.force_compiler_arguments = force_compiler_arguments
+        self.write_log_on_fail = write_log_on_fail
         self.compiled_code_tab_size = compiled_code_tab_size
         self.extra_syntax_checks = extra_syntax_checks or optimize
 
@@ -2397,10 +2397,18 @@ class KSPCompiler(object):
         self.module.emit(emitter)
         self.compiled_code = buffer.getvalue()
 
-        # NOTE(Sam): Add a KSP comment at the beginning of the compiled script to display the time and date it was compiled on
+        lines = self.compiled_code.split('\n')
+
+        new_lines = []
         if self.add_compiled_date_comment:
             localtime = time.asctime( time.localtime(time.time()) )
-            self.compiled_code = "{ Compiled on " + localtime + " }\n" + self.compiled_code
+            new_lines.append("{ Compiled on " + localtime + " }")
+
+        init_block = False
+        for l in lines:
+            new_lines.append(l)
+
+        self.compiled_code = '\n'.join(new_lines)
 
     def uncompress_variable_names(self, compiled_code):
         def sub_func(match_obj):
@@ -2418,12 +2426,14 @@ class KSPCompiler(object):
 
         init_globals()
 
+        log = []
+
         try:
             used_functions = set()
             used_variables = set()
             var_assigns = {}
 
-            time_so_far = 0
+            tasks_executed = 0
 
             if self.abort_requested:
                 return False
@@ -2431,10 +2441,10 @@ class KSPCompiler(object):
             # do the code scanning and importing as a separate step in order to capture "compile_with" pragmas
             # so that we can override compiler options downstream
             if callback:
-                callback('scanning and importing code', time_so_far) # parameters are: description, percent done
+                callback('scanning and importing code', tasks_executed)
 
             self.do_imports_and_convert_to_line_objects()
-            time_so_far += 1
+            tasks_executed += 1
 
             # override compiler options through pragma directives
             # but only if --force command line option is not used
@@ -2462,68 +2472,72 @@ class KSPCompiler(object):
                         self.add_compiled_date_comment = value
                     if option == 'sanitize_exit_command':
                         self.sanitize_exit_command = value
+                    if option == 'write_log_on_fail':
+                        self.write_log_on_fail = value
 
             do_extra = self.extra_syntax_checks
             do_optim = do_extra and self.optimize
             do_abo = do_extra and self.additional_branch_optimization
             do_sanitize_exit = self.sanitize_exit_command
 
-            #      description                        function                                                                           condition     time-weight
+            #      description                        function                                                                                        condition
             tasks = [
-                 ('processing extensions',            lambda: self.extensions_with_macros(),                                             True,                   1),
+                 ('processing extensions',            lambda: self.extensions_with_macros(),                                                          True),
 
-                 ('pre-macro processes',              lambda: self.run_pre_macro_functions(),                                            True,                   1),
+                 ('pre-macro processes',              lambda: self.run_pre_macro_functions(),                                                         True),
 
-                 ('parsing macros',                   lambda: self.extract_macros(),                                                     True,                   1),
-                 ('expanding macros',                 lambda: self.expand_macros(),                                                      True,                   1),
+                 ('parsing macros',                   lambda: self.extract_macros(),                                                                  True),
+                 ('expanding macros',                 lambda: self.expand_macros(),                                                                   True),
 
-                 ('post-macro processes',             lambda: self.run_post_macro_functions(),                                           True,                   1),
+                 ('post-macro processes',             lambda: self.run_post_macro_functions(),                                                        True),
 
-                 ('sanitizing exit command',          lambda: self.run_sanitize_exit_command(),                                          do_sanitize_exit,       1),
-                 ('replacing string placeholders',    lambda: self.replace_string_placeholders(),                                        True,                   1),
-                 ('searching for nckp import',        lambda: self.search_for_nckp(),                                                    True,                   1),
-                 ('converting lines to code blocks',  lambda: self.convert_lines_to_code(),                                              True,                   1),
+                 ('sanitizing exit command',          lambda: self.run_sanitize_exit_command(),                                                       do_sanitize_exit),
+                 ('replacing string placeholders',    lambda: self.replace_string_placeholders(),                                                     True),
+                 ('searching for nckp import',        lambda: self.search_for_nckp(),                                                                 True),
+                 ('converting lines to code blocks',  lambda: self.convert_lines_to_code(),                                                           True),
 
-                 ('parsing code',                     lambda: self.parse_code(),                                                         True,                   1),
-                 ('combining callbacks',              lambda: ASTModifierCombineCallbacks(self.module, self.combine_callbacks),          True,                   1),
-                 ('modifying nodes to native KSP',    lambda: ASTModifierNodesToNativeKSP(self.module, self.lines),                      True,                   1),
-                 ('adding variable name prefixes',    lambda: ASTModifierFixPrefixesIncludingLocalVars(self.module),                     True,                   1),
-                 ('inlining functions',               lambda: ASTModifierFunctionExpander(self.module),                                  True,                   1),
-                 ('handling taskfuncs',               lambda: ASTModifierTaskfuncFunctionHandler(self.module),                           True,                   1),
-                 ('handling local variables',         lambda: self.sort_functions_and_insert_local_variables_into_on_init(),             True,                   1),
-                 ('adding variable name prefixes',    lambda: ASTModifierFixPrefixesAndFixControlPars(self.module),                      True,                   1),
-                 ('converting dots to underscores',   lambda: self.convert_dots_to_double_underscore(),                                  True,                   1),
+                 ('parsing code',                     lambda: self.parse_code(),                                                                      True),
+                 ('combining callbacks',              lambda: ASTModifierCombineCallbacks(self.module, self.combine_callbacks),                       True),
+                 ('modifying nodes to native KSP',    lambda: ASTModifierNodesToNativeKSP(self.module, self.lines),                                   True),
+                 ('adding variable name prefixes',    lambda: ASTModifierFixPrefixesIncludingLocalVars(self.module),                                  True),
+                 ('inlining functions',               lambda: ASTModifierFunctionExpander(self.module),                                               True),
+                 ('handling taskfuncs',               lambda: ASTModifierTaskfuncFunctionHandler(self.module),                                        True),
+                 ('handling local variables',         lambda: self.sort_functions_and_insert_local_variables_into_on_init(),                          True),
+                 ('adding variable name prefixes',    lambda: ASTModifierFixPrefixesAndFixControlPars(self.module),                                   True),
+                 ('converting dots to underscores',   lambda: self.convert_dots_to_double_underscore(),                                               True),
 
-                 ('initializing extra syntax checks', lambda: self.init_extra_syntax_checks(),                                           do_extra,               1),
-                 ('checking expression types',        lambda: comp_extras.ASTVisitorDetermineExpressionTypes(self.module, functions),    do_extra,               1),
-                 ('checking statement types',         lambda: comp_extras.ASTVisitorCheckStatementExprTypes(self.module),                do_extra,               1),
-                 ('removing unused branches',         lambda: comp_extras.ASTModifierRemoveUnusedBranches(self.module),                  do_abo,                 1),
-                 ('checking declarations',            lambda: comp_extras.ASTVisitorCheckDeclarations(self.module),                      do_extra,               1),
-                 ('simplying expressions',            lambda: comp_extras.ASTModifierSimplifyExpressions(self.module, True),             do_optim,               1),
-                 ('removing unused branches',         lambda: comp_extras.ASTModifierRemoveUnusedBranches(self.module),                  do_optim,               1),
-                 ('finding unused functions',         lambda: comp_extras.ASTVisitorFindUsedFunctions(self.module, used_functions),      do_optim,               1),
-                 ('removing unused functions',        lambda: comp_extras.ASTModifierRemoveUnusedFunctions(self.module, used_functions), do_optim,               1),
-                 ('finding unused variables',         lambda: comp_extras.ASTVisitorFindUsedVariables(self.module, used_variables, var_assigns),      do_optim,               1),
-                 ('removing unused variables',        lambda: comp_extras.ASTModifierRemoveUnusedVariables(self.module, used_variables, var_assigns), do_optim,               1),
+                 ('initializing extra syntax checks', lambda: self.init_extra_syntax_checks(),                                                        do_extra),
+                 ('checking expression types',        lambda: comp_extras.ASTVisitorDetermineExpressionTypes(self.module, functions),                 do_extra),
+                 ('checking statement types',         lambda: comp_extras.ASTVisitorCheckStatementExprTypes(self.module),                             do_extra),
+                 ('removing unused branches',         lambda: comp_extras.ASTModifierRemoveUnusedBranches(self.module),                               do_abo),
+                 ('checking declarations',            lambda: comp_extras.ASTVisitorCheckDeclarations(self.module),                                   do_extra),
+                 ('simplying expressions',            lambda: comp_extras.ASTModifierSimplifyExpressions(self.module, True),                          do_optim),
+                 ('removing unused branches',         lambda: comp_extras.ASTModifierRemoveUnusedBranches(self.module),                               do_optim),
+                 ('finding unused functions',         lambda: comp_extras.ASTVisitorFindUsedFunctions(self.module, used_functions),                   do_optim),
+                 ('removing unused functions',        lambda: comp_extras.ASTModifierRemoveUnusedFunctions(self.module, used_functions),              do_optim),
+                 ('finding unused variables',         lambda: comp_extras.ASTVisitorFindUsedVariables(self.module, used_variables, var_assigns),      do_optim),
+                 ('removing unused variables',        lambda: comp_extras.ASTModifierRemoveUnusedVariables(self.module, used_variables, var_assigns), do_optim),
 
-                 ('compacting variable names',        self.compact_names,                                                                self.compact_variables, 1),
-                 ('generating code',                  self.generate_compiled_code,                                                       True,                   1),
+                 ('compacting variable names',        self.compact_names,                                                                             self.compact_variables),
+                 ('generating code',                  self.generate_compiled_code,                                                                    True),
             ]
 
             # keep only tasks where the execution-condition is true
-            tasks = [(desc, func, time) for (desc, func, condition, time) in tasks if condition]
+            tasks = [(desc, func) for (desc, func, condition) in tasks if condition]
+            total_tasks = float(len(tasks))
 
-            total_time = float(sum(t[-1] for t in tasks))
-
-            for (desc, func, time) in tasks:
+            for (desc, func) in tasks:
                 if self.abort_requested:
                     return False
 
                 if callback:
-                    callback(desc, 100 * time_so_far / total_time) # parameters are: description, percent done
+                    callback(desc, 100 * tasks_executed / total_tasks)
+
+                    log = [l.command for l in self.lines]
 
                 func()
-                time_so_far += time
+
+                tasks_executed += 1
 
             return True
 
@@ -2541,6 +2555,11 @@ class KSPCompiler(object):
                 line = self.lines[line_number]
 
             message = '\n'.join(messages)
+
+            if self.write_log_on_fail and self.basedir:
+                with open(os.path.join(self.basedir, '__compile_fail.log'), 'w') as out:
+                    for l in log:
+                        out.write('\n'.join(log))
 
             raise ParseException(line, message)
 
@@ -2622,6 +2641,9 @@ if __name__ == "__main__":
     arg_parser.add_argument('-x', '--sanitize_exit_command',
                             dest = 'sanitize_exit_command', action = 'store_true', default = False,
                             help = 'adds a dummy no-op command before every exit function call')
+    arg_parser.add_argument('-l', '--log',
+                            dest = 'write_log_on_fail', action = 'store_true', default = False,
+                            help = 'dumps the compiler output to a log file on failed compilation')
     arg_parser.add_argument('source_file', type = FileType('r', encoding = 'latin-1'))
     arg_parser.add_argument('output_file', nargs = '?')
 
@@ -2653,6 +2675,7 @@ if __name__ == "__main__":
                            sanitize_exit_command          = args.sanitize_exit_command,
                            add_compiled_date_comment      = args.add_compile_date,
                            force_compiler_arguments       = args.force_compiler_arguments,
+                           write_log_on_fail              = args.write_log_on_fail,
                            compiled_code_tab_size         = args.num_spaces)
 
     compiler.compile(callback = utils.compile_on_progress)

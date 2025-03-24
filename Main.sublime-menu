@@ -55,12 +55,23 @@
 						"mnemonic": "U",
 						"id": "uncompress"
 					},
+
+					{"caption": "-"}, //separator
+
 					{
 						"command": "ksp_global_setting_toggle",
 						"args": {"setting": "ksp_play_sound", "default": false},
 						"caption": "Play Sound When Compilation Finishes",
 						"mnemonic": "S",
 						"id": "play_sound",
+						"checkbox": true
+					},
+					{
+						"command": "ksp_global_setting_toggle",
+						"args": {"setting": "ksp_write_log_on_fail", "default": false},
+						"caption": "Write Log on Failed Compilation",
+						"mnemonic": "W",
+						"id": "fail_log",
 						"checkbox": true
 					},
 

@@ -195,6 +195,7 @@ class CompileKspThread(threading.Thread):
             add_compiled_date_comment = settings.get('ksp_add_compiled_date', True)
             should_play_sound = settings.get('ksp_play_sound', False)
             compiled_code_tab_size = settings.get('ksp_compiled_code_tab_size', 2)
+            write_log_on_fail = settings.get('ksp_write_log_on_fail', False)
 
             error_msg = None
             error_lineno = None
@@ -231,6 +232,7 @@ class CompileKspThread(threading.Thread):
                                                          additional_branch_optimization = check and additional_branch_optimization,
                                                          sanitize_exit_command          = sanitize_exit_command,
                                                          add_compiled_date_comment      = add_compiled_date_comment,
+                                                         write_log_on_fail              = write_log_on_fail,
                                                          compiled_code_tab_size         = compiled_code_tab_size)
 
                 if self.compiler.compile(callback = utils.compile_on_progress):
@@ -620,6 +622,7 @@ class KspGlobalSettingToggleCommand(sublime_plugin.ApplicationCommand):
         'ksp_comment_inline_functions'             : 'Insert Comments When Expanding Functions',
         'ksp_play_sound'                           : 'Play Sound When Compilation Finishes',
         'ksp_add_completions_for_vanilla_builtins' : 'Enable Completions for Vanilla KSP Built-ins',
+        'ksp_write_log_on_fail'                    : 'Write Log on Failed Compilation',
         'ksp_compiled_code_tab_size'               : 'Indent Size in Compiled Code',
     }
 
@@ -845,6 +848,7 @@ class KspFixLineEndingsAndSetSyntax(sublime_plugin.EventListener):
                                              (r'define\s+%s\s*(?:\((.+)\))?\s*:=(.+)' % varRe, 1),
                                              (r'import\s*[\"\']', 1),
                                              (r'instpers', 2),
+                                             (r'macro\s+([a-zA-Z0-9_]+(\.[a-zA-Z_0-9.]+)*)', 2),
                                              (r'make_perfview', 3),
                                              (r'make_persistent', 2),
                                              (r'make_instr', 2),

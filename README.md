@@ -61,6 +61,7 @@ optional arguments:
   -e, --extra_syntax_checks                additional syntax checks during compilation
   -o, --optimize                           optimize the compiled code
   -b, --extra_branch_optimization          adds branch optimization checks earlier in compile process, allowing define constant based branching etc.
+  -l, --log                                dumps the compiler output to a log file on failed compilation
   -i NUM_SPACES, --indent-size NUM_SPACES  specifies how many spaces is used for indentation, if --compact compiler option is not used
   -t, --add_compile_date                   adds the date and time comment atop the compiled code
   -x, --sanitize_exit_command              adds a dummy no-op command before every exit function call
