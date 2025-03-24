@@ -184,6 +184,8 @@ class StructMember(object):
 
         if self.prefix == "@":
             self.prefix = "!"
+        elif self.prefix == "~":
+            self.prefix = "?"
 
     def addNamePrefix(self, namePrefix):
         ''' Add the prefix to the member with a dot operator. '''
