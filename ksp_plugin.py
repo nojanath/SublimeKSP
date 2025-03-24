@@ -813,15 +813,18 @@ class KspDocsCommand(sublime_plugin.ApplicationCommand):
 
 class KspFixLineEndingsAndSetSyntax(sublime_plugin.EventListener):
     def is_probably_ksp_file(self, view):
+        passthrough_exts = ['.ksp', '.b3s', '.nbsc']
+        detect_syntax_exts = ['.txt', '.log']
+
         fn = view.file_name()
         ext = ''
 
         if fn:
             ext = os.path.splitext(fn)[1].lower()
 
-        if ext == '.ksp' or ext == '.b3s' or ext == '.nbsc':
+        if ext in passthrough_exts:
             return True
-        elif ext == '.txt' or ext == '':
+        elif ext in detect_syntax_exts or not fn:
             code = view.substr(sublime.Region(0, 5000))
             varRe = preprocessor_plugins.variableNameRe
 
