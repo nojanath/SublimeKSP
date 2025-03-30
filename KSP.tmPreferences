@@ -5,7 +5,7 @@
 	<key>name</key>
 	<string>Miscellaneous</string>
 	<key>scope</key>
-	<string>source.ksp</string>
+	<string>source.sksp</string>
 	<key>settings</key>
 	<dict>
 		<key>highlightPairs</key>
