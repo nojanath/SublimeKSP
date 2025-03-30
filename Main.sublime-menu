@@ -18,7 +18,7 @@
 						[{
 							"key": "selector",
 							"operator": "equal",
-							"operand": "source.ksp"
+							"operand": "source.sksp"
 						}],
 						"caption": "Compile",
 						"mnemonic": "C",
@@ -30,7 +30,7 @@
 						[{
 							"key": "selector",
 							"operator": "equal",
-							"operand": "source.ksp"
+							"operand": "source.sksp"
 						}],
 						"caption": "Compile All Open Scripts With Defined Output Path",
 						"mnemonic": "p",
@@ -42,7 +42,7 @@
 						[{
 							"key": "selector",
 							"operator": "equal",
-							"operand": "source.ksp"
+							"operand": "source.sksp"
 						}],
 						"caption": "Recompile Last Script",
 						"mnemonic": "L",

@@ -7,97 +7,97 @@ name: KSP
 file_extensions:
   - ksp
 
-scope: source.ksp
+scope: source.sksp
 
 contexts:
   f-string:
     - match: '<'
-      scope: operator.source.ksp
-      embed: scope:source.ksp
+      scope: operator.source.sksp
+      embed: scope:source.sksp
       escape: "(?:([^->])|(>>))(>)(?=[^>])"
       escape_captures:
-        2: entity.name.function.source.ksp
-        3: operator.source.ksp
+        2: entity.name.function.source.sksp
+        3: operator.source.sksp
 
     - match: "'"
-      scope: string.quoted.single.source.ksp
+      scope: string.quoted.single.source.sksp
       pop: true
 
     - match: '.'
-      scope: string.quoted.single.source.ksp
+      scope: string.quoted.single.source.sksp
 
   main:
     - match: '\{\{'
       comment: Double curly bracket section comment (symbol list only)
       push:
-        - meta_scope: comment.block.source.ksp, section.comment.source.ksp
+        - meta_scope: comment.block.source.sksp, section.comment.source.sksp
         - match: '\}\}'
           pop: true
 
     - match: "(f)(')"
       captures:
-        1: keyword.other.source.ksp
-        2: string.quoted.single.source.ksp
+        1: keyword.other.source.sksp
+        2: string.quoted.single.source.sksp
       push: f-string
 
     - match: 'run\s*<<'
       embed: scope:source.python
-      scope: entity.name.function.source.ksp
+      scope: entity.name.function.source.sksp
       escape: ">>"
       escape_captures:
-        0: entity.name.function.source.ksp
+        0: entity.name.function.source.sksp
 
     - match: 'read\s*<<'
       embed: scope:source.python
-      scope: entity.name.function.source.ksp
+      scope: entity.name.function.source.sksp
       escape: ">>"
       escape_captures:
-        0: entity.name.function.source.ksp
+        0: entity.name.function.source.sksp
 
     - match: '\{'
       comment: Curly bracket block comment
       push:
-        - meta_scope: comment.block.source.ksp
+        - meta_scope: comment.block.source.sksp
         - match: '\}'
           pop: true
 
     - match: '\(\*'
       comment: Old Pascal-style block comment
       push:
-        - meta_scope: comment.block.source.ksp
+        - meta_scope: comment.block.source.sksp
         - match: '\*\)'
           pop: true
 
     - match: '/\*'
       comment: C-style block comment
       push:
-        - meta_scope: comment.block.source.ksp
+        - meta_scope: comment.block.source.sksp
         - match: '\*/'
           pop: true
 
     - match: //
       comment: Comment
       push:
-        - meta_scope: comment.source.ksp
+        - meta_scope: comment.source.sksp
         - match: \n|\r
           pop: true
 
     - match: '\band\b|\bor\b|\bxor\b|\bnot\b|[.]and[.]|[.]or[.]|[.]xor[.]|[.]not[.]'
       comment: Control flow and boolean operator
-      scope: keyword.operator.source.ksp
+      scope: keyword.operator.source.sksp
 
     - match: '\#{1}{{varchars}}+\#{1}'
       comment: Macro replacement token
-      scope: variable.parameter.source.ksp
+      scope: variable.parameter.source.sksp
 
     - match: '(on\s+ui_control)\s*(\()\s*([$%@?]?[\w#.]+)\s*(\))'
       comment: Single UI control callback
       captures:
-        0: entity.name.callback.source.ksp
-        1: keyword.other.source.ksp
-        2: punctuation.source.ksp
-        3: variable.source.ksp
-        4: punctuation.source.ksp
+        0: entity.name.callback.source.sksp
+        1: keyword.other.source.sksp
+        2: punctuation.source.sksp
+        3: variable.source.sksp
+        4: punctuation.source.sksp
 
     - match: '(?x)
                \b(on\s+
@@ -117,20 +117,20 @@ contexts:
                  on_pgs_changed|on_post_init|on_release)
                \b'
       comment: Callback start
-      scope: keyword.other.source.ksp entity.name.callback.source.ksp
+      scope: keyword.other.source.sksp entity.name.callback.source.sksp
 
     - match: \b(end\s+on|end_on)\b
       comment: Callback end
-      scope: keyword.other.source.ksp
+      scope: keyword.other.source.sksp
 
     - match: '\)\s*(on)'
       comment: Literate on
       captures:
-        1: keyword.other.source.ksp
+        1: keyword.other.source.sksp
 
     - match: '(\s+-|(?<=[=,{}()\[\]])-)?((0x)[0-9a-fA-F]*|[0-9][0-9a-fA-F]*[hH]|b[01]+|[01]+b|(\d+\.\d+|\.\d+|\d+\.|\d+)([eE][+-]?\d+)?)\b'
       comment: Numerical constant
-      scope: constant.numeric.source.ksp
+      scope: constant.numeric.source.sksp
 
     - match: "[,.()\\[\\]]"
       comment: Punctuation and brackets
@@ -139,69 +139,69 @@ contexts:
     - match: '{{builtin_param_shorthands}}'
       comment: Control and event parameter shorthand
       captures:
-        1: operator.source.ksp
-        2: support.variable.source.ksp
+        1: operator.source.sksp
+        2: support.variable.source.sksp
 
     - match: (?!#)\b(if|to|downto|else|for|while|select|case|continue)\b(?!#)
       comment: Control keywords
-      scope: keyword.control.source.ksp
+      scope: keyword.control.source.sksp
 
     - match: '((function|macro|taskfunc) +([\w.#]+)\s*)\(?'
       comment: Function definition
       captures:
-        1: meta.function.source.ksp
-        2: keyword.other.source.ksp
-        3: entity.name.function.source.ksp
+        1: meta.function.source.sksp
+        2: keyword.other.source.sksp
+        3: entity.name.function.source.sksp
       push:
-        - meta_scope: function.ksp
+        - meta_scope: function.sksp
         - match: \)|$
           pop: true
         - match: 'override'
-          scope: keyword.other.source.ksp
+          scope: keyword.other.source.sksp
         - match: 'out\s+|var\s+'
-          scope: keyword.other.source.ksp
+          scope: keyword.other.source.sksp
           comment: Task function keywords
         - match: '[\w#.]+'
-          scope: variable.parameter.function.source.ksp
+          scope: variable.parameter.function.source.sksp
         - include: main
 
     - match: '^\s*(const +)({{varchars}}+)'
       comment: Const block definition
-      scope: constblock.ksp
+      scope: constblock.sksp
       captures:
-        0: meta.constblock.source.ksp
-        1: keyword.other.source.ksp
-        2: entity.name.type.source.ksp
+        0: meta.constblock.source.sksp
+        1: keyword.other.source.sksp
+        2: entity.name.type.source.sksp
 
     - match: '^\s*(family +)({{varchars}}+)'
       comment: Family definition
-      scope: family.ksp
+      scope: family.sksp
       captures:
-        0: meta.family.source.ksp
-        1: keyword.other.source.ksp
-        2: entity.name.type.source.ksp
+        0: meta.family.source.sksp
+        1: keyword.other.source.sksp
+        2: entity.name.type.source.sksp
 
     - match: '^\s*(list +)({{varchars}}+)'
       comment: List definition
-      scope: list.ksp
+      scope: list.sksp
       captures:
-        0: meta.list.source.ksp
-        1: keyword.other.source.ksp
-        2: entity.name.type.source.ksp
+        0: meta.list.source.sksp
+        1: keyword.other.source.sksp
+        2: entity.name.type.source.sksp
 
     - match: '^\s*(struct +)({{varchars}}+)'
       comment: Struct definition
-      scope: struct.ksp
+      scope: struct.sksp
       captures:
-        0: meta.struct.source.ksp
-        1: keyword.other.source.ksp
-        2: entity.name.type.source.ksp
+        0: meta.struct.source.sksp
+        1: keyword.other.source.sksp
+        2: entity.name.type.source.sksp
 
     - match: '\b(call) +({{varchars}}+)?'
       comment: Function call using 'call'
       captures:
-        1: keyword.other.source.ksp
-        2: meta.function-call.source.ksp
+        1: keyword.other.source.sksp
+        2: meta.function-call.source.sksp
 
     - match: '(?x)
               (declare|define)\s+
@@ -227,16 +227,16 @@ contexts:
               (({{varchars}}+)?(\#(.+?)\#)?({{varchars}}+)?)\s*\('
       comment: Variable declaration
       captures:
-        1: keyword.other.source.ksp
-        2: keyword.other.source.ksp
-        3: keyword.other.source.ksp
-        4: keyword.other.source.ksp
-        5: keyword.other.source.ksp
-        6: keyword.other.source.ksp
-        8: variable.source.ksp
-        9: operator.source.ksp
-        10: variable.source.ksp
-        11: variable.source.ksp
+        1: keyword.other.source.sksp
+        2: keyword.other.source.sksp
+        3: keyword.other.source.sksp
+        4: keyword.other.source.sksp
+        5: keyword.other.source.sksp
+        6: keyword.other.source.sksp
+        8: variable.source.sksp
+        9: operator.source.sksp
+        10: variable.source.sksp
+        11: variable.source.sksp
       push:
         - match: \)|$
           pop: true
@@ -244,50 +244,50 @@ contexts:
 
     - match: '(?!#)\b(struct|define|literals|on|(inst)?pers|read|list|call|step|function|taskfunc|macro|mod|declare|const|polyphonic|end|local|global|family|import|as|property|out|override|ui_(label|button|switch|slider|menu|value_edit|waveform|wavetable|knob|table|xy|text_edit|level_meter|file_selector|panel|mouse_area))\b(?!#)'
       comment: Keywords
-      scope: keyword.other.source.ksp
+      scope: keyword.other.source.sksp
 
     - match: '"(?:[^"\\]|\\.)*"'
       comment: Double-quoted string
-      scope: string.quoted.double.source.ksp
+      scope: string.quoted.double.source.sksp
 
     - match: '(?:f)?''(?:[^''\\]|\\.)*'''
       comment: Single-quoted string
-      scope: string.quoted.single.source.ksp
+      scope: string.quoted.single.source.sksp
 
     - match: '{{builtin_consts_and_vars}}'
       comment: Built-in variable or constant
-      scope: support.variable.source.ksp
+      scope: support.variable.source.sksp
 
     - match: '{{builtin_functions}}'
       comment: Built-in function
-      scope: support.function.source.ksp
+      scope: support.function.source.sksp
 
     - match: '({{varchars}}*)\s*(\()'
       comment: Function call
       captures:
-        1: meta.function-call.source.ksp meta.function-name
-        2: meta.function-call.source.ksp punctuation.definition.arguments.begin.source.ksp
+        1: meta.function-call.source.sksp meta.function-name
+        2: meta.function-call.source.sksp punctuation.definition.arguments.begin.source.sksp
       push:
         - match: (\))|$
           captures:
-            1: meta.function-call.source.ksp punctuation.definition.arguments.end.source.ksp
+            1: meta.function-call.source.sksp punctuation.definition.arguments.end.source.sksp
           pop: true
         - include: main
 
     - match: '(\b|[~?$%!@&]){{varchars}}+|\b\d+[A-Za-z_]\w*\b'
       comment: Identifier
-      scope: variable.source.ksp
+      scope: variable.source.sksp
 
     - match: '[:+]=|[=][+]|&|<=|>=|<|>|#|=|->|\.\.\.'
       comment: Operator
-      scope: operator.source.ksp
+      scope: operator.source.sksp
 
     - match: "[-+*/]"
       comment: Arithmetic Operator
-      scope: arithmetic.source.ksp
+      scope: arithmetic.source.sksp
 
 variables:
   varchars: '[\w.]'
-  builtin_consts_and_vars: '(\$)?\b(?:E(?:N(?:GINE_(?:PAR_(?:S(?:E(?:Q_(?:H(?:F_(?:BELL|FREQ|GAIN)|MF_(?:FREQ|GAIN|Q)|P(?:_FREQ)?)|L(?:F_(?:BELL|FREQ|GAIN)|MF_(?:FREQ|GAIN|Q)|P(?:_FREQ)?))|ND(?:LEVEL_(?:SMOOTHED_[01234567]|0|1|2|3|4|5|6|7)|_EFFECT_(?:OUTPUT_GAIN|DRY_LEVEL|BYPASS|TYPE)))|T(?:ART_CRITERIA_(?:C(?:C_M(?:AX|IN)|YCLE_CLASS|ONTROLLER)|S(?:LICE_IDX|EQ_ONLY)|KEY_M(?:AX|IN)|NEXT_CRIT|ZONE_IDX|MODE)|E(?:REO(?:TUNE_(?:SP(?:READ|LIT)|DRIFT|MIX)|_P(?:SEUDO|AN))?|PSEQ_(?:STEP_VALUE|NUM_STEPS|ONESHOT)))|U(?:PERGT_(?:C(?:HA(?:R(?:ACTER|_MODE)|NNEL_LINK_MODE)|OMPRESS)|SAT(?:URATION|_MODE)|HPF_MODE|RELEASE|ATTACK|TRIM|MIX)|STAIN)|F100_(?:O(?:VERDRIVE|D_GAIN)|M(?:ASTER|ONO|ID)|B(?:RIGHT|ASS)|NORMAL_GAIN|PRESENCE|CRUNCH|TREBLE|DEPTH)|K(?:DLX_(?:M(?:O(?:DE|NO)|ID)|T(?:REBLE|ONE)|DRIVE|BASS)|_(?:B(?:RIGHT|ASS)|DRIVE|TONE|MIX))|P(?:_(?:OFFSET_(?:DISTANCE|AZIMUTH|X|Y)|DIVERGENCE|LFE_VOLUME|SIZE)|EED(?:_UNIT)?)|COMP_(?:R(?:ELEASE|ATIO)|M(?:AKEUP|IX)|THRESHOLD|ATTACK|LINK)|LICE_(?:RELEASE|ATTACK)|1200_FILTER_MODE|HAPE(?:_TYPE)?|OURCE_MODE|MOOTH)|R(?:DL_(?:D(?:UCKING_(?:RELEASE|AMOUNT|SENSE)|E(?:NSE|PTH))|S(?:ATURATION|HUFFLE|TEREO|IZE)|T(?:IME(?:_UNIT)?|APEAGE|YPE)|F(?:EE(?:DBACK|L)|LUTTER)|P(?:INGPONG(?:_FLIP)?|AN)|L(?:R_OFFSET|OWCUT)|A(?:CCENT|MOUNT)|MODULATION|BBDTYPE|HIGHCUT|QUALITY|NOISE|WIDTH|RATE)|A(?:UM_(?:D(?:IFFUSION|AMPING|ECAY)|F(?:EEDBACK|REEZE)|PREDELAY(?:_UNIT)?|R(?:EVERB|ATE)|S(?:PARSE|IZE)|LOWSHELF|HIGHCUT|TYPE|MOD)|TIO)|V(?:2_(?:D(?:AMPING|IFF)|S(?:TEREO|IZE)|T(?:IME|YPE)|LOWSHELF|PREDELAY|HIGHCUT|MOD)|_(?:S(?:TEREO|IZE)|PREDELAY|DAMPING|COLOUR))|INGMOD_(?:LFO_(?:RATE(?:_UNIT)?|AMOUNT|WAVE)|F(?:AST_MODE|REQUENCY|M)|EDGE|RING)|G_(?:INVERT_GRAINS|FORWARD|REVERSE|GRAIN|PITCH|SPEED|MIX)|T_(?:ACCEL_(?:HI|LO)|DISTANCE|BALANCE|SPEED|MIX)|E(?:LEASE(?:_(?:TRIGGER|UNIT))?|SONANCE))|F(?:L(?:AIR_(?:D(?:AMPING|ETUNE)|RATE(?:_UNIT)?|INVERT_PHASE|M(?:ODE|IX)|FEEDBACK|SCANMODE|AMOUNT|OFFSET|VOICES|CHORD|PITCH|WIDTH)|EXENV_(?:STAGE_(?:LEVEL|SLOPE|TIME)|LOOP(?:_(?:START|END))?|NUM_STAGES|ONESHOT)|_(?:SPEED(?:_UNIT)?|FEEDBACK|COLOR|DEPTH|PHASE))|RE(?:AK_(?:F(?:REQUENCY|EEDBACK)|C(?:ARRIER|ONTOUR)|BP_F(?:ILTER|REQ)|WID(?:E_RANGE|TH)|T(?:UNING|YPE)|M(?:ODE|IX)|HARMONICS|ANTIFOLD|RELEASE|STEREO|DEMOD|GATE)|Q(?:UENCY|1|2|3))|COMP_(?:R(?:ELEASE|ATIO)|M(?:AKEUP|IX)|HQ_MODE|ATTACK|INPUT|LINK)|ILTER_(?:LADDER_HQ|SHIFT[BC]|TYPE[ABC]|BYP[ABC]|RES[BC]|GAIN)|ORMANT(?:_(?:S(?:H(?:ARP|IFT)|IZE)|TALK))?|UZZ_(?:AMOUNT|TREBLE|BASS|MONO))|B(?:A(?:SS(?:PRO_(?:G(?:EQ(?:_(?:1(?:0K|80|K)|VOLUME|4[0K]|300|500|2K|90))?|AIN)|M(?:ID(?:FREQ)?|ASTER|ONO)|B(?:RIGHT|ASS)|ULTRA(?:HI|LO)|TREBLE|DRIVE)|INVADER_(?:M(?:ID_CONTOUR|ASTER|ONO)|HI_(?:BOOST|MID)|LO_(?:CUT|MID)|B(?:OOST|ASS)|TREBLE|VOLUME))|NDWIDTH)|I(?:T(?:E_(?:P(?:OSTFILTER|REFILTER)|D(?:C_QUANT|ITHER)|FREQUENCY|SATURATE|CRUNCH|EXPAND|JITTER|BITS|HPF|MIX)|S)|GFUZZ_(?:T(?:REBLE|ONE)|SUSTAIN|BASS|MONO))|EAT(?:MASHER_(?:R(?:EVERSE|OTATE)|M(?:ASH|IX)|LENGTH|GATE|WRAP)|SLICER_(?:S(?:LICE|TYLE)|PATTERN|TWOBARS|BUZZ|GATE|MIX))|W[123]|REAK)|T(?:DL_(?:PREDELAY_(?:L(?:_UNIT)?|R(?:_UNIT)?)|TIME_(?:L(?:_UNIT)?|R(?:_UNIT)?)|CROSS_FEEDBACK|FEEDBACK_[LR]|LEVEL_[LR]|WIDTH)|R(?:A(?:NS(?:LIM_(?:THRESHOLD|CEILING|RELEASE)|IENT_SIZE)|CKING)|_(?:S(?:USTAIN|MOOTH)|ATTACK|INPUT))|S_(?:S(?:TRETCH|IZE)|TWOBARS|AMOUNT|GRAIN|KEY|MIX)|W_(?:B(?:RIGHT|ASS)|M(?:ONO|ID)|TREBLE|VOLUME)|P_(?:HF_ROLLOFF|QUALITY|WARMTH|GAIN)|M(?:PRO_KEEP_FORMANTS|_LEGATO)|HRESHOLD|UNE)|P(?:H(?:AS(?:IS_(?:INVERT_(?:MOD_MIX|PHASE)|S(?:PREAD|TEREO)|M(?:OD_MIX|IX)|RATE(?:_UNIT)?|FEEDBACK|NOTCHES|AMOUNT|CENTER|ULTRA)|E_INVERT)|_(?:SPEED(?:_UNIT)?|FEEDBACK|DEPTH|PHASE))|SYDL_(?:REVERSE(?:_STEREO)?|DETUNE(?:_STEREO)?|CROSS_FEEDBACK|TIME(?:_UNIT)?|LR_OFFSET|FEEDBACK|PITCH)|R_(?:LOWSHELF|PREDELAY|HIDAMP|STEREO|DECAY)|OST_FX_SLOT|AN)|C(?:H(?:ORAL_(?:INVERT_PHASE|M(?:ODE|IX)|FEEDBACK|SCATTER|AMOUNT|VOICES|DELAY|WIDTH|RATE)|_(?:SPEED(?:_UNIT)?|DEPTH|PHASE))|T_(?:T(?:REBLE|ONE)|BA(?:LLS|SS)|DISTORTION|FILTER|VOLUME|MONO)|S_(?:L(?:EVEL|OW)|DISTORTION|HIGH|MONO)|OMP_(?:ATTACK|DECAY|LINK|TYPE)|B_(?:TREBLE|BASS|SIZE|AIR)|W_(?:PEDAL|MONO)|ABINET_TYPE|UTOFF)|E(?:PP_(?:TREMOLO_(?:RATE(?:_UNIT)?|W(?:IDTH|AVE)|AMOUNT|MODE)|EQ_(?:M(?:ODE|ID)|TREBLE|BASS)|DRIVE(?:_MODE)?|PASSIVE_BASS|MONO)|NV(?:F_(?:A(?:DAPTION|TTACK)|GAIN_BOOST|RELEASE)|_(?:DBD_EASY|AHD)|ELOPE_ORDER)|X(?:P_FILTER_(?:AMOUNT|MORPH)|TMOD_INTENSITY)|FFECT_(?:SUBTYPE|BYPASS|TYPE))|D(?:I(?:RT_(?:B(?:IAS[AB]|LEND)|M(?:ODE[AB]|IX)|AMOUNT[AB]|SAFETY[AB]|DRIVE[AB]|TILT[AB]|ROUTING)|STORTION_TYPE)|S_(?:T(?:REBLE|ONE)|M(?:ONO|ID)|VOLUME|DRIVE|BASS)|L_(?:TIME(?:_UNIT)?|FEEDBACK|DAMPING|PAN)|ECAY(?:1(?:_UNIT)?|2(?:_UNIT)?|_UNIT)?|AMPING|RIVE)|I(?:RC_(?:FREQ_(?:HIGHPASS_(?:ER|LR)|LOWPASS_(?:ER|LR))|LENGTH_RATIO_(?:ER|LR)|ER_LR_BOUNDARY|AUTO_GAIN|PREDELAY|REVERSE)|N(?:TMOD_(?:FREQUENCY(?:_UNIT)?|PULSEWIDTH|INTENSITY|RETRIGGER|SUBTYPE|BYPASS|TYPE)|SERT_EFFECT_OUTPUT_GAIN))|W(?:T_(?:MOD_(?:T(?:UNE(?:_UNIT)?|YPE)|AMOUNT|WAVE)|P(?:HASE(?:_RAND)?|OSITION)|FORM(?:2(?:_MODE)?|_MODE)?|INHARMONIC(?:_MODE)?|QUALITY)|OWFLUTTER_(?:S(?:ATURATION|CRAPE|TEREO|PEED)|FLUTTER|GATE|AGE|MIX|WOW))|V(?:5_(?:P(?:RE(?:GAIN(?:RHYTHM|LEAD)|SENCE)|OSTGAIN)|B(?:RIGHT|ASS)|LEADCHANNEL|M(?:ONO|ID)|RESONANCE|CRUNCH|HIGAIN|TREBLE)|C_(?:BLEND|COLOR|DEPTH|WIDTH|RATE|MIX)|O(?:ICE_GROUP|LUME))|G(?:A(?:TER_(?:M(?:UTE_INPUT|IX)|S(?:TUTTER|HAPE)|RATE(?:_SYNC)?|NOISE|GATE)|IN[123]?)|R(?:OUP_DYNAMICS|AIN_LENGTH)|LIDE_COEF(?:_UNIT)?|N_GAIN)|A(?:C_(?:T(?:RE(?:MOLO(?:DEPTH|SPEED)|BLE)|ONECUT)|B(?:RILLIANTVOLUME|ASS)|NORMALVOLUME|MONO)|T(?:TACK(?:_UNIT)?|K_CURVE)|UX_LEVEL_[0123])|H(?:S_(?:PRE(?:OVERDRIVE|NORMAL|SENCE)|M(?:ASTER|ONO|ID)|OVERDRIVE|TREBLE|DEPTH|BASS)|OLD(?:_UNIT)?|P_CUTOFF|QI_MODE)|L(?:FO_(?:DELAY(?:_UNIT)?|R(?:AND|ECT)|S(?:INE|AW)|NORMALIZE|PHASE|TRI)|IM_(?:IN_GAIN|RELEASE)|P_CUTOFF|R_SWAP)|KOLOR_(?:B(?:OOST(?:_LEVEL)?|ASS(?:_SAVER)?)|M(?:I(?:D(?:_(?:FREQ|Q))?|X)|ODE)|TREBLE|DRIVE|HPF|LPF)|JMP_(?:M(?:ASTER|ONO|ID)|PRE(?:SENCE|AMP)|HIGAIN|TREBLE|BASS)|M(?:OD_TARGET_(?:MP_INTENSITY|INTENSITY)|IDI_CHANNEL)|NOISE(?:COLOR|LEVEL)|OUTPUT_CHANNEL)|UPTIME)|V_TYPE_(?:AHDSR|FLEX|DBD))|FFECT_TYPE_(?:S(?:U(?:PER(?:FAST100|GT)|RROUND_PANNER)|KREAMER(?:DLX)?|TEREO(?:_TUNE)?|END_LEVELS|OLID_GEQ|HAPER)|B(?:EAT(?:MASHER|SLICER)|ASS(?:INVADER|PRO)|I(?:GFUZZ|TE)|US_COMP)|T(?:RANS(?:_(?:STRETCH|MASTER)|LIM)|W(?:INDELAY|ANG)|APE_SAT)|C(?:H(?:OR(?:AL|US)|AINSAW)|A(?:BINET|T)|OMPRESSOR|RYWAH)|R(?:E(?:V(?:ERB2?|GRAIN)|PLIKA)|INGMOD|OTATOR|AUM)|F(?:LA(?:NGER|IR)|B_COMP|ILTER|REAK|UZZ)|P(?:HAS(?:ER|IS)|LATEREVERB|SYCHEDELAY)|D(?:I(?:STORTION|RT)|STORTION|ELAY)|V(?:IBRATO_CHORUS|AN51)|A(?:ET_FILTER|CBOX)|I(?:NVERTER|RC)|L(?:IMITER|OFI)|GA(?:INER|TER)|EP_PREAMPS|WOWFLUTTER|HOTSOLO|KOLOR|JUMP|NONE)|VENT_(?:PAR_(?:M(?:IDI_(?:C(?:HANNEL|OMMAND)|BYTE_[12])|OD_VALUE_(?:EX_ID|ID))|V(?:ELOCITY(?:_2)?|OLUME)|ALLOW_(?:KEY_TYPE|GROUP)|P(?:LAY_POS|AN|OS)|DISALLOW_KEY_TYPE|NOTE(?:_LENGTH)?|T(?:RACK_NR|UNE)|REL_VELOCITY|ZONE_ID|CUSTOM|SOURCE|ID|0|1|2|3)|STATUS_(?:MIDI_QUEUE|NOTE_QUEUE|INACTIVE)|VELOCITY(?:_2)?|NOTE|ID))|N(?:I_(?:D(?:ETECT_(?:KEY_(?:A(?:SHARP_M(?:AJOR|INOR)|_M(?:AJOR|INOR))|C(?:SHARP_M(?:AJOR|INOR)|_M(?:AJOR|INOR))|D(?:SHARP_M(?:AJOR|INOR)|_M(?:AJOR|INOR))|F(?:SHARP_M(?:AJOR|INOR)|_M(?:AJOR|INOR))|G(?:SHARP_M(?:AJOR|INOR)|_M(?:AJOR|INOR))|B_M(?:AJOR|INOR)|E_M(?:AJOR|INOR)|INVALID)|INSTRUMENT_TYPE_(?:B(?:OWED_STRING|RASS|ASS)|PLUCKED_STRING|KEYBOARD|INVALID|GUITAR|MALLET|FLUTE|ORGAN|SYNTH|VOCAL|REED)|DRUM_TYPE_(?:C(?:L(?:OSED_HH|AP)|YMBAL)|PERC_(?:OTHER|DRUM)|S(?:HAKER|NARE)|INVALID|OPEN_HH|KICK|TOM)|SAMPLE_TYPE_(?:IN(?:STRUMENT|VALID)|DRUM))|I(?:RT_(?:ROUTING_(?:PARALLEL|ATOB|BTOA)|MODE_I(?:II?)?)|STORTION_TYPE_T(?:RANS|UBE))|ND_ACCEPT_(?:MULTIPLE|NONE|ONE)|ATE_(?:MONTH|YEAR|DAY))|S(?:YNC_UNIT_(?:QUARTER(?:_TRIPLET)?|WHOLE(?:_TRIPLET)?|16TH(?:_TRIPLET)?|32ND(?:_TRIPLET)?|64TH(?:_TRIPLET)?|HALF(?:_TRIPLET)?|8TH(?:_TRIPLET)?|256TH|ZONE|ABS)|UPERGT_(?:CHA(?:NNEL_LINK_MODE_(?:DUAL_MONO|STEREO|MS)|R_MODE_(?:BRIGHT|WARM|FAT))|SAT_MODE_(?:M(?:ODERATE|ILD)|HOT)|HPF_MODE_(?:100|300|OFF))|O(?:URCE_MODE_(?:T(?:IME_MACHINE_(?:PRO|1|2)|ONE_MACHINE)|S(?:1200_MACHINE|AMPLER)|BEAT_MACHINE|MP60_MACHINE|WAVETABLE|DFD)|NG_POSITION)|IGNAL_T(?:RANSP_ST(?:ART|OP)|IMER_(?:BEAT|MS)|YPE)|1200_FILTER_(?:HIGH(?:_MID)?|LOW(?:_MID)?|NONE)|HAPE_TYPE_(?:ENHANCED|CLASSIC|DRUMS)|KDLX_MODE_(?:CLASSIC|LED|EQ)|LOT_(?:MIDI_CHANNEL|IDX)|END_BUS)|C(?:O(?:NTROL_(?:TYPE_(?:L(?:EVEL_METER|ABEL)|M(?:OUSE_AREA|ENU)|T(?:EXT_EDIT|ABLE)|WAVE(?:TABLE|FORM)|S(?:LIDER|WITCH)|FILE_SELECTOR|VALUE_EDIT|BUTTON|PANEL|KNOB|NONE|XY)|PAR_IDX)|MP_TYPE_(?:ENHANCED|CLASSIC|PRO))|B_TYPE_(?:P(?:ERSISTENCE_CHANGED|OLY_AT|GS)|N(?:OTE(?:_CONTROLLER)?|RPN)|UI_(?:CONTROLS?|UPDATE)|ASYNC_COMPLETE|R(?:ELEASE|PN)|CONTROLLER|LISTENER|MIDI_IN|INIT)|HORAL_MODE_(?:DIMENSION|UNIVERSAL|ENSEMBLE|SYNTH)|ALLBACK_(?:TYPE|ID))|W(?:T_(?:FORM_(?:S(?:YNC[123456]|ATURATE|EESAW)|ASYM(?:2(?:MP?|P)|MP?|P)|BEND(?:2(?:MP?|P)|MP?|P)|L(?:OG(?:EXP)?|INEAR)|F(?:LIP|OLD)|QUANTIZE|2BLINDS|4BLINDS|6BLINDS|8BLINDS|MIRROR|WRAP|EXP|PWM)|MOD_(?:WAVE_(?:T(?:UNED_NOISE|X[2345678]|RIANGLE)|WHITE_NOISE|PINK_NOISE|RED_NOISE|SINE)|T(?:YPE_(?:FM[123]|PM[123]|BLEND|MIX|OFF|RM)|UNE_UNIT_(?:SEMITONES|RATIO|HZ)))|QUALITY_(?:MEDIUM|BEST|HIGH|LOFI)|VIS_(?:2D|3D))|F_VIS_MODE_[123])|EPP_(?:TREMOLO_(?:WAVE_(?:S(?:AW_(?:DOWN|UP)|QUARE|INE)|TRIANGLE)|MODE_(?:E_GRAND|BYPASS|GUITAR|SYNTH|70S|80S))|DRIVE_MODE_(?:T(?:RANSISTOR|APE)|DE_TUBE|US_TUBE|BYPASS)|EQ_MODE_(?:E_GRAND|PASSIVE|BYPASS|70S|80S))|F(?:LAIR_(?:SCANMODE_(?:SAW_(?:DOWN|UP)|TRIANGLE)|MODE_(?:S(?:TANDARD|CAN)|THRU_ZERO))|ILE_(?:TYPE_(?:A(?:RRAY|UDIO)|MIDI)|FULL_PATH(?:_OS)?|EXTENSION|NAME)|REAK_MODE_(?:OSCILLATOR|SIDECHAIN|RADIO))|K(?:O(?:LOR_(?:S(?:OLID_CONSOLE|MOOTH_FUZZ|ATURAVER|UPER_AMP)|HARMONIC_CTRL|ANALOG_AURA|FULL_ON|CRUNCH|DIODE|TAPE)|NTAKT_IS_(?:STANDALONE|HEADLESS))|EY_TYPE_(?:CONTROL|DEFAULT|NONE))|N(?:KS_(?:STYLE_(?:FILTERTYPE|TEMPOSYNC|WAVEFORM|DEFAULT|POWER|VALUE|KNOB|MENU)|TYPE_(?:CONTINUOUS_(?:UNI|BI)|DISCRETE_(?:UNI|BI)|TOGGLE))|UM_SCALES|OT_FOUND)|R(?:E(?:PLIKA_TYPE_(?:DIFFUSION|ANALOGUE|VINTAGE|MODERN|TAPE)|VERB2_TYPE_(?:HALL|ROOM))|AUM_TYPE_(?:GROUNDED|COSMIC|AIRY)|INGMOD_LFO_WAVE_S(?:QUARE|INE))|B(?:EATMASHER_LENGTH_(?:QUARTER(?:_DOTTED)?|HALF(?:_DOTTED)?|8TH(?:_DOTTED)?|16TH|32ND|BAR)|ITE_HPF_MODE_(?:100|200|5)|AR_START_POSITION|US_OFFSET)|L(?:E(?:AP_(?:DEFAULT_START_KEY|KEYBOARD_TONALITY)|VEL_METER_(?:INSERT|GROUP|MAIN))|OG_(?:WA(?:TCHING|RNING)|MESSAGE))|M(?:OUSE_(?:EVENT_TYPE(?:_(?:LEFT_BUTTON_(?:DOWN|UP)|DR(?:AG|OP)))?|OVER_CONTROL)|AIN_BUS)|G(?:ROUP_PAR_(?:NUM_ZONES|HIGH_KEY|LOW_KEY|COLOR)|LOBAL_(?:SCALE|KEY))|V(?:C_(?:COLOR_TYPE_[ABC]|DEPTH_[123456])|L_TMPRO_(?:STANDARD|HQ))|T(?:RANSPORT_(?:RUNNING|ACTIVE)|IME_(?:MINUTE|SECOND|HOUR))|ASYNC_(?:EXIT_STATUS|PAR_[12]|VALUE|TYPE|ID)|ZONE_STATUS_(?:IGNORED|LOADED|PURGED|EMPTY)|IN(?:S(?:ERT_BUS|T_NAME)|TERNAL_MARK)|HQI_MODE_(?:STANDARD|PERFECT|HIGH)|UI_ID)|UM_(?:OUTPUT_CHANNELS|GROUPS|ZONES)|C_(?:N(?:OTE|UM)|VALUE)|OTE_HELD)|C(?:ONTROL_PAR_(?:W(?:AVE(?:_(?:C(?:URSOR_COLOR|OLOR)|END_(?:ALPHA|COLOR)|ALPHA)|TABLE_(?:END_(?:ALPHA|COLOR)|ALPHA|COLOR))|T_(?:VIS_MODE|ZONE)|F_VIS_MODE|IDTH)|F(?:ONT_TYPE(?:_O(?:N(?:_(?:PRESSED|HOVER))?|FF_(?:PRESSED|HOVER)))?|ILE(?:_TYPE|PATH))|D(?:ND_(?:ACCEPT_(?:A(?:RRAY|UDIO)|MIDI)|BEHAVIOUR)|ISABLE_TEXT_SHIFTING|EFAULT_VALUE)|M(?:OUSE_(?:BEHAVIOUR(?:_[XY])?|MODE)|I(?:DI_EXPORT_AREA_IDX|N_VALUE)|AX_VALUE)|P(?:AR(?:ALLAX_[XY]|ENT_PANEL)|ICTURE(?:_STATE)?|EAK_COLOR|OS_[XY])|S(?:HO(?:W_ARROWS|RT_NAME)|LICEMARKERS_COLOR|ELECTED_ITEM_IDX)|N(?:KS_(?:ST(?:R_VALUES|YLE)|NUM_VALUES|TYPE)|UM_ITEMS|ONE)|A(?:UTOMATION_(?:NAME|ID)|LLOW_AUTOMATION|CTIVE_INDEX)|B(?:A(?:R_COLOR|SEPATH)|G_(?:ALPHA|COLOR))|C(?:U(?:RSOR_PICTURE|STOM_ID)|OLUMN_WIDTH)|R(?:ECEIVE_DRAG_EVENTS|ANGE_M(?:AX|IN))|T(?:EXT(?:_ALIGNMENT|POS_Y|LINE)?|YPE)|O(?:VERLOAD_COLOR|FF_COLOR|N_COLOR)|V(?:ALUE(?:POS_Y)?|ERTICAL)|Z(?:ERO_LINE_COLOR|_LAYER)|GRID_(?:HEIGHT|WIDTH|X|Y)|KEY_(?:CONTROL|SHIFT|ALT)|H(?:E(?:IGHT|LP)|IDE)|ENABLE_DND|IDENTIFIER|LABEL|UNIT)|URRENT_(?:SCRIPT_SLOT|EVENT)|C_NUM)|FILTER_TYPE_(?:S(?:V_(?:PAR_(?:BPBP|LPHP)|NOTCH[46]|HP[1246]|LP[1246]|SER_LPHP|BP[246])|IMPLE_LPHP)|L(?:DR_(?:HP[1234]|LP[1234]|BP[24]|NOTCH|PEAK)|P(?:1POLE|2POLE|4POLE|6POLE)|ADDER)|AR_(?:BP(?:24?|4)|HP(?:24?|4)|LP(?:24?|4))|B(?:P(?:2POLE|4POLE)|R4POLE)|EQ(?:1BAND|2BAND|3BAND)|HP(?:1POLE|2POLE|4POLE)|V(?:ERSATILE|OWEL[AB])|P(?:HASER|RO52)|DAFT_(?:HP|LP)|FORMANT_[12])|K(?:EY_COLOR_(?:W(?:ARM_YELLOW|HITE)|LI(?:GHT_ORANGE|ME)|M(?:AGENTA|INT)|P(?:URPLE|LUM)|BL(?:ACK|UE)|TURQUOISE|INACTIVE|DEFAULT|FUCHSIA|ORANGE|VIOLET|YELLOW|GREEN|CYAN|NONE|RED)|NOB_UNIT_(?:PERCENT|NONE|OCT|DB|HZ|MS|ST)|SP_TIMER)|M(?:IDI_(?:C(?:OMMAND(?:_(?:P(?:ROGRAM_CHANGE|ITCH_BEND|OLY_AT)|N(?:OTE_O(?:FF|N)|RPN)|MONO_AT|RPN|CC))?|HANNEL)|BYTE_[12])|ARK_(?:1[0123456789]?|2[012345678]?|3|4|5|6|7|8|9)|OD_TARGET_INVERT_SOURCE)|I(?:N(?:ST_(?:LIB_(?:PIC_(?:ONE_ID|TWO_ID)|DESCRIPTION_ID|COPYRIGHT_ID)|WALLPAPER_ID|PERFVIEW_ID|ICON_ID)|TMOD_TYPE_(?:ENV(?:_FOLLOW|ELOPE)|STEPMOD|GLIDE|NONE|LFO))|DX_OFFSET_EXT_MOD)|S(?:TART_CRITERIA_(?:O(?:N_(?:CONTROLLER|KEY)|R_NEXT)|CYCLE_R(?:OUND_ROBIN|ANDOM)|AND_N(?:OT_NEXT|EXT)|SLICE_TRIGGER|NONE)|LOT_TYPE_(?:INSTRUMENT|EMPTY|BANK)|IGNATURE_(?:DENOM|NUM))|ZONE_PAR_(?:S(?:AMPLE_(?:MOD_RANGE|START|RATE|END)|ELECTED)|FADE_(?:HIGH_(?:VELO|KEY)|LOW_(?:VELO|KEY))|HIGH_(?:VELO|KEY)|LOW_(?:VELO|KEY)|ROOT_KEY|VOLUME|GROUP|TUNE|BPM|PAN)|UI_W(?:F_PROP_(?:TABLE_(?:IDX_HIGHLIGHT|VAL)|MIDI_DRAG_START_NOTE|PLAY_CURSOR|FLAGS)|AVEFORM_(?:USE_(?:MIDI_DRAG|SLICES|TABLE)|TABLE_IS_BIPOLAR))|L(?:FO_TYPE_(?:R(?:ECTANGLE|ANDOM)|MULTI(?:_DIGITAL)?|S(?:AWTOOTH|INE)|TRIANGLE)|OOP_PAR_(?:LENGTH|TUNING|COUNT|START|XFADE|MODE))|D(?:URATION_(?:SIXTEENTH(?:_TRIPLET)?|QUARTER(?:_TRIPLET)?|EIGHTH(?:_TRIPLET)?|BAR)|ISTANCE_BAR_START)|HIDE_(?:PART_(?:MOD_LIGHT|NOTHING|CURSOR|TITLE|VALUE|BG)|WHOLE_CONTROL)|V(?:ALUE_EDIT_MODE_NOTE_NAMES|CC_(?:PITCH_BEND|MONO_AT)|NC_PITCH_BEND)|GET_FOLDER_(?:FACTORY_DIR|INSTALL_DIR|LIBRARY_DIR|PATCH_DIR|RC_DIR)|R(?:EF_(?:GROUP_IDX|SLOT_IDX)|PN_(?:ADDRESS|VALUE))|OUTPUT_TYPE_(?:MASTER_OUT|AUX_OUT|BUS_OUT|DEFAULT)|P(?:LAYED_VOICES_(?:TOTAL|INST)|OLY_AT_NUM)|ALL_(?:EVENTS|GROUPS))\b|(~)?\bNI_(?:DETECT_(?:P(?:ITCH_INVALID|EAK_INVALID)|LOUDNESS_INVALID|TEMPO_INVALID|RMS_INVALID)|MATH_(?:PI|E))\b|(@)?\bNI_ASYNC_STR_VALUE\b|(%)?\b(?:N(?:I_USER_ZONE_IDS|OTE_DURATION)|GROUPS_(?:AFFECTED|SELECTED)|KEY_DOWN(?:_OCT)?|CC(?:_TOUCHED)?|EVENT_PAR|POLY_AT)\b|(!)?\bNI_DND_ITEMS_(?:A(?:RRAY|UDIO)|MIDI)\b'
-  builtin_functions: '\b(?:s(?:e(?:t_(?:k(?:ey(?:_(?:pressed(?:_support)?|color|name|type)|range)|nob_(?:properties|defval|label|unit)|ill_priority)|m(?:enu_(?:item_(?:v(?:isibility|alue)|str)|properties)|ap_editor_event_color|idi)|s(?:lider_properties|witch_properties|napshot_type|cript_title|kin_offset|ample)|control(?:_(?:par(?:_(?:str(?:_arr)?|real_arr|arr))?|help)|ler)|t(?:able_(?:steps_shown|properties)|ext(?:_edit_properties)?)|wave(?:table(?:2d_properties|3d_properties)|form_properties)|l(?:evel_meter_properties|abel_properties|istener|oop_par)|n(?:ks_nav_(?:name|par)|ote_controller|um_user_zones|rpn)|v(?:alue_(?:edit_properties|async(?:_str)?)|oice_limit)|ui_(?:w(?:f_property|idth_px)|height(?:_px)?|color)|e(?:vent_(?:par(?:_arr)?|mark)|ngine_par(?:_m)?)|b(?:utton_properties|ounds)|group_dyn_par_name|zone_par|poly_at|rpn)|arch)|l(?:ice_(?:idx_loop_(?:start|end)|l(?:oop_count|ength)|start)|otidx_to_guiidx)|h(?:_(?:right|left)|ow_library_tab)|ave_(?:array(?:_str)?|midi_file)|ubscribe_async|i(?:gnbit|n)|top_wait|ort|qrt|gn)|g(?:et_(?:key(?:_(?:t(?:riggerstate|ype)|color|name)|range_(?:m(?:ax_note|in_note)|name))|e(?:ngine_par(?:_(?:disp(?:_(?:ext|m))?|m))?|vent_(?:par(?:_arr)?|mark|ids))|con(?:trol_par(?:_(?:str(?:_arr)?|real_arr|arr))?|nected_slots)|s(?:ample(?:_length)?|cale(?:_name)?|el_zones_idx)|m(?:enu_item_(?:v(?:isibility|alue)|str)|od_idx)|n(?:ks_nav_(?:name|par)|um_zones)|zone_(?:status|par|id)|ui_(?:wf_property|id)|group_(?:idx|par)|fo(?:nt_id|lder)|purge_state|voice_limit|target_idx|loop_par)|uiidx_to_slotidx|roup_name)|m(?:f_(?:get_(?:n(?:ext(?:_at)?|ote_length|um_tracks)|b(?:yte_(?:one|two)|uffer_size)|l(?:ast(?:_filename)?|ength)|p(?:rev(?:_at)?|os)|c(?:hannel|ommand)|event_par|track_idx|first|mark|id)|set_(?:b(?:yte_(?:one|two)|uffer_size)|n(?:um_export_areas|ote_length)|e(?:xport_area|vent_par)|c(?:hannel|ommand)|length|mark|pos)|insert_(?:event|file)|re(?:move_event|set)|copy_export_area)|ake_(?:per(?:sistent|fview)|instr_persistent)|ove_control(?:_px)?|s(?:_to_ticks|b)|essage)|_(?:s(?:lice_(?:idx_loop_(?:start|end)|l(?:oop_count|ength)|start)|et_(?:skin_offset|engine_par))|pgs_(?:get_key_val|set_key_val|create_key|key_exists)|re(?:set_rls_trig_counter|ad_persistent_var)|get_(?:engine_par(?:_disp)?|folder)|will_never_terminate|load_ir_sample|num_slices)|l(?:o(?:ad_(?:p(?:erformance_view|atch)|n(?:ext_patch|ative_ui)|ir_sample(?:_m)?|array(?:_str)?|komplete_ui|midi_file)|g(?:10|2)?)|i(?:terate_(?:post_macro|macro)|st_add)|sb)|d(?:e(?:tect_(?:instrument_type|p(?:itch|eak)|sample_type|drum_type|loudness|tempo|key|rms)|lete_event_mark|c)|isa(?:ble_logging|llow_group)|ont_use_machine_mode)|r(?:e(?:set_(?:rls_trig_counter|ksp_timer|nks_nav|engine)|a(?:d_persistent_var|l(?:_to_int)?)|direct_(?:output|midi)|quest_value_async|move_keyrange)|andom|ound)|c(?:hange_(?:t(?:ime_with_pitch|une)|listener_par|v(?:elo|ol)|note|pan)|ircle_of_fifths_distance|o(?:n(?:tinue|cat)|s)|c_delivery_request|brt|eil)|p(?:gs_(?:s(?:et_(?:str_key_val|key_val)|tr_key_exists)|get_(?:str_key_val|key_val)|create_(?:str_key|key)|key_exists)|urge_group|lay_note|ow)|i(?:gnore_(?:controller|event|midi)|n(?:t(?:_to_real)?|_range|c)|terate_(?:post_macro|macro)|s_zone_empty|mport_nckp)|a(?:t(?:tach_(?:level_meter|zone)|an)|dd_(?:menu_item|text_line)|llow_group|rray_equal|cos|sin|bs)|f(?:ind_(?:target|group|zone|mod)|s_(?:get_filename|navigate)|ade_(?:out|in)|lo(?:at|or))|w(?:a(?:it(?:_(?:async|ticks))?|tch_(?:array_idx|var))|ill_never_terminate)|zone_slice_(?:idx_loop_(?:start|end)|l(?:oop_count|ength)|start)|e(?:x(?:p(?:ose_controls|2)?|it)|vent_status)|n(?:um_(?:slices(?:_zone)?|elements)|ote_off)|S(?:ET_CONDITION|TART_INC)|END_(?:USE_CODE|INC)|USE_CODE_IF(?:_NOT)?|output_channel_name|by_(?:marks|track)|t(?:icks_to_ms|an)|RESET_CONDITION|unload_slot|hide_part)\b'
+  builtin_consts_and_vars: '(\$)?\b(?:E(?:N(?:GINE_(?:PAR_(?:S(?:E(?:Q_(?:H(?:F_(?:BELL|FREQ|GAIN)|MF_(?:FREQ|GAIN|Q)|P(?:_FREQ)?)|L(?:F_(?:BELL|FREQ|GAIN)|MF_(?:FREQ|GAIN|Q)|P(?:_FREQ)?))|ND(?:LEVEL_(?:SMOOTHED_[01234567]|0|1|2|3|4|5|6|7)|_EFFECT_(?:OUTPUT_GAIN|DRY_LEVEL|BYPASS|TYPE)))|T(?:ART_CRITERIA_(?:C(?:C_M(?:AX|IN)|YCLE_CLASS|ONTROLLER)|S(?:LICE_IDX|EQ_ONLY)|KEY_M(?:AX|IN)|NEXT_CRIT|ZONE_IDX|MODE)|E(?:REO(?:TUNE_(?:SP(?:READ|LIT)|DRIFT|MIX)|_P(?:SEUDO|AN))?|PSEQ_(?:STEP_VALUE|NUM_STEPS|ONESHOT)))|U(?:PERGT_(?:C(?:HA(?:R(?:ACTER|_MODE)|NNEL_LINK_MODE)|OMPRESS)|SAT(?:URATION|_MODE)|HPF_MODE|RELEASE|ATTACK|TRIM|MIX)|STAIN)|F100_(?:O(?:VERDRIVE|D_GAIN)|M(?:ASTER|ONO|ID)|B(?:RIGHT|ASS)|NORMAL_GAIN|PRESENCE|CRUNCH|TREBLE|DEPTH)|K(?:DLX_(?:M(?:O(?:DE|NO)|ID)|T(?:REBLE|ONE)|DRIVE|BASS)|_(?:B(?:RIGHT|ASS)|DRIVE|TONE|MIX))|P(?:_(?:OFFSET_(?:DISTANCE|AZIMUTH|X|Y)|DIVERGENCE|LFE_VOLUME|SIZE)|EED(?:_UNIT)?)|COMP_(?:R(?:ELEASE|ATIO)|M(?:AKEUP|IX)|THRESHOLD|ATTACK|LINK)|LICE_(?:RELEASE|ATTACK)|1200_FILTER_MODE|HAPE(?:_TYPE)?|OURCE_MODE|MOOTH)|R(?:DL_(?:D(?:UCKING_(?:RELEASE|AMOUNT|SENSE)|E(?:NSE|PTH))|S(?:ATURATION|HUFFLE|TEREO|IZE)|T(?:IME(?:_UNIT)?|APEAGE|YPE)|F(?:EE(?:DBACK|L)|LUTTER)|P(?:INGPONG(?:_FLIP)?|AN)|L(?:R_OFFSET|OWCUT)|A(?:CCENT|MOUNT)|MODULATION|BBDTYPE|HIGHCUT|QUALITY|NOISE|WIDTH|RATE)|A(?:UM_(?:D(?:IFFUSION|AMPING|ECAY)|F(?:EEDBACK|REEZE)|PREDELAY(?:_UNIT)?|R(?:EVERB|ATE)|S(?:PARSE|IZE)|LOWSHELF|HIGHCUT|TYPE|MOD)|TIO)|V(?:2_(?:D(?:AMPING|IFF)|S(?:TEREO|IZE)|T(?:IME|YPE)|LOWSHELF|PREDELAY|HIGHCUT|MOD)|_(?:S(?:TEREO|IZE)|PREDELAY|DAMPING|COLOUR))|INGMOD_(?:LFO_(?:RATE(?:_UNIT)?|AMOUNT|WAVE)|F(?:AST_MODE|REQUENCY|M)|EDGE|RING)|G_(?:INVERT_GRAINS|FORWARD|REVERSE|GRAIN|PITCH|SPEED|MIX)|T_(?:ACCEL_(?:HI|LO)|DISTANCE|BALANCE|SPEED|MIX)|E(?:LEASE(?:_(?:TRIGGER|UNIT))?|SONANCE))|F(?:L(?:AIR_(?:D(?:AMPING|ETUNE)|RATE(?:_UNIT)?|INVERT_PHASE|M(?:ODE|IX)|FEEDBACK|SCANMODE|AMOUNT|OFFSET|VOICES|CHORD|PITCH|WIDTH)|EXENV_(?:STAGE_(?:LEVEL|SLOPE|TIME)|LOOP(?:_(?:START|END))?|NUM_STAGES|ONESHOT)|_(?:SPEED(?:_UNIT)?|FEEDBACK|COLOR|DEPTH|PHASE))|RE(?:AK_(?:F(?:REQUENCY|EEDBACK)|C(?:ARRIER|ONTOUR)|BP_F(?:ILTER|REQ)|WID(?:E_RANGE|TH)|T(?:UNING|YPE)|M(?:ODE|IX)|HARMONICS|ANTIFOLD|RELEASE|STEREO|DEMOD|GATE)|Q(?:UENCY|1|2|3))|ILTER_(?:F(?:EEDBACK(?:_TYPE)?|M)|LADDER_HQ|SHIFT[BC]|TYPE[ABC]|BYP[ABC]|RES[BC]|GAIN)|COMP_(?:R(?:ELEASE|ATIO)|M(?:AKEUP|IX)|HQ_MODE|ATTACK|INPUT|LINK)|ORMANT(?:_(?:S(?:H(?:ARP|IFT)|IZE)|TALK))?|UZZ_(?:AMOUNT|TREBLE|BASS|MONO))|B(?:A(?:SS(?:PRO_(?:G(?:EQ(?:_(?:1(?:0K|80|K)|VOLUME|4[0K]|300|500|2K|90))?|AIN)|M(?:ID(?:FREQ)?|ASTER|ONO)|B(?:RIGHT|ASS)|ULTRA(?:HI|LO)|TREBLE|DRIVE)|INVADER_(?:M(?:ID_CONTOUR|ASTER|ONO)|HI_(?:BOOST|MID)|LO_(?:CUT|MID)|B(?:OOST|ASS)|TREBLE|VOLUME))|NDWIDTH)|I(?:T(?:E_(?:P(?:OSTFILTER|REFILTER)|D(?:C_QUANT|ITHER)|FREQUENCY|SATURATE|CRUNCH|EXPAND|JITTER|BITS|HPF|MIX)|S)|GFUZZ_(?:T(?:REBLE|ONE)|SUSTAIN|BASS|MONO))|EAT(?:MASHER_(?:R(?:EVERSE|OTATE)|M(?:ASH|IX)|LENGTH|GATE|WRAP)|SLICER_(?:S(?:LICE|TYLE)|PATTERN|TWOBARS|BUZZ|GATE|MIX))|W[123]|REAK)|T(?:DL_(?:PREDELAY_(?:L(?:_UNIT)?|R(?:_UNIT)?)|TIME_(?:L(?:_UNIT)?|R(?:_UNIT)?)|CROSS_FEEDBACK|FEEDBACK_[LR]|LEVEL_[LR]|WIDTH)|R(?:A(?:NS(?:LIM_(?:THRESHOLD|CEILING|RELEASE)|IENT_SIZE)|CKING)|_(?:S(?:USTAIN|MOOTH)|ATTACK|INPUT))|S_(?:S(?:TRETCH|IZE)|TWOBARS|AMOUNT|GRAIN|KEY|MIX)|W_(?:B(?:RIGHT|ASS)|M(?:ONO|ID)|TREBLE|VOLUME)|P_(?:HF_ROLLOFF|QUALITY|WARMTH|GAIN)|M(?:PRO_KEEP_FORMANTS|_LEGATO)|HRESHOLD|UNE)|P(?:H(?:AS(?:IS_(?:INVERT_(?:MOD_MIX|PHASE)|S(?:PREAD|TEREO)|M(?:OD_MIX|IX)|RATE(?:_UNIT)?|FEEDBACK|NOTCHES|AMOUNT|CENTER|ULTRA)|E_INVERT)|_(?:SPEED(?:_UNIT)?|FEEDBACK|DEPTH|PHASE))|SYDL_(?:REVERSE(?:_STEREO)?|DETUNE(?:_STEREO)?|CROSS_FEEDBACK|TIME(?:_UNIT)?|LR_OFFSET|FEEDBACK|PITCH)|R_(?:LOWSHELF|PREDELAY|HIDAMP|STEREO|DECAY)|OST_FX_SLOT|AN)|C(?:H(?:ORAL_(?:INVERT_PHASE|M(?:ODE|IX)|FEEDBACK|SCATTER|AMOUNT|VOICES|DELAY|WIDTH|RATE)|_(?:SPEED(?:_UNIT)?|DEPTH|PHASE))|T_(?:T(?:REBLE|ONE)|BA(?:LLS|SS)|DISTORTION|FILTER|VOLUME|MONO)|S_(?:L(?:EVEL|OW)|DISTORTION|HIGH|MONO)|OMP_(?:ATTACK|DECAY|LINK|TYPE)|B_(?:TREBLE|BASS|SIZE|AIR)|W_(?:PEDAL|MONO)|ABINET_TYPE|UTOFF)|E(?:PP_(?:TREMOLO_(?:RATE(?:_UNIT)?|W(?:IDTH|AVE)|AMOUNT|MODE)|EQ_(?:M(?:ODE|ID)|TREBLE|BASS)|DRIVE(?:_MODE)?|PASSIVE_BASS|MONO)|NV(?:F_(?:A(?:DAPTION|TTACK)|GAIN_BOOST|RELEASE)|_(?:DBD_EASY|AHD)|ELOPE_ORDER)|X(?:P_FILTER_(?:AMOUNT|MORPH)|TMOD_INTENSITY)|FFECT_(?:SUBTYPE|BYPASS|TYPE))|D(?:I(?:RT_(?:B(?:IAS[AB]|LEND)|M(?:ODE[AB]|IX)|AMOUNT[AB]|SAFETY[AB]|DRIVE[AB]|TILT[AB]|ROUTING)|STORTION_TYPE)|S_(?:T(?:REBLE|ONE)|M(?:ONO|ID)|VOLUME|DRIVE|BASS)|L_(?:TIME(?:_UNIT)?|FEEDBACK|DAMPING|PAN)|ECAY(?:1(?:_UNIT)?|2(?:_UNIT)?|_UNIT)?|AMPING|RIVE)|I(?:RC_(?:FREQ_(?:HIGHPASS_(?:ER|LR)|LOWPASS_(?:ER|LR))|LENGTH_RATIO_(?:ER|LR)|ER_LR_BOUNDARY|AUTO_GAIN|PREDELAY|REVERSE)|N(?:TMOD_(?:FREQUENCY(?:_UNIT)?|PULSEWIDTH|INTENSITY|RETRIGGER|SUBTYPE|BYPASS|TYPE)|SERT_EFFECT_OUTPUT_GAIN))|W(?:T_(?:MOD_(?:T(?:UNE(?:_UNIT)?|YPE)|AMOUNT|WAVE)|P(?:HASE(?:_RAND)?|OSITION)|FORM(?:2(?:_MODE)?|_MODE)?|INHARMONIC(?:_MODE)?|QUALITY)|OWFLUTTER_(?:S(?:ATURATION|CRAPE|TEREO|PEED)|FLUTTER|GATE|AGE|MIX|WOW))|V(?:5_(?:P(?:RE(?:GAIN(?:RHYTHM|LEAD)|SENCE)|OSTGAIN)|B(?:RIGHT|ASS)|LEADCHANNEL|M(?:ONO|ID)|RESONANCE|CRUNCH|HIGAIN|TREBLE)|C_(?:BLEND|COLOR|DEPTH|WIDTH|RATE|MIX)|O(?:ICE_GROUP|LUME))|G(?:A(?:TER_(?:M(?:UTE_INPUT|IX)|S(?:TUTTER|HAPE)|RATE(?:_SYNC)?|NOISE|GATE)|IN[123]?)|R(?:OUP_DYNAMICS|AIN_LENGTH)|LIDE_COEF(?:_UNIT)?|N_GAIN)|A(?:C_(?:T(?:RE(?:MOLO(?:DEPTH|SPEED)|BLE)|ONECUT)|B(?:RILLIANTVOLUME|ASS)|NORMALVOLUME|MONO)|T(?:TACK(?:_UNIT)?|K_CURVE)|UX_LEVEL_[0123])|H(?:S_(?:PRE(?:OVERDRIVE|NORMAL|SENCE)|M(?:ASTER|ONO|ID)|OVERDRIVE|TREBLE|DEPTH|BASS)|P_(?:RESONANCE|CUTOFF)|OLD(?:_UNIT)?|QI_MODE)|L(?:FO_(?:DELAY(?:_UNIT)?|R(?:AND|ECT)|S(?:INE|AW)|NORMALIZE|PHASE|TRI)|IM_(?:IN_GAIN|RELEASE)|P_(?:RESONANCE|CUTOFF)|R_SWAP)|KOLOR_(?:B(?:OOST(?:_LEVEL)?|ASS(?:_SAVER)?)|M(?:I(?:D(?:_(?:FREQ|Q))?|X)|ODE)|TREBLE|DRIVE|HPF|LPF)|JMP_(?:M(?:ASTER|ONO|ID)|PRE(?:SENCE|AMP)|HIGAIN|TREBLE|BASS)|M(?:OD_TARGET_(?:MP_INTENSITY|INTENSITY)|IDI_CHANNEL)|NOISE(?:COLOR|LEVEL)|OUTPUT_CHANNEL)|UPTIME)|V_TYPE_(?:AHDSR|FLEX|DBD))|FFECT_TYPE_(?:S(?:U(?:PER(?:FAST100|GT)|RROUND_PANNER)|KREAMER(?:DLX)?|TEREO(?:_TUNE)?|END_LEVELS|OLID_GEQ|HAPER)|B(?:EAT(?:MASHER|SLICER)|ASS(?:INVADER|PRO)|I(?:GFUZZ|TE)|US_COMP)|T(?:RANS(?:_(?:STRETCH|MASTER)|LIM)|W(?:INDELAY|ANG)|APE_SAT)|C(?:H(?:OR(?:AL|US)|AINSAW)|A(?:BINET|T)|OMPRESSOR|RYWAH)|R(?:E(?:V(?:ERB2?|GRAIN)|PLIKA)|INGMOD|OTATOR|AUM)|F(?:LA(?:NGER|IR)|B_COMP|ILTER|REAK|UZZ)|P(?:HAS(?:ER|IS)|LATEREVERB|SYCHEDELAY)|D(?:I(?:STORTION|RT)|STORTION|ELAY)|V(?:IBRATO_CHORUS|AN51)|A(?:ET_FILTER|CBOX)|I(?:NVERTER|RC)|L(?:IMITER|OFI)|GA(?:INER|TER)|EP_PREAMPS|WOWFLUTTER|HOTSOLO|KOLOR|JUMP|NONE)|VENT_(?:PAR_(?:M(?:IDI_(?:C(?:HANNEL|OMMAND)|BYTE_[12])|OD_VALUE_(?:EX_ID|ID))|V(?:ELOCITY(?:_2)?|OLUME)|ALLOW_(?:KEY_TYPE|GROUP)|P(?:LAY_POS|AN|OS)|DISALLOW_KEY_TYPE|NOTE(?:_LENGTH)?|T(?:RACK_NR|UNE)|REL_VELOCITY|ZONE_ID|CUSTOM|SOURCE|ID|0|1|2|3)|STATUS_(?:MIDI_QUEUE|NOTE_QUEUE|INACTIVE)|VELOCITY(?:_2)?|NOTE|ID))|N(?:I_(?:D(?:ETECT_(?:KEY_(?:A(?:SHARP_M(?:AJOR|INOR)|_M(?:AJOR|INOR))|C(?:SHARP_M(?:AJOR|INOR)|_M(?:AJOR|INOR))|D(?:SHARP_M(?:AJOR|INOR)|_M(?:AJOR|INOR))|F(?:SHARP_M(?:AJOR|INOR)|_M(?:AJOR|INOR))|G(?:SHARP_M(?:AJOR|INOR)|_M(?:AJOR|INOR))|B_M(?:AJOR|INOR)|E_M(?:AJOR|INOR)|INVALID)|INSTRUMENT_TYPE_(?:B(?:OWED_STRING|RASS|ASS)|PLUCKED_STRING|KEYBOARD|INVALID|GUITAR|MALLET|FLUTE|ORGAN|SYNTH|VOCAL|REED)|DRUM_TYPE_(?:C(?:L(?:OSED_HH|AP)|YMBAL)|PERC_(?:OTHER|DRUM)|S(?:HAKER|NARE)|INVALID|OPEN_HH|KICK|TOM)|SAMPLE_TYPE_(?:IN(?:STRUMENT|VALID)|DRUM))|I(?:RT_(?:ROUTING_(?:PARALLEL|ATOB|BTOA)|MODE_I(?:II?)?)|STORTION_TYPE_T(?:RANS|UBE))|ND_ACCEPT_(?:MULTIPLE|NONE|ONE)|ATE_(?:MONTH|YEAR|DAY))|S(?:YNC_UNIT_(?:QUARTER(?:_TRIPLET)?|WHOLE(?:_TRIPLET)?|16TH(?:_TRIPLET)?|32ND(?:_TRIPLET)?|64TH(?:_TRIPLET)?|HALF(?:_TRIPLET)?|8TH(?:_TRIPLET)?|256TH|ZONE|ABS)|UPERGT_(?:CHA(?:NNEL_LINK_MODE_(?:DUAL_MONO|STEREO|MS)|R_MODE_(?:BRIGHT|WARM|FAT))|SAT_MODE_(?:M(?:ODERATE|ILD)|HOT)|HPF_MODE_(?:100|300|OFF))|O(?:URCE_MODE_(?:T(?:IME_MACHINE_(?:PRO|1|2)|ONE_MACHINE)|S(?:1200_MACHINE|AMPLER)|BEAT_MACHINE|MP60_MACHINE|WAVETABLE|DFD)|NG_POSITION)|IGNAL_T(?:RANSP_ST(?:ART|OP)|IMER_(?:BEAT|MS)|YPE)|1200_FILTER_(?:HIGH(?:_MID)?|LOW(?:_MID)?|NONE)|HAPE_TYPE_(?:ENHANCED|CLASSIC|DRUMS)|KDLX_MODE_(?:CLASSIC|LED|EQ)|LOT_(?:MIDI_CHANNEL|IDX)|END_BUS)|C(?:O(?:NTROL_(?:TYPE_(?:L(?:EVEL_METER|ABEL)|M(?:OUSE_AREA|ENU)|T(?:EXT_EDIT|ABLE)|WAVE(?:TABLE|FORM)|S(?:LIDER|WITCH)|FILE_SELECTOR|VALUE_EDIT|BUTTON|PANEL|KNOB|NONE|XY)|PAR_IDX)|MP_TYPE_(?:ENHANCED|CLASSIC|PRO))|B_TYPE_(?:P(?:ERSISTENCE_CHANGED|OLY_AT|GS)|N(?:OTE(?:_CONTROLLER)?|RPN)|UI_(?:CONTROLS?|UPDATE)|ASYNC_COMPLETE|R(?:ELEASE|PN)|CONTROLLER|LISTENER|MIDI_IN|INIT)|HORAL_MODE_(?:DIMENSION|UNIVERSAL|ENSEMBLE|SYNTH)|ALLBACK_(?:TYPE|ID))|W(?:T_(?:FORM_(?:S(?:YNC[123456]|ATURATE|EESAW)|ASYM(?:2(?:MP?|P)|MP?|P)|BEND(?:2(?:MP?|P)|MP?|P)|L(?:OG(?:EXP)?|INEAR)|F(?:LIP|OLD)|QUANTIZE|2BLINDS|4BLINDS|6BLINDS|8BLINDS|MIRROR|WRAP|EXP|PWM)|MOD_(?:WAVE_(?:T(?:UNED_NOISE|X[2345678]|RIANGLE)|WHITE_NOISE|PINK_NOISE|RED_NOISE|SINE)|T(?:YPE_(?:FM[123]|PM[123]|BLEND|MIX|OFF|RM)|UNE_UNIT_(?:SEMITONES|RATIO|HZ)))|QUALITY_(?:MEDIUM|BEST|HIGH|LOFI)|VIS_(?:2D|3D))|F_VIS_MODE_[123])|F(?:IL(?:E_(?:TYPE_(?:A(?:RRAY|UDIO)|MIDI)|FULL_PATH(?:_OS)?|EXTENSION|NAME)|TER_FEEDBACK_TYPE_(?:OFF|A|B))|LAIR_(?:SCANMODE_(?:SAW_(?:DOWN|UP)|TRIANGLE)|MODE_(?:S(?:TANDARD|CAN)|THRU_ZERO))|REAK_MODE_(?:OSCILLATOR|SIDECHAIN|RADIO))|EPP_(?:TREMOLO_(?:WAVE_(?:S(?:AW_(?:DOWN|UP)|QUARE|INE)|TRIANGLE)|MODE_(?:E_GRAND|BYPASS|GUITAR|SYNTH|70S|80S))|DRIVE_MODE_(?:T(?:RANSISTOR|APE)|DE_TUBE|US_TUBE|BYPASS)|EQ_MODE_(?:E_GRAND|PASSIVE|BYPASS|70S|80S))|K(?:O(?:LOR_(?:S(?:OLID_CONSOLE|MOOTH_FUZZ|ATURAVER|UPER_AMP)|HARMONIC_CTRL|ANALOG_AURA|FULL_ON|CRUNCH|DIODE|TAPE)|NTAKT_IS_(?:STANDALONE|HEADLESS))|EY_TYPE_(?:CONTROL|DEFAULT|NONE))|N(?:KS_(?:STYLE_(?:FILTERTYPE|TEMPOSYNC|WAVEFORM|DEFAULT|POWER|VALUE|KNOB|MENU)|TYPE_(?:CONTINUOUS_(?:UNI|BI)|DISCRETE_(?:UNI|BI)|TOGGLE))|UM_SCALES|OT_FOUND)|R(?:E(?:PLIKA_TYPE_(?:DIFFUSION|ANALOGUE|VINTAGE|MODERN|TAPE)|VERB2_TYPE_(?:HALL|ROOM))|AUM_TYPE_(?:GROUNDED|COSMIC|AIRY)|INGMOD_LFO_WAVE_S(?:QUARE|INE))|B(?:EATMASHER_LENGTH_(?:QUARTER(?:_DOTTED)?|HALF(?:_DOTTED)?|8TH(?:_DOTTED)?|16TH|32ND|BAR)|ITE_HPF_MODE_(?:100|200|5)|AR_START_POSITION|US_OFFSET)|L(?:E(?:AP_(?:DEFAULT_START_KEY|KEYBOARD_TONALITY)|VEL_METER_(?:INSERT|GROUP|MAIN))|OG_(?:WA(?:TCHING|RNING)|MESSAGE))|M(?:OUSE_(?:EVENT_TYPE(?:_(?:LEFT_BUTTON_(?:DOWN|UP)|DR(?:AG|OP)))?|OVER_CONTROL)|AIN_BUS)|G(?:ROUP_PAR_(?:NUM_ZONES|HIGH_KEY|LOW_KEY|COLOR)|LOBAL_(?:SCALE|KEY))|V(?:C_(?:COLOR_TYPE_[ABC]|DEPTH_[123456])|L_TMPRO_(?:STANDARD|HQ))|T(?:RANSPORT_(?:RUNNING|ACTIVE)|IME_(?:MINUTE|SECOND|HOUR))|ASYNC_(?:EXIT_STATUS|PAR_[12]|VALUE|TYPE|ID)|ZONE_STATUS_(?:IGNORED|LOADED|PURGED|EMPTY)|IN(?:S(?:ERT_BUS|T_NAME)|TERNAL_MARK)|HQI_MODE_(?:STANDARD|PERFECT|HIGH)|UI_ID)|UM_(?:OUTPUT_CHANNELS|GROUPS|ZONES)|C_(?:N(?:OTE|UM)|VALUE)|OTE_HELD)|C(?:ONTROL_PAR_(?:W(?:AVE(?:_(?:C(?:URSOR_COLOR|OLOR)|END_(?:ALPHA|COLOR)|ALPHA)|TABLE_(?:END_(?:ALPHA|COLOR)|ALPHA|COLOR))|T_(?:VIS_MODE|ZONE)|F_VIS_MODE|IDTH)|F(?:ONT_TYPE(?:_O(?:N(?:_(?:PRESSED|HOVER))?|FF_(?:PRESSED|HOVER)))?|ILE(?:_TYPE|PATH))|D(?:ND_(?:ACCEPT_(?:A(?:RRAY|UDIO)|MIDI)|BEHAVIOUR)|ISABLE_TEXT_SHIFTING|EFAULT_VALUE)|M(?:OUSE_(?:BEHAVIOUR(?:_[XY])?|MODE)|I(?:DI_EXPORT_AREA_IDX|N_VALUE)|AX_VALUE)|P(?:AR(?:ALLAX_[XY]|ENT_PANEL)|ICTURE(?:_STATE)?|EAK_COLOR|OS_[XY])|S(?:HO(?:W_ARROWS|RT_NAME)|LICEMARKERS_COLOR|ELECTED_ITEM_IDX)|N(?:KS_(?:ST(?:R_VALUES|YLE)|NUM_VALUES|TYPE)|UM_ITEMS|ONE)|A(?:UTOMATION_(?:NAME|ID)|LLOW_AUTOMATION|CTIVE_INDEX)|B(?:A(?:R_COLOR|SEPATH)|G_(?:ALPHA|COLOR))|C(?:U(?:RSOR_PICTURE|STOM_ID)|OLUMN_WIDTH)|R(?:ECEIVE_DRAG_EVENTS|ANGE_M(?:AX|IN))|T(?:EXT(?:_ALIGNMENT|POS_Y|LINE)?|YPE)|O(?:VERLOAD_COLOR|FF_COLOR|N_COLOR)|V(?:ALUE(?:POS_Y)?|ERTICAL)|Z(?:ERO_LINE_COLOR|_LAYER)|GRID_(?:HEIGHT|WIDTH|X|Y)|KEY_(?:CONTROL|SHIFT|ALT)|H(?:E(?:IGHT|LP)|IDE)|ENABLE_DND|IDENTIFIER|LABEL|UNIT)|URRENT_(?:SCRIPT_SLOT|EVENT)|C_NUM)|FILTER_TYPE_(?:S(?:V_(?:PAR_(?:BPBP|LPHP)|NOTCH[46]|HP[1246]|LP[1246]|SER_LPHP|BP[246])|IMPLE_LPHP)|L(?:DR_(?:HP[1234]|LP[1234]|BP[24]|NOTCH|PEAK)|P(?:1POLE|2POLE|4POLE|6POLE)|ADDER)|AR_(?:BP(?:24?|4)|HP(?:24?|4)|LP(?:24?|4))|B(?:P(?:2POLE|4POLE)|R4POLE)|D(?:AFT_(?:HP|LP)|UAL_SKF)|EQ(?:1BAND|2BAND|3BAND)|HP(?:1POLE|2POLE|4POLE)|V(?:ERSATILE|OWEL[AB])|MONARK_(?:LP[124]|BP)|P(?:HASER|RO52)|FORMANT_[12])|K(?:EY_COLOR_(?:W(?:ARM_YELLOW|HITE)|LI(?:GHT_ORANGE|ME)|M(?:AGENTA|INT)|P(?:URPLE|LUM)|BL(?:ACK|UE)|TURQUOISE|INACTIVE|DEFAULT|FUCHSIA|ORANGE|VIOLET|YELLOW|GREEN|CYAN|NONE|RED)|NOB_UNIT_(?:PERCENT|NONE|OCT|DB|HZ|MS|ST)|SP_TIMER)|M(?:IDI_(?:C(?:OMMAND(?:_(?:P(?:ROGRAM_CHANGE|ITCH_BEND|OLY_AT)|N(?:OTE_O(?:FF|N)|RPN)|MONO_AT|RPN|CC))?|HANNEL)|BYTE_[12])|ARK_(?:1[0123456789]?|2[012345678]?|3|4|5|6|7|8|9)|OD_TARGET_INVERT_SOURCE)|I(?:N(?:ST_(?:LIB_(?:PIC_(?:ONE_ID|TWO_ID)|DESCRIPTION_ID|COPYRIGHT_ID)|WALLPAPER_ID|PERFVIEW_ID|ICON_ID)|TMOD_TYPE_(?:ENV(?:_FOLLOW|ELOPE)|STEPMOD|GLIDE|NONE|LFO))|DX_OFFSET_EXT_MOD)|S(?:TART_CRITERIA_(?:O(?:N_(?:CONTROLLER|KEY)|R_NEXT)|CYCLE_R(?:OUND_ROBIN|ANDOM)|AND_N(?:OT_NEXT|EXT)|SLICE_TRIGGER|NONE)|LOT_TYPE_(?:INSTRUMENT|EMPTY|BANK)|IGNATURE_(?:DENOM|NUM))|ZONE_PAR_(?:S(?:AMPLE_(?:MOD_RANGE|START|RATE|END)|ELECTED)|FADE_(?:HIGH_(?:VELO|KEY)|LOW_(?:VELO|KEY))|HIGH_(?:VELO|KEY)|LOW_(?:VELO|KEY)|ROOT_KEY|VOLUME|GROUP|TUNE|BPM|PAN)|UI_W(?:F_PROP_(?:TABLE_(?:IDX_HIGHLIGHT|VAL)|MIDI_DRAG_START_NOTE|PLAY_CURSOR|FLAGS)|AVEFORM_(?:USE_(?:MIDI_DRAG|SLICES|TABLE)|TABLE_IS_BIPOLAR))|L(?:FO_TYPE_(?:R(?:ECTANGLE|ANDOM)|MULTI(?:_DIGITAL)?|S(?:AWTOOTH|INE)|TRIANGLE)|OOP_PAR_(?:LENGTH|TUNING|COUNT|START|XFADE|MODE))|D(?:URATION_(?:SIXTEENTH(?:_TRIPLET)?|QUARTER(?:_TRIPLET)?|EIGHTH(?:_TRIPLET)?|BAR)|ISTANCE_BAR_START)|HIDE_(?:PART_(?:MOD_LIGHT|NOTHING|CURSOR|TITLE|VALUE|BG)|WHOLE_CONTROL)|V(?:ALUE_EDIT_MODE_NOTE_NAMES|CC_(?:PITCH_BEND|MONO_AT)|NC_PITCH_BEND)|GET_FOLDER_(?:FACTORY_DIR|INSTALL_DIR|LIBRARY_DIR|PATCH_DIR|RC_DIR)|R(?:EF_(?:GROUP_IDX|SLOT_IDX)|PN_(?:ADDRESS|VALUE))|OUTPUT_TYPE_(?:MASTER_OUT|AUX_OUT|BUS_OUT|DEFAULT)|P(?:LAYED_VOICES_(?:TOTAL|INST)|OLY_AT_NUM)|ALL_(?:EVENTS|GROUPS))\b|(~)?\bNI_(?:DETECT_(?:P(?:ITCH_INVALID|EAK_INVALID)|LOUDNESS_INVALID|TEMPO_INVALID|RMS_INVALID)|MATH_(?:PI|E))\b|(@)?\bNI_ASYNC_STR_VALUE\b|(%)?\b(?:N(?:I_USER_ZONE_IDS|OTE_DURATION)|GROUPS_(?:AFFECTED|SELECTED)|KEY_DOWN(?:_OCT)?|CC(?:_TOUCHED)?|EVENT_PAR|POLY_AT)\b|(!)?\bNI_DND_ITEMS_(?:A(?:RRAY|UDIO)|MIDI)\b'
+  builtin_functions: '\b(?:s(?:e(?:t_(?:k(?:ey(?:_(?:pressed(?:_support)?|color|name|type)|range)|nob_(?:properties|defval|label|unit)|ill_priority)|m(?:enu_(?:item_(?:v(?:isibility|alue)|str)|properties)|ap_editor_event_color|idi)|s(?:lider_properties|witch_properties|napshot_type|cript_title|kin_offset|ample)|control(?:_(?:par(?:_(?:str(?:_arr)?|real_arr|arr))?|help)|ler)|t(?:able_(?:steps_shown|properties)|ext(?:_edit_properties)?)|wave(?:table(?:2d_properties|3d_properties)|form_properties)|l(?:evel_meter_properties|abel_properties|istener|oop_par)|n(?:ks_nav_(?:name|par)|ote_controller|um_user_zones|rpn)|v(?:alue_(?:edit_properties|async(?:_str)?)|oice_limit)|ui_(?:w(?:f_property|idth_px)|height(?:_px)?|color)|e(?:vent_(?:par(?:_arr)?|mark)|ngine_par(?:_m)?)|b(?:utton_properties|ounds)|group_dyn_par_name|zone_par|poly_at|rpn)|arch)|l(?:ice_(?:idx_loop_(?:start|end)|l(?:oop_count|ength)|start)|otidx_to_guiidx)|h(?:_(?:right|left)|ow_library_tab)|ave_(?:array(?:_str)?|midi_file)|ubscribe_async|i(?:gnbit|n)|top_wait|ort|qrt|gn)|g(?:et_(?:key(?:_(?:t(?:riggerstate|ype)|color|name)|range_(?:m(?:ax_note|in_note)|name))|e(?:ngine_par(?:_(?:disp(?:_(?:ext|m))?|m))?|vent_(?:par(?:_arr)?|mark|ids))|con(?:trol_par(?:_(?:str(?:_arr)?|real_arr|arr))?|nected_slots)|s(?:ample(?:_length)?|cale(?:_name)?|el_zones_idx)|m(?:enu_item_(?:v(?:isibility|alue)|str)|od_idx)|n(?:ks_nav_(?:name|par)|um_zones)|zone_(?:status|par|id)|ui_(?:wf_property|id)|group_(?:idx|par)|fo(?:nt_id|lder)|purge_state|voice_limit|target_idx|loop_par)|uiidx_to_slotidx|roup_name)|m(?:f_(?:get_(?:n(?:ext(?:_at)?|ote_length|um_tracks)|b(?:yte_(?:one|two)|uffer_size)|l(?:ast(?:_filename)?|ength)|p(?:rev(?:_at)?|os)|c(?:hannel|ommand)|event_par|track_idx|first|mark|id)|set_(?:b(?:yte_(?:one|two)|uffer_size)|n(?:um_export_areas|ote_length)|e(?:xport_area|vent_par)|c(?:hannel|ommand)|length|mark|pos)|insert_(?:event|file)|re(?:move_event|set)|copy_export_area)|ake_(?:per(?:sistent|fview)|instr_persistent)|ove_control(?:_px)?|s(?:_to_ticks|b)|essage)|_(?:s(?:lice_(?:idx_loop_(?:start|end)|l(?:oop_count|ength)|start)|et_(?:skin_offset|engine_par))|pgs_(?:get_key_val|set_key_val|create_key|key_exists)|re(?:set_rls_trig_counter|ad_persistent_var)|get_(?:engine_par(?:_disp)?|folder)|will_never_terminate|load_ir_sample|num_slices)|l(?:o(?:ad_(?:p(?:erformance_view|atch)|n(?:ext_patch|ative_ui)|ir_sample(?:_m)?|array(?:_str)?|komplete_ui|midi_file)|g(?:10|2)?)|iterate_(?:post_macro|macro)|sb)|d(?:e(?:tect_(?:instrument_type|p(?:itch|eak)|sample_type|drum_type|loudness|tempo|key|rms)|lete_event_mark|c)|isa(?:ble_logging|llow_group)|ont_use_machine_mode)|r(?:e(?:set_(?:rls_trig_counter|ksp_timer|nks_nav|engine)|a(?:d_persistent_var|l(?:_to_int)?)|direct_(?:output|midi)|quest_value_async|move_keyrange)|andom|ound)|p(?:gs_(?:s(?:et_(?:str_key_val|key_val)|tr_key_exists)|get_(?:str_key_val|key_val)|create_(?:str_key|key)|key_exists)|urge_group|lay_note|ow)|c(?:hange_(?:t(?:ime_with_pitch|une)|listener_par|v(?:elo|ol)|note|pan)|ircle_of_fifths_distance|c_delivery_request|o(?:ntinue|s)|brt|eil)|i(?:gnore_(?:controller|event|midi)|n(?:t(?:_to_real)?|_range|c)|terate_(?:post_macro|macro)|s_zone_empty|mport_nckp)|a(?:t(?:tach_(?:level_meter|zone)|an)|dd_(?:menu_item|text_line)|llow_group|rray_equal|cos|sin|bs)|f(?:ind_(?:target|group|zone|mod)|s_(?:get_filename|navigate)|ade_(?:out|in)|lo(?:at|or))|w(?:a(?:it(?:_(?:async|ticks))?|tch_(?:array_idx|var))|ill_never_terminate)|zone_slice_(?:idx_loop_(?:start|end)|l(?:oop_count|ength)|start)|e(?:x(?:p(?:ose_controls|2)?|it)|vent_status)|n(?:um_(?:slices(?:_zone)?|elements)|ote_off)|USE_CODE_IF(?:_NOT)?|output_channel_name|by_(?:marks|track)|t(?:icks_to_ms|an)|RESET_CONDITION|SET_CONDITION|END_USE_CODE|unload_slot|hide_part)\b'
   builtin_param_shorthands: '(->)\s*((?:m(?:i(?:di_(?:c(?:hannel|ommand)|export_area_idx|byte_[12])|n(?:_value)?)|o(?:use_(?:behaviour(?:_[xy])?|mode)|d_value_(?:ex_id|id))|ax(?:_value)?)|w(?:ave(?:_(?:c(?:ursor_color|olor)|end_(?:alpha|color)|alpha)|table_(?:end_(?:alpha|color)|alpha|color))|t_(?:vis_mode|zone)|f_vis_mode|idth)|d(?:nd_(?:accept_(?:a(?:rray|udio)|midi)|behaviour)|isa(?:ble_text_shifting|llow_key_type)|efault(?:_value)?)|p(?:a(?:r(?:allax_[xy]|ent_panel|_[0123])|n)|icture(?:_state)?|os(?:_[xy])?|eak_color|lay_pos)|f(?:ont_type(?:_o(?:n(?:_(?:pressed|hover))?|ff_(?:pressed|hover)))?|ile(?:_type|path))|n(?:ks_(?:st(?:r_values|yle)|num_values|type)|o(?:te(?:_length)?|ne)|um_items)|a(?:llow_(?:automation|key_type|group)|utomation_(?:name|id)|ctive_index)|s(?:ho(?:w_arrows|rt_name)|licemarkers_color|elected_item_idx|ource)|r(?:e(?:ceive_drag_events|l_velocity)|ange_m(?:ax|in))|v(?:e(?:locity(?:_2)?|rtical)|alue(?:pos_y)?|olume)|t(?:ext(?:_alignment|pos_y|line)?|rack_nr|une|ype)|c(?:u(?:rsor_picture|stom(?:_id)?)|olumn_width)|b(?:a(?:r_color|sepath)|g_(?:alpha|color))|o(?:verload_color|ff_color|n_color)|z(?:ero_line_color|_layer|one_id)|grid_(?:height|width|x|y)|key_(?:control|shift|alt)|h(?:e(?:ight|lp)|ide)|id(?:entifier)?|enable_dnd|label|unit|0|1|2|3|x|y))\b'

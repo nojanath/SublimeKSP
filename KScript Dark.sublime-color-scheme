@@ -67,7 +67,7 @@
         },
         {
             "name": "User function call",
-            "scope": "meta.function-call -function.ksp",
+            "scope": "meta.function-call",
             "foreground": "#F60"
         },
         {
