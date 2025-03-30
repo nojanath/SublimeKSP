@@ -2,5 +2,5 @@
 	<content><![CDATA[{ #pragma compile_with add_compile_date }]]></content>
 	<description>pragma compile with add compile date</description>
 	<tabTrigger>pwa</tabTrigger>
-	<scope>source.ksp</scope>
+	<scope>source.sksp</scope>
 </snippet>

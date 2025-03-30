@@ -2,5 +2,5 @@
 	<content><![CDATA[{ #pragma compile_without extra_syntax_checks }]]></content>
 	<description>pragma compile without extra syntax checks</description>
 	<tabTrigger>poe</tabTrigger>
-	<scope>source.ksp</scope>
+	<scope>source.sksp</scope>
 </snippet>

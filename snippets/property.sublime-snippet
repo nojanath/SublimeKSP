@@ -12,5 +12,5 @@ end property
 ]]></content>
 	<description>property</description>
 	<tabTrigger>property</tabTrigger>
-	<scope>source.ksp</scope>
+	<scope>source.sksp</scope>
 </snippet>

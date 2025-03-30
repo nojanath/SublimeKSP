@@ -2,5 +2,5 @@
 	<content><![CDATA[{ #pragma compile_without combine_callbacks }]]></content>
 	<description>pragma compile without combine callbacks</description>
 	<tabTrigger>pocc</tabTrigger>
-	<scope>source.ksp</scope>
+	<scope>source.sksp</scope>
 </snippet>

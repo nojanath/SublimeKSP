@@ -2,5 +2,5 @@
 	<content><![CDATA[declare ui_slider ${1:name} (${2:min}, ${3:max})]]></content>
 	<description>ui_slider</description>
 	<tabTrigger>ui_slider</tabTrigger>
-	<scope>source.ksp</scope>
+	<scope>source.sksp</scope>
 </snippet>

@@ -2,5 +2,5 @@
 	<content><![CDATA[{ #pragma compile_without compact_variables }]]></content>
 	<description>pragma compile without compact variables</description>
 	<tabTrigger>pocv</tabTrigger>
-	<scope>source.ksp</scope>
+	<scope>source.sksp</scope>
 </snippet>

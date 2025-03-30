@@ -2,5 +2,5 @@
 	<content><![CDATA[{ #pragma compile_with remove_whitespace }]]></content>
 	<description>pragma compile with remove whitespace</description>
 	<tabTrigger>pwrw</tabTrigger>
-	<scope>source.ksp</scope>
+	<scope>source.sksp</scope>
 </snippet>

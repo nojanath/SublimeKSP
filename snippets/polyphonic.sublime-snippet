@@ -2,5 +2,5 @@
 	<content><![CDATA[declare polyphonic ${1:name}]]></content>
 	<description>polyphonic</description>
 	<tabTrigger>polyphonic</tabTrigger>
-	<scope>source.ksp</scope>
+	<scope>source.sksp</scope>
 </snippet>

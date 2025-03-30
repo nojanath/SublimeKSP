@@ -9,5 +9,5 @@ end select
 ]]></content>
 	<description>select</description>
 	<tabTrigger>select</tabTrigger>
-	<scope>source.ksp</scope>
+	<scope>source.sksp</scope>
 </snippet>

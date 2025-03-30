@@ -15,5 +15,5 @@ end on
 ]]></content>
 	<description>listener callback</description>
 	<tabTrigger>lcb</tabTrigger>
-	<scope>source.ksp</scope>
+	<scope>source.sksp</scope>
 </snippet>

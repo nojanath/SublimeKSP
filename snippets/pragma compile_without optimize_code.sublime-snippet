@@ -2,5 +2,5 @@
 	<content><![CDATA[{ #pragma compile_without optimize_code }]]></content>
 	<description>pragma compile without optimize code</description>
 	<tabTrigger>poo</tabTrigger>
-	<scope>source.ksp</scope>
+	<scope>source.sksp</scope>
 </snippet>

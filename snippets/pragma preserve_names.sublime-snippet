@@ -2,5 +2,5 @@
 	<content><![CDATA[{ #pragma preserve_names ${1:name} }]]></content>
 	<description>pragma preserve names</description>
 	<tabTrigger>ppn</tabTrigger>
-	<scope>source.ksp</scope>
+	<scope>source.sksp</scope>
 </snippet>

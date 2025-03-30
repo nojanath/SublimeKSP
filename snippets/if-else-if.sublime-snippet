@@ -8,5 +8,5 @@ end if
 ]]></content>
 	<description>if else if</description>
     <tabTrigger>iei</tabTrigger>
-    <scope>source.ksp</scope>
+    <scope>source.sksp</scope>
 </snippet>

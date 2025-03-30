@@ -6,5 +6,5 @@ end on
 ]]></content>
 	<description>NRPN callback</description>
     <tabTrigger>nrpn</tabTrigger>
-    <scope>source.ksp</scope>
+    <scope>source.sksp</scope>
 </snippet>

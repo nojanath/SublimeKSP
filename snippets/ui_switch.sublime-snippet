@@ -2,5 +2,5 @@
 	<content><![CDATA[declare ui_switch ${1:name}]]></content>
 	<description>ui_switch</description>
 	<tabTrigger>ui_switch</tabTrigger>
-	<scope>source.ksp</scope>
+	<scope>source.sksp</scope>
 </snippet>

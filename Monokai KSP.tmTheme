@@ -220,7 +220,7 @@
 			<key>name</key>
 			<string>Parentheses</string>
 			<key>scope</key>
-			<string>parentheses -begin.source.ksp -end.source.ksp</string>
+			<string>parentheses -begin.source.sksp -end.source.sksp</string>
 			<key>settings</key>
 			<dict>
 				<key>foreground</key>
