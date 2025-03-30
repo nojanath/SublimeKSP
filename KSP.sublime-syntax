@@ -242,7 +242,7 @@ contexts:
           pop: true
         - include: main
 
-    - match: '(?!#)\b(struct|define|literals|on|(inst)?pers|read|list|call|step|function|taskfunc|macro|mod|declare|const|polyphonic|end|local|global|family|import|as|property|out|override|ui_(label|button|switch|slider|menu|value_edit|waveform|wavetable|knob|table|xy|text_edit|level_meter|file_selector|panel|mouse_area))\b(?!#)'
+    - match: '(?!#)\b(struct|define|literals|on|(inst)?pers|read|list|call|step|function|taskfunc|macro|mod|declare|const|polyphonic|end|local|global|family|import|as|property|out|override|ui_(label|button|switch|slider|menu|value_edit|waveform|wavetable|knob|table|xy|text_edit|level_meter|file_selector|panel|mouse_area)|var)\b(?!#)'
       comment: Keywords
       scope: keyword.other.source.sksp
 
