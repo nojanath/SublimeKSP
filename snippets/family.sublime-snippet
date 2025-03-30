@@ -6,5 +6,5 @@ end family
 ]]></content>
 	<description>family</description>
     <tabTrigger>family</tabTrigger>
-    <scope>source.ksp</scope>
+    <scope>source.sksp</scope>
 </snippet>

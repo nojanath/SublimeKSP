@@ -2,5 +2,5 @@
 	<content><![CDATA[{ #pragma save_compiled_source ${1:path} }]]></content>
 	<description>pragma save compiled source</description>
 	<tabTrigger>psc</tabTrigger>
-	<scope>source.ksp</scope>
+	<scope>source.sksp</scope>
 </snippet>

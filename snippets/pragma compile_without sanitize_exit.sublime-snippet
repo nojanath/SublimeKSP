@@ -2,5 +2,5 @@
 	<content><![CDATA[{ #pragma compile_without sanitize_exit_command }]]></content>
 	<description>pragma compile without sanitize exit</description>
 	<tabTrigger>pos</tabTrigger>
-	<scope>source.ksp</scope>
+	<scope>source.sksp</scope>
 </snippet>

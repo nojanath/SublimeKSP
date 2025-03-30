@@ -2,5 +2,5 @@
 	<content><![CDATA[{ #pragma compile_without write_log_on_fail }]]></content>
 	<description>pragma compile without write log on fail</description>
 	<tabTrigger>pol</tabTrigger>
-	<scope>source.ksp</scope>
+	<scope>source.sksp</scope>
 </snippet>

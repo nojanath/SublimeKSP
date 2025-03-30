@@ -2,5 +2,5 @@
 	<content><![CDATA[declare ui_text_edit @${1:name}]]></content>
 	<description>ui_text_edit</description>
 	<tabTrigger>ui_text_edit</tabTrigger>
-	<scope>source.ksp</scope>
+	<scope>source.sksp</scope>
 </snippet>

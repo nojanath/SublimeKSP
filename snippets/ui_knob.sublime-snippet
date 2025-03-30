@@ -2,5 +2,5 @@
 	<content><![CDATA[declare ui_knob ${1:name} (${2:min}, ${3:max}, ${4:display_ratio})]]></content>
 	<description>ui_knob</description>
 	<tabTrigger>ui_knob</tabTrigger>
-	<scope>source.ksp</scope>
+	<scope>source.sksp</scope>
 </snippet>

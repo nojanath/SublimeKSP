@@ -102,7 +102,7 @@
         },
         {
             "name": "Parentheses",
-            "scope": "parentheses -begin.source.ksp -end.source.ksp",
+            "scope": "parentheses -begin.source.sksp -end.source.sksp",
             "foreground": "#888"
         }
     ]

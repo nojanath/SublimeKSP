@@ -2,5 +2,5 @@
 	<content><![CDATA[declare ui_waveform ${1:name} (${2:width}, ${3:height})]]></content>
 	<description>ui_waveform</description>
 	<tabTrigger>ui_wf</tabTrigger>
-	<scope>source.ksp</scope>
+	<scope>source.sksp</scope>
 </snippet>

@@ -6,5 +6,5 @@ end on
 ]]></content>
 	<description>PGS callback</description>
     <tabTrigger>pgsc</tabTrigger>
-    <scope>source.ksp</scope>
+    <scope>source.sksp</scope>
 </snippet>

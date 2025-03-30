@@ -8,5 +8,5 @@ end while
 ]]></content>
 	<description>while with counter</description>
     <tabTrigger>whilec</tabTrigger>
-    <scope>source.ksp</scope>
+    <scope>source.sksp</scope>
 </snippet>

@@ -71,7 +71,7 @@ class CompileKspCommand(sublime_plugin.ApplicationCommand):
 
         if kwargs.get('compile_all_open', None):
             open_views = view.window().views()
-            open_views = [view for view in open_views if re.search(r'source\.ksp',view.scope_name(0))]
+            open_views = [view for view in open_views if re.search(r'source\.sksp',view.scope_name(0))]
 
         self.thread = CompileKspThread(open_views)
         self.thread.start()
@@ -498,7 +498,7 @@ class KspCompletions(sublime_plugin.EventListener):
 
         global builtin_compl_vars, builtin_compl_funcs, magic_control_and_event_pars, builtin_snippets
 
-        if not view.match_selector(locations[0], 'source.ksp -string -comment -constant'):
+        if not view.match_selector(locations[0], 'source.sksp -string -comment -constant'):
             return []
 
         pt = locations[0] # - len(prefix) - 1

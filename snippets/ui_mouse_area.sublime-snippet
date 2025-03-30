@@ -2,5 +2,5 @@
 	<content><![CDATA[declare ui_mouse_area ${1:name}]]></content>
 	<description>ui_mouse_area</description>
 	<tabTrigger>ui_mouse_area</tabTrigger>
-	<scope>source.ksp</scope>
+	<scope>source.sksp</scope>
 </snippet>

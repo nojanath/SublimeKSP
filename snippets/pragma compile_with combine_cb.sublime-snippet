@@ -2,5 +2,5 @@
 	<content><![CDATA[{ #pragma compile_with combine_callbacks }]]></content>
 	<description>pragma compile with combine callbacks</description>
 	<tabTrigger>pwcc</tabTrigger>
-	<scope>source.ksp</scope>
+	<scope>source.sksp</scope>
 </snippet>

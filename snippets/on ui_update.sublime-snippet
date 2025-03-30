@@ -6,5 +6,5 @@ end on
 ]]></content>
 	<description>UI update callback</description>
 	<tabTrigger>upd</tabTrigger>
-	<scope>source.ksp</scope>
+	<scope>source.sksp</scope>
 </snippet>
