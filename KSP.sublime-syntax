@@ -381,7 +381,7 @@ contexts:
                     EXP_FILTER_(AMOUNT|MORPH)|
                     EXTMOD_INTENSITY|
                     FCOMP_(ATTACK|HQ_MODE|INPUT|LINK|MAKEUP|MIX|RATIO|RELEASE)|
-                    FILTER_(BYPA|BYPB|BYPC|GAIN|LADDER_HQ|RESB|RESC|SHIFTB|SHIFTC|TYPEA|TYPEB|TYPEC)|
+                    FILTER_(BYPA|BYPB|BYPC|FEEDBACK(_TYPE)?|FM|GAIN|LADDER_HQ|RESB|RESC|SHIFTB|SHIFTC|TYPEA|TYPEB|TYPEC)|
                     FL_(COLOR|DEPTH|FEEDBACK|PHASE|SPEED(_UNIT)?)|
                     FLAIR_(AMOUNT|CHORD|DAMPING|DETUNE|FEEDBACK|INVERT_PHASE|MIX|MODE|OFFSET|PITCH|RATE(_UNIT)?|SCANMODE|VOICES|WIDTH)|
                     FLEXENV_(LOOP(_START|_END)?|NUM_STAGES|ONESHOT|STAGE_LEVEL|STAGE_SLOPE|STAGE_TIME)|
@@ -393,7 +393,7 @@ contexts:
                     GATER_(GATE|MIX|MUTE_INPUT|NOISE|RATE(_SYNC)?|SHAPE|STUTTER)|
                     GLIDE_COEF(_UNIT)?|
                     GN_GAIN|GRAIN_LENGTH|GROUP_DYNAMICS|
-                    HOLD(_UNIT)?|(HP|LP)_CUTOFF|HQI_MODE|
+                    HOLD(_UNIT)?|(HP|LP)_(CUTOFF|RESONANCE)|HQI_MODE|
                     HS_(BASS|DEPTH|MASTER|MID|MONO|OVERDRIVE|PRE(NORMAL|OVERDRIVE)|PRESENCE|TREBLE)|
                     (INSERT|SEND)_EFFECT_OUTPUT_GAIN|
                     INTMOD_(BYPASS|FREQUENCY(_UNIT)?|INTENSITY|PULSEWIDTH|RETRIGGER|SUBTYPE|TYPE)|
@@ -478,13 +478,14 @@ contexts:
         FILTER_TYPE_(
                      AR_(BP|HP|LP)(2?4?)|
                      BP(2|4)POLE|BR4POLE|
-                     DAFT_(HP|LP)|
+                     DAFT_(HP|LP)|DUAL_SKF|
                      EQ[1-3]BAND|
                      FORMANT_[1-2]|
                      HP(1|2|4)POLE|
                      LADDER|
                      LDR_((BP|HP|LP)(2|4)|(HP|LP)(1|3)|NOTCH|PEAK)|
                      LP(1|2|4|6)POLE|
+                     MONARK_(LP[124]|BP)|
                      PHASER|
                      PRO52|
                      SIMPLE_LPHP|
@@ -528,6 +529,7 @@ contexts:
             DISTORTION_TYPE_(TRANS|TUBE)|
             DND_ACCEPT_(MULTIPLE|NONE|ONE)|
             EPP_(DRIVE_MODE_(BYPASS|(DE|US)_TUBE|TAPE|TRANSISTOR)|EQ_MODE_(70S|80S|BYPASS|E_GRAND|PASSIVE)|TREMOLO_(MODE_(70S|80S|BYPASS|E_GRAND|GUITAR|SYNTH)|WAVE_(SAW_(DOWN|UP)|SINE|SQUARE|TRIANGLE)))|
+            FILTER_FEEDBACK_TYPE_(OFF|A|B)|
             FILE_(EXTENSION|FULL_PATH|FULL_PATH_OS|NAME)|
             FILE_TYPE_(ARRAY|AUDIO|MIDI)|
             FLAIR_(MODE_(SCAN|STANDARD|THRU_ZERO)|SCANMODE_(SAW_DOWN|SAW_UP|TRIANGLE))|
