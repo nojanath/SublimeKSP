@@ -1,6 +1,6 @@
 # SublimeKSP
 
-A Sublime Text 3/4 plugin for working with and compiling KSP (Kontakt Script Processor) code.
+A Sublime Text (versions 3 and 4) plugin for working with and compiling KSP (Kontakt Script Processor) code.
 
 ### Changes
 This fork is based on [Nils Liberg's official SublimeKSP plugin, v1.11](http://nilsliberg.se/ksp/), and supports all Kontakt versions.
