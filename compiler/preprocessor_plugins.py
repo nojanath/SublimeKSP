@@ -1224,7 +1224,7 @@ def handleStringArrayInitialisation(lines, placeholders):
             m = re.search(stringArrayRe, line)
 
             if m:
-                if m.group("prefix") == "!":
+                if m.group("prefix") == "!" or '{' in m.group("initlist"):
                     if not re.search(stringListRe, m.group("initlist")):
                         raise ParseException(lines[i], "Expected integers, got strings!\n")
 
@@ -1234,7 +1234,11 @@ def handleStringArrayInitialisation(lines, placeholders):
                     if famCount != 0:
                         name = inspectFamilyState(lines, i) + name
 
-                    newLines.append(lines[i].copy(line[: line.find(":")]))
+                    if m.group("prefix") != "!":
+                        line = Line("declare !{}[{}]".format(m.group("name"), m.group("arraysize")))
+                        newLines.append(line)
+                    else:
+                        newLines.append(lines[i].copy(line[: line.find(":")]))
 
                     if len(stringList) != 1:
                         for ii in range(len(stringList)):
@@ -1251,7 +1255,7 @@ def handleStringArrayInitialisation(lines, placeholders):
 
                             # if it's an empty string don't add it to new lines
                             if strVal != '\"\"':
-                                newLines.append(lines[i].copy("%s[%s] := %s" % (name, str(ii), stringList[ii])))
+                                newLines.append(lines[i].copy("!%s[%s] := %s" % (name, str(ii), stringList[ii])))
                     else:
                         newLines.append(lines[i].copy("for string_it := 0 to %s - 1" % m.group("arraysize")))
                         newLines.append(lines[i].copy("%s[string_it] := %s" % (name, "".join(stringList))))
