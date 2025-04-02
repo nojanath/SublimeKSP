@@ -490,6 +490,9 @@ def handlePython(code, basepath):
             finished = False
             break
 
+        if not finished:
+            continue
+
         # Then process all read<< >> blocks
         for m in read_re.finditer(new_code):  # Process in reverse to maintain indices
             eval_code = trimmed(m.group('code'))
@@ -506,6 +509,9 @@ def handlePython(code, basepath):
 
             finished = False
             break
+
+        if not finished:
+            continue
 
     return new_code
 
