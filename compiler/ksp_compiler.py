@@ -358,7 +358,7 @@ def merge_lines(lines):
        This will remove any context information such as locations or namespaces'''
     return '\n'.join([line.command for line in lines])
 
-def parse_lines(s, filename = None, namespaces = None):
+def parse_lines(s, basepath = None, filename = None, namespaces = None):
     '''converts a source code string to a list of Line objects'''
     def process_f_string(line):
         in_string = False
@@ -421,7 +421,7 @@ def parse_lines(s, filename = None, namespaces = None):
     if namespaces is None:
         namespaces = []
 
-    s = handlePython(s)
+    s = handlePython(s, basepath)
 
     lines = s.replace('\r\n', '\n').replace('\r', '\n').split('\n')
     lines = [process_f_string(l) for l in lines]
@@ -459,12 +459,13 @@ def parse_lines(s, filename = None, namespaces = None):
 
     return collections.deque(lines)
 
-def handlePython(code):
+def handlePython(code, basepath):
     # Use re.DOTALL to make '.' match newlines
     run_re = re.compile(r"run\s*<<(?P<code>.+?)>>", re.DOTALL)
     read_re = re.compile(r"read\s*<<(?P<code>.+?)>>", re.DOTALL)
 
     namespace = {'__builtins__': __builtins__}
+    namespace = {'basepath': basepath}
     namespace.update(globals())
 
     import textwrap
@@ -579,7 +580,7 @@ def parse_lines_and_handle_imports(basepath, source, compiler_import_cache, file
     if preprocessor_func:
         source = preprocessor_func(source, namespaces)
 
-    lines = parse_lines(source, filename, namespaces)
+    lines = parse_lines(source, basepath, filename, namespaces)
     new_lines = collections.deque()
 
     while lines:
