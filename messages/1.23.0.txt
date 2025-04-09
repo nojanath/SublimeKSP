@@ -1,0 +1,46 @@
+Version 1.23.0
+---------------------------------------------------
+
+This update adds support for new engine parameters introduced in Kontakt 8.3, and a number of fixes.
+
+- ADDED Support for new filter types and engine parameters (Monark and Dual SKF)
+
+- ADDED If variables are using inline initializers, type prefix is deducted automatically (the only exception is single strings, @ prefix is still required for those)
+
+- ADDED New color scheme, KScript Dark VS, inspired by VS Code Dark+ theme
+
+- ADDED New compiler option to write a log on failed compilation
+
+- FIXED Automatic syntax detection was not working in unsaved Sublime Text views
+
+- FIXED import_nckp() command was not removed from compiled output if the imported NCKP file was empty
+
+- IMPROVED Structs now properly support declaring and using real members (issue #455)
+
+- IMPROVED START_INC, END_INC, concat() and list_add() are now properly syntax colored
+
+- IMPROVED Refactored how new built-in syntax identifiers are ingested to the compiler internally
+
+
+Thanks to Nabeel from Impact Soundworks (@eitherys) for assistance with some type deduction issues!
+
+
+That's all - have fun!
+
+
+---------------------------------------------------
+
+If you would like to roll back a version of SublimeKSP for time critical work prevented by a new bug:
+
+First, remove SublimeKSP from Sublime Package Control:
+1. Press `Ctrl + Shift + P` on Windows and Linux, or `Cmd + Shift + P` on Mac.
+2. Type "Remove Package" and select it, then select the "KSP (Kontakt Script Processor)" entry.
+
+Next, download the version you'd like [here](https://github.com/nojanath/SublimeKSP/releases).
+
+After the download, you can install it as a user package in Sublime following these instructions:
+
+1. Open the Preferences menu in Sublime Text and click Browse Packages. A folder will open up.
+2. Extract the ZIP archive you have downloaded and place it into this folder.
+3. IMPORTANT: Rename the unpacked folder to `KSP (Kontakt Script Processor)` (this is important so that your settings from Package Control version are retained)!
+4. Restart Sublime Text. Alternatively, make sure you have [Automatic​Package​Reloader](https://packagecontrol.io/packages/AutomaticPackageReloader) package installed.
