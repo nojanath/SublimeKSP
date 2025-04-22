@@ -25,6 +25,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), 'compiler'))
 import ksp_ast
 import ksp_compiler
 import preprocessor_plugins
+import subprocess
 import utils
 
 last_compiler = None
@@ -34,6 +35,52 @@ pragma_save_src_re = r'\{\s*\#pragma\s+save_compiled_source\s+(.*)\}'
 import_path_re = r'\s*import\s+[\"\'](.*)[\"\']'
 save_src_compiled_re = re.compile(pragma_save_src_re)
 pragma_and_import_re = re.compile(r'%s|%s' % (pragma_save_src_re, import_path_re))
+
+supported_exts = ['.ksp', '.b3s', '.nbsc']
+detect_syntax_exts = ['.txt', '.log']
+all_exts = supported_exts + detect_syntax_exts
+
+
+class CompileKspCliCommand(sublime_plugin.ApplicationCommand):
+    '''Compile the KSP file via command line'''
+
+    def __init__(self):
+        sublime_plugin.ApplicationCommand.__init__(self)
+        self.last_filename = None
+
+    def is_enabled(self):
+        view = sublime.active_window().active_view()
+
+        if view:
+            return 'KSP.sublime-syntax' in view.settings().get('syntax', '')
+
+    def run(self, *args, **kwargs):
+        # path to compiler
+        path = os.path.join(sublime.packages_path(), 'KSP (Kontakt Script Processor)', 'compiler', 'ksp_compiler.py')
+
+        if path:
+            fn = ''
+
+            if kwargs.get('recompile', None) and self.last_filename:
+                fn = self.last_filename
+            else:
+                # find the view containing the code to compile
+                view = sublime.active_window().active_view()
+                fn = view.file_name()
+
+            if fn:
+                print(fn)
+                if os.path.splitext(fn)[1] in all_exts:
+                    subprocess.Popen(['python', '-i', path, fn])
+
+                    self.last_filename = fn
+                else:
+                    utils.log_message('Attempted compilation of an unsupported file type! Make sure the extension is .ksp, .txt or .log and that syntax is set to KSP!')
+            else:
+                utils.log_message('Current tab in Sublime Text is not a file which exists on disk. Save the code to disk before compiling via command line!')
+        else:
+            utils.log_message('The available SublimeKSP package is installed via Package Control. Compiling via command line requires an unmanaged (manual) installation!')
+
 
 class CompileKspCommand(sublime_plugin.ApplicationCommand):
     '''Compile the KSP file or files'''
@@ -816,16 +863,13 @@ class KspDocsCommand(sublime_plugin.ApplicationCommand):
 
 class KspFixLineEndingsAndSetSyntax(sublime_plugin.EventListener):
     def is_probably_ksp_file(self, view):
-        passthrough_exts = ['.ksp', '.b3s', '.nbsc']
-        detect_syntax_exts = ['.txt', '.log']
-
         fn = view.file_name()
         ext = ''
 
         if fn:
             ext = os.path.splitext(fn)[1].lower()
 
-        if ext in passthrough_exts:
+        if ext in supported_exts:
             return True
         elif ext in detect_syntax_exts or not fn:
             code = view.substr(sublime.Region(0, 5000))
