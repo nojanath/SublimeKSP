@@ -109,19 +109,22 @@ class ParseException(SyntaxError):
         if msg is None:
             msg = 'Syntax Error'
 
-        lineno = node.lineno
+        if node:
+            lineno = node.lineno
 
-        if lineno == 0 and hasattr(node, 'get_childnodes'):
-            for child in node.get_childnodes():
-                if child.lineno != 0:
-                    lineno = child.lineno
-                    break
+            if lineno == 0 and hasattr(node, 'get_childnodes'):
+                for child in node.get_childnodes():
+                    if child.lineno != 0:
+                        lineno = child.lineno
+                        break
 
-        self.lineno = lineno
-        self.node = node
-        self.msg = msg
+            self.lineno = lineno
+            self.node = node
+            self.msg = msg
 
-        SyntaxError.__init__(self, msg)
+            SyntaxError.__init__(self, msg)
+        else:
+            SyntaxError.__init__(self, msg)
 
 class ASTNode:
     '''The very base node comprised in all AST objects'''
