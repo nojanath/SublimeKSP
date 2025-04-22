@@ -84,7 +84,12 @@ def t_BEGIN_CALLBACK(t):
     t.type = 'BEGIN_CALLBACK'
     variable = None
     parts = t.value.split()
-    name = parts[1]
+    name = ""
+
+    if len(parts) < 2:
+        raise_parse_exception(t, "Incorrect ui_control callback declaration! Perhaps parentheses are missing?")
+    else:
+        name = parts[1]
 
     if name.startswith('ui_control') and not name.startswith('ui_controls'):
         name, variable = re.match(r'on\s+(ui_control)\s*?\((.+)\)', t.value).groups()
