@@ -132,13 +132,12 @@ true_conditions         = set()         # the conditions set using SET_CONDITION
 called_functions        = set()         # functions that are somewhere in the script invoked using the Kontakt 4.1 "call" keyword
 call_graph = collections.defaultdict(list)  # an item (a, b) is included if function a invokes function b using the "call" keyword
 
-
-def init_globals():
-    variables.clear()
-    ui_variables.clear()
+def clear_global_context():
+    placeholders.clear()
     functions.clear()
     functions_before_prefix.clear()
-    placeholders.clear()
+    variables.clear()
+    ui_variables.clear()
     families.clear()
     properties.clear()
     functions_invoking_wait.clear()
@@ -2431,10 +2430,9 @@ class KSPCompiler(object):
     def compile(self, callback = None):
         global variables
 
-        init_globals()
+        clear_global_context()
 
-        log = []
-
+        compiled_code = []
         try:
             used_functions = set()
             used_variables = set()
@@ -2539,8 +2537,7 @@ class KSPCompiler(object):
 
                 if callback:
                     callback(desc, 100 * tasks_executed / total_tasks)
-
-                    log = [l.command for l in self.lines]
+                    compiled_code = [line.command for line in self.lines]
 
                 func()
 
@@ -2565,16 +2562,17 @@ class KSPCompiler(object):
 
             if self.write_log_on_fail and self.basedir:
                 with open(os.path.join(self.basedir, '__compile_fail.log'), 'w') as out:
-                    for l in log:
-                        out.write('\n'.join(log))
-
+                    out.write('\n'.join(compiled_code))
             raise ParseException(line, message)
+        except Exception as e:
+            print("Exception encountered...")
+            raise e
 
     def abort_compilation(self):
         self.abort_requested = True
         utils.log_message('Compilation aborted!')
 
-if __name__ == "__main__":
+def main():
     '''Using the compiler as command line tool'''
     import sys
     import argparse
@@ -2723,3 +2721,6 @@ if __name__ == "__main__":
             utils.log_message("The output path for the compiled code cannot be a folder, however compilation ended successfully in %s!" % delta)
         else:
             utils.log_message("The output file for the compiled code was not defined, however compilation ended successfully in %s!" % delta)
+
+if __name__ == "__main__":
+    main()
