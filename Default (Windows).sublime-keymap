@@ -1,33 +1,79 @@
 [
-        {
-            "keys": ["f5"],
-             "command" : "compile_ksp",
-             "context": [{ "key": "selector", "operator": "equal", "operand": "source.sksp" }]
-        },
-        {
-            "keys": ["ctrl+f5"],
-             "command" : "recompile_ksp",
-             "context": [{ "key": "selector", "operator": "equal", "operand": "source.sksp" }]
-        },
-        {
-            "keys": ["shift+f5"],
-             "command" : "compile_all_open_ksp",
-             "context": [{ "key": "selector", "operator": "equal", "operand": "source.sksp" }]
-        },
-        {
-            "keys": ["alt+c"],
-            "command": "numeric_sequence",
-            "context": [{ "key": "selector", "operator": "equal", "operand": "source.sksp" }]
-        },
-        {
-            "keys": ["alt+o"],
-            "command": "open_path_from_import_or_pragma",
-            "context": [{ "key": "selector", "operator": "equal", "operand": "source.sksp" }]
-        },
-        {
-            "keys": ["enter"],
-            "command": "ksp_on_enter",
-            "context": [{ "key": "selector", "operator": "equal", "operand": "source.sksp", },
-                        { "key": "auto_complete_visible", "operator": "equal", "operand": false }]
-        },
+    {
+        "keys": ["f5"],
+        "command": "compile_ksp",
+        "context":
+        [
+            {
+                "key": "selector",
+                "operator": "equal",
+                "operand": "source.sksp"
+            }
+        ]
+    },
+    {
+        "keys": ["ctrl+f5"],
+        "command": "recompile_ksp",
+        "context":
+        [
+            {
+                "key": "selector",
+                "operator": "equal",
+                "operand": "source.sksp"
+            }
+        ]
+    },
+    {
+        "keys": ["shift+f5"],
+        "command": "compile_all_open_ksp",
+        "context":
+        [
+            {
+                "key": "selector",
+                "operator": "equal",
+                "operand": "source.sksp"
+            }
+        ]
+    },
+    {
+        "keys": ["alt+c"],
+        "command": "numeric_sequence",
+        "context":
+        [
+            {
+                "key": "selector",
+                "operator": "equal",
+                "operand": "source.sksp"
+            }
+        ]
+    },
+    {
+        "keys": ["alt+o"],
+        "command": "open_path_from_import_or_pragma",
+        "context":
+        [
+            {
+                "key": "selector",
+                "operator": "equal",
+                "operand": "source.sksp"
+            }
+        ]
+    },
+    {
+        "keys": ["enter"],
+        "command": "ksp_on_enter",
+        "context":
+        [
+            {
+                "key": "selector",
+                "operator": "equal",
+                "operand": "source.sksp"
+            },
+            {
+                "key": "auto_complete_visible",
+                "operator": "equal",
+                "operand": false
+            }
+        ]
+    }
 ]

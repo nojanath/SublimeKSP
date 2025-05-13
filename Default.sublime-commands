@@ -1,156 +1,143 @@
 [
-	{
-		"caption": "SublimeKSP: Compile",
-		"command": "compile_ksp"
-	},
-	{
-		"caption": "SublimeKSP: Compile All Open Scripts With Defined Output Path",
-		"command": "compile_all_open_ksp"
-	},
-	{
-		"caption": "SublimeKSP: Recompile",
-		"command": "recompile_ksp"
-	},
-	{
-		"caption": "SublimeKSP: Uncompress Selected Compiled Code",
-		"command": "ksp_uncompress_code"
-	},
-
-	{
-		"caption": "SublimeKSP: Play Sound When Compilation Finishes",
-		"command": "ksp_global_setting_toggle",
-		"args":
-		{
-			"setting": "ksp_play_sound",
-			"default": false
-		}
-	},
-	{
-		"caption": "SublimeKSP: Write Log on Failed Compilation",
-		"command": "ksp_global_setting_toggle",
-		"args":
-		{
-			"setting": "ksp_write_log_on_fail",
-			"default": false
-		}
-	},
-
-	{
-		"command": "ksp_global_setting_toggle",
-		"caption": "SublimeKSP: Remove Indents",
-		"args":
-		{
-			"setting": "ksp_compact_output",
-			"default": false
-		}
-	},
-	{
-		"command": "ksp_global_setting_toggle",
-		"caption": "SublimeKSP: Compact Variables",
-		"args":
-		{
-			"setting": "ksp_compact_variables",
-			"default": false
-		}
-	},
-
-
-	{
-		"command": "ksp_global_setting_toggle",
-		"caption": "SublimeKSP: Extra Syntax Checks",
-		"args":
-		{
-			"setting": "ksp_extra_checks",
-			"default": true
-		}
-	},
-	{
-		"command": "ksp_global_setting_toggle",
-		"caption": "SublimeKSP: Optimize Compiled Code",
-		"args":
-		{
-			"setting": "ksp_optimize_code",
-			"default": false
-		}
-	},
-	{
-		"command": "ksp_global_setting_toggle",
-		"caption": "SublimeKSP: Additional Branch Optimization",
-		"args":
-		{
-			"setting": "ksp_additional_branch_optimization",
-			"default": false
-		}
-	},
-
-	{
-		"command": "ksp_global_setting_toggle",
-		"caption": "SublimeKSP: Indent Size in Compiled Code",
-		"args":
-		{
-			"setting": "ksp_compiled_code_tab_size",
-			"default": 2
-		}
-	},
-
-
-	{
-		"command": "ksp_global_setting_toggle",
-		"caption": "SublimeKSP: Add Compilation Date/Time Comment",
-		"args":
-		{
-			"setting": "ksp_add_compiled_date",
-			"default": true
-		}
-	},
-	{
-		"command": "ksp_global_setting_toggle",
-		"caption": "SublimeKSP: Combine Duplicate Callbacks",
-		"args":
-		{
-			"setting": "ksp_combine_callbacks",
-			"default": false
-		}
-	},
-	{
-		"command": "ksp_global_setting_toggle",
-		"caption": "SublimeKSP: Sanitize Behavior of 'exit' Command",
-		"args":
-		{
-			"setting": "ksp_sanitize_exit_command",
-			"default": true
-		}
-	},
-
-
-	{
-		"caption": "SublimeKSP: Enable Completions for Vanilla KSP Built-ins (Reopen Sublime Text!)",
-		"command": "ksp_global_setting_toggle",
-		"args":
-		{
-			"setting": "ksp_add_completions_for_vanilla_builtins",
-			"default": false
-		}
-	},
-
-
-	{
-		"caption": "SublimeKSP: About...",
-		"command": "ksp_about"
-	},
-	{
-		"caption": "SublimeKSP: Documentation...",
-		"command": "ksp_docs"
-	},
-
-
-	{
-		"caption": "Preferences: SublimeKSP",
-		"command": "edit_settings",
-		"args":
-		{
-			"base_file": "${packages}/KSP (Kontakt Script Processor)/KSP.sublime-settings",
-			"default": "{\n\t$0\n}\n"
-		}
-	}
+    {
+        "caption": "SublimeKSP: Compile",
+        "command": "compile_ksp"
+    },
+    {
+        "caption": "SublimeKSP: Compile All Open Scripts With Defined Output Path",
+        "command": "compile_all_open_ksp"
+    },
+    {
+        "caption": "SublimeKSP: Recompile",
+        "command": "recompile_ksp"
+    },
+    {
+        "caption": "SublimeKSP: Uncompress Selected Compiled Code",
+        "command": "ksp_uncompress_code"
+    },
+    {
+        "caption": "SublimeKSP: Play Sound When Compilation Finishes",
+        "command": "ksp_global_setting_toggle",
+        "args":
+        {
+            "setting": "ksp_play_sound",
+            "default": false
+        }
+    },
+    {
+        "caption": "SublimeKSP: Write Log on Failed Compilation",
+        "command": "ksp_global_setting_toggle",
+        "args":
+        {
+            "setting": "ksp_write_log_on_fail",
+            "default": false
+        }
+    },
+    {
+        "command": "ksp_global_setting_toggle",
+        "caption": "SublimeKSP: Remove Indents",
+        "args":
+        {
+            "setting": "ksp_compact_output",
+            "default": false
+        }
+    },
+    {
+        "command": "ksp_global_setting_toggle",
+        "caption": "SublimeKSP: Compact Variables",
+        "args":
+        {
+            "setting": "ksp_compact_variables",
+            "default": false
+        }
+    },
+    {
+        "command": "ksp_global_setting_toggle",
+        "caption": "SublimeKSP: Extra Syntax Checks",
+        "args":
+        {
+            "setting": "ksp_extra_checks",
+            "default": true
+        }
+    },
+    {
+        "command": "ksp_global_setting_toggle",
+        "caption": "SublimeKSP: Optimize Compiled Code",
+        "args":
+        {
+            "setting": "ksp_optimize_code",
+            "default": false
+        }
+    },
+    {
+        "command": "ksp_global_setting_toggle",
+        "caption": "SublimeKSP: Additional Branch Optimization",
+        "args":
+        {
+            "setting": "ksp_additional_branch_optimization",
+            "default": false
+        }
+    },
+    {
+        "command": "ksp_global_setting_toggle",
+        "caption": "SublimeKSP: Indent Size in Compiled Code",
+        "args":
+        {
+            "setting": "ksp_compiled_code_tab_size",
+            "default": 2
+        }
+    },
+    {
+        "command": "ksp_global_setting_toggle",
+        "caption": "SublimeKSP: Add Compilation Date/Time Comment",
+        "args":
+        {
+            "setting": "ksp_add_compiled_date",
+            "default": true
+        }
+    },
+    {
+        "command": "ksp_global_setting_toggle",
+        "caption": "SublimeKSP: Combine Duplicate Callbacks",
+        "args":
+        {
+            "setting": "ksp_combine_callbacks",
+            "default": false
+        }
+    },
+    {
+        "command": "ksp_global_setting_toggle",
+        "caption": "SublimeKSP: Sanitize Behavior of 'exit' Command",
+        "args":
+        {
+            "setting": "ksp_sanitize_exit_command",
+            "default": true
+        }
+    },
+    {
+        "caption": "SublimeKSP: Enable Completions for Vanilla KSP Built-ins (Reopen Sublime Text!)",
+        "command": "ksp_global_setting_toggle",
+        "args":
+        {
+            "setting": "ksp_add_completions_for_vanilla_builtins",
+            "default": false
+        }
+    },
+    {
+        "caption": "SublimeKSP: About...",
+        "command": "ksp_about"
+    },
+    {
+        "caption": "SublimeKSP: Documentation...",
+        "command": "ksp_docs"
+    },
+    {
+        "caption": "Preferences: SublimeKSP",
+        "command": "edit_settings",
+        "args":
+        {
+            "base_file": "${packages}/KSP (Kontakt Script Processor)/KSP.sublime-settings",
+            "default": "{\n\t$0\n}\n"
+        }
+    }
 ]
