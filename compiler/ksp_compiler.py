@@ -475,6 +475,11 @@ def handlePython(code, basepath):
         """
         return textwrap.dedent(s)
 
+    # Change directory to compile path
+    wd = os.getcwd()
+    if basepath:
+        os.chdir(basepath)
+
     new_code = code
     finished = False
     while (not finished):
@@ -511,6 +516,9 @@ def handlePython(code, basepath):
 
         if not finished:
             continue
+
+    if basepath:
+        os.chdir(wd)
 
     return new_code
 
