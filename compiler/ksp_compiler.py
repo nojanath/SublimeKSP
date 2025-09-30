@@ -248,7 +248,7 @@ class Line:
     filename = property(get_filename)
 
     def get_locations_string(self):
-        return '\n'.join(('%s%s: %d' % (' ' * (i * 4), filename or '<main script>', lineno)) \
+        return '\n'.join(('%s%s, line %d' % (' ' * (i * 4), filename or '<main script>', lineno)) \
                          for (i, (filename, lineno)) in enumerate(reversed(self.locations)))
 
     def copy(self, new_command = None, add_location = None):
