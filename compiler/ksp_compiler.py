@@ -210,9 +210,8 @@ class ExceptionWithMessage(Exception):
 class ParseException(ExceptionWithMessage):
     '''Parse Exceptions for parse errors raised before AST lex/yacc parsing'''
 
-    def __init__(self, line, message, no_traceback = False):
-        if no_traceback:
-            utils.disable_traceback()
+    def __init__(self, line, message):
+        utils.disable_traceback()
 
         if line.calling_lines:
             macro_chain = '\n'.join(['=> {}'.format(l.command.strip()) for l in line.calling_lines])
