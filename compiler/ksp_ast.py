@@ -122,7 +122,7 @@ class ParseException(SyntaxError):
                         lineno = child.lineno
                         break
 
-            self.lineno = lineno
+            self.lineno = None if utils.DISABLE_TRACEBACK_IN_EXCEPTIONS else lineno
             self.node = node
             self.msg = msg
 
