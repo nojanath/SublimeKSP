@@ -18,17 +18,25 @@ from platform import system
 import os.path
 import ctypes
 
+
+DISABLE_TRACEBACK_IN_EXCEPTIONS = True
+
+
 try:
     from sublime import status_message
     has_sublime_api = True
 except ImportError:
     has_sublime_api = False
 
+
 def disable_traceback():
-    if sys.version_info < (3, 6, 2):
-        sys.tracebacklimit = None
-    else:
-        sys.tracebacklimit = 0
+    if DISABLE_TRACEBACK_IN_EXCEPTIONS:
+        __suppress_context__ = True
+
+        if sys.version_info < (3, 6, 2):
+            sys.tracebacklimit = None
+        else:
+            sys.tracebacklimit = 0
 
 def split_args(arg_string, line):
     '''converts eg. "x, y*(1+z), z" into a list ['x', 'y*(1+z)', 'z']'''

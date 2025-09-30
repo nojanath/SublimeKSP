@@ -15,6 +15,8 @@
 import sys, types
 import ply.lex as lex
 import copy
+import utils
+
 from decimal import Decimal
 from ksp_builtins import functions_with_forced_parentheses
 
@@ -106,6 +108,8 @@ class ParseException(SyntaxError):
     '''Parse Exceptions for parse errors after AST lex/yacc parsing'''
 
     def __init__(self, node, msg=None):
+        utils.disable_traceback()
+
         if msg is None:
             msg = 'Syntax Error'
 
