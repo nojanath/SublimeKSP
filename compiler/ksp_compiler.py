@@ -224,6 +224,8 @@ class ParseException(ExceptionWithMessage):
         Exception.__init__(self, msg)
         self.line = line
         self.message = msg
+        # Save the original error message (without any context info)
+        self.error_message = message
 
 class Line:
     '''Line object used for handling lines before AST lex/yacc parsing'''
