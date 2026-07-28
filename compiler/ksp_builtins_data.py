@@ -1219,6 +1219,11 @@ $NI_EPP_TREMOLO_WAVE_SAW_UP
 $NI_EPP_TREMOLO_WAVE_SINE
 $NI_EPP_TREMOLO_WAVE_SQUARE
 $NI_EPP_TREMOLO_WAVE_TRIANGLE
+$NI_FADE_EQUAL_POWER
+$NI_FADE_EXPONENTIAL
+$NI_FADE_LINEAR
+$NI_FADE_LOGARITHMIC
+$NI_FADE_S_CURVE
 $NI_FILE_EXTENSION
 $NI_FILE_FULL_PATH
 $NI_FILE_FULL_PATH_OS
@@ -1658,7 +1663,9 @@ exp(<real-value>):real
 exp2(<real-value>):real
 expose_controls
 fade_in(<event-id>, <fade-time>)
+fade_in(<event-id>, <fade-time>, <curve>)
 fade_out(<event-id>, <fade-time>, <stop-voice>)
+fade_out(<event-id>, <fade-time>, <stop-voice>, <curve>)
 find_group(<group-name>):integer
 find_mod(<group-idx>, <mod-name>):integer
 find_target(<group-idx>, <mod-idx>, <target-name>):integer
