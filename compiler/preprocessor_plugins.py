@@ -1017,7 +1017,7 @@ def handleLists(lines):
     isInInit = False
     preInit = True
     addInitVar = False
-    loopBlockCounter = 0
+    openBlocks = [] # "loop" or "if" for each for, while and if statement the current line is in
     famCount = 0
 
     for lineIdx in range(len(lines)):
@@ -1054,34 +1054,29 @@ def handleLists(lines):
 
                     continue
 
-            def findLoop(lineText, loopCount):
-                ''' Check for any for, while or if statements. This is laid out like this for speed reasons. '''
-                startVal = loopCount
-
+            def findBlock(lineText, blocks):
+                ''' Track the for, while and if statements the line is in. This is laid out like this for speed reasons. '''
                 if lineText.startswith("for"):
                     if re.search(forRe, lineText):
-                        loopCount += 1
+                        blocks.append("loop")
+                        return True
                 elif lineText.startswith("while"):
                     if re.search(whileRe, lineText):
-                        loopCount += 1
+                        blocks.append("loop")
+                        return True
                 elif lineText.startswith("if"):
                     if re.search(ifRe, lineText):
-                        loopCount += 1
-                elif loopCount != 0:
+                        blocks.append("if")
+                        return True
+                elif blocks:
                     if lineText.startswith("end"):
-                        if re.search(endForRe, lineText):
-                            loopCount -= 1
-                        elif re.search(endIfRe, lineText):
-                            loopCount -= 1
-                        elif re.search(endWhileRe, lineText):
-                            loopCount -= 1
+                        if re.search(endForRe, lineText) or re.search(endIfRe, lineText) or re.search(endWhileRe, lineText):
+                            blocks.pop()
+                            return True
 
-                return(loopCount, startVal != loopCount)
+                return False
 
-            shouldExit = False
-            loopBlockCounter, shouldExit = findLoop(line, loopBlockCounter)
-
-            if shouldExit:
+            if findBlock(line, openBlocks):
                 newLines.append(lines[lineIdx])
                 continue
 
@@ -1115,6 +1110,10 @@ def handleLists(lines):
                 m = re.search(listAddRe, line)
 
                 if m:
+                    # the list size is fixed at compile time, so a loop would keep overwriting the same element
+                    if "loop" in openBlocks:
+                        raise ParseException(lines[lineIdx], "list_add() cannot be used inside loops!\n")
+
                     name = m.group("name")
                     value = m.group("value").strip()
 
