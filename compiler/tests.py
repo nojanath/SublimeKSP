@@ -1555,6 +1555,30 @@ end on'''
         output = do_compile(code, remove_preprocessor_vars = True)
         self.assertTrue('declare $long_variable_name' in output)
 
+class BackslashesInStrings(unittest.TestCase):
+    # like in Kontakt, a quote with a backslash before it is always escaped, so "C:\\" is not closed
+    def testQuoteAfterBackslashIsAlwaysEscaped(self):
+        code = r'''
+on init
+    declare @s
+    @s := "C:\\""
+    @s := 'D:\\''
+    message("next")
+end on'''
+
+        output = do_compile(code)
+        self.assertIn(r'@s := "C:\\""', output)
+        self.assertIn('@s := "D:\\\'"', output)
+        self.assertIn('message("next")', output)
+
+    def testStringEndingWithBackslashIsUnterminated(self):
+        code = r'''
+on init
+    message("C:\\")
+end on'''
+
+        self.assertRaisesRegex(ParseException, 'Unterminated string', do_compile, code)
+
 class ArgumentListErrors(unittest.TestCase):
     def testUnmatchedParenthesisInMacroCall(self):
         code = '''

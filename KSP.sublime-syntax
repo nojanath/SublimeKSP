@@ -11,6 +11,10 @@ scope: source.sksp
 
 contexts:
   f-string:
+    - match: '\\[''<]'
+      comment: Escaped quote or argument start (like in Kontakt, a backslash always escapes the quote after it)
+      scope: string.quoted.single.source.sksp
+
     - match: '<'
       scope: operator.source.sksp
       embed: scope:source.sksp
@@ -246,12 +250,12 @@ contexts:
       comment: Keywords
       scope: keyword.other.source.sksp
 
-    - match: '"(?:[^"\\]|\\.)*"'
-      comment: Double-quoted string
+    - match: '".*?(?<!\\)"'
+      comment: Double-quoted string (like in Kontakt, it ends at the first quote without a backslash before it, so "C:\\" is not closed)
       scope: string.quoted.double.source.sksp
 
-    - match: '(?:f)?''(?:[^''\\]|\\.)*'''
-      comment: Single-quoted string
+    - match: '(?:f)?''.*?(?<!\\)'''
+      comment: Single-quoted string (ends at the first quote without a backslash before it)
       scope: string.quoted.single.source.sksp
 
     - match: '{{builtin_consts_and_vars}}'
