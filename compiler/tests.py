@@ -1417,6 +1417,34 @@ class MacroIterChecks(unittest.TestCase):
         output = do_compile(code)
         assert_equal(self, output, expected_output)
 
+    def testIterateMacroPlaceholderOnlyInString(self):
+        code = '''
+            on init
+                declare ui_menu menu
+                iterate_macro(add_menu_item(menu, "Item #n#", 0)) := 0 to 1
+                iterate_post_macro(add_menu_item(menu, "Post #n#", 0)) := 0 to 1
+            end on'''
+
+        output = do_compile(code)
+        self.assertTrue('add_menu_item($menu,"Item 0",0)' in output)
+        self.assertTrue('add_menu_item($menu,"Item 1",0)' in output)
+        self.assertTrue('add_menu_item($menu,"Post 0",0)' in output)
+        self.assertTrue('add_menu_item($menu,"Post 1",0)' in output)
+
+    def testLiterateMacroPlaceholderOnlyInString(self):
+        code = '''
+            on init
+                declare ui_menu instrument
+                literate_macro(add_menu_item(instrument, '#l#', #n#)) on INST_1, INST_2
+                literate_post_macro(add_menu_item(instrument, "Post #l#", #n#)) on INST_1, INST_2
+            end on'''
+
+        output = do_compile(code)
+        self.assertTrue('add_menu_item($instrument,"INST_1",0)' in output)
+        self.assertTrue('add_menu_item($instrument,"INST_2",1)' in output)
+        self.assertTrue('add_menu_item($instrument,"Post INST_1",0)' in output)
+        self.assertTrue('add_menu_item($instrument,"Post INST_2",1)' in output)
+
 class LineContinuation(unittest.TestCase):
     def testMacrosInvokingEachOtherNotSupported(self):
         code = '''
