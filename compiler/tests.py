@@ -409,6 +409,26 @@ class VariableModifiersTest(unittest.TestCase):
         self.assertTrue('make_persistent($bar)'     in output)
         self.assertTrue('read_persistent_var($bar)' in output)
 
+class ConstantArrayCheck(unittest.TestCase):
+    def testConstantArray(self):
+        code = '''
+            on init
+                declare const arr[2] := (1, 2)
+            end on'''
+
+        self.assertRaisesRegex(ParseException, 'A constant can have only one value assigned, it cannot be an array', do_compile, code)
+
+    def testArrayOfStructsWithConstant(self):
+        code = '''
+            struct s
+                declare const C := 1
+            end struct
+
+            on init
+                declare &s x[2]
+            end on'''
+
+        self.assertRaisesRegex(ParseException, 'A constant can have only one value assigned, it cannot be an array', do_compile, code)
 class ListsInMultipleInitCallbacks(unittest.TestCase):
     def testListAddArrayInSecondInitCallback(self):
         code = '''

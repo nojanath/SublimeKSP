@@ -650,6 +650,10 @@ class ASTVisitorCheckDeclarations(ASTVisitor):
 
             init_expr = node.initial_value
 
+            # an initializer list, e.g. declare const arr[2] := (1, 2)
+            if isinstance(init_expr, list):
+                raise ParseException(node.variable, 'A constant can have only one value assigned, it cannot be an array!')
+
             # First need to check if the initial value is an NI constant
             if not (isinstance(init_expr, VarRef) and (str(init_expr.identifier).upper() in ksp_builtins.all_builtins)                     \
                or ("function_name" in init_expr.__dict__  and str(init_expr.function_name) in ksp_builtins.functions_with_constant_return) \
