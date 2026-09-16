@@ -1555,6 +1555,27 @@ end on'''
         output = do_compile(code, remove_preprocessor_vars = True)
         self.assertTrue('declare $long_variable_name' in output)
 
+class ArgumentListErrors(unittest.TestCase):
+    def testUnmatchedParenthesisInMacroCall(self):
+        code = '''
+macro show(#a#)
+    message(#a#)
+end macro
+
+on init
+    show((1)
+end on'''
+
+        self.assertRaisesRegex(ParseException, r'Unmatched parenthesis in function call(.|\n)*line 7\b', do_compile, code)
+
+    def testEmptyArgumentInOpenSizeArray(self):
+        code = '''
+on init
+    declare arr[] := (1, , 2)
+end on'''
+
+        self.assertRaisesRegex(ParseException, r'Empty argument in function call(.|\n)*line 3\b', do_compile, code)
+
 class FunctionInlining(unittest.TestCase):
     def testBasicInlining(self):
         code = '''

@@ -59,14 +59,14 @@ def split_args(arg_string, line):
             cur_arg = cur_arg.strip()
             if not cur_arg:
                 from ksp_compiler import ParseException
-                raise ParseException(line, 'Empty argument in function call %s!' % arg_string, True)
+                raise ParseException(line, 'Empty argument in function call %s!' % arg_string)
             args.append(cur_arg)
             cur_arg = ''
         else:
             cur_arg += ch
     if unmatched_left_paren:
         from ksp_compiler import ParseException
-        raise ParseException(line, 'Unmatched parenthesis in function call %s!' % arg_string, True)
+        raise ParseException(line, 'Unmatched parenthesis in function call %s!' % arg_string)
     return args
 
 def log_message(msg):
