@@ -1,0 +1,3 @@
+function folder_import_c
+    message("c")
+end function
