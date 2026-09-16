@@ -2846,6 +2846,265 @@ class FunctionInlining(unittest.TestCase):
 
         self.assertRaisesRegex(ParseException, 'Recursive functions calls', do_compile, code)
 
+class FunctionResultAliasing(unittest.TestCase):
+    '''When "x := f(...)" is inlined, the result variable of f becomes x. If the function body reads x after
+       having assigned the result, it has to see the old value of x, so the result is stored in a temporary variable.'''
+
+    CLAMP = '''
+        function clamp(value, lo, hi) -> result
+            result := value
+            if value < lo
+                result := lo
+            else if value > hi
+                result := hi
+            end if
+        end function
+        '''
+
+    def callbackBody(self, output, callback):
+        lines = [l.strip() for l in output.split('\n') if l.strip()]
+        start = lines.index(callback)
+        return lines[start + 1:lines.index('end on', start)]
+
+    def testArgumentReferencingTarget(self):
+        code = self.CLAMP + '''
+            on init
+                declare x
+            end on
+
+            on note
+                x := clamp(x + 1, 0, 100)
+            end on'''
+
+        output = do_compile(code)
+        self.assertIn('declare $_clamp_result', output)
+        self.assertEqual(self.callbackBody(output, 'on note'),
+                         ['$_clamp_result := $x+1',
+                          'if ($x+1<0)',
+                          '$_clamp_result := 0',
+                          'else',
+                          'if ($x+1>100)',
+                          '$_clamp_result := 100',
+                          'end if',
+                          'end if',
+                          '$x := $_clamp_result'])
+
+    def testGlobalReadInFunctionBody(self):
+        code = '''
+            function over_limit() -> result
+                result := 0
+                if x > 5
+                    result := 1
+                end if
+            end function
+
+            on init
+                declare x
+            end on
+
+            on note
+                x := over_limit()
+            end on'''
+
+        output = do_compile(code)
+        self.assertEqual(self.callbackBody(output, 'on note'),
+                         ['$_over_limit_result := 0',
+                          'if ($x>5)',
+                          '$_over_limit_result := 1',
+                          'end if',
+                          '$x := $_over_limit_result'])
+
+    def testReadAfterBranches(self):
+        code = '''
+            function sign_then_log(value) -> result
+                if value > 0
+                    result := 1
+                else
+                    result := -1
+                end if
+                message(value)
+            end function
+
+            on init
+                declare x
+            end on
+
+            on note
+                x := sign_then_log(x)
+            end on'''
+
+        output = do_compile(code)
+        body = self.callbackBody(output, 'on note')
+        self.assertIn('message($x)', body)
+        self.assertEqual(body[-1], '$x := $_sign_then_log_result')
+
+    def testReadInLaterLoopIteration(self):
+        code = '''
+            function add_twice(value) -> result
+                n := 0
+                while n < 2
+                    result := value + 1
+                    inc(n)
+                end while
+            end function
+
+            on init
+                declare n
+                declare x
+            end on
+
+            on note
+                x := add_twice(x)
+            end on'''
+
+        output = do_compile(code)
+        self.assertIn('$_add_twice_result := $x+1', output)
+        self.assertEqual(self.callbackBody(output, 'on note')[-1], '$x := $_add_twice_result')
+
+    def testArrayElementTarget(self):
+        code = self.CLAMP + '''
+            on init
+                declare arr[4]
+                declare i
+            end on
+
+            on note
+                arr[i] := clamp(arr[i] + 1, 0, 100)
+            end on'''
+
+        output = do_compile(code)
+        self.assertIn('declare $_clamp_result', output)
+        self.assertEqual(self.callbackBody(output, 'on note')[-1], '%arr[$i] := $_clamp_result')
+
+    def testTemporaryVariableTypes(self):
+        code = '''
+            function fclamp(value, lo, hi) -> result
+                result := value
+                if value > hi
+                    result := hi
+                end if
+            end function
+
+            function fallback(value) -> result
+                result := "none"
+                result := value & result
+            end function
+
+            on init
+                declare ~r
+                declare @s
+                declare ?reals[2]
+            end on
+
+            on note
+                ~r := fclamp(~r * 2.0, 0.0, 1.0)
+                @s := fallback(@s & "!")
+                ?reals[0] := fclamp(?reals[0] + 1.0, 0.0, 1.0)
+            end on'''
+
+        output = do_compile(code)
+        self.assertIn('declare ~_fclamp_result', output)
+        self.assertIn('declare @_fallback_result', output)
+        self.assertIn('~r := ~_fclamp_result', output)
+        self.assertIn('@s := @_fallback_result', output)
+        self.assertIn('?reals[0] := ~_fclamp_result', output)
+
+    def testTemporaryVariableDeclaredBeforeUseInInit(self):
+        code = self.CLAMP + '''
+            on init
+                declare x
+                x := clamp(x + 1, 0, 100)
+            end on'''
+
+        output = do_compile(code)
+        body = self.callbackBody(output, 'on init')
+        self.assertLess(body.index('declare $_clamp_result'), body.index('$_clamp_result := $x+1'))
+        self.assertEqual(body[-1], '$x := $_clamp_result')
+
+    def testNestedInlining(self):
+        code = self.CLAMP + '''
+            function bump(value) -> result
+                result := clamp(value + 1, 0, 100)
+            end function
+
+            on init
+                declare x
+            end on
+
+            on note
+                x := bump(x)
+            end on'''
+
+        output = do_compile(code)
+        body = self.callbackBody(output, 'on note')
+        self.assertEqual(body[0], '$_bump_result := $x+1')
+        self.assertEqual(body[-1], '$x := $_bump_result')
+
+    def testUniqueTemporaryVariableName(self):
+        code = self.CLAMP + '''
+            on init
+                declare x
+                declare _clamp_result
+            end on
+
+            on note
+                x := clamp(x + 1, 0, 100)
+            end on'''
+
+        output = do_compile(code)
+        self.assertIn('declare $_clamp_result2', output)
+        self.assertIn('$x := $_clamp_result2', output)
+
+    def testNoTemporaryVariableWithoutAliasing(self):
+        code = self.CLAMP + '''
+            function plus_one(value) -> result
+                result := value + 1
+            end function
+
+            function last_write(value) -> result
+                if value > 0
+                    message(value)
+                end if
+                result := value * 2
+            end function
+
+            on init
+                declare x
+                declare y
+            end on
+
+            on note
+                x := clamp(x, 0, 100)
+                y := clamp(x + 1, 0, 100)
+                x := plus_one(x)
+                x := last_write(x + 1)
+            end on'''
+
+        output = do_compile(code)
+        self.assertNotIn('_result', output)
+        self.assertEqual(self.callbackBody(output, 'on note'),
+                         ['$x := $x',
+                          'if ($x<0)',
+                          '$x := 0',
+                          'else',
+                          'if ($x>100)',
+                          '$x := 100',
+                          'end if',
+                          'end if',
+                          '$y := $x+1',
+                          'if ($x+1<0)',
+                          '$y := 0',
+                          'else',
+                          'if ($x+1>100)',
+                          '$y := 100',
+                          'end if',
+                          'end if',
+                          '$x := $x+1',
+                          'if ($x+1>0)',
+                          'message($x+1)',
+                          'end if',
+                          '$x := ($x+1)*2'])
+
 class FunctionInvocationUsingCall(unittest.TestCase):
     def testNotAllowedInOnInit(self):
         code = '''

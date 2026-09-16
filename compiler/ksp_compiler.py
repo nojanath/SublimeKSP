@@ -1712,6 +1712,8 @@ class ASTModifierFunctionExpander(ASTModifierBase):
     '''Handle function usage'''
     def __init__(self, ast):
         ASTModifierBase.__init__(self, modify_expressions = True)
+        self.result_declarations = []     # declarations of temporary result variables used outside of 'on init'
+        self.result_placeholders = set() # names of result placeholders of the function calls currently being inlined
         self.traverse(ast, parent_toplevel = None, function_stack = [])
 
     def modifyModule(self, node, *args, **kwargs):
@@ -1732,7 +1734,10 @@ class ASTModifierFunctionExpander(ASTModifierBase):
         # insert it as the first block
         node.blocks.insert(0, on_init_block)
 
-        return ASTModifierBase.modifyModule(self, node, *args, **kwargs)
+        node = ASTModifierBase.modifyModule(self, node, *args, **kwargs)
+        on_init_block.lines = on_init_block.lines + self.result_declarations
+
+        return node
 
     def modifyFunctionDef(self, node, parent_toplevel = None, function_stack = None):
         ''' Add to context info about which function/callback we are currently inside '''
@@ -1919,6 +1924,136 @@ class ASTModifierFunctionExpander(ASTModifierBase):
 
         return (prologue, epilogue)
 
+    def createResultPlaceholder(self, func, assign_stmt_lhs):
+        '''Create a reference to a variable that stands in for the result variable of func while it's inlined as "x := func(...)".
+           Its name is unique regardless of prefix, since it gets substituted by name only'''
+        base_name = '_%s_%s' % (func.name.identifier.replace('.', '__'), func.return_value.identifier)
+        name = base_name
+        i = 2
+
+        while name.lower() in self.result_placeholders or any((p + name).lower() in variables for p in variable_prefixes):
+            name = '%s%d' % (base_name, i)
+            i += 1
+
+        self.result_placeholders.add(name.lower())
+
+        # the temporary result variable holds a single value of the same type as the assignment target (integer if the target has no prefix)
+        prefix = {'%': '$', '?': '~', '!': '@'}.get(assign_stmt_lhs.identifier.prefix, assign_stmt_lhs.identifier.prefix) or '$'
+        li = assign_stmt_lhs.lexinfo
+
+        return ksp_ast.VarRef(li, ksp_ast.ID(li, prefix + name))
+
+    def resolveResultPlaceholder(self, statements, placeholder, target, is_inside_init_callback):
+        '''Inlining "x := func(...)" assigns the result of func directly to x. That's only correct if the inlined body doesn't read x after
+           assigning the result, since it would then see the result instead of the old value of x (e.g. x := clamp(x + 1, 0, 100)).
+           Replace the placeholder by x if that can't happen, otherwise keep it as a temporary variable and assign it to x at the end'''
+        self.result_placeholders.discard(placeholder.identifier.identifier.lower())
+
+        if not self.isTargetReadAfterResultAssignment(statements, placeholder, target):
+            return flatten([ASTModifierVarRefSubstituter({placeholder.identifier.identifier: target}).modify(s) for s in statements])
+
+        li = placeholder.lexinfo
+        declaration = ksp_ast.DeclareStmt(li, ksp_ast.ID(li, str(placeholder.identifier)), modifiers = [])
+        variables.add(str(placeholder.identifier).lower())
+
+        # declarations in 'on init' need to come before the variable is used, elsewhere they are moved to 'on init'
+        if is_inside_init_callback:
+            statements = [declaration] + statements
+        else:
+            self.result_declarations.append(declaration)
+
+        return statements + [ksp_ast.AssignStmt(target.lexinfo, target, placeholder)]
+
+    def isTargetReadAfterResultAssignment(self, statements, placeholder, target):
+        '''Check whether the inlined statements could read the variable of the assignment target after assigning the result placeholder.
+           Statements are scanned in execution order, with loop bodies scanned a second time for reads in later iterations'''
+        result_name = str(placeholder.identifier).lower()
+        target_name = str(target.identifier).lower()
+        target_text = str(target)
+        state = {'assigned': False, 'read_after': False}
+
+        def is_variable(node, name):
+            return isinstance(node, ksp_ast.VarRef) and str(node.identifier).lower() == name
+
+        def references_target(node):
+            return is_variable(node, target_name) or any(references_target(c) for c in node.get_childnodes() if c is not None)
+
+        # the target's own subscripts are evaluated again on each assignment of the result once the placeholder is replaced
+        target_subscripts_reference_target = any(references_target(s) for s in target.subscripts)
+
+        def scan(node):
+            if node is None or state['read_after']:
+                return
+
+            if isinstance(node, ksp_ast.AssignStmt):
+                scan(node.expression)
+
+                for s in node.varref.subscripts:
+                    scan(s)
+
+                # "result := x" is a no-op once the placeholder becomes x
+                if is_variable(node.varref, result_name) and str(node.expression) != target_text:
+                    if state['assigned'] and target_subscripts_reference_target:
+                        state['read_after'] = True
+
+                    state['assigned'] = True
+
+            elif isinstance(node, (ksp_ast.WhileStmt, ksp_ast.ForStmt)):
+                assigned_before = state['assigned']
+
+                for c in node.get_childnodes():
+                    scan(c)
+
+                # a later iteration could read what an earlier one assigned
+                if state['assigned'] and not assigned_before:
+                    for c in node.get_childnodes():
+                        scan(c)
+
+            elif isinstance(node, (ksp_ast.IfStmt, ksp_ast.SelectStmt)):
+                if isinstance(node, ksp_ast.IfStmt):
+                    branches = node.condition_stmts_tuples
+                else:
+                    scan(node.expression)
+                    branches = [(None, stmts) for (_, stmts) in node.range_stmts_tuples]
+
+                # only one branch is executed, so an assignment in one branch can't be seen by the others
+                assigned_before = state['assigned']
+                assigned_in_branch = False
+
+                for (condition, stmts) in branches:
+                    state['assigned'] = assigned_before
+                    scan(condition)
+
+                    for s in stmts:
+                        scan(s)
+
+                    assigned_in_branch = assigned_in_branch or state['assigned']
+
+                state['assigned'] = assigned_before or assigned_in_branch
+
+            elif isinstance(node, ksp_ast.FunctionCall):
+                for p in node.parameters:
+                    scan(p)
+
+                # user-defined functions invoked with "call" could read the target, builtins could assign the result (e.g. inc(result))
+                if state['assigned'] and node.function_name.identifier not in ksp_builtins.functions:
+                    state['read_after'] = True
+
+                if any(is_variable(p, result_name) for p in node.parameters):
+                    state['assigned'] = True
+
+            elif is_variable(node, target_name) and state['assigned']:
+                state['read_after'] = True
+
+            else:
+                for c in node.get_childnodes():
+                    scan(c)
+
+        for stmt in statements:
+            scan(stmt)
+
+        return state['read_after']
+
     def modifyFunctionCall(self, node, parent_toplevel = None, function_stack = None, assign_stmt_lhs = None):
         ''' For invocations of user-defined functions check that the function is defined and that the number of parameters match.
             Unless "call" is used inline the function '''
@@ -1978,9 +2113,11 @@ class ASTModifierFunctionExpander(ASTModifierBase):
 
             # build a substitution dictionary that maps parameters to arguments
             name_subst_dict = dict(list(zip(list(map(str, func.parameters)), node.parameters)))
-            # if the function call is of the format "x := myfunc(...)", then setup the dict up to substitute the result variable of the function by "x"
+            # if the function call is of the format "x := myfunc(...)", then setup the dict up to substitute the result variable of the function
+            # by a placeholder, which is later replaced by "x" (or by a temporary variable, see resolveResultPlaceholder)
             if assign_stmt_lhs:
-                name_subst_dict[str(func.return_value)] = assign_stmt_lhs
+                result_placeholder = self.createResultPlaceholder(func, assign_stmt_lhs)
+                name_subst_dict[str(func.return_value)] = result_placeholder
             # also add the mapping from local variable names to their new globally unique counterpart
             # (except for raw arrays of local multidimensional arrays, since e.g. the renamed size constant _arr.SIZE_D1 would be mistaken for _arr)
             name_subst_dict.update({k: v for k, v in func.locals_name_subst_dict.items() if k not in getattr(func, 'local_property_raw_arrays', ())})
@@ -1990,6 +2127,9 @@ class ASTModifierFunctionExpander(ASTModifierBase):
 
             # recursively modify each line in the function body and add them to the return value
             result = result + flatten([self.modify(line, parent_toplevel = parent_toplevel, function_stack = function_stack + [function_name]) for line in func.lines])
+
+            if assign_stmt_lhs:
+                result = self.resolveResultPlaceholder(result, result_placeholder, assign_stmt_lhs, is_inside_init_callback)
 
             # if this function call is embedded within some expression
             if not (assign_stmt_lhs or node.is_procedure):
