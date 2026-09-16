@@ -1,0 +1,5 @@
+__IGNORE__
+
+function folder_import_b
+    message("b")
+end function
