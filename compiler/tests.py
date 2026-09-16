@@ -2867,6 +2867,83 @@ class TestTaskfunc(unittest.TestCase):
 
         self.assertRaises(ParseException, do_compile, code, optimize = True)
 
+    # issue #97: inlining a function whose body calls a taskfunc should not depend on the order of definitions
+    def assertSameOutputRegardlessOfOrder(self, functions, callbacks):
+        output_functions_first = do_compile(functions + callbacks)
+        output_functions_last = do_compile(callbacks + functions)
+        assert_equal(self, output_functions_first, output_functions_last)
+
+    def testInlinedFunctionCallingTaskfunc(self):
+        functions = '''
+            function ks_function
+              tcm_function(1)
+            end function
+
+            taskfunc tcm_function(param)
+              message(param)
+            end taskfunc
+            '''
+
+        callbacks = '''
+            on init
+              tcm.init(10)
+              declare ui_switch switch
+            end on
+
+            on ui_control(switch)
+              ks_function
+            end on
+            '''
+
+        self.assertSameOutputRegardlessOfOrder(functions, callbacks)
+
+    def testInlinedFunctionCallingTaskfuncDefinedFirst(self):
+        functions = '''
+            taskfunc tcm_function(param)
+              message(param)
+            end taskfunc
+
+            function ks_function
+              tcm_function(1)
+            end function
+            '''
+
+        callbacks = '''
+            on init
+              tcm.init(10)
+            end on
+
+            on note
+              ks_function
+            end on
+            '''
+
+        self.assertSameOutputRegardlessOfOrder(functions, callbacks)
+
+    def testInlinedFunctionCallingTaskfuncWithReturnValue(self):
+        functions = '''
+            function ks_function
+              x := tcm_function(1)
+            end function
+
+            taskfunc tcm_function(param) -> result
+              result := param
+            end taskfunc
+            '''
+
+        callbacks = '''
+            on init
+              tcm.init(10)
+              declare x
+            end on
+
+            on note
+              ks_function
+            end on
+            '''
+
+        self.assertSameOutputRegardlessOfOrder(functions, callbacks)
+
 class K5_6Features(unittest.TestCase):
     def testDeclaration(self):
         code = '''
