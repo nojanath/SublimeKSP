@@ -622,6 +622,18 @@ class CompactOutput(unittest.TestCase):
 
         do_compile(code, compact_variables = True)
 
+class CompiledDateComment(unittest.TestCase):
+    def testCompiledDateComment(self):
+        code = '''
+            on init
+            end on'''
+
+        output = do_compile(code, add_compiled_date_comment = True)
+        self.assertRegex(output.split('\n')[0], r'^\{ Compiled on .+ \d{4} \}$')
+
+        output = do_compile(code)
+        self.assertFalse('Compiled on' in output)
+
 class VariableDeclarationCheck(unittest.TestCase):
     def testVariableDeclaredInCallback(self):
         code = '''
@@ -1458,6 +1470,25 @@ class StringArrayInitialisation(unittest.TestCase):
         output = do_compile(code)
         self.assertTrue('declare !fam__names[2]\n!fam__names[0] := "a"\n!fam__names[1] := "b"' in output)
 
+    def testStringArrayInitialisationWithOpenSize(self):
+        code = '''
+            on init
+                declare !strings[] := ("foo", "bar")
+                message(strings.SIZE)
+            end on'''
+
+        expected_output = '''
+            on init
+              declare !strings[2]
+              !strings[0] := "foo"
+              !strings[1] := "bar"
+              declare const $strings__SIZE := 2
+              message($strings__SIZE)
+            end on'''
+
+        output = do_compile(code, remove_preprocessor_vars = True)
+        assert_equal(self, output, expected_output)
+
     def testStringArrayInitialisationWithIntegers(self):
         code = '''
             on init
@@ -1586,6 +1617,24 @@ class HexNumberCheck(unittest.TestCase):
 
         output = do_compile(code)
         self.assertTrue('message(303)' in output)
+
+    def testBinaryLSBRight(self):
+        code = '''
+            on init
+              message(1100b)
+            end on'''
+
+        output = do_compile(code)
+        self.assertTrue('message(12)' in output)
+
+    def testBinaryLSBLeft(self):
+        code = '''
+            on init
+              message(b1100)
+            end on'''
+
+        output = do_compile(code)
+        self.assertTrue('message(3)' in output)
 
 class TypeChecks(unittest.TestCase):
     def testAssignStringToIntVar1(self):
@@ -1737,6 +1786,69 @@ class MacroDefineChecks(unittest.TestCase):
 
         output = do_compile(code)
         self.assertTrue('message("MYDEFINE")' in output)
+
+    def testMacroDefineVariants(self):
+        code = '''
+            define NUM := 20
+            define VALUE := (20 / 3)
+            define STRING := "text"
+            define FUNC(a, b) := (a + b)
+            define MENU_NAME(#name#) := #name#Menu
+
+            on init
+                message(NUM)
+                message(VALUE)
+                message(STRING)
+                message(FUNC(1, 2) * FUNC(3, 4))
+                declare ui_menu MENU_NAME(sound)
+            end on'''
+
+        expected_output = '''
+            on init
+              message(20)
+              message(6)
+              message("text")
+              message((1+2)*(3+4))
+              declare ui_menu $soundMenu
+            end on'''
+
+        output = do_compile(code, remove_preprocessor_vars = True)
+        assert_equal(self, output, expected_output)
+
+    def testMacroDefineAppendAndPrepend(self):
+        code = '''
+            define FOO := age
+            define FOO += height
+            define FOO += weight
+            define FOO =+ name, surname
+
+            on init
+                literate_macro(declare #l#) on FOO
+            end on'''
+
+        expected_output = '''
+            on init
+              declare $name
+              declare $surname
+              declare $age
+              declare $height
+              declare $weight
+            end on'''
+
+        output = do_compile(code, remove_preprocessor_vars = True)
+        assert_equal(self, output, expected_output)
+
+    def testBuiltinDefines(self):
+        code = '''
+            on init
+                message(__SEC__ & __MIN__ & __HOUR__ & __HOUR12__ & __AMPM__)
+                message(__DAY__ & __MONTH__ & __YEAR__ & __YEAR2__)
+                message(__LOCALE_MONTH__ & __LOCALE_MONTH_ABBR__ & __LOCALE_DATE__ & __LOCALE_TIME__)
+            end on'''
+
+        output = do_compile(code)
+        self.assertFalse('__' in output)
+        self.assertRegex(output, r'message\("\d{2}" & "\d{2}" & "\d{4}" & "\d{2}"\)')
 
 class MacroOverloading(unittest.TestCase):
     def testOverloadedWithNumArgs(self):
@@ -1969,6 +2081,81 @@ class MacroIterChecks(unittest.TestCase):
         self.assertTrue('add_menu_item($instrument,"Post INST_1",0)' in output)
         self.assertTrue('add_menu_item($instrument,"Post INST_2",1)' in output)
 
+class NumberIncrementer(unittest.TestCase):
+    def testNumberIncrementer(self):
+        code = '''
+            on init
+                START_INC(N, 0, 1)
+                message(N)
+                message(N & N)
+                END_INC
+
+                f()
+
+                declare list !menuItems[]
+
+                START_INC(N, 0, 1)
+                CreateMenuItem(MOD_LFO, "LFO")
+                CreateMenuItem(MOD_ENV, "Envelope")
+                END_INC
+            end on
+
+            function f()
+                START_INC(N, -2, -1)
+                message(N)
+                message(N)
+                END_INC
+            end function
+
+            macro CreateMenuItem(ID, text)
+                declare const ID := N
+                list_add(menuItems, text)
+            end macro'''
+
+        expected_output = '''
+            on init
+              message(0)
+              message(1 & 1)
+              message(-2)
+              message(-3)
+              declare !menuItems[2]
+              declare const $menuItems__SIZE := 2
+              declare const $MOD_LFO := 0
+              !menuItems[0] := "LFO"
+              declare const $MOD_ENV := 1
+              !menuItems[1] := "Envelope"
+            end on'''
+
+        output = do_compile(code, remove_preprocessor_vars = True)
+        assert_equal(self, output, expected_output)
+
+    def testNumberIncrementerWithoutEnd(self):
+        code = '''
+            on init
+                START_INC(N, 0, 1)
+                message(N)
+            end on'''
+
+        self.assertRaisesRegex(ParseException, "Did not find a corresponding 'END_INC'", do_compile, code)
+
+    def testNumberIncrementerWithoutStart(self):
+        code = '''
+            on init
+                message(1)
+                END_INC
+            end on'''
+
+        self.assertRaisesRegex(ParseException, "Did not find a corresponding 'START_INC'", do_compile, code)
+
+    def testNumberIncrementerWithWrongArguments(self):
+        code = '''
+            on init
+                START_INC(N, 0)
+                END_INC
+            end on'''
+
+        self.assertRaisesRegex(ParseException, 'Incorrect parameters for START_INC', do_compile, code)
+
 class LineContinuation(unittest.TestCase):
     def testMacrosInvokingEachOtherNotSupported(self):
         code = '''
@@ -2078,6 +2265,21 @@ end on'''
 
         output = do_compile(code, remove_preprocessor_vars = True)
         self.assertTrue('declare $long_variable_name' in output)
+
+    def testUserDefinedCodeSection(self):
+        code = '''
+            {{ THIS IS A CERTAIN CODE SECTION }}
+            on init
+                message(1)
+            end on'''
+
+        expected_output = '''
+            on init
+              message(1)
+            end on'''
+
+        output = do_compile(code, remove_preprocessor_vars = True)
+        assert_equal(self, output, expected_output)
 
 class BackslashesInStrings(unittest.TestCase):
     # like in Kontakt, a quote with a backslash before it is always escaped, so "C:\\" is not closed
@@ -2427,6 +2629,73 @@ class FunctionInvocationUsingCall(unittest.TestCase):
 
         output = do_compile(code)
         self.assertTrue(output.index('function bar') < output.index('function foo'), 'Functions should be reordered so that they are always defined before they are used')
+
+class FunctionOverriding(unittest.TestCase):
+    def testOverrideInlinedFunction(self):
+        code = '''
+            function foo() override
+                message("new")
+            end function
+
+            function foo()
+                message("old")
+            end function
+
+            on note
+                foo()
+            end on'''
+
+        output = do_compile(code)
+        self.assertTrue('message("new")' in output)
+        self.assertFalse('message("old")' in output)
+
+    def testOverrideCalledFunction(self):
+        code = '''
+            function foo()
+                message("old")
+            end function
+
+            function foo() override
+                message("new")
+            end function
+
+            on note
+                call foo()
+            end on'''
+
+        output = do_compile(code)
+        self.assertTrue('function foo\nmessage("new")\nend function' in output)
+        self.assertFalse('message("old")' in output)
+
+    def testOverrideBuiltinFunction(self):
+        code = '''
+            function play_note(note, velocity, offset, duration) override
+                message("played")
+            end function
+
+            on note
+                play_note(60, 100, 0, -1)
+            end on'''
+
+        output = do_compile(code)
+        self.assertTrue('message("played")' in output)
+        self.assertFalse('play_note(' in output)
+
+    def testDuplicateFunctionWithoutOverride(self):
+        code = '''
+            function foo()
+                message("old")
+            end function
+
+            function foo()
+                message("new")
+            end function
+
+            on note
+                foo()
+            end on'''
+
+        self.assertRaisesRegex(ParseException, 'Function already declared', do_compile, code)
 
 class NamespacePrefixing(unittest.TestCase):
     def testNamespacePrefixing(self):
@@ -3348,6 +3617,29 @@ class ControlParTest(unittest.TestCase):
         output = do_compile(code)
         self.assertTrue('set_event_par(get_event_par_arr($EVENT_ID,$EVENT_PAR_CUSTOM,5),$EVENT_PAR_3,$ENGINE_UPTIME)' in output)
         self.assertTrue('set_event_par(by_marks($MARK_3),$EVENT_PAR_VOLUME,random(-100000,0))' in output)
+
+    def testControlParAliases(self):
+        code = '''
+            on init
+                declare ui_slider foo (0, 100)
+                foo -> x := 1
+                foo -> y := 2
+                foo -> default := 3
+                message(foo -> min)
+                message(foo -> max)
+            end on
+
+            on note
+                EVENT_ID -> par_0 := 5
+            end on'''
+
+        output = do_compile(code)
+        self.assertTrue('set_control_par(get_ui_id($foo),$CONTROL_PAR_POS_X,1)' in output)
+        self.assertTrue('set_control_par(get_ui_id($foo),$CONTROL_PAR_POS_Y,2)' in output)
+        self.assertTrue('set_control_par(get_ui_id($foo),$CONTROL_PAR_DEFAULT_VALUE,3)' in output)
+        self.assertTrue('message(get_control_par(get_ui_id($foo),$CONTROL_PAR_MIN_VALUE))' in output)
+        self.assertTrue('message(get_control_par(get_ui_id($foo),$CONTROL_PAR_MAX_VALUE))' in output)
+        self.assertTrue('set_event_par($EVENT_ID,$EVENT_PAR_0,5)' in output)
 
 class TestSubscripts(unittest.TestCase):
     def testSubscripts1(self):
