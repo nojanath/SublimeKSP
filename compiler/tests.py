@@ -1947,6 +1947,40 @@ class PropertyTests(unittest.TestCase):
         self.assertTrue('message(%_data[3])' in output)
         self.assertTrue('%_data[0] := 2' in output)
 
+class MultidimensionalArrayTest(unittest.TestCase):
+    def testMultidimensionalArrayWithPrefix(self):
+        code = '''
+            on init
+                declare foo[2, 2]
+                declare ?bar[2, 3]
+                family fam
+                    declare !baz[2, 2]
+                end family
+                %foo[1, 1] := 5
+                ?bar[1, 2] := 1.0
+                !fam.baz[1, 0] := "x"
+                message(%foo[0, 1])
+                message(?bar[0, 1])
+                message(!fam.baz[1, 0])
+            end on'''
+
+        output = do_compile(code)
+        self.assertTrue('%_foo[2*1+1] := 5' in output)
+        self.assertTrue('?_bar[3*1+2] := 1.0' in output)
+        self.assertTrue('!fam___baz[2*1+0] := "x"' in output)
+        self.assertTrue('message(%_foo[2*0+1])' in output)
+        self.assertTrue('message(?_bar[3*0+1])' in output)
+        self.assertTrue('message(!fam___baz[2*1+0])' in output)
+
+    def testMultidimensionalArrayWithWrongPrefix(self):
+        code = '''
+            on init
+                declare foo[2, 2]
+                message(?foo[0, 0])
+            end on'''
+
+        self.assertRaises(ParseException, do_compile, code)
+
 class FunctionAsArgumentTest(unittest.TestCase):
     def testFunctionAsArgument(self):
         code = '''
