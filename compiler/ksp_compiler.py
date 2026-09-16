@@ -219,17 +219,37 @@ class ExceptionWithMessage(Exception):
 
     message = property(_get_message, _set_message)
 
+placeholder_or_string_re = re.compile(r'''
+    "[^\n]*?(?<!\\)"            # match "..." (kept as it is)
+    |                           # or
+    '[^\n]*?(?<!\\)'            # match '...' (kept as it is)
+    |                           # or
+    \{(?P<index>\d+)\}          # match a string placeholder, eg. {8}
+''', re.VERBOSE)
+
+def replace_placeholders_in_text(text, placeholders = placeholders):
+    '''Replaces string placeholders with their strings, but not inside strings that were already replaced'''
+    def replace_func(m):
+        if m.group('index') is None:
+            return m.group(0)
+
+        return placeholders.get(int(m.group('index')), m.group(0))
+
+    return placeholder_or_string_re.sub(replace_func, text)
+
 class ParseException(ExceptionWithMessage):
     '''Parse Exceptions for parse errors raised before AST lex/yacc parsing'''
 
     def __init__(self, line, message):
         utils.disable_traceback()
 
+        message = replace_placeholders_in_text(message, line.placeholders)
+
         if line.calling_lines:
-            macro_chain = '\n'.join(['=> {}'.format(l.command.strip()) for l in line.calling_lines])
-            line_content = 'Macro traceback:\n{}\n{}'.format(macro_chain, str(line).strip())
+            macro_chain = '\n'.join(['=> {}'.format(replace_placeholders_in_text(l.command.strip(), line.placeholders)) for l in line.calling_lines])
+            line_content = 'Macro traceback:\n{}\n{}'.format(macro_chain, replace_placeholders_in_text(str(line).strip(), line.placeholders))
         else:
-            line_content = str(line).strip()
+            line_content = replace_placeholders_in_text(str(line).strip(), line.placeholders)
 
         msg = "%s\n\n%s\n\n%s" % (message, line_content, line.get_locations_string())
 
@@ -450,7 +470,8 @@ def parse_lines(s, basepath = None, filename = None, namespaces = None):
         if m.group('unterminated'):
             line_start = s.rfind('\n', 0, m.start()) + 1
             lineno = int(s[line_start + 3:line_start + 3 + 5])
-            raise ParseException(Line(source_lines[lineno - 1], [(filename, lineno)], namespaces), 'Unterminated string!')
+            # strings aren't converted to placeholders yet, so there are none to replace in this line
+            raise ParseException(Line(source_lines[lineno - 1], [(filename, lineno)], namespaces, placeholders = {}), 'Unterminated string!')
 
         return m.group('string') or ''
 
