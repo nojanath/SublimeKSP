@@ -1458,6 +1458,84 @@ class LineContinuation(unittest.TestCase):
         output = do_compile(code)
         self.assertTrue('''message("this is a really long line ... " & "so it is broken up into multiple lines. x=" & $x)''' in output)
 
+class CommentsAndStrings(unittest.TestCase):
+    def testCommentMarkersInsideStringsAreKept(self):
+        code = '''
+            on init
+                declare ui_label Label(1, 1)
+                declare var
+                set_text(Label, "First section: { " & var & " } | The rest")
+                message("a (* b *) c")
+                message('a /* b */ c')
+                message("http://example.com")
+            end on'''
+
+        output = do_compile(code)
+        self.assertTrue('''set_text($Label,"First section: { " & $var & " } | The rest")''' in output)
+        self.assertTrue('''message("a (* b *) c")''' in output)
+        self.assertTrue('''message("a /* b */ c")''' in output)
+        self.assertTrue('''message("http://example.com")''' in output)
+
+    def testCommentMarkersSpanningStringsAndLines(self):
+        code = '''
+            on init
+                message("x {" & "} y")
+                message("open {")
+                message("close }")
+            end on'''
+
+        output = do_compile(code)
+        self.assertTrue('''message("x {" & "} y")''' in output)
+        self.assertTrue('''message("open {")''' in output)
+        self.assertTrue('''message("close }")''' in output)
+
+    def testFStringInsideBraces(self):
+        code = '''
+            on init
+                declare v
+                message(f'value {<v>}')
+            end on'''
+
+        output = do_compile(code)
+        self.assertTrue('''message("value {" & $v & "}")''' in output)
+
+    def testQuotesAndBracesInsideComments(self):
+        code = '''
+            on init
+                { don't "do" this }
+                message("a") // see { here
+                message("b") // and } here
+                (* it's *) message("c") /* "quoted" */
+            end on'''
+
+        output = do_compile(code)
+        self.assertTrue('message("a")' in output)
+        self.assertTrue('message("b")' in output)
+        self.assertTrue('message("c")' in output)
+        self.assertTrue('here' not in output)
+        self.assertTrue('quoted' not in output)
+
+    def testUnterminatedString(self):
+        code = '''
+            on init
+                message("oops)
+                message("fine")
+            end on'''
+
+        self.assertRaisesRegex(ParseException, 'Unterminated string', do_compile, code)
+
+    def testPragmasOnlyInsideCurlyBracketComments(self):
+        code = '''
+            // { #pragma compile_with compact_variables }
+            on init
+                declare long_variable_name
+                message("{ #pragma compile_with compact_variables }")
+                message(long_variable_name)
+            end on'''
+
+        output = do_compile(code, remove_preprocessor_vars = True)
+        self.assertTrue('declare $long_variable_name' in output)
+
 class FunctionInlining(unittest.TestCase):
     def testBasicInlining(self):
         code = '''

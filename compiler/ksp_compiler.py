@@ -37,18 +37,26 @@ variable_prefixes = '$%@!?~'
 white_space_re = r'(\s*(\{[^\n]*?\})?\s*)'
 white_space = r'(?ms)%s' % white_space_re
 
-comment_singleline_re = re.compile(r'''
-            (?<!["\'])         # negative lookbehind to exclude comments inside strings
-            \/\/.*             # match single-line comment //
-            ''', re.VERBOSE)
-
-comment_re = re.compile(r'''
-    (?<!["'])   # negative lookbehind to make sure there is no quote before the pattern
-    \{.*?\}     # match {...}
-    |           # or
-    \(\*.*?\*\) # match (*...*)
-    |           # or
-    /\*.*?\*/   # match /*...*/
+# strings and comments are matched together, so that whichever starts first wins
+# (comment markers inside strings are kept, quotes inside comments are ignored)
+comment_or_string_re = re.compile(r'''
+    (?P<string>
+        "[^\n]*?(?<!\\)"        # match "..." on a single line
+        |                       # or
+        '[^\n]*?(?<!\\)'        # match '...' on a single line
+    )
+    |                           # or
+    (?P<unterminated>["'])      # match a quote that is not closed on the same line
+    |                           # or
+    (?P<comment>
+        \{.*?\}                 # match {...}
+        |                       # or
+        \(\*.*?\*\)             # match (*...*)
+        |                       # or
+        /\*.*?\*/               # match /*...*/
+        |                       # or
+        //[^\n]*                # match // until the end of the line
+    )
 ''', re.DOTALL | re.VERBOSE)
 
 string_re = re.compile(r'''
@@ -430,25 +438,25 @@ def parse_lines(s, basepath = None, filename = None, namespaces = None):
     lines = s.replace('\r\n', '\n').replace('\r', '\n').split('\n')
     lines = [process_f_string(l) for l in lines]
 
+    source_lines = lines
+
     # encode lines numbers as '[[[lineno]]]' at the beginning of each line
     lines = ['[[[%.5d]]]%s' % (lineno+1, x) for (lineno, x) in enumerate(lines)]
 
     s = '\n'.join(lines)
 
-    # remove comments and multi-line indicators ('...\n')
-    s = comment_re.sub('', s)
+    # remove comments, but not comment markers inside strings
+    def remove_comment(m):
+        if m.group('unterminated'):
+            line_start = s.rfind('\n', 0, m.start()) + 1
+            lineno = int(s[line_start + 3:line_start + 3 + 5])
+            raise ParseException(Line(source_lines[lineno - 1], [(filename, lineno)], namespaces), 'Unterminated string!')
 
-    lines = s.split('\n')
+        return m.group('string') or ''
 
+    s = comment_or_string_re.sub(remove_comment, s)
 
-    # NOTE(Sam): Remove any occurances of the new comment type //
-    for i in range(len(lines)):
-        m = re.search(r"^(?:(?!\/\/|[\"\']).|[\"\'][^\"\']*[\"\'])*(\/\/.*$)", lines[i])
-
-        if m:
-            lines[i] = lines[i].replace(m.group(1), "")
-
-    s = '\n'.join(lines)
+    # remove multi-line indicators ('...\n')
     s = line_continuation_re.sub('', s)
 
     # construct Line objects by extracting the line number and line parts
@@ -2450,10 +2458,14 @@ class KSPCompiler(object):
     def examine_pragmas(self, code, namespaces):
         '''Examine pragmas within code'''
 
+        # pragmas are only valid inside {...} comments, not in strings or other kinds of comments
+        pragma_comments = '\n'.join(m.group(0) for m in comment_or_string_re.finditer(code)
+                                    if m.group('comment') and m.group(0).startswith('{'))
+
         # find path to where we will save the compiled code
         pragma_re = re.compile(r'\{\s*\#pragma\s+save_compiled_source\s+(.*)\}')
 
-        for m in pragma_re.finditer(code):
+        for m in pragma_re.finditer(pragma_comments):
             dir_check = m.group(1).strip()
 
             if not os.path.isabs(dir_check):
@@ -2472,7 +2484,7 @@ class KSPCompiler(object):
         # find info about which variable names not to compact
         pragma_re = re.compile(r'\{\s*\#pragma\s+preserve_names\s+(.*?)\s*\}')
 
-        for m in pragma_re.finditer(code):
+        for m in pragma_re.finditer(pragma_comments):
             names = re.sub(r'[$!%@?~]', '', m.group(1))  # remove any prefixes
 
             for variable_name_pattern in re.split(r'\s+,?\s*|\s*,\s+|,', names):
@@ -2486,11 +2498,11 @@ class KSPCompiler(object):
                 self.variable_names_to_preserve.add(variable_name_pattern)
 
         # compiler option overrides
-        for m in pragma_compile_with_re.finditer(code):
+        for m in pragma_compile_with_re.finditer(pragma_comments):
             if m.group(1) not in self.compiler_options_to_override:
                 self.compiler_options_to_override[m.group(1)] = True
 
-        for m in pragma_compile_without_re.finditer(code):
+        for m in pragma_compile_without_re.finditer(pragma_comments):
             if m.group(1) not in self.compiler_options_to_override:
                 self.compiler_options_to_override[m.group(1)] = False
 
