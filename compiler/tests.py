@@ -1576,6 +1576,33 @@ end on'''
 
         self.assertRaisesRegex(ParseException, r'Empty argument in function call(.|\n)*line 3\b', do_compile, code)
 
+    def testErrorShowsStringsInsteadOfPlaceholders(self):
+        code = '''
+on init
+    declare !s[2] := ("a {0} b", )
+end on'''
+
+        with self.assertRaises(ParseException) as cm:
+            do_compile(code)
+
+        self.assertIn('Empty argument in function call "a {0} b", !', str(cm.exception))
+        self.assertIn('declare !s[2] := ("a {0} b", )', str(cm.exception))
+
+    def testUnterminatedStringErrorKeepsBracesAsWritten(self):
+        # the first import already has strings converted to placeholders when the second one is read
+        code = '''
+            import "test_imports/ui_cb_test_import.ksp" as f
+            import 'test_imports/unterminated_string.ksp'
+
+            on init
+                show_message()
+            end on'''
+
+        with self.assertRaises(ParseException) as cm:
+            do_compile(code)
+
+        self.assertIn('message("oops {0})', str(cm.exception))
+
 class FunctionInlining(unittest.TestCase):
     def testBasicInlining(self):
         code = '''
