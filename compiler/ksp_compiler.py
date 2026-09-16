@@ -619,15 +619,18 @@ def parse_lines_and_handle_imports(basepath, source, compiler_import_cache, file
 
             new_sources = read_path(basepath, filename)
 
+            # parse code and add an extra namespace if applicable
+            namespaces = line.namespaces
+
+            if namespace:
+                namespaces = namespaces + [namespace]
+
             for path, source in new_sources:
-                if path not in compiler_import_cache:
-                    compiler_import_cache.append(path)
+                # the same file can be imported more than once, as long as it's under a different namespace
+                import_key = (path, tuple(namespaces))
 
-                    # parse code and add an extra namespace if applicable
-                    namespaces = line.namespaces
-
-                    if namespace:
-                        namespaces = namespaces + [namespace]
+                if import_key not in compiler_import_cache:
+                    compiler_import_cache.append(import_key)
 
                     preproc_s = source
 
@@ -895,10 +898,12 @@ class ASTModifierCombineCallbacks(ASTModifierBase):
                 ui_name = ""
 
                 if b.variable:  # ui_controls have a variable which is stored as a child component
-                    if b.lexinfo[3]: # If the ui_control has been imported with a namespace
-                        ui_name = "".join(b.lexinfo[2])
+                    # prefix the name with the namespaces of the file the callback was imported from (if any),
+                    # so that the same callback imported under different namespaces doesn't get combined
+                    ui_name = prefix_with_ns(str(b.variable), b.lexinfo[3])
 
-                    ui_name += str(b.variable)
+                    if ui_name[0] in variable_prefixes:
+                        ui_name = ui_name[1:]
 
                 cb_key = b.name + ui_name
 
