@@ -28,7 +28,8 @@ def do_compile(code,
                combine_callbacks         = True,
                extra_syntax_checks       = True,
                optimize                  = False,
-               add_compiled_date_comment = False):
+               add_compiled_date_comment = False,
+               sanitize_exit_command     = False):
 
     compiler = KSPCompiler(code,
                            os.path.dirname(__file__),
@@ -37,7 +38,8 @@ def do_compile(code,
                            combine_callbacks         = combine_callbacks,
                            extra_syntax_checks       = extra_syntax_checks,
                            optimize                  = optimize,
-                           add_compiled_date_comment = add_compiled_date_comment)
+                           add_compiled_date_comment = add_compiled_date_comment,
+                           sanitize_exit_command     = sanitize_exit_command)
     compiler.compile()
     output_code = compiler.compiled_code
 
@@ -1583,6 +1585,141 @@ class PragmaTests(unittest.TestCase):
         self.assertTrue('declare $X' in output)
         self.assertTrue('declare $Y' in output)
         self.assertTrue('declare $Z' not in output)
+
+class SanitizeExitCommand(unittest.TestCase):
+    def testExitWithoutInitCallback(self):
+        code = '''
+            function x()
+                exit
+            end function
+
+            on note
+                call x()
+            end on'''
+
+        expected_output = '''
+            on init
+            declare $sksp_dummy
+            end on
+
+            function x
+            $sksp_dummy := $sksp_dummy
+            exit
+            end function
+
+            on note
+            call x
+            end on'''
+
+        output = do_compile(code, optimize = True, sanitize_exit_command = True)
+        assert_equal(self, output, expected_output)
+
+    def testExitWithInitCallback(self):
+        code = '''
+            function x()
+                exit
+            end function
+
+            on note
+                call x()
+            end on
+
+            on init
+                declare ~foo := 1.0
+                message(~foo)
+            end on'''
+
+        expected_output = '''
+            on init
+            declare $sksp_dummy
+            declare ~foo := 1.0
+            message(~foo)
+            end on
+
+            function x
+            $sksp_dummy := $sksp_dummy
+            exit
+            end function
+
+            on note
+            call x
+            end on'''
+
+        output = do_compile(code, optimize = True, sanitize_exit_command = True)
+        assert_equal(self, output, expected_output)
+
+    def testExitWithinForLoop(self):
+        code = '''
+            on init
+                declare i
+            end on
+
+            on note
+                message(i)
+                for i := 0 to 3
+                    exit
+                end for
+            end on'''
+
+        expected_output = '''
+            on init
+            declare $sksp_dummy
+            declare $i
+            end on
+
+            on note
+            message($i)
+            $i := 0
+            while ($i<=3)
+            $sksp_dummy := $sksp_dummy
+            exit
+            inc($i)
+            end while
+            end on'''
+
+        output = do_compile(code, optimize = True, sanitize_exit_command = True)
+        assert_equal(self, output, expected_output)
+
+    def testExitWithinNamespacedImport(self):
+        code = '''
+            import 'test_imports/sanitize_exit.ksp' as mymodule
+
+            on note
+                mymodule.bail()
+            end on'''
+
+        expected_output = '''
+            on init
+            declare $sksp_dummy
+            declare $mymodule__imported_var := 1
+            message($mymodule__imported_var)
+            end on
+
+            on note
+            $sksp_dummy := $sksp_dummy
+            exit
+            end on'''
+
+        output = do_compile(code, optimize = True, sanitize_exit_command = True)
+        assert_equal(self, output, expected_output)
+
+    def testNoDummyVariableWhenNoExitCommand(self):
+        code = '''
+            on init
+                declare x
+            end on'''
+
+        output = do_compile(code, sanitize_exit_command = True)
+        self.assertTrue('sksp_dummy' not in output)
+
+    def testNoDummyVariableWhenOptionDisabled(self):
+        code = '''
+            on note
+                exit
+            end on'''
+
+        output = do_compile(code, sanitize_exit_command = False)
+        self.assertTrue('sksp_dummy' not in output)
 
 class OptimizationModeChecks(unittest.TestCase):
     def testBasicArithmeticExpression(self):

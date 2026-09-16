@@ -262,6 +262,18 @@ class ASTModifier(object):
 
         return [node]
 
+    def modifyForStmt(self, node, *args, **kwargs):
+        node.loopvar = self.modify(node.loopvar, *args, **kwargs)
+        node.start = self.modify(node.start, *args, **kwargs)
+        node.end = self.modify(node.end, *args, **kwargs)
+
+        if node.step:
+            node.step = self.modify(node.step, *args, **kwargs)
+
+        node.statements = flatten([self.modify(s, *args, **kwargs) for s in node.statements])
+
+        return [node]
+
     def modifyIfStmt(self, node, *args, **kwargs):
         temp = []
 

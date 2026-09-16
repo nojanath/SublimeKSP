@@ -1,0 +1,8 @@
+on init
+  declare imported_var := 1
+  message(imported_var)
+end on
+
+function bail()
+  exit
+end function

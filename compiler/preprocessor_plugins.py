@@ -1180,30 +1180,6 @@ def handleOpenSizeArrays(lines):
 
 #=================================================================================================
 
-def handleSanitizeExitCommand(lines):
-    newLines = collections.deque()
-
-    for i in range(len(lines)):
-        line = lines[i].command.strip()
-
-        if line.startswith("on"):
-            if re.search(initRe, line):
-                newLines.append(lines[i])
-
-                if not any(l.command == "declare sksp_dummy" for l in newLines): # Only add preprocessor variable if not previously declared
-                    newLines.append(lines[i].copy("declare sksp_dummy"))
-
-                continue
-
-        if line == "exit":
-            newLines.append(lines[i].copy("sksp_dummy := sksp_dummy"))
-
-        newLines.append(lines[i])
-
-    replaceLines(lines, newLines)
-
-#=================================================================================================
-
 def handleStringArrayInitialisation(lines, placeholders):
     ''' Convert the single-line list of strings to one string per line for Kontakt to understand. '''
     stringArrayRe = r"^declare\s+%s\s*\[(?P<arraysize>[^\]]+)\]\s*:=\s*\((?P<initlist>.+)\)$" % variableNameRe
