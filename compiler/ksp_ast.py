@@ -483,6 +483,7 @@ class FunctionCall(Stmt):
         self.parameters = parameters
         self.is_procedure = is_procedure
         self.using_call_keyword = using_call_keyword
+        self.is_lowered_taskfunc_call = False
 
     def __str__(self):
         s = str(self.function_name)

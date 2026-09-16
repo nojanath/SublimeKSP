@@ -1787,6 +1787,12 @@ class ASTModifierFunctionExpander(ASTModifierBase):
         if function_name in function_stack:
             raise ksp_ast.ParseException(node, "Recursive functions calls (functions directly or indirectly calling themselves) are not allowed! %s" % ' -> '.join(function_stack + [function_name]))
 
+        # a taskfunc call that was already lowered has had its parameters moved into the prologue
+        if node.is_lowered_taskfunc_call:
+            if is_inside_init_callback:
+                raise ksp_ast.ParseException(node, 'Usage of "call" inside init callback is not allowed! Please also verify that the called function is not a taskfunc.')
+            return
+
         # verify that number of parameters and arguments matches
         if len(node.parameters) != len(func.parameters):
             raise ksp_ast.ParseException(node, "Wrong number of parameters for %s()! Expected %d, got %d." % (function_name, len(func.parameters), len(node.parameters)))
@@ -1901,8 +1907,12 @@ class ASTModifierFunctionExpander(ASTModifierBase):
         if isinstance(parent_toplevel, ksp_ast.Callback):
             functions[function_name].used = True
 
+        # if it's a taskfunc call that was already lowered, e.g. inside the body of a function that got processed before being inlined (see issue #97)
+        if node.is_lowered_taskfunc_call:
+            result = [node]
+
         # if it's a call to a taskfunc function
-        if func.is_taskfunc:
+        elif func.is_taskfunc:
             (prologue, epilogue) = self.getTaskFuncCallPrologueAndEpilogue(node, func, assign_stmt_lhs)
             prologue = flatten([self.modifyAssignStmt(stmt, parent_toplevel, function_stack, disallow_function_in_rhs = True) for stmt in prologue])
             epilogue = flatten([self.modifyAssignStmt(stmt, parent_toplevel, function_stack, disallow_function_in_rhs = True) for stmt in epilogue])
@@ -1910,6 +1920,7 @@ class ASTModifierFunctionExpander(ASTModifierBase):
             node.parameters = []
             node.using_call_keyword = True
             node.is_procedure = True
+            node.is_lowered_taskfunc_call = True
             called_functions.add(node.function_name.identifier)
 
         # if 'call' keyword is used
