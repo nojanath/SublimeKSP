@@ -3223,6 +3223,80 @@ class TestTaskfunc(unittest.TestCase):
 
         self.assertSameOutputRegardlessOfOrder(functions, callbacks)
 
+    # issue #296: exit inside a taskfunc must restore the stack and frame pointers first
+    def getFunctionBody(self, output, function_name):
+        lines = output.strip().split('\n')
+        start = lines.index('function %s' % function_name)
+        end = lines.index('end function', start)
+
+        return lines[start + 1:end]
+
+    def testExitInsideTaskfunc(self):
+        code = '''
+            on init
+              tcm.init(100)
+            end on
+
+            taskfunc tf(param)
+              if param = 0
+                exit
+              end if
+              while param > 0
+                exit
+              end while
+            end taskfunc
+
+            on note
+              tf(EVENT_NOTE)
+            end on'''
+
+        epilogue = ['$sp := $fp', '$fp := %p[$fp]', '$sp := $sp+2']
+
+        expected_body = ['%p[$sp-2] := $fp', '$fp := $sp-2', '$sp := $fp',
+                         'if (%p[$fp+1]=0)'] + epilogue + ['exit', 'end if',
+                         'while (%p[$fp+1]>0)'] + epilogue + ['exit', 'end while'] + epilogue
+
+        output = do_compile(code, optimize = True, sanitize_exit_command = True)
+        self.assertEqual(self.getFunctionBody(output, 'tf'), expected_body)
+        self.assertTrue('sksp_dummy' not in output)
+
+    def testExitInsideFunctionInlinedIntoTaskfunc(self):
+        code = '''
+            on init
+              tcm.init(100)
+              declare x
+            end on
+
+            function bail()
+              if x = 1
+                exit
+              end if
+            end function
+
+            function regular()
+              exit
+            end function
+
+            taskfunc tf()
+              bail()
+              call regular()
+            end taskfunc
+
+            on note
+              tf()
+            end on'''
+
+        epilogue = ['$sp := $fp', '$fp := %p[$fp]', '$sp := $sp+1']
+
+        expected_body = ['%p[$sp-1] := $fp', '$fp := $sp-1', '$sp := $fp',
+                         'if ($x=1)'] + epilogue + ['exit', 'end if', 'call regular'] + epilogue
+
+        output = do_compile(code, optimize = True, sanitize_exit_command = True)
+        self.assertEqual(self.getFunctionBody(output, 'tf'), expected_body)
+
+        # exit in a function invoked with "call" leaves only that function, so it's still sanitized as usual
+        self.assertEqual(self.getFunctionBody(output, 'regular'), ['$sksp_dummy := $sksp_dummy', 'exit'])
+
 class K5_6Features(unittest.TestCase):
     def testDeclaration(self):
         code = '''

@@ -2057,18 +2057,44 @@ class ASTModifierTaskfuncFunctionHandler(ASTModifierBase):
             call_graph[node.name.identifier].append('check_full')
             called_functions.add('check_full')
 
-        # epilogue
-        line0 = AssignStmt(li, VarRef(li, ID(li, '$sp')), VarRef(li, ID(li, '$fp')))
-        line1 = AssignStmt(li, VarRef(li, ID(li, '$fp')), VarRef(li, ID(li, '%p'), [VarRef(li, ID(li, '$fp'))]))
-        line2 = AssignStmt(li, VarRef(li, ID(li, '$sp')), BinOp(li, VarRef(li, ID(li, '$sp')), '+', Integer(li, Ta)))
+        # epilogue, which also has to run before every exit command, otherwise the stack and frame pointers
+        # are left pointing into this function's frame (see issue #296)
+        def make_epilogue(li):
+            return [AssignStmt(li, VarRef(li, ID(li, '$sp')), VarRef(li, ID(li, '$fp'))),
+                    AssignStmt(li, VarRef(li, ID(li, '$fp')), VarRef(li, ID(li, '%p'), [VarRef(li, ID(li, '$fp'))])),
+                    AssignStmt(li, VarRef(li, ID(li, '$sp')), BinOp(li, VarRef(li, ID(li, '$sp')), '+', Integer(li, Ta)))]
 
-        node.lines.append(line0)
-        node.lines.append(line1)
-        node.lines.append(line2)
+        ASTModifierTaskfuncExitHandler(node, make_epilogue)
+
+        node.lines.extend(make_epilogue(li))
 
         node.parameters = []
 
         return func
+
+class ASTModifierTaskfuncExitHandler(ASTModifierBase):
+    '''Inserts the taskfunc epilogue before every exit command in the body of a taskfunc. The epilogue statements
+       also work around the Kontakt bug that sanitizing the exit command deals with, so dummy statements are removed.'''
+
+    def __init__(self, func, make_epilogue):
+        ASTModifierBase.__init__(self, modify_expressions = False)
+        self.make_epilogue = make_epilogue
+        func.lines = flatten([self.modify(line) for line in func.lines])
+
+    def modifyAssignStmt(self, node, *args, **kwargs):
+        dummy = ASTModifierSanitizeExitCommand.dummy_variable
+
+        if isinstance(node.expression, ksp_ast.VarRef) and node.varref.identifier.identifier.lstrip('$') == dummy \
+           and node.expression.identifier.identifier.lstrip('$') == dummy:
+            return []
+
+        return [node]
+
+    def modifyFunctionCall(self, node, *args, **kwargs):
+        if node.is_procedure and node.function_name.identifier == 'exit':
+            return self.make_epilogue(node.lexinfo) + [node]
+
+        return ASTModifierBase.modifyFunctionCall(self, node, *args, **kwargs)
 
 class ASTModifierFixPrefixesAndFixControlPars(ASTModifierFixPrefixes):
     '''Checks prefixs and control_pars. Add get_ui_id() to control_pars'''
