@@ -1524,6 +1524,25 @@ class CommentsAndStrings(unittest.TestCase):
 
         self.assertRaisesRegex(ParseException, 'Unterminated string', do_compile, code)
 
+    def testErrorLineNumberInImportedFile(self):
+        code = '''
+            import 'test_imports/unterminated_string.ksp'
+
+            on init
+                show_message()
+            end on'''
+
+        self.assertRaisesRegex(ParseException, r'unterminated_string\.ksp, line 2\b', do_compile, code)
+
+    def testImportNckpErrorLineNumber(self):
+        code = '''import 'test_imports/pragma.ksp' as mymodule
+on init
+    load_performance_view("x")
+    import_nckp("does_not_exist.nckp")
+end on'''
+
+        self.assertRaisesRegex(ParseException, r'<main script>, line 4\b', do_compile, code)
+
     def testPragmasOnlyInsideCurlyBracketComments(self):
         code = '''
             // { #pragma compile_with compact_variables }

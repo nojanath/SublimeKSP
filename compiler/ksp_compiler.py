@@ -598,7 +598,7 @@ def parse_lines_and_handle_imports(basepath, source, compiler_import_cache, file
         # actually open everything in paths list sequentially
         for p in paths:
             with io.open(p, 'r', encoding = 'utf-8') as s:
-                src = '\n' + re.sub('\r+\n*', '\n', s.read())
+                src = re.sub('\r+\n*', '\n', s.read())
 
                 out_data.append((p, src))
 
@@ -2271,13 +2271,13 @@ def open_nckp(lines, basedir):
     nckp_path = '' # predeclared to avoid errors if the import_nckp ksp function is not used
     ui_to_import = []
 
-    for index, l in enumerate(lines):
+    for l in lines:
         line = l.command
 
         if 'import_nckp' in line:
             if 'load_performance_view' in source:
                 if 'make_perfview' in source:
-                    raise ParseException(Line(line, [(None, index + 1)], None), 'If \'load_performance_view\' is used, \'make_perfview\' must be removed!\n')
+                    raise ParseException(l,'If \'load_performance_view\' is used, \'make_perfview\' must be removed!\n')
 
                 nckp_path = line[line.find('(') + 1:line.find(')')][1:-1]
 
@@ -2307,9 +2307,9 @@ def open_nckp(lines, basedir):
                             comp_extras.add_nckp_var_to_nckp_table(v.replace('__', '.'))
 
                     else:
-                        raise ParseException(Line(line, [(None, index + 1)], None), '.nkcp file not found at: %s!' % os.path.abspath(nckp_path))
+                        raise ParseException(l,'.nkcp file not found at: %s!' % os.path.abspath(nckp_path))
             else:
-                raise ParseException(Line(line, [(None, index + 1)], None), 'import_nckp was used, but \'load_performance_view\' was not found in the script!\n')
+                raise ParseException(l,'import_nckp was used, but \'load_performance_view\' was not found in the script!\n')
 
     return bool(ui_to_import)
 
