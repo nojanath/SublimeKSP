@@ -1294,12 +1294,15 @@ class IterateMacro(object):
     def __init__(self, macroName, minVal, maxVal, step, direction, line, placeholders):
         self.line = line
         self.macroName = macroName
-        self.isSingleLine = '#n#' in self.macroName
+        # restore strings first, so that #n# is also found inside string literals
+        l = Line(macroName)
+        l.replace_placeholders(placeholders=placeholders)
+        self.expandedMacro = l.command
+        self.isSingleLine = '#n#' in self.expandedMacro
         self.minVal = int(tryStringEval(minVal, line, 'min'))
         self.maxVal = int(tryStringEval(maxVal, line, 'max'))
         self.direction = direction
         self.step = 1
-        self.placeholders = placeholders
 
         if step:
             self.step = int(tryStringEval(step, line, 'step'))
@@ -1318,9 +1321,7 @@ class IterateMacro(object):
                     newLines.append(self.line.copy('%s(%s)' % (self.macroName, str(i))))
             else:
                 for i in range(self.minVal, self.maxVal + offset, self.step):
-                    l = Line(self.macroName)
-                    l.replace_placeholders(placeholders=self.placeholders)
-                    newLines.append(self.line.copy(l.command.replace('#n#', str(i))))
+                    newLines.append(self.line.copy(self.expandedMacro.replace('#n#', str(i))))
 
         return(newLines)
 
@@ -1440,15 +1441,17 @@ def handleLiterateMacro(lines, placeholders):
             if m:
                 name = m.group("macro")
                 targets = utils.split_args(m.group("target"), lines[lineIdx])
+                # restore strings first, so that #l# is also found inside string literals
+                l = Line(name)
+                l.replace_placeholders(placeholders=placeholders)
+                expandedName = l.command
 
-                if not "#l#" in name:
+                if not "#l#" in expandedName:
                     for text in targets:
                         newLines.append(lines[lineIdx].copy("%s(%s)" % (name, text)))
                 else:
                     for index, text in enumerate(targets):
-                        l = Line(name)
-                        l.replace_placeholders(placeholders=placeholders)
-                        newLines.append(lines[lineIdx].copy(l.command.replace("#l#", text).replace("#n#", str(index))))
+                        newLines.append(lines[lineIdx].copy(expandedName.replace("#l#", text).replace("#n#", str(index))))
                 continue
             else:
                 raise ParseException(lines[lineIdx], "Syntax error in literate_macro: incomplete or missing parameters!\n")
@@ -1475,15 +1478,17 @@ def handleLiteratePostMacro(lines, placeholders):
             if m:
                 name = m.group("macro")
                 targets = utils.split_args(m.group("target"), lines[lineIdx])
+                # restore strings first, so that #l# is also found inside string literals
+                l = Line(name)
+                l.replace_placeholders(placeholders=placeholders)
+                expandedName = l.command
 
-                if not "#l#" in name:
+                if not "#l#" in expandedName:
                     for text in targets:
                         newLines.append(lines[lineIdx].copy("%s(%s)" % (name, text)))
                 else:
                     for index, text in enumerate(targets):
-                        l = Line(name)
-                        l.replace_placeholders(placeholders=placeholders)
-                        newLines.append(lines[lineIdx].copy(l.command.replace("#l#", text).replace("#n#", str(index))))
+                        newLines.append(lines[lineIdx].copy(expandedName.replace("#l#", text).replace("#n#", str(index))))
                 continue
 
         newLines.append(lines[lineIdx])
