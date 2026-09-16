@@ -2269,6 +2269,119 @@ class MultidimensionalArrayTest(unittest.TestCase):
 
         self.assertRaises(ParseException, do_compile, code)
 
+    def testMultidimensionalArrayInOnInitFunction(self):
+        code = '''
+            function on_init_foo
+                declare arr[10, 10]
+                family fam
+                    declare arr[3, 4]
+                end family
+            end function
+
+            on init
+                on_init_foo
+                arr[1, 2] := 5
+                fam.arr[2, 3] := arr.SIZE_D1 + fam.arr.SIZE_D2
+            end on'''
+
+        output = do_compile(code)
+        self.assertTrue('declare %_arr[10*10]' in output)
+        self.assertTrue('declare %fam___arr[3*4]' in output)
+        self.assertTrue('%_arr[10*1+2] := 5' in output)
+        self.assertTrue('%fam___arr[4*2+3] := $arr__SIZE_D1+$fam__arr__SIZE_D2' in output)
+
+    def testLocalMultidimensionalArrayInFunction(self):
+        code = '''
+            function foo
+                declare arr[3, 4]
+                arr[1, 2] := arr.SIZE_D1
+            end function
+
+            function bar
+                declare arr[2, 2]
+                arr[1, 1] := arr.SIZE_D1
+            end function
+
+            on init
+                declare arr[5, 5]
+                arr[1, 1] := 1
+            end on
+
+            on note
+                foo
+                bar
+                message(arr[1, 1])
+            end on'''
+
+        output = do_compile(code)
+        self.assertTrue('declare %_arr[5*5]' in output)
+        self.assertTrue('declare %__arr[3*4]' in output)
+        self.assertTrue('declare %__arr2[2*2]' in output)
+        self.assertTrue('%__arr[4*1+2] := $_arr__SIZE_D1' in output)
+        self.assertTrue('%__arr2[2*1+1] := $_arr__SIZE_D12' in output)
+        self.assertTrue('message(%_arr[5*1+1])' in output)
+
+    def testLocalMultidimensionalArrayWithLocalSize(self):
+        # the property functions use local constants and must not pick up locals named like their own parameters
+        code = '''
+            function foo(d1, val)
+                declare const N := 3
+                declare arr[N, N]
+                arr[d1, 1] := val
+            end function
+
+            on note
+                foo(2, 9)
+            end on'''
+
+        output = do_compile(code)
+        self.assertTrue('declare %__arr[$_N*$_N]' in output)
+        self.assertTrue('%__arr[$_N*2+1] := 9' in output)
+
+    def testLocalMultidimensionalArrayInCallback(self):
+        code = '''
+            on note
+                declare arr[2, 2]
+                declare global glob[3, 3]
+                arr[1, 1] := 1
+                glob[2, 2] := 2
+            end on
+
+            on release
+                glob[1, 1] := 3
+            end on'''
+
+        output = do_compile(code)
+        self.assertTrue('%__arr[2*1+1] := 1' in output)
+        self.assertTrue('%_glob[3*2+2] := 2' in output)
+        self.assertTrue('%_glob[3*1+1] := 3' in output)
+
+    def testLocalMultidimensionalArrayOutOfScope(self):
+        code = '''
+            function foo
+                declare arr[2, 2]
+            end function
+
+            on note
+                foo
+                arr[1, 1] := 1
+            end on'''
+
+        self.assertRaises(ParseException, do_compile, code)
+
+    def testLocalMultidimensionalArrayRedeclared(self):
+        code = '''
+            function foo
+                declare arr[2, 2]
+                declare arr
+            end function
+
+            on note
+                foo
+            end on'''
+
+        self.assertRaises(ParseException, do_compile, code)
+
 class FunctionAsArgumentTest(unittest.TestCase):
     def testFunctionAsArgument(self):
         code = '''
