@@ -181,11 +181,67 @@ class Callbacks(unittest.TestCase):
             end on
             on ui_control($f__mySwitch)
               message("imported")
-              message("switch")
             end on
             on midi_in
               message("midi on imported")
               message("midi in main")
+            end on
+            on ui_control($mySwitch)
+              message("switch")
+            end on'''
+
+        output = do_compile(code, combine_callbacks = True, remove_preprocessor_vars = True)
+        assert_equal(self, output, expected_output)
+
+    def testCombineCallbackWithImportedFileNamespace(self):
+        code = '''
+            import "test_imports/ui_cb_test_import.ksp" as f
+
+            on init
+            end on
+
+            on ui_control (f.mySwitch)
+                message("switch")
+            end on'''
+
+        expected_output = '''
+            on init
+              declare ui_switch $f__mySwitch
+            end on
+            on ui_control($f__mySwitch)
+              message("imported")
+              message("switch")
+            end on
+            on midi_in
+              message("midi on imported")
+            end on'''
+
+        output = do_compile(code, combine_callbacks = True, remove_preprocessor_vars = True)
+        assert_equal(self, output, expected_output)
+
+    def testSameFileImportedUnderDifferentNamespaces(self):
+        code = '''
+            import "test_imports/ui_cb_test_import.ksp" as first
+            import "test_imports/ui_cb_test_import.ksp" as second
+            import "test_imports/ui_cb_test_import.ksp" as second
+
+            on init
+            end on'''
+
+        expected_output = '''
+            on init
+              declare ui_switch $first__mySwitch
+              declare ui_switch $second__mySwitch
+            end on
+            on ui_control($first__mySwitch)
+              message("imported")
+            end on
+            on midi_in
+              message("midi on imported")
+              message("midi on imported")
+            end on
+            on ui_control($second__mySwitch)
+              message("imported")
             end on'''
 
         output = do_compile(code, combine_callbacks = True, remove_preprocessor_vars = True)
