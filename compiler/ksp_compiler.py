@@ -918,6 +918,62 @@ class ASTModifierCombineCallbacks(ASTModifierBase):
             # Removes the CBs with no lines from node.blocks
             node.blocks = [b for b in node.blocks if (isinstance(b, ksp_ast.Callback) and b.lines != []) or not isinstance(b, ksp_ast.Callback)]
 
+class ASTModifierSanitizeExitCommand(ASTModifierBase):
+    '''Inserts a dummy no-op assignment in front of every 'exit' command, which works around a Kontakt bug
+       where 'exit' collapses the whole function call tree in certain situations (see issue #299).
+       The dummy variable is only declared if the script actually makes use of 'exit', and the init
+       callback it is declared in is created in case the script does not have one.'''
+
+    dummy_variable = 'sksp_dummy'
+
+    def __init__(self, ast):
+        ASTModifierBase.__init__(self, modify_expressions = False)
+        self.exit_command_found = False
+        self.traverse(ast)
+
+    def make_dummy_id(self, lexinfo):
+        id = ksp_ast.ID(lexinfo, self.dummy_variable)
+
+        # the dummy variable is a single global one, so it must not be prefixed with the namespace
+        # of whichever file the 'exit' command (or the init callback) happens to live in
+        id.namespace_prefix_done = True
+
+        return id
+
+    def make_dummy_varref(self, lexinfo):
+        return ksp_ast.VarRef(lexinfo, self.make_dummy_id(lexinfo))
+
+    def modifyModule(self, node, *args, **kwargs):
+        ASTModifierBase.modifyModule(self, node, *args, **kwargs)
+
+        if not self.exit_command_found:
+            return
+
+        # find the init callback, and create one in case the script has none
+        on_init_block = None
+
+        for b in node.blocks:
+            if isinstance(b, ksp_ast.Callback) and b.name == 'init':
+                on_init_block = b
+                break
+
+        if on_init_block is None:
+            on_init_block = ksp_ast.Callback(node.lexinfo, 'init', lines = [])
+            node.blocks.insert(0, on_init_block)
+
+        lexinfo = on_init_block.lexinfo
+        on_init_block.lines.insert(0, ksp_ast.DeclareStmt(lexinfo, self.make_dummy_id(lexinfo), modifiers = []))
+
+    def modifyFunctionCall(self, node, *args, **kwargs):
+        result = ASTModifierBase.modifyFunctionCall(self, node, *args, **kwargs)
+
+        if not (node.is_procedure and node.function_name.identifier == 'exit'):
+            return result
+
+        self.exit_command_found = True
+
+        return [ksp_ast.AssignStmt(node.lexinfo, self.make_dummy_varref(node.lexinfo), self.make_dummy_varref(node.lexinfo))] + result
+
 class ASTModifierNodesToNativeKSP(ASTModifierBase):
     '''Travel through AST and modify nodes to native KSP'''
     def __init__(self, ast, line_map):
@@ -2255,12 +2311,6 @@ class KSPCompiler(object):
         handleStringArrayInitialisation(self.lines, placeholders)
         handleArrayConcat(self.lines)
 
-    def run_sanitize_exit_command(self):
-        '''Run handleSanitizeExitCommand from `preprocessor_plugins.py`'''
-        from preprocessor_plugins import handleSanitizeExitCommand
-
-        handleSanitizeExitCommand(self.lines)
-
     def extract_macros(self):
         '''Isolate macros into objects, removing from code'''
         self.lines, self.macros = extract_macros(self.lines)
@@ -2505,12 +2555,12 @@ class KSPCompiler(object):
 
                  ('post-macro processes',             lambda: self.run_post_macro_functions(),                                                        True),
 
-                 ('sanitizing exit command',          lambda: self.run_sanitize_exit_command(),                                                       do_sanitize_exit),
                  ('replacing string placeholders',    lambda: self.replace_string_placeholders(),                                                     True),
                  ('searching for nckp import',        lambda: self.search_for_nckp(),                                                                 True),
                  ('converting lines to code blocks',  lambda: self.convert_lines_to_code(),                                                           True),
 
                  ('parsing code',                     lambda: self.parse_code(),                                                                      True),
+                 ('sanitizing exit command',          lambda: ASTModifierSanitizeExitCommand(self.module),                                            do_sanitize_exit),
                  ('combining callbacks',              lambda: ASTModifierCombineCallbacks(self.module, self.combine_callbacks),                       True),
                  ('modifying nodes to native KSP',    lambda: ASTModifierNodesToNativeKSP(self.module, self.lines),                                   True),
                  ('adding variable name prefixes',    lambda: ASTModifierFixPrefixesIncludingLocalVars(self.module),                                  True),
