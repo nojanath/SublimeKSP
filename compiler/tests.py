@@ -425,6 +425,26 @@ class ConstBlockTests(unittest.TestCase):
         self.assertTrue('declare const $VARS__foo := 0'  in output)
         self.assertTrue('declare const $VARS__bar := 1'  in output)
 
+    def testConstBlockGeneratedNames(self):
+        code = '''
+            on init
+                const modes
+                    MY_MODE
+                    OTHER := 5
+                end const
+
+                message(modes.str[0])
+                message(modes.title)
+                message(modes.OTHER.idx)
+            end on'''
+
+        output = do_compile(code)
+        self.assertTrue('declare %modes[2] := (0, 5)' in output)
+        self.assertTrue('!modes__str[0] := "MY MODE"' in output)
+        self.assertTrue('!modes__str[1] := "OTHER"' in output)
+        self.assertTrue('@modes__title := "modes"' in output)
+        self.assertTrue('declare const $modes__OTHER__idx := 1' in output)
+
 class Family(unittest.TestCase):
     def testFamily(self):
         code = '''
@@ -595,6 +615,32 @@ class IfElse(unittest.TestCase):
             message("lots of groups")
             end if
             end if
+            end on'''
+
+        output = do_compile(code, remove_preprocessor_vars = True)
+        assert_equal(self, output, expected_output)
+
+    def testSelectElse(self):
+        code = '''
+            on init
+                declare x
+                select x
+                    case 0
+                        message(0)
+                    else
+                        message(1)
+                end select
+            end on'''
+
+        expected_output = '''
+            on init
+            declare $x
+            select ($x)
+            case 0
+            message(0)
+            case 080000000h to 2147483647
+            message(1)
+            end select
             end on'''
 
         output = do_compile(code, remove_preprocessor_vars = True)
@@ -1016,6 +1062,15 @@ class UIArrayCheck(unittest.TestCase):
         self.assertTrue('declare ui_text_edit @edits0' in output)
         self.assertTrue('declare ui_text_edit @edits1' in output)
         self.assertTrue('%edits[$preproc_i] := get_ui_id(@edits0)+$preproc_i' in output)
+
+    def testUIArraySizeWithNativeConstant(self):
+        code = '''
+            on init
+                declare const N := 3
+                declare ui_button buttons[N]
+            end on'''
+
+        self.assertRaisesRegex(ParseException, 'Invalid syntax in UI array size value', do_compile, code)
 
     def testPersistentMultidimensionalUIArrayInFamily(self):
         code = '''
@@ -1977,6 +2032,19 @@ class MacroInlining(unittest.TestCase):
 
         self.assertRaises(ParseException, do_compile, code)
 
+    def testMacroArgumentInsideString(self):
+        code = '''
+            macro say(#x#)
+                message("value #x#")
+            end macro
+
+            on init
+                say(5)
+            end on'''
+
+        output = do_compile(code)
+        self.assertTrue('message("value 5")' in output)
+
 class MacroIterChecks(unittest.TestCase):
     def testMacrosIterate(self):
         code = '''
@@ -2080,6 +2148,77 @@ class MacroIterChecks(unittest.TestCase):
         self.assertTrue('add_menu_item($instrument,"INST_2",1)' in output)
         self.assertTrue('add_menu_item($instrument,"Post INST_1",0)' in output)
         self.assertTrue('add_menu_item($instrument,"Post INST_2",1)' in output)
+
+    def testIterateMacroDownto(self):
+        code = '''
+            on init
+                iterate_macro(message(#n#)) := 3 downto 1
+            end on'''
+
+        expected_output = '''
+            on init
+              message(3)
+              message(2)
+              message(1)
+            end on'''
+
+        output = do_compile(code, remove_preprocessor_vars = True)
+        assert_equal(self, output, expected_output)
+
+    def testIterateMacroWithInvalidRange(self):
+        code = '''
+            on init
+                iterate_macro(message(#n#)) := 5 to 1
+                message("done")
+            end on'''
+
+        expected_output = '''
+            on init
+              message("done")
+            end on'''
+
+        output = do_compile(code, remove_preprocessor_vars = True)
+        assert_equal(self, output, expected_output)
+
+    def testPostIterateMacroWithMacroArguments(self):
+        code = '''
+            macro make(#name#, #start#, #end#)
+                iterate_post_macro(declare ui_button #name##n#) := #start# to #end#
+            end macro
+
+            on init
+                make(btn, 1, 2)
+            end on'''
+
+        expected_output = '''
+            on init
+              declare ui_button $btn1
+              declare ui_button $btn2
+            end on'''
+
+        output = do_compile(code, remove_preprocessor_vars = True)
+        assert_equal(self, output, expected_output)
+
+    def testPostLiterateMacroWithMacroArgument(self):
+        code = '''
+            define KNOBS.CONTROLS := cutoff, reso
+
+            macro make(#obj#)
+                literate_post_macro(declare #l#) on #obj#.CONTROLS
+            end macro
+
+            on init
+                make(KNOBS)
+            end on'''
+
+        expected_output = '''
+            on init
+              declare $cutoff
+              declare $reso
+            end on'''
+
+        output = do_compile(code, remove_preprocessor_vars = True)
+        assert_equal(self, output, expected_output)
 
 class NumberIncrementer(unittest.TestCase):
     def testNumberIncrementer(self):
@@ -2265,6 +2404,17 @@ end on'''
 
         output = do_compile(code, remove_preprocessor_vars = True)
         self.assertTrue('declare $long_variable_name' in output)
+
+    def testLineCommentsInsideArrayInitializer(self):
+        code = '''
+            on init
+                declare arr[3] := (1, // one
+                                   2, // two
+                                   3)
+            end on'''
+
+        output = do_compile(code)
+        self.assertTrue('declare %arr[3] := (1, 2, 3)' in output)
 
     def testUserDefinedCodeSection(self):
         code = '''
@@ -2548,6 +2698,40 @@ class FunctionInlining(unittest.TestCase):
         output = do_compile(code)
         self.assertTrue('%my_array[0] := 10' in output)
 
+    def testMultilineFunctionInsideExpression(self):
+        code = '''
+            on init
+                declare x := 1
+                declare y := 5
+                message(max(x, y))
+            end on
+
+            function max(a, b) -> result
+                if a > b
+                    result := a
+                else
+                    result := b
+                end if
+            end function'''
+
+        self.assertRaisesRegex(ParseException, 'needs to consist of a single line', do_compile, code)
+
+    def testRecursiveFunction(self):
+        code = '''
+            on init
+                foo()
+            end on
+
+            function foo()
+                bar()
+            end function
+
+            function bar()
+                foo()
+            end function'''
+
+        self.assertRaisesRegex(ParseException, 'Recursive functions calls', do_compile, code)
+
 class FunctionInvocationUsingCall(unittest.TestCase):
     def testNotAllowedInOnInit(self):
         code = '''
@@ -2697,6 +2881,28 @@ class FunctionOverriding(unittest.TestCase):
 
         self.assertRaisesRegex(ParseException, 'Function already declared', do_compile, code)
 
+class FolderImport(unittest.TestCase):
+    def testFolderImportSkipsIgnoredFiles(self):
+        code = '''
+            import "test_imports/folder_import"
+
+            on init
+                folder_import_a
+                folder_import_c
+            end on'''
+
+        output = do_compile(code)
+        self.assertTrue('message("a")\nmessage("c")' in output)
+
+        code = '''
+            import "test_imports/folder_import"
+
+            on init
+                folder_import_b
+            end on'''
+
+        self.assertRaisesRegex(ParseException, 'folder_import_b has not been declared', do_compile, code)
+
 class NamespacePrefixing(unittest.TestCase):
     def testNamespacePrefixing(self):
         code = '''
@@ -2808,6 +3014,18 @@ class PragmaTests(unittest.TestCase):
         self.assertTrue('declare $X' in output)
         self.assertTrue('declare $Y' in output)
         self.assertTrue('declare $Z' not in output)
+
+    def testCompileWithTakesPrecedenceOverCompileWithout(self):
+        code = '''
+            { #pragma compile_without compact_variables }
+            { #pragma compile_with compact_variables }
+            on init
+                declare long_variable_name
+                message(long_variable_name)
+            end on'''
+
+        output = do_compile(code)
+        self.assertFalse('long_variable_name' in output)
 
 class SanitizeExitCommand(unittest.TestCase):
     def testExitWithoutInitCallback(self):
@@ -3109,6 +3327,24 @@ class OptimizationModeChecks(unittest.TestCase):
         self.assertTrue('if (1=1)' in output)
         self.assertTrue('2=2' not in output)
 
+    def testAdditionalBranchOptimizationRemovesFalseBranch(self):
+        code = '''
+            { #pragma compile_with extra_branch_optimization }
+            define TEST := %d
+
+            on init
+                if TEST > 7
+                    declare some_var
+                end if
+
+                message(some_var)
+            end on'''
+
+        output = do_compile(code % 9)
+        self.assertTrue('declare $some_var\nmessage($some_var)' in output)
+
+        self.assertRaisesRegex(ParseException, r'Undeclared variable or function: \$some_var', do_compile, code % 5)
+
 class PropertyTests(unittest.TestCase):
     def testAlias1(self):
         code = '''
@@ -3306,6 +3542,31 @@ class PropertyTests(unittest.TestCase):
         self.assertTrue('%_data[1] := 1' in output)
         self.assertTrue('message(%_data[3])' in output)
         self.assertTrue('%_data[0] := 2' in output)
+
+    def testPropertyWithIndicesInsideName(self):
+        code = '''
+            on init
+                declare data[100]
+
+                property col.row
+                    function get(x, y) -> result
+                        result := data[x * 10 + y]
+                    end function
+
+                    function set(x, y, value)
+                        data[x * 10 + y] := value
+                    end function
+                end property
+
+                col[4].row[5] := 10
+                col.row[4, 6] := 11
+                message(col[4].row[5])
+            end on'''
+
+        output = do_compile(code)
+        self.assertTrue('%data[4*10+5] := 10' in output)
+        self.assertTrue('%data[4*10+6] := 11' in output)
+        self.assertTrue('message(%data[4*10+5])' in output)
 
 class MultidimensionalArrayTest(unittest.TestCase):
     def testMultidimensionalArrayWithPrefix(self):
@@ -3760,7 +4021,7 @@ class TestTaskfunc(unittest.TestCase):
 
     def testTaskfuncWithAdditionalBranchOptimization(self):
         code = '''
-            { pragma compile_with extra_branch_optimization }
+            { #pragma compile_with extra_branch_optimization }
 
             on init
               SET_CONDITION(TCM_DEBUG)
@@ -4128,6 +4389,66 @@ class TestTaskfunc(unittest.TestCase):
 
         # exit in a function invoked with "call" leaves only that function, so it's still sanitized as usual
         self.assertEqual(self.getFunctionBody(output, 'regular'), ['$sksp_dummy := $sksp_dummy', 'exit'])
+
+    def testTaskfuncWithVarAndOutParams(self):
+        code = '''
+            on init
+                tcm.init(100)
+                declare x
+                declare y
+                declare z
+            end on
+
+            taskfunc swap_get_max(var a, var b, out max)
+                declare tmp := a
+
+                a := b
+                b := tmp
+
+                if a > b
+                    max := a
+                else
+                    max := b
+                end if
+            end taskfunc
+
+            on note
+                swap_get_max(x, y, z)
+            end on'''
+
+        output = do_compile(code)
+        self.assertTrue('%p[$sp-3] := $x\n%p[$sp-2] := $y\ncall swap_get_max\n$x := %p[$sp-3]\n$y := %p[$sp-2]\n$z := %p[$sp-1]' in output)
+        self.assertTrue('%p[$fp+1] := %p[$fp+2]\n%p[$fp+2] := %p[$fp+3]\n%p[$fp+3] := %p[$fp+1]' in output)
+
+    def testTaskfuncLargeMemory(self):
+        code = '''
+            on init
+                tcm.init(100)
+            end on'''
+
+        self.assertTrue('declare const $MEM_SIZE := 32768' in do_compile(code))
+        self.assertTrue('declare const $MEM_SIZE := 1000000' in do_compile('SET_CONDITION(TCM_LARGE)\n' + code))
+
+    def testTaskfuncWaitTicksAndWaitAsync(self):
+        code = '''
+            on init
+                tcm.init(100)
+            end on
+
+            taskfunc t()
+                tcm.wait_ticks(1)
+                tcm.wait_async(2)
+            end taskfunc
+
+            on note
+                t()
+            end on'''
+
+        output = do_compile(code)
+        self.assertTrue('wait_ticks(%p[$sp-1])' in output)
+        self.assertTrue('wait_async(%p[$sp-1])' in output)
+        self.assertTrue('%p[$sp-1] := 1\ncall _twait_ticks' in output)
+        self.assertTrue('%p[$sp-1] := 2\ncall _twait_async' in output)
 
 class K5_6Features(unittest.TestCase):
     def testDeclaration(self):
