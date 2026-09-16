@@ -1,0 +1,3 @@
+function show_message()
+    message("oops)
+end function
