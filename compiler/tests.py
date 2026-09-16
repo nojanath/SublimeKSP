@@ -425,6 +425,64 @@ class ConstBlockTests(unittest.TestCase):
         self.assertTrue('declare const $VARS__foo := 0'  in output)
         self.assertTrue('declare const $VARS__bar := 1'  in output)
 
+class ListAddInBlocks(unittest.TestCase):
+    def testListAddInForLoop(self):
+        code = '''
+            on init
+                declare i
+                declare list l[]
+                for i := 0 to 2
+                    list_add(l, i)
+                end for
+            end on'''
+
+        self.assertRaisesRegex(ParseException, r'list_add\(\) cannot be used inside loops', do_compile, code)
+
+    def testListAddInWhileLoop(self):
+        code = '''
+            on init
+                declare i
+                declare list l[]
+                while i < 3
+                    list_add(l, i)
+                    inc(i)
+                end while
+            end on'''
+
+        self.assertRaisesRegex(ParseException, r'list_add\(\) cannot be used inside loops', do_compile, code)
+
+    def testListAddInIfInsideLoop(self):
+        code = '''
+            on init
+                declare i
+                declare list l[]
+                for i := 0 to 2
+                    if i = 1
+                        list_add(l, i)
+                    end if
+                end for
+            end on'''
+
+        self.assertRaisesRegex(ParseException, r'list_add\(\) cannot be used inside loops', do_compile, code)
+
+    def testListAddInIfAndAfterLoop(self):
+        code = '''
+            on init
+                declare i
+                declare list l[]
+                for i := 0 to 2
+                    message(i)
+                end for
+                if i = 3
+                    list_add(l, 5)
+                end if
+                list_add(l, 6)
+            end on'''
+
+        output = do_compile(code)
+        self.assertTrue('declare %l[2]' in output)
+        self.assertTrue('if ($i=3)\n%l[0] := 5\nend if\n%l[1] := 6' in output)
+
 class Family(unittest.TestCase):
     def testFamily(self):
         code = '''
