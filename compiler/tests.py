@@ -973,6 +973,530 @@ class UIArrayCheck(unittest.TestCase):
         output = do_compile(code)
         assert_equal(self, output, expected_output)
 
+    def testUITableArrayDeclaration(self):
+        code = '''
+            on init
+                declare ui_table tables[2] [100] (2, 2, 100)
+            end on'''
+
+        expected_output = '''
+            on init
+              declare %tables[2]
+              declare ui_table %tables0[100](2,2,100)
+              declare ui_table %tables1[100](2,2,100)
+              $preproc_i := 0
+              while ($preproc_i<=1)
+                %tables[$preproc_i] := get_ui_id(%tables0)+$preproc_i
+                inc($preproc_i)
+              end while
+            end on'''
+
+        output = do_compile(code, remove_preprocessor_vars=True)
+        assert_equal(self, output, expected_output)
+
+    def testUITextEditArrayDeclaration(self):
+        code = '''
+            on init
+                declare ui_text_edit edits[2]
+            end on'''
+
+        output = do_compile(code)
+        self.assertTrue('declare ui_text_edit @edits0' in output)
+        self.assertTrue('declare ui_text_edit @edits1' in output)
+        self.assertTrue('%edits[$preproc_i] := get_ui_id(@edits0)+$preproc_i' in output)
+
+    def testPersistentMultidimensionalUIArrayInFamily(self):
+        code = '''
+            on init
+                family fam
+                    declare pers ui_knob knobs[2, 2] (0, 100, 1)
+                end family
+                message(fam.knobs[1, 1])
+            end on'''
+
+        output = do_compile(code)
+        self.assertTrue('declare %fam___knobs[2*2]' in output)
+        self.assertTrue('declare const $fam__knobs__SIZE_D1 := 2' in output)
+
+        for i in range(4):
+            self.assertTrue('declare ui_knob $fam___knobs%d(0,100,1)\nmake_persistent($fam___knobs%d)' % (i, i) in output)
+
+        self.assertTrue('%fam___knobs[$preproc_i] := get_ui_id($fam___knobs0)+$preproc_i' in output)
+        self.assertTrue('message(%fam___knobs[2*1+1])' in output)
+
+class StructTests(unittest.TestCase):
+    def testStructDeclaration(self):
+        code = '''
+            struct note_info
+                declare velocity
+                declare @name
+                declare ~ratio := 1.0
+            end struct
+
+            on init
+                declare &note_info info
+                info.velocity := 64
+                info.name := "C3"
+                message(info.velocity & info.name & info.ratio)
+            end on'''
+
+        expected_output = '''
+            on init
+              declare $info__velocity
+              declare @info__name
+              declare ~info__ratio := 1.0
+              $info__velocity := 64
+              @info__name := "C3"
+              message($info__velocity & @info__name & ~info__ratio)
+            end on'''
+
+        output = do_compile(code, remove_preprocessor_vars=True)
+        assert_equal(self, output, expected_output)
+
+    def testStructArray(self):
+        code = '''
+            struct voice
+                declare id
+                declare @label
+                declare data[4]
+            end struct
+
+            on init
+                declare &voice voices[8]
+                voices[3].id := 5
+                voices[3].label := "x"
+                voices[3].data[2] := 7
+                message(voices.SIZE)
+            end on'''
+
+        output = do_compile(code)
+        self.assertTrue('declare const $voices__SIZE := 8' in output)
+        self.assertTrue('declare %voices__id[8]' in output)
+        self.assertTrue('declare !voices__label[8]' in output)
+        self.assertTrue('declare %_voices__data[8*4]' in output)
+        self.assertTrue('%voices__id[3] := 5' in output)
+        self.assertTrue('!voices__label[3] := "x"' in output)
+        self.assertTrue('%_voices__data[4*3+2] := 7' in output)
+        self.assertTrue('message($voices__SIZE)' in output)
+
+    def testMultidimensionalStructArray(self):
+        code = '''
+            struct cell
+                declare val
+            end struct
+
+            on init
+                declare &cell grid[3, 4]
+                grid[1, 2].val := 5
+                message(grid.SIZE_D1 & grid.SIZE_D2)
+            end on'''
+
+        output = do_compile(code)
+        self.assertTrue('declare const $grid__SIZE_D1 := 3' in output)
+        self.assertTrue('declare const $grid__SIZE_D2 := 4' in output)
+        self.assertTrue('declare %_grid__val[3*4]' in output)
+        self.assertTrue('%_grid__val[4*1+2] := 5' in output)
+
+    def testStructWithinStruct(self):
+        code = '''
+            struct point
+                declare x
+                declare y
+            end struct
+
+            struct rect
+                declare &point origin
+                declare &point size
+            end struct
+
+            on init
+                declare &rect r
+                r.origin.x := 1
+                r.size.y := 2
+            end on'''
+
+        expected_output = '''
+            on init
+              declare $r__origin__x
+              declare $r__origin__y
+              declare $r__size__x
+              declare $r__size__y
+              $r__origin__x := 1
+              $r__size__y := 2
+            end on'''
+
+        output = do_compile(code, remove_preprocessor_vars=True)
+        assert_equal(self, output, expected_output)
+
+    def testNestedStructDefinition(self):
+        code = '''
+            struct a
+                struct b
+                    declare x
+                end struct
+            end struct
+
+            on init
+            end on'''
+
+        self.assertRaisesRegex(ParseException, 'Struct definitions cannot be nested', do_compile, code)
+
+    def testStructWithNonDeclarationMember(self):
+        code = '''
+            struct a
+                message(1)
+            end struct
+
+            on init
+            end on'''
+
+        self.assertRaisesRegex(ParseException, 'Structs can only consist of variable declarations', do_compile, code)
+
+    def testUndeclaredStruct(self):
+        code = '''
+            struct a
+                declare x
+            end struct
+
+            on init
+                declare &b x
+            end on'''
+
+        self.assertRaisesRegex(ParseException, 'Undeclared struct b', do_compile, code)
+
+    def testStructContainingItself(self):
+        code = '''
+            struct a
+                declare &a inner
+            end struct
+
+            on init
+                declare &a x
+            end on'''
+
+        self.assertRaisesRegex(ParseException, 'Declared struct cannot be the same as struct parent', do_compile, code)
+
+class ListTests(unittest.TestCase):
+    def testListDeclaration(self):
+        code = '''
+            on init
+                declare list notes[]
+                list_add(notes, 60)
+                list_add(notes, 64)
+                list_add(notes, 67)
+                message(notes.SIZE)
+            end on'''
+
+        expected_output = '''
+            on init
+              declare %notes[3]
+              declare const $notes__SIZE := 3
+              %notes[0] := 60
+              %notes[1] := 64
+              %notes[2] := 67
+              message($notes__SIZE)
+            end on'''
+
+        output = do_compile(code, remove_preprocessor_vars=True)
+        assert_equal(self, output, expected_output)
+
+    def testPersistentStringList(self):
+        code = '''
+            on init
+                declare pers list !names[]
+                list_add(names, "a")
+                list_add(names, "b")
+            end on'''
+
+        expected_output = '''
+            on init
+              declare !names[2]
+              declare const $names__SIZE := 2
+              make_persistent(!names)
+              !names[0] := "a"
+              !names[1] := "b"
+            end on'''
+
+        output = do_compile(code, remove_preprocessor_vars=True)
+        assert_equal(self, output, expected_output)
+
+    def testListMatrix(self):
+        code = '''
+            on init
+                declare a[3] := (1, 2, 3)
+                declare b[2] := (4, 5)
+                declare list mat[,]
+                list_add(mat, a)
+                list_add(mat, b)
+                message(mat[1, 1])
+                mat[0, 2] := 9
+            end on'''
+
+        output = do_compile(code)
+        self.assertTrue('declare %_mat[5]' in output)
+        self.assertTrue('declare const $mat__SIZE := 2' in output)
+        self.assertTrue('declare %mat__sizes[2] := (3, 2)' in output)
+        self.assertTrue('declare %mat__pos[2] := (0, 3)' in output)
+        self.assertTrue('%_mat[$list_it+0] := %a[$list_it]' in output)
+        self.assertTrue('%_mat[$list_it+3] := %b[$list_it]' in output)
+        self.assertTrue('message(%_mat[%mat__pos[1]+1])' in output)
+        self.assertTrue('%_mat[%mat__pos[0]+2] := 9' in output)
+
+    def testListAddOutsideInit(self):
+        code = '''
+            on init
+                declare list notes[]
+                list_add(notes, 1)
+            end on
+
+            on note
+                list_add(notes, 2)
+            end on'''
+
+        self.assertRaisesRegex(ParseException, r'list_add\(\) can only be used in the init callback', do_compile, code)
+
+    def testListAddToUndeclaredList(self):
+        code = '''
+            on init
+                list_add(notes, 1)
+            end on'''
+
+        self.assertRaisesRegex(ParseException, 'Undeclared list: notes', do_compile, code)
+
+class ArrayConcatTests(unittest.TestCase):
+    def testConcatIntoDeclaredArray(self):
+        code = '''
+            on init
+                declare a[3] := (1, 2, 3)
+                declare b[2] := (4, 5)
+                declare c[5]
+                c := concat(a, b)
+            end on'''
+
+        expected_output = '''
+            on init
+              declare %a[3] := (1, 2, 3)
+              declare %b[2] := (4, 5)
+              declare %c[5]
+              $concat_offset := 0
+              $concat_it := 0
+              while ($concat_it<num_elements(%a))
+                %c[$concat_it+$concat_offset] := %a[$concat_it]
+                inc($concat_it)
+              end while
+              $concat_offset := $concat_offset+num_elements(%a)
+              $concat_it := 0
+              while ($concat_it<num_elements(%b))
+                %c[$concat_it+$concat_offset] := %b[$concat_it]
+                inc($concat_it)
+              end while
+            end on'''
+
+        output = do_compile(code, remove_preprocessor_vars=True)
+        assert_equal(self, output, expected_output)
+
+    def testConcatWithOpenSize(self):
+        code = '''
+            on init
+                declare a[3] := (1, 2, 3)
+                declare b[2] := (4, 5)
+                declare c[] := concat(a, b)
+            end on'''
+
+        output = do_compile(code)
+        self.assertTrue('declare %c[5]' in output)
+        self.assertTrue('%c[$concat_it+$concat_offset] := %b[$concat_it]' in output)
+
+    def testConcatSingleArray(self):
+        code = '''
+            on init
+                declare a[3] := (1, 2, 3)
+                declare c[] := concat(a)
+            end on'''
+
+        expected_output = '''
+            on init
+              declare %a[3] := (1, 2, 3)
+              declare %c[3]
+              $concat_it := 0
+              while ($concat_it<num_elements(%a))
+                %c[$concat_it] := %a[$concat_it]
+                inc($concat_it)
+              end while
+            end on'''
+
+        output = do_compile(code, remove_preprocessor_vars=True)
+        assert_equal(self, output, expected_output)
+
+    def testConcatWithoutBrackets(self):
+        code = '''
+            on init
+                declare a[3] := (1, 2, 3)
+                declare c := concat(a)
+            end on'''
+
+        self.assertRaisesRegex(ParseException, 'No array size given', do_compile, code)
+
+    def testConcatUndeclaredArray(self):
+        code = '''
+            on init
+                declare a[3] := (1, 2, 3)
+                declare c[] := concat(a, b)
+            end on'''
+
+        self.assertRaisesRegex(ParseException, r'Undeclared array\(s\) in concat function: b', do_compile, code)
+
+class UIPropertyFunctions(unittest.TestCase):
+    def testUIPropertyFunctions(self):
+        code = '''
+            on init
+                declare ui_button btn
+                declare ui_slider sld (0, 100)
+                set_bounds(btn, 10, 20, 100, 30)
+                set_button_properties(btn, "Go", "pic")
+                set_slider_properties(sld, 50)
+            end on'''
+
+        expected_output = '''
+            on init
+              declare ui_button $btn
+              declare ui_slider $sld(0,100)
+              set_control_par(get_ui_id($btn),$CONTROL_PAR_POS_X,10)
+              set_control_par(get_ui_id($btn),$CONTROL_PAR_POS_Y,20)
+              set_control_par(get_ui_id($btn),$CONTROL_PAR_WIDTH,100)
+              set_control_par(get_ui_id($btn),$CONTROL_PAR_HEIGHT,30)
+              set_control_par_str(get_ui_id($btn),$CONTROL_PAR_TEXT,"Go")
+              set_control_par_str(get_ui_id($btn),$CONTROL_PAR_PICTURE,"pic")
+              set_control_par(get_ui_id($sld),$CONTROL_PAR_DEFAULT_VALUE,50)
+            end on'''
+
+        output = do_compile(code, remove_preprocessor_vars=True)
+        assert_equal(self, output, expected_output)
+
+    def testUIPropertyFunctionWithTooManyArguments(self):
+        code = '''
+            on init
+                declare ui_knob knob (0, 100, 1)
+                set_knob_properties(knob, "a", 5, 6)
+            end on'''
+
+        self.assertRaisesRegex(ParseException, 'Too many arguments! Maximum is 2, got 3', do_compile, code)
+
+    def testUIPropertyFunctionWithoutProperties(self):
+        code = '''
+            on init
+                declare ui_knob knob (0, 100, 1)
+                set_knob_properties(knob)
+            end on'''
+
+        self.assertRaisesRegex(ParseException, 'Function requires at least 2 arguments', do_compile, code)
+
+class StringArrayInitialisation(unittest.TestCase):
+    def testStringArrayInitialisation(self):
+        code = '''
+            on init
+                declare !names[3] := ("one", "two", "three")
+            end on'''
+
+        expected_output = '''
+            on init
+              declare !names[3]
+              !names[0] := "one"
+              !names[1] := "two"
+              !names[2] := "three"
+            end on'''
+
+        output = do_compile(code, remove_preprocessor_vars=True)
+        assert_equal(self, output, expected_output)
+
+    def testStringArrayInitialisationWithoutPrefix(self):
+        code = '''
+            on init
+                declare names[2] := ("one", "two")
+            end on'''
+
+        output = do_compile(code)
+        self.assertTrue('declare !names[2]\n!names[0] := "one"\n!names[1] := "two"' in output)
+
+    def testStringArrayInitialisationWithSingleValue(self):
+        code = '''
+            on init
+                declare !names[4] := ("x")
+            end on'''
+
+        expected_output = '''
+            on init
+              declare !names[4]
+              $string_it := 0
+              while ($string_it<4)
+                !names[$string_it] := "x"
+                inc($string_it)
+              end while
+            end on'''
+
+        output = do_compile(code, remove_preprocessor_vars=True)
+        assert_equal(self, output, expected_output)
+
+    def testStringArrayInitialisationSkipsEmptyStrings(self):
+        code = '''
+            on init
+                declare !names[3] := ("a", "", "c")
+            end on'''
+
+        output = do_compile(code)
+        self.assertTrue('!names[0] := "a"\n!names[2] := "c"' in output)
+        self.assertFalse('!names[1]' in output)
+
+    def testStringArrayInitialisationInFamily(self):
+        code = '''
+            on init
+                family fam
+                    declare !names[2] := ("a", "b")
+                end family
+            end on'''
+
+        output = do_compile(code)
+        self.assertTrue('declare !fam__names[2]\n!fam__names[0] := "a"\n!fam__names[1] := "b"' in output)
+
+    def testStringArrayInitialisationWithIntegers(self):
+        code = '''
+            on init
+                declare !names[2] := (1, 2)
+            end on'''
+
+        self.assertRaisesRegex(ParseException, 'Expected integers, got strings', do_compile, code)
+
+class PersistenceTests(unittest.TestCase):
+    def testPersistenceKeywords(self):
+        code = '''
+            on init
+                declare pers a
+                declare instpers b[4]
+                declare read ui_knob knob (0, 100, 1)
+                declare pers !s[2]
+                family fam
+                    declare pers c
+                end family
+            end on'''
+
+        expected_output = '''
+            on init
+              declare $a
+              make_persistent($a)
+              declare %b[4]
+              make_instr_persistent(%b)
+              declare ui_knob $knob(0,100,1)
+              make_persistent($knob)
+              read_persistent_var($knob)
+              declare !s[2]
+              make_persistent(!s)
+              declare $fam__c
+              make_persistent($fam__c)
+            end on'''
+
+        output = do_compile(code, remove_preprocessor_vars=True)
+        assert_equal(self, output, expected_output)
+
 class GlobalVariableCheck(unittest.TestCase):
     def testGlobalVariableDeclaration(self):
         code = '''
@@ -2547,6 +3071,22 @@ class MultidimensionalArrayTest(unittest.TestCase):
             end on'''
 
         self.assertRaises(ParseException, do_compile, code)
+
+    def testPersistentThreeDimensionalArray(self):
+        code = '''
+            on init
+                declare pers cube[2, 3, 4]
+                cube[1, 2, 3] := 7
+                message(cube.SIZE_D3)
+            end on'''
+
+        output = do_compile(code)
+        self.assertTrue('declare %_cube[2*3*4]\nmake_persistent(%_cube)' in output)
+        self.assertTrue('declare const $cube__SIZE_D1 := 2' in output)
+        self.assertTrue('declare const $cube__SIZE_D2 := 3' in output)
+        self.assertTrue('declare const $cube__SIZE_D3 := 4' in output)
+        self.assertTrue('%_cube[4*3*1+(4*2)+3] := 7' in output)
+        self.assertTrue('message($cube__SIZE_D3)' in output)
 
     def testMultidimensionalArrayInOnInitFunction(self):
         code = '''
