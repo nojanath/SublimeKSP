@@ -1721,6 +1721,17 @@ class NamespacePrefixing(unittest.TestCase):
         output = do_compile(code, optimize = True)
         self.assertTrue('_mymodule__tmp' in output)
 
+    def testCircularImportUnderNamespace(self):
+        code = '''
+            import 'test_imports/circular_import.ksp' as mymodule
+
+            on init
+            end on'''
+
+        output = do_compile(code)
+        self.assertEqual(output.count('declare $mymodule__circular'), 1)
+        self.assertTrue('again' not in output)
+
     def testPreprocessorVariablesNotPrefixed(self):
         code = '''
             import 'test_imports/ui_cb_test_import.ksp' as mymodule

@@ -1,0 +1,5 @@
+import "test_imports/circular_import.ksp" as again
+
+on init
+	declare circular
+end on

@@ -550,8 +550,9 @@ def convert_strings_to_placeholders(lines):
     else:
         lines.command = string_re.sub(replace_func, lines.command)
 
-def parse_lines_and_handle_imports(basepath, source, compiler_import_cache, filename = None, namespaces = None, preprocessor_func = None):
-    '''parses lines into Line objects and imports all files. preprocessor_func does not mean preprocessor_plugins'''
+def parse_lines_and_handle_imports(basepath, source, compiler_import_cache, filename = None, namespaces = None, preprocessor_func = None, import_chain = ()):
+    '''parses lines into Line objects and imports all files. preprocessor_func does not mean preprocessor_plugins.
+       import_chain holds the paths of the files which are currently being imported, in order to break circular imports'''
 
     def read_path(basepath, filepath):
         # import from URL
@@ -631,9 +632,10 @@ def parse_lines_and_handle_imports(basepath, source, compiler_import_cache, file
 
             for path, source in new_sources:
                 # the same file can be imported more than once, as long as it's under a different namespace
+                # (but not from within itself, which would add another namespace on each import, forever)
                 import_key = (path, tuple(namespaces))
 
-                if import_key not in compiler_import_cache:
+                if import_key not in compiler_import_cache and path not in import_chain:
                     compiler_import_cache.append(import_key)
 
                     preproc_s = source
@@ -641,7 +643,7 @@ def parse_lines_and_handle_imports(basepath, source, compiler_import_cache, file
                     if preprocessor_func:
                         preproc_s = preprocessor_func(source, namespaces)
 
-                    new_lines.extend(parse_lines_and_handle_imports(basepath, preproc_s, compiler_import_cache, path, namespaces))
+                    new_lines.extend(parse_lines_and_handle_imports(basepath, preproc_s, compiler_import_cache, path, namespaces, import_chain = import_chain + (path,)))
         # non-import line so just add it to result line list:
         else:
             new_lines.append(line)
