@@ -1162,7 +1162,7 @@ def handleOpenSizeArrays(lines):
         m = re.search(openArrayRe, line)
 
         if m:
-            stringList = utils.split_args(line[line.find("(") + 1 : len(line) - 1], line)
+            stringList = utils.split_args(line[line.find("(") + 1 : len(line) - 1], lines[lineIdx])
             numElements = len(stringList)
             name = m.group("name")
             newLines.append(lines[lineIdx].copy(line[: line.find("[") + 1] + str(numElements) + line[line.find("[") + 1 :]))
