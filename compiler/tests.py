@@ -567,10 +567,161 @@ class CompactOutput(unittest.TestCase):
         do_compile(code, compact_variables = True)
 
 class VariableDeclarationCheck(unittest.TestCase):
-    def testVariableDeclaredOutsideInit(self):
+    def testVariableDeclaredInCallback(self):
         code = '''
             on note
                 declare x := 5
+                declare local y := 6
+                message(x & y)
+            end on
+            '''
+
+        output = do_compile(code)
+        self.assertTrue('declare $_x := 5' in output)
+        self.assertTrue('declare $_y := 6' in output)
+        self.assertTrue('message($_x & $_y)' in output)
+
+    def testGlobalVariableDeclaredInCallback(self):
+        code = '''
+            on release
+                declare global x := 5
+                message(x)
+            end on
+            '''
+
+        output = do_compile(code)
+        self.assertTrue('declare $x := 5' in output)
+        self.assertTrue('message($x)' in output)
+
+    def testLocalVariableDeclaredInUICallback(self):
+        code = '''
+            on init
+                declare ui_knob knob (0, 100, 1)
+            end on
+
+            on ui_control (knob)
+                declare local value := knob
+                message(value)
+            end on
+            '''
+
+        output = do_compile(code)
+        self.assertTrue('declare $_value' in output)
+        self.assertTrue('$_value := $knob' in output)
+        self.assertTrue('message($_value)' in output)
+
+    def testSameLocalVariableInDifferentCallbacks(self):
+        code = '''
+            on note
+                declare local x := 1
+                message(x)
+            end on
+
+            on release
+                declare local x := 2
+                message(x)
+            end on
+            '''
+
+        output = do_compile(code)
+        self.assertTrue('declare $_x := 1' in output)
+        self.assertTrue('declare $_x2 := 2' in output)
+        self.assertTrue('message($_x)' in output)
+        self.assertTrue('message($_x2)' in output)
+
+    def testSameLocalVariableInCombinedCallbacks(self):
+        code = '''
+            on note
+                declare local x := 1
+                message(x)
+            end on
+
+            on note
+                declare local x := 2
+                message(x)
+            end on
+            '''
+
+        expected_output = '''
+            on note
+              $_x := 1
+              message($_x)
+              $_x2 := 2
+              message($_x2)
+            end on'''
+
+        output = do_compile(code, combine_callbacks = True)
+        self.assertTrue('declare $_x := 1' in output)
+        self.assertTrue('declare $_x2 := 2' in output)
+        assert_equal(self, output[output.index('on note'):], expected_output)
+
+    def testSameLocalVariableInUncombinedCallbacks(self):
+        code = '''
+            on note
+                declare local x := 1
+                message(x)
+            end on
+
+            on note
+                declare local x := 2
+                message(x)
+            end on
+            '''
+
+        expected_output = '''
+            on note
+              $_x := 1
+              message($_x)
+            end on
+            on note
+              $_x2 := 2
+              message($_x2)
+            end on'''
+
+        output = do_compile(code, combine_callbacks = False)
+        self.assertTrue('declare $_x := 1' in output)
+        self.assertTrue('declare $_x2 := 2' in output)
+        assert_equal(self, output[output.index('on note'):], expected_output)
+
+    def testLocalVariableRedeclaredInCallback(self):
+        # a redeclared local variable reuses a single variable for all of its references, same as inside functions
+        code = '''
+            on note
+                declare local x := 1
+                message(x)
+                declare local x := 2
+                message(x)
+            end on
+            '''
+
+        output = do_compile(code)
+        messages = [l.strip() for l in output.split('\n') if l.strip().startswith('message(')]
+        self.assertEqual(len(messages), 2)
+        self.assertEqual(messages[0], messages[1])
+
+    def testLocalVariableRedeclaredInFunction(self):
+        code = '''
+            function foo
+                declare local x := 1
+                message(x)
+                declare local x := 2
+                message(x)
+            end function
+
+            on note
+                foo()
+            end on
+            '''
+
+        output = do_compile(code)
+        messages = [l.strip() for l in output.split('\n') if l.strip().startswith('message(')]
+        self.assertEqual(len(messages), 2)
+        self.assertEqual(messages[0], messages[1])
+
+    def testUIControlDeclaredInCallback(self):
+        code = '''
+            on note
+                declare ui_knob knob (0, 100, 1)
             end on
             '''
 

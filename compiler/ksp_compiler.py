@@ -902,6 +902,9 @@ class ASTModifierCombineCallbacks(ASTModifierBase):
 
                 cb_key = b.name + ui_name
 
+                # each part of a combined callback keeps its own scope for local variables
+                b.line_groups = [list(b.lines)]
+
                 if cb_key in callbacks:
                     if  self.combine_callbacks:
                         children = b.get_childnodes()
@@ -910,6 +913,7 @@ class ASTModifierCombineCallbacks(ASTModifierBase):
                             children = children[1:] # Removes ui_name from children to prevent duplicate CBs
 
                         callbacks[cb_key].lines.extend(children) # Extend the existing CB with lines from the duplicate
+                        callbacks[cb_key].line_groups.append(children)
                         b.lines = [] # Delete lines of duplicate CBs
                 else:
                     callbacks[cb_key] = b
@@ -1002,8 +1006,39 @@ class ASTModifierNodesToNativeKSP(ASTModifierBase):
 
         ASTModifierBase.modifyModule(self, node, *args, **kwargs)
 
+        # move variable declarations made inside callbacks to 'on init'
+        for b in node.blocks:
+            if isinstance(b, ksp_ast.Callback) and b.name != 'init':
+                node.on_init.lines = b.global_declaration_statements + node.on_init.lines + b.local_declaration_statements
+
         # in case some function definition has been overriden, keep only the version among functions.value()
         node.blocks = [b for b in node.blocks if not (isinstance(b, ksp_ast.FunctionDef) and functions[b.name.identifier] != b)]
+
+        return node
+
+    def modifyCallback(self, node, parent_function = None, function_params = None, parent_families = None):
+        ''' Variables declared inside callbacks other than 'on init' are handled like the ones declared inside functions.
+            Each callback, and each part of a combined callback, has its own scope for local variables. '''
+
+        if node.name == 'init':
+            return ASTModifierBase.modifyCallback(self, node, parent_function = None, function_params = function_params, parent_families = parent_families)
+
+        node.local_declaration_statements = []
+        node.global_declaration_statements = []
+        node.taskfunc_declaration_statements = []
+        node.is_taskfunc = False
+
+        node.variable = self.modify(node.variable, parent_function = None, function_params = function_params, parent_families = parent_families)
+
+        lines = []
+
+        for group in getattr(node, 'line_groups', [node.lines]):
+            node.locals_name_subst_dict = {}
+            node.locals = set()
+
+            lines.extend(flatten([self.modify(l, parent_function = node, function_params = function_params, parent_families = parent_families) for l in group]))
+
+        node.lines = lines
 
         return node
 
@@ -1191,7 +1226,7 @@ class ASTModifierNodesToNativeKSP(ASTModifierBase):
 
         # if a global variable declaration made inside a function
         is_local = 'local' in node.modifiers
-        is_global = ('on_init' in func.name.identifier.lower() and not 'local' in node.modifiers) or ('global' in node.modifiers)
+        is_global = (isinstance(func, ksp_ast.FunctionDef) and 'on_init' in func.name.identifier.lower() and not 'local' in node.modifiers) or ('global' in node.modifiers)
 
         if is_global:
             global_varname = node.variable.prefix + node.variable.identifier
@@ -1261,6 +1296,9 @@ class ASTModifierNodesToNativeKSP(ASTModifierBase):
             If declared inside a family then prefix it with the names of the family definitions we're currently inside.
             Otherwise prefix the name with the namespaces of the line it's declared on (when that line was imported using "import ... as").
             Handle the case when the variable is declared inside a user-defined function. '''
+
+        if isinstance(kwargs['parent_function'], ksp_ast.Callback) and node.isUIDeclaration():
+            raise ksp_ast.ParseException(node, 'UI controls may only be declared inside the "on init" callback!')
 
         # default handling of everything except the variable name:
         node.size = self.modify(node.size, *args, **kwargs)
