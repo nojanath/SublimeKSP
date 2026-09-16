@@ -409,6 +409,43 @@ class VariableModifiersTest(unittest.TestCase):
         self.assertTrue('make_persistent($bar)'     in output)
         self.assertTrue('read_persistent_var($bar)' in output)
 
+class ListsInMultipleInitCallbacks(unittest.TestCase):
+    def testListAddArrayInSecondInitCallback(self):
+        code = '''
+            on init
+                message(1)
+            end on
+
+            on init
+                declare arr[] := (1, 2)
+                declare list mat[,]
+                list_add(mat, arr)
+                list_add(mat, 3)
+            end on'''
+
+        output = do_compile(code)
+        self.assertTrue('declare %mat__sizes[2] := (2, 1)' in output)
+        self.assertTrue('%_mat[$list_it+0] := %arr[$list_it]' in output)
+        self.assertTrue('%_mat[2] := 3' in output)
+
+    def testListBlockOfArraysInSecondInitCallback(self):
+        code = '''
+            on init
+                declare first[] := (1, 2)
+            end on
+
+            on init
+                list mat[,]
+                    first
+                    3, 4, 5
+                end list
+            end on'''
+
+        output = do_compile(code)
+        self.assertTrue('declare %mat__sizes[2] := (2, 3)' in output)
+        self.assertTrue('%_mat[$list_it+0] := %first[$list_it]' in output)
+        self.assertTrue('%_mat[$list_it+2] := %mat1[$list_it]' in output)
+
 class ConstBlockTests(unittest.TestCase):
     def testConstBlock(self):
         code = '''

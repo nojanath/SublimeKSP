@@ -991,9 +991,11 @@ def handleLists(lines):
                     if re.search(initRe, line):
                         initFlag = True
             else:
+                # there can be multiple init callbacks (Combine Duplicate Callbacks), so keep scanning for the next one
                 if line.startswith("end"):
                     if re.search(endOnRe, line):
-                        break
+                        initFlag = False
+                        continue
 
                 if line.startswith("declare"):
                     m = re.search(r"^declare\s+%s%s\s*(?:\[(%s)\])" % (persistenceRe, variableNameUnRe, variableOrInt), line)
