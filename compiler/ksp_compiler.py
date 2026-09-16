@@ -1329,6 +1329,17 @@ class ASTModifierFixPrefixes(ASTModifierBase):
     def modifyVarRef(self, node, parent_function = None, parent_varref = None):
         return ASTModifierBase.modifyVarRef(self, node, parent_function = parent_function, parent_varref = node) # pass along a reference to what varref we're currently inside
 
+    def isPrefixedMultidimensionalArray(self, node):
+        '''Multidimensional arrays are properties backed by a raw array whose last name part starts with an underscore (e.g. %fam.foo -> %fam._foo),
+           so a prefixed reference to one is valid only if the prefix matches the raw array'''
+        if node.identifier not in properties:
+            return False
+
+        parts = node.identifier.split('.')
+        parts[-1] = '_' + parts[-1]
+
+        return (node.prefix + '.'.join(parts)).lower() in variables
+
     def modifyID(self, node, parent_function = None, parent_varref = None):
         '''Add a variable prefix (one of $, %, @, !, ? and ~) to each variable based on the list of variables previously built'''
         name = node.prefix + node.identifier
@@ -1359,7 +1370,7 @@ class ASTModifierFixPrefixes(ASTModifierBase):
 
             return node
 
-        elif node.prefix and not (name.lower() in variables or name in ksp_builtins.all_builtins):
+        elif node.prefix and not (name.lower() in variables or name in ksp_builtins.all_builtins or self.isPrefixedMultidimensionalArray(node)):
             raise ksp_ast.ParseException(node, "%s has not been declared!" % name)
         else:
             return node
