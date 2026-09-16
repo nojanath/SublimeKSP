@@ -179,12 +179,16 @@ def prefix_with_ns(name, namespaces, function_parameter_names = None, force_pref
     # if the name consists of multiple parts (eg. myfamily.myvariable extract the first part - myfamily in this example)
     first_name_part = name.split('.')[0]
 
+    # preprocessor variables are declared only once for the whole script, so never prefix them (not even in their declaration,
+    # which would otherwise pick up the namespaces of whichever imported file has the first init callback)
+    if unprefixed_name in ksp_builtins.sKSP_preprocessor_variables:
+        return name
+
     # if built-in name or function parameter
     if (unprefixed_name in ksp_builtins.all_builtins_unprefixed or
           name in ksp_builtins.functions and not name in functions_before_prefix or
           name in ksp_builtins.keywords or
-          first_name_part in function_parameter_names or
-          name in ksp_builtins.sKSP_preprocessor_variables) and not force_prefixing:
+          first_name_part in function_parameter_names) and not force_prefixing:
         return name   # don't add prefix
 
     # add namespace to name

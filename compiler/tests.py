@@ -1721,6 +1721,21 @@ class NamespacePrefixing(unittest.TestCase):
         output = do_compile(code, optimize = True)
         self.assertTrue('_mymodule__tmp' in output)
 
+    def testPreprocessorVariablesNotPrefixed(self):
+        code = '''
+            import 'test_imports/ui_cb_test_import.ksp' as mymodule
+
+            on init
+                declare a[2] := (1, 2)
+                declare b[2] := (3, 4)
+                declare c[4]
+                c := concat(a, b)
+            end on'''
+
+        output = do_compile(code)
+        self.assertTrue('declare $concat_offset' in output)
+        self.assertTrue('mymodule__concat' not in output)
+
     def testFunctionReturnValuesNotPrefixedOrReadFrom(self):
         code = '''
             import 'test_imports/namespace2.ksp' as mymodule
