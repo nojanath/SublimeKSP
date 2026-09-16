@@ -526,11 +526,12 @@ def handleArrayConcat(lines):
 
 #=================================================================================================
 class MultiDimensionalArray(object):
-    def __init__(self, name, prefix, dimensionsString, persistence, assignment, familyPrefix, line):
+    def __init__(self, name, prefix, dimensionsString, scope, persistence, assignment, familyPrefix, line):
         self.name = name
         self.prefix = prefix or ""
         self.assignment = assignment or ""
         self.dimensions = utils.split_args(dimensionsString, line)
+        self.scope = scope or ""
         self.persistence = persistence or ""
         self.rawArrayName = familyPrefix + "_" + self.name
 
@@ -538,7 +539,7 @@ class MultiDimensionalArray(object):
         newName = self.prefix + "_" + self.name
         totalArraySize = "*".join(["(" + dim + ")" for dim in self.dimensions])
 
-        return("declare %s %s [%s] %s" % (self.persistence, newName, totalArraySize, self.assignment))
+        return("declare %s %s %s [%s] %s" % (self.scope, self.persistence, newName, totalArraySize, self.assignment))
 
     def buildPropertyAndConstants(self, line):
         propertyTemplate = [
@@ -550,13 +551,14 @@ class MultiDimensionalArray(object):
                 "#rawArrayName#[#calculatedDimList#] := val",
             "end function ",
         "end property"]
-        constTemplate = "declare const #name#.SIZE_D#dimNum# := #val#"
+        constTemplate = "declare #scope# const #name#.SIZE_D#dimNum# := #val#"
 
         newLines = collections.deque()
 
         # Build the declare const lines and add them to the newLines deque.
         for dimNum, dimSize in enumerate(self.dimensions):
             declareConstText = constTemplate          \
+                .replace("#scope#", self.scope)       \
                 .replace("#name#", self.name)         \
                 .replace("#dimNum#", str(dimNum + 1)) \
                 .replace("#val#", dimSize)
@@ -589,54 +591,46 @@ class MultiDimensionalArray(object):
 
         return(newLines)
 
-# TODO: Check whether making this only init callback is ok.
 def handleMultidimensionalArrays(lines):
+    ''' Multidimensional arrays can be declared anywhere a regular array can. Outside of the init callback
+        the raw array, its size constants and the property follow the scoping rules of local variables. '''
+    scopeRe = r"(?:\b(?P<scope>global|local)\s+)?"
     multipleDimensionsRe = r"\[(?P<dimensions>[^\]]+(?:\,[^\]]+)+)\]" # Match square brackets with 2 or more comma separated dimensions.
-    multidimensionalArrayRe = r"^declare\s+%s%s\s*%s(?P<assignment>\s*:=.+)?$" % (persistenceRe, variableNameRe, multipleDimensionsRe)
+    multidimensionalArrayRe = r"^declare\s+%s%s%s\s*%s(?P<assignment>\s*:=.+)?$" % (scopeRe, persistenceRe, variableNameRe, multipleDimensionsRe)
 
     newLines = collections.deque()
     famCount = 0
-    initFlag = False
 
     for lineIdx in range(len(lines)):
         line = lines[lineIdx].command.strip()
 
-        if not initFlag:
-            if re.search(initRe, line):
-                initFlag = True
+        # If a multidim array is found, if necessary the family prefix is added and the lines needed for the property are added.
+        famCount = countFamily(line, famCount)
 
-            newLines.append(lines[lineIdx])
-        else: # Multidimensional arrays are only allowed in the init callback.
-            if re.search(endOnRe, line):
-                initFlag = False # In case there are other init CBs (Combine Duplciate Callbacks)
-                newLines.append(lines[lineIdx])
+        if line.startswith("declare"):
+            m = re.search(multidimensionalArrayRe, line)
+
+            if m:
+                famPrefix = ""
+
+                if famCount != 0:
+                    famPrefix = inspectFamilyState(lines, lineIdx)
+
+                name = m.group("name")
+                multiDim = MultiDimensionalArray(name,                   \
+                                                 m.group("prefix"),      \
+                                                 m.group("dimensions"),  \
+                                                 m.group("scope"),       \
+                                                 m.group("persistence"), \
+                                                 m.group("assignment"),  \
+                                                 famPrefix,              \
+                                                 lines[lineIdx])
+                newLines.append(lines[lineIdx].copy(multiDim.getRawArrayDeclaration()))
+                newLines.extend(multiDim.buildPropertyAndConstants(lines[lineIdx]))
             else:
-                # If a multidim array is found, if necessary the family prefix is added and the lines needed for the property are added.
-                famCount = countFamily(line, famCount)
-
-                if line.startswith("declare"):
-                    m = re.search(multidimensionalArrayRe, line)
-
-                    if m:
-                        famPrefix = ""
-
-                        if famCount != 0:
-                            famPrefix = inspectFamilyState(lines, lineIdx)
-
-                        name = m.group("name")
-                        multiDim = MultiDimensionalArray(name,                   \
-                                                         m.group("prefix"),      \
-                                                         m.group("dimensions"),  \
-                                                         m.group("persistence"), \
-                                                         m.group("assignment"),  \
-                                                         famPrefix,              \
-                                                         lines[lineIdx])
-                        newLines.append(lines[lineIdx].copy(multiDim.getRawArrayDeclaration()))
-                        newLines.extend(multiDim.buildPropertyAndConstants(lines[lineIdx]))
-                    else:
-                        newLines.append(lines[lineIdx])
-                else:
-                    newLines.append(lines[lineIdx])
+                newLines.append(lines[lineIdx])
+        else:
+            newLines.append(lines[lineIdx])
 
     replaceLines(lines, newLines)
 

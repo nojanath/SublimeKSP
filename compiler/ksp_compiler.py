@@ -1125,6 +1125,37 @@ class ASTModifierNodesToNativeKSP(ASTModifierBase):
         else:
             node.name = self.modifyID(node.name, kwargs['parent_function'], kwargs['parent_families'])
 
+        # a property backed by a local array (e.g. a multidimensional array declared inside a function) is local too
+        func = kwargs['parent_function']
+        local_subst_dict = {}
+
+        if hasattr(node.name, 'local_name'):
+            raise ksp_ast.ParseException(node, "Local variable {} redeclared!".format(node.name.local_name))
+
+        if func:
+            local_name = node.name.identifier
+            name_parts = local_name.split('.')
+            raw_array_name = '.'.join(name_parts[:-1] + ['_' + name_parts[-1]])
+            raw_array = func.locals_name_subst_dict.get(raw_array_name)
+
+            if isinstance(raw_array, ksp_ast.VarRef) and not raw_array.subscripts:
+                if not hasattr(func, 'local_property_raw_arrays'):
+                    func.local_property_raw_arrays = set()
+
+                func.local_property_raw_arrays.add(raw_array_name)
+
+                # derive a name from the globally unique name of the raw array, e.g. %__foo2 -> __foo2@local
+                # (@ cannot appear inside an identifier in source code, so this can't clash with any variable or property)
+                node.name = ksp_ast.ID(node.name.lexinfo, raw_array.identifier.identifier + '@local')
+                node.name.namespace_prefix_done = True
+                node.name.local_name = local_name
+
+                func.locals.add(local_name.lower())
+                func.locals_name_subst_dict[local_name] = ksp_ast.VarRef(node.lexinfo, node.name)
+
+                # references to other locals in the get/set functions need to be translated before they leave the scope of the function
+                local_subst_dict = func.locals_name_subst_dict
+
         # change the get/set function names before proceeding to them
         if node.get_func_def:
             node.get_func_def.name.identifier = node.name.identifier + '.get'   # if property is called prop, then this function is named prop.get
@@ -1133,6 +1164,14 @@ class ASTModifierNodesToNativeKSP(ASTModifierBase):
         if node.set_func_def:
             node.set_func_def.name.identifier = node.name.identifier + '.set'   # if property is called prop, then this function is named prop.set
             node.set_func_def = self.modify(node.set_func_def, parent_function = None, function_params = [], parent_families = [], add_name_prefix = False)
+
+        if local_subst_dict:
+            for func_def in [node.get_func_def, node.set_func_def]:
+                if func_def:
+                    own_names = set(map(str, func_def.parameters + ([func_def.return_value] if func_def.return_value else [])))
+                    name_subst_dict = {k: v.identifier.prefix + v.identifier.identifier for k, v in local_subst_dict.items()
+                                       if k not in own_names and isinstance(v, ksp_ast.VarRef) and not v.subscripts}
+                    ASTModifierIDSubstituter(name_subst_dict).modify(func_def)
 
         # add property to list
         properties.add(node.name.identifier)
@@ -1316,6 +1355,9 @@ class ASTModifierNodesToNativeKSP(ASTModifierBase):
         # otherwise treat it as any other name
         else:
             node.variable = self.modifyID(node.variable, kwargs['parent_function'], kwargs['parent_families'], is_name_in_declaration = True)
+
+            if hasattr(node.variable, 'local_name'):
+                raise ksp_ast.ParseException(node, "Local variable {} redeclared!".format(node.variable.local_name))
 
         # if no variable prefix used, add one automatically
         if not node.variable.prefix:
@@ -1889,7 +1931,8 @@ class ASTModifierFunctionExpander(ASTModifierBase):
             if assign_stmt_lhs:
                 name_subst_dict[str(func.return_value)] = assign_stmt_lhs
             # also add the mapping from local variable names to their new globally unique counterpart
-            name_subst_dict.update(func.locals_name_subst_dict)
+            # (except for raw arrays of local multidimensional arrays, since e.g. the renamed size constant _arr.SIZE_D1 would be mistaken for _arr)
+            name_subst_dict.update({k: v for k, v in func.locals_name_subst_dict.items() if k not in getattr(func, 'local_property_raw_arrays', ())})
 
             # apply name substitutions to a copy of the function
             func = ASTModifierVarRefSubstituter(name_subst_dict, inlining_function_node = node).modify(func.copy())
