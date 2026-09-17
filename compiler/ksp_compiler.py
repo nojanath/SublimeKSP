@@ -393,6 +393,10 @@ def merge_lines(lines):
 def parse_lines(s, basepath = None, filename = None, namespaces = None):
     '''converts a source code string to a list of Line objects'''
     def process_f_string(line):
+        # an f-string always starts with f immediately followed by a quote
+        if "f'" not in line:
+            return line
+
         in_string = False
         in_f_string = False
         f_connect = False
