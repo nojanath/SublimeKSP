@@ -872,13 +872,6 @@ def expand_macros(lines, macros, level = 0, replace_raw = True, define_cache = N
                 macro = macro.substitute_names(replace_raw, name_subst_dict)
 
                 # add macro body
-                if args:
-                    macro_call_str = '%s(%s)' % (macro_name, ', '.join([re.sub(white_space, '', a).strip() for a in args]))
-                else:
-                    macro_call_str = '%s' % (macro_name)
-
-                # erase any inner comments to not disturb outer
-                macro_call_str = re.sub(white_space, '', macro_call_str)
                 normal_lines, callback_lines = extract_callback_lines(macro.lines[1:-1])
 
                 sub_defines(normal_lines, line, define_cache)
