@@ -1822,6 +1822,9 @@ class ASTModifierFunctionExpander(ASTModifierBase):
 
         # if the right-hand-side is function call
         if isinstance(expression, ksp_ast.FunctionCall) and expression.function_name.identifier not in ksp_builtins.functions and not disallow_function_in_rhs:
+            # the left hand side is only substituted into the function body after that has been inlined, so inline calls in its subscripts first
+            node.varref.subscripts = [self.modify(s, parent_toplevel = parent_toplevel, function_stack = function_stack) for s in node.varref.subscripts]
+
             # invocations of built-in functions are not checked at this compilation stage
             return self.modifyFunctionCall(expression,
                                            parent_toplevel = parent_toplevel,
