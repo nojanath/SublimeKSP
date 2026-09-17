@@ -2976,6 +2976,42 @@ class FunctionInlining(unittest.TestCase):
 
         self.assertRaisesRegex(ParseException, 'needs to consist of a single line', do_compile, code)
 
+    def testSameFunctionCalledInArgument(self):
+        code = '''
+            function twice(value) -> result
+                result := value * 2
+            end function
+
+            function show(value)
+                message(value)
+            end function
+
+            on init
+                message(twice(twice(1)))
+                show(twice(1))
+            end on'''
+
+        output = do_compile(code)
+        self.assertIn('message(1*2*2)', output)
+        self.assertIn('message(1*2)', output)
+
+    def testRecursionThroughArgument(self):
+        code = '''
+            function show(value)
+                message(value)
+            end function
+
+            function foo() -> result
+                show(foo())
+                result := 1
+            end function
+
+            on init
+                message(foo())
+            end on'''
+
+        self.assertRaisesRegex(ParseException, 'Recursive functions calls', do_compile, code)
+
     def testRecursiveFunction(self):
         code = '''
             on init

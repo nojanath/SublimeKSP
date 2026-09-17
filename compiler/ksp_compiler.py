@@ -1778,8 +1778,12 @@ class ASTModifierFunctionExpander(ASTModifierBase):
     def modifyVarRef(self, node, *args, **kwargs):
         '''If the VarRef is a property, then convert it to a call to the get-function of the property'''
         if node.identifier.identifier in properties:
-            return self.modifyFunctionCall(self.convert_property_access_to_function_call(node),
-                                           *args, **kwargs)
+            function_call = self.convert_property_access_to_function_call(node)
+
+            if hasattr(node, 'caller_function_stack'):
+                function_call.caller_function_stack = node.caller_function_stack
+
+            return self.modifyFunctionCall(function_call, *args, **kwargs)
         else:
             return ASTModifierBase.modifyVarRef(self, node, *args, **kwargs)
 
@@ -2060,11 +2064,24 @@ class ASTModifierFunctionExpander(ASTModifierBase):
 
         return state['read_after']
 
+    def setCallerFunctionStack(self, node, function_stack):
+        '''Record the stack of functions being inlined where the function calls and property accesses within node are made,
+           unless an outer call site has already done so'''
+        if isinstance(node, (ksp_ast.FunctionCall, ksp_ast.VarRef)) and not hasattr(node, 'caller_function_stack'):
+            node.caller_function_stack = function_stack
+
+        for child in node.get_childnodes() or ():
+            if isinstance(child, ksp_ast.ASTNode):
+                self.setCallerFunctionStack(child, function_stack)
+
     def modifyFunctionCall(self, node, parent_toplevel = None, function_stack = None, assign_stmt_lhs = None):
         ''' For invocations of user-defined functions check that the function is defined and that the number of parameters match.
             Unless "call" is used inline the function '''
 
         function_name = node.function_name.identifier  # shorter name alias
+
+        # a call in an argument of an inlined function is still made by the caller (see setCallerFunctionStack)
+        function_stack = getattr(node, 'caller_function_stack', function_stack)
 
         # update call graph
         self.updateCallGraph(node, parent_toplevel, function_stack)
@@ -2116,6 +2133,10 @@ class ASTModifierFunctionExpander(ASTModifierBase):
                 result = func.global_declaration_statements + func.local_declaration_statements + result
                 func.local_declaration_statements = []
                 func.global_declaration_statements = []
+
+            # the arguments get substituted into the function body, but calls in them are made by the caller, e.g. in foo(foo(1))
+            for p in node.parameters:
+                self.setCallerFunctionStack(p, function_stack)
 
             # build a substitution dictionary that maps parameters to arguments
             name_subst_dict = dict(list(zip(list(map(str, func.parameters)), node.parameters)))
