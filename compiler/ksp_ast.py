@@ -130,6 +130,57 @@ class ParseException(SyntaxError):
         else:
             SyntaxError.__init__(self, msg)
 
+atomic_types = (str, int, bool, float, type(None), Decimal)
+
+def deepcopy_ast(x, memo):
+    '''Same result as copy.deepcopy for AST subtrees, including shared references within the copied tree,
+       but without the generic reduce/reconstruct overhead. Unknown types fall back to copy.deepcopy.'''
+    cls = type(x)
+
+    if cls in atomic_types:
+        return x
+
+    y = memo.get(id(x))
+
+    if y is not None:
+        return y
+
+    if cls is list:
+        y = []
+        memo[id(x)] = y
+        y.extend([deepcopy_ast(v, memo) for v in x])
+    elif cls is tuple:
+        items = [deepcopy_ast(v, memo) for v in x]
+
+        # like copy.deepcopy, reuse the tuple if none of its items needed copying
+        if all(a is b for a, b in zip(items, x)):
+            y = x
+        else:
+            y = tuple(items)
+
+        memo[id(x)] = y
+    elif cls is dict:
+        y = {}
+        memo[id(x)] = y
+
+        for k, v in x.items():
+            y[deepcopy_ast(k, memo)] = deepcopy_ast(v, memo)
+    elif cls is set:
+        y = set(deepcopy_ast(v, memo) for v in x)
+        memo[id(x)] = y
+    elif isinstance(x, ASTNode):
+        y = cls.__new__(cls)
+        memo[id(x)] = y
+        state = y.__dict__
+
+        for k, v in x.__dict__.items():
+            state[k] = deepcopy_ast(v, memo)
+    else:
+        y = copy.deepcopy(x, memo)
+        memo[id(x)] = y
+
+    return y
+
 class ASTNode:
     '''The very base node comprised in all AST objects'''
 
@@ -157,7 +208,7 @@ class ASTNode:
         return self.lexinfo[1]
 
     def copy(self):
-        return copy.deepcopy(self)
+        return deepcopy_ast(self, {})
 
     def put_symbol(self, name, value):
         self.env.put(name, value)
