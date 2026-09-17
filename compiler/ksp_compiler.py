@@ -2909,7 +2909,9 @@ class KSPCompiler(object):
 
                 if callback:
                     callback(desc, 100 * tasks_executed / total_tasks)
-                    compiled_code = [line.command for line in self.lines]
+
+                    if self.write_log_on_fail:
+                        compiled_code = [line.command for line in self.lines]
 
                 func()
 
