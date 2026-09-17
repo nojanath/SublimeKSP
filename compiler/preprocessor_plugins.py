@@ -45,6 +45,8 @@ familyStartRe = r"^family\s+(?P<famname>.+)$"
 familyEndRe = r"^end\s+family$"
 initRe = r"^on\s+init$"
 endOnRe = r"^end\s+on$"
+plainDefineNameRe = re.compile(r"[a-zA-Z0-9_][a-zA-Z0-9_.]*\Z") # A define constant name without a prefix symbol
+wordRe = re.compile(r"\w+")
 
 concatSyntax = "concat" # The name of the function to concat arrays.
 stringEvaluator = SimpleEval() # Object used to evaluate strings as maths expressions.
@@ -1627,6 +1629,71 @@ class DefineConstant(object):
 
         return(newCommand)
 
+class DefineConstantList(collections.deque):
+    ''' The define constants of a script, together with the index used to substitute them into lines. '''
+    substitutionIndex = None
+
+class DefineSubstitutionIndex(object):
+    ''' Tells which define constants can occur in a line, so that substituteValue only needs to be tried for those.
+        substituteValue matches \\bNAME\\b using the name as a regex, in which a dot matches any character.
+        A match therefore starts a word (\\w+ token) of the line with the part of the name before the first dot,
+        and a name without dots can only match a whole token. Names with other characters are always tried. '''
+    def __init__(self, defineConstants):
+        self.defines = list(defineConstants)
+        self.byName = {}
+        self.byFirstNamePart = {}
+        self.alwaysTried = []
+
+        for i, dc in enumerate(self.defines):
+            if not plainDefineNameRe.match(dc.name):
+                self.alwaysTried.append(i)
+            elif "." in dc.name:
+                self.byFirstNamePart.setdefault(dc.name.split(".", 1)[0], []).append(i)
+            else:
+                self.byName.setdefault(dc.name, []).append(i)
+
+        self.firstNamePartLengths = sorted(set(len(part) for part in self.byFirstNamePart))
+
+    def substitute(self, lines, defineConstants):
+        for line in lines:
+            command = line.command
+            candidates = set(self.alwaysTried)
+
+            for token in set(wordRe.findall(command)):
+                candidates.update(self.byName.get(token, ()))
+
+                for length in self.firstNamePartLengths:
+                    if length > len(token):
+                        break
+
+                    candidates.update(self.byFirstNamePart.get(token[:length], ()))
+
+            # try the candidates in the order of the define constants
+            for i in sorted(candidates):
+                newCommand = self.defines[i].substituteValue(command, defineConstants, line)
+
+                if newCommand != command:
+                    # the substituted value can contain any of the following define constants, so try all of them
+                    for dc in self.defines[i + 1:]:
+                        newCommand = dc.substituteValue(newCommand, defineConstants, line)
+
+                    command = newCommand
+                    break
+
+            line.command = command
+
+def substituteDefineConstants(lines, defineConstants):
+    ''' Replaces all occurences of the define constants in the given lines, trying them in order. '''
+    index = getattr(defineConstants, "substitutionIndex", None)
+
+    if index is None or len(index.defines) != len(defineConstants):
+        index = DefineSubstitutionIndex(defineConstants)
+
+        if isinstance(defineConstants, DefineConstantList):
+            defineConstants.substitutionIndex = index
+
+    index.substitute(lines, defineConstants)
+
 def handleDefineConstants(lines, define_cache = None):
     defineRe = r"^define\s+%s\s*(?:\((?P<args>.+)\))?\s*:=(?P<val>.+)$" % variableNameRe
     defineAppendRe = r"^define\s+%s\s*(?:\((?P<args>.+)\))?\s*\+=(?P<val>.+)$" % variableNameRe
@@ -1634,12 +1701,9 @@ def handleDefineConstants(lines, define_cache = None):
 
     if define_cache is not None:
         defineConstants = define_cache
-
-        for l in lines:
-            for dc in defineConstants:
-                l.command = dc.substituteValue(l.command, defineConstants, l)
+        substituteDefineConstants(lines, defineConstants)
     else:
-        defineConstants = collections.deque()
+        defineConstants = DefineConstantList()
 
         newLines = collections.deque()
         defineNames = set()
@@ -1712,9 +1776,7 @@ def handleDefineConstants(lines, define_cache = None):
 
                         dc_i.evaluateValue()
 
-            for l in newLines:
-                for dc in defineConstants:
-                    l.command = dc.substituteValue(l.command, defineConstants, l)
+            substituteDefineConstants(newLines, defineConstants)
 
         replaceLines(lines, newLines)
 
