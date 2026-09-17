@@ -537,7 +537,7 @@ def handleArrayConcat(lines):
                 newLines.append(lines[lineIdx])
 
                 # Only add preprocessor variable if not previously declared
-                if not (any(l.command == "declare concat_i" for l in newLines) or any(l.command == "declare concat_offset" for l in newLines)):
+                if not (any(l.command == "declare concat_it" for l in newLines) or any(l.command == "declare concat_offset" for l in newLines)):
                     newLines.append(lines[lineIdx].copy("declare concat_it"))
                     newLines.append(lines[lineIdx].copy("declare concat_offset"))
 
