@@ -741,7 +741,6 @@ def get_missing_block_end_line(p):
 def p_error(p):
     'error                 :'
     missing_end_line = get_missing_block_end_line(p)
-    expected = "Expected '%s'!" % missing_end_line if missing_end_line else None
 
     if p is None:
         # PLY passes no token when the error is at the end of the script, so point at its last non-blank line instead
@@ -751,9 +750,9 @@ def p_error(p):
         end_token.value = ''
         end_token.lineno = next((i for i in range(len(lines) - 1, -1, -1) if lines[i].command.strip()), 0)
         end_token.lexpos = 0
-        raise ParseException(end_token, 'Unexpected end of script!' + (' ' + expected if expected else ''))
+        raise ParseException(end_token, "Unexpected end of script - expected '%s'!" % missing_end_line if missing_end_line else 'Unexpected end of script!')
 
-    raise_parse_exception(p, expected or 'Syntax error!')
+    raise_parse_exception(p, "Expected '%s'!" % missing_end_line if missing_end_line else 'Syntax error!')
 
 # tokens that consist of exactly one character, and whose character cannot start any other token
 single_char_tokens = {',': 'COMMA', ')': 'RPAREN', '[': 'LBRACK', ']': 'RBRACK', '+': 'PLUS', '*': 'TIMES', '&': 'CONCAT'}

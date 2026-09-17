@@ -871,7 +871,7 @@ def expand_macros(lines, macros, level = 0, replace_raw = True, define_cache = N
 
                 # verify that the parameter count is correct
                 if len(macro.parameters) != len(args):
-                    raise ParseException(line, "Wrong number of parameters for %s()! Expected %d, got %d." % (macro_name, len(macro.parameters), len(args)))
+                    raise ParseException(line, "Wrong number of parameters for %s() - expected %d, got %d!" % (macro_name, len(macro.parameters), len(args)))
 
                 if level > 40:
                     raise ParseException(line, "This macro seems to be invoking itself recursively, which is not allowed!")
@@ -1846,7 +1846,7 @@ class ASTModifierFunctionExpander(ASTModifierBase):
 
         # verify that number of parameters and arguments matches
         if len(node.parameters) != len(func.parameters):
-            raise ksp_ast.ParseException(node, "Wrong number of parameters for %s()! Expected %d, got %d." % (function_name, len(func.parameters), len(node.parameters)))
+            raise ksp_ast.ParseException(node, "Wrong number of parameters for %s() - expected %d, got %d!" % (function_name, len(func.parameters), len(node.parameters)))
 
         # verify that function calls that are part of expressions invoke a function for which a return value variable has been defined
         if not node.is_procedure and func.return_value is None:
