@@ -126,6 +126,9 @@ import_basic_re = re.compile(r'^\s*import ')
 import_ignore_re = re.compile(r'^\s*__IGNORE__')
 macro_start_re = re.compile(r'^\s*macro(?=\W)')
 macro_end_re = re.compile(r'^\s*end\s+macro')
+callback_start_re = re.compile(r'\s*on\s+(ui_control(s\s*$)?)')
+callback_end_re = re.compile(r'\s*end on\b')
+placeholder_number_re = re.compile(r'\{(\d+?)\}')
 
 
 placeholders            = {}            # mapping from placeholder number to contents (placeholders used for comments, strings, etc.)
@@ -298,30 +301,6 @@ class Line:
 
         return line
 
-    def substitute_names(self, name_subst_dict):
-        '''Return copy of line with a line.command substitution specified in name_subst_dict'''
-        if not name_subst_dict:
-            return self
-
-        def repl_func(match):
-            n = match.group(0)
-
-            if n.endswith('.'):
-                suffix = '.'
-                n = n[:-1]
-            else:
-                suffix = ''
-
-            if n in name_subst_dict:
-                return name_subst_dict[n] + suffix
-            else:
-                return n + suffix
-
-        s = varname_re.sub(repl_func, self.command)
-        s = varname_dot_re.sub(repl_func, s)
-
-        return self.copy(new_command = s)
-
     def replace_placeholders(self, placeholders = placeholders):
         replace_func = lambda matchobj: placeholders[int(matchobj.group(1))]
         self.command = re.sub(r'\{(\d+?)\}', replace_func, self.command)
@@ -363,27 +342,44 @@ class Macro:
 
         return (name, params)
 
-    def copy(self, lines=None, add_location=None):
-        if lines is None:
-            lines = self.lines[:]
+    def expand_body(self, add_location, replace_string_placeholders, name_subst_dict):
+        '''Returns copies of the body lines (without the macro and end macro lines),
+           with add_location appended to their locations and the specified name substitutions made'''
+        def repl_func(match):
+            n = match.group(0)
 
-        return Macro([l.copy(add_location=add_location) for l in lines])
+            if n.endswith('.'):
+                suffix = '.'
+                n = n[:-1]
+            else:
+                suffix = ''
 
-    def substitute_names(self, replace_string_placeholders, name_subst_dict):
-        '''Returns a copy of the block with the specified name substitutions made'''
-        new_macro = self.copy(lines = [line.substitute_names(name_subst_dict) for line in self.lines])
+            if n in name_subst_dict:
+                return name_subst_dict[n] + suffix
+            else:
+                return n + suffix
 
-        if replace_string_placeholders:
-            for line in new_macro.lines:
-                line.replace_placeholders()
+        # arguments like #var# are substituted irrespectively of context
+        raw_substitutions = [(name1, name2) for name1, name2 in name_subst_dict.items() if name1.startswith('#')]
+        body_lines = []
 
-        # handle raw replacements (arguments like #var# should be substituted irrespectively of context)
-        for name1, name2 in list(name_subst_dict.items()):
-            if name1.startswith('#'):
-                for line in new_macro.lines:
-                    line.command = line.command.replace(name1, name2)
+        for line in self.lines[1:-1]:
+            s = line.command
 
-        return new_macro
+            # a name can only be substituted if it occurs in the line, so skip the costly regex substitutions otherwise
+            if any(name in s for name in name_subst_dict):
+                s = varname_re.sub(repl_func, s)
+                s = varname_dot_re.sub(repl_func, s)
+
+            if replace_string_placeholders and '{' in s:
+                s = placeholder_number_re.sub(lambda m: placeholders[int(m.group(1))], s)
+
+            for name1, name2 in raw_substitutions:
+                s = s.replace(name1, name2)
+
+            body_lines.append(Line(s, line.locations + [add_location], line.namespaces, calling_lines = line.calling_lines))
+
+        return body_lines
 
 def merge_lines(lines):
     '''Converts a list of Line objects to a source code string.  \n
@@ -784,10 +780,10 @@ def extract_callback_lines(lines):
     inside_callback = False
 
     for line in lines:
-        if re.match(r'\s*on\s+(ui_control(s\s*$)?)', line.command):
+        if 'on' in line.command and callback_start_re.match(line.command):
             inside_callback = True
             callback_lines.append(line)
-        elif re.match(r'\s*end on\b', line.command):
+        elif 'end on' in line.command and callback_end_re.match(line.command):
             inside_callback = False
             callback_lines.append(line)
         else:
@@ -872,11 +868,10 @@ def expand_macros(lines, macros, level = 0, replace_raw = True, define_cache = N
                 # build a substitution mapping parameters to arguments, and substitute
                 name_subst_dict = dict(list(zip(macro.parameters, args)))
 
-                macro = macro.copy(add_location = line.locations[0])
-                macro = macro.substitute_names(replace_raw, name_subst_dict)
+                body_lines = macro.expand_body(line.locations[0], replace_raw, name_subst_dict)
 
                 # add macro body
-                normal_lines, callback_lines = extract_callback_lines(macro.lines[1:-1])
+                normal_lines, callback_lines = extract_callback_lines(body_lines)
 
                 sub_defines(normal_lines, line, define_cache)
                 sub_defines(callback_lines, line, define_cache)
