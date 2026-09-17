@@ -117,37 +117,44 @@ def handle_get_par(control, parameter):
 class VariableNotDeclaredException(ParseException):
     pass
 
+def class_dispatch_table(obj):
+    '''Returns the table mapping node classes to handler functions for the class of obj.
+       The table is shared by all instances of that class (but not by its subclasses),
+       so visitors and modifiers created for every inlined call don't start with an empty cache.'''
+    cls = obj.__class__
+    table = cls.__dict__.get('_class_dispatch_table')
+
+    if table is None:
+        table = {}
+        cls._class_dispatch_table = table
+
+    return table
+
 class ASTVisitor(object):
     '''Object to traverse and read AST nodes'''
 
     def __init__(self, visit_expressions=True):
         self.node = None
         self._visit_expressions = visit_expressions
-        self._cache = {}
+        self._dispatch_table = class_dispatch_table(self)
         self.depth = -1
 
     def dispatch(self, parent, node, *args, **kwargs):
         if not self._visit_expressions and isinstance(node, Expr):
             return
 
-        self.node = node
         node_class = node.__class__
-        meth = self._cache.get(node_class, None)
-
-        if meth is None:
-            className = node_class.__name__
-            meth = getattr(self, 'visit' + className, self.visit_default)
-            self._cache[node_class] = meth
-
-        self.depth += 1
 
         try:
-            result = meth(parent, node, *args, **kwargs)
+            meth = self._dispatch_table[node_class]
+        except KeyError:
+            # None means there is no visit method for this node class
+            meth = getattr(self.__class__, 'visit' + node_class.__name__, None)
+            self._dispatch_table[node_class] = meth
 
-            if result is not False and not meth == self.visit_default:
-                self.visit_children(parent, node, *args, **kwargs)
-        finally:
-            self.depth -= 1
+        if meth is None or meth(self, parent, node, *args, **kwargs) is not False:
+            for child in node.get_childnodes():
+                self.dispatch(node, child, *args, **kwargs)
 
         return
 
@@ -175,33 +182,26 @@ class ASTModifier(object):
     def __init__(self, modify_expressions=True):
         self.node = None
         self._modify_expressions = modify_expressions
-        self._cache = {}
+        self._dispatch_table = class_dispatch_table(self)
         self.depth = -1
 
     def dispatch(self, node, *args, **kwargs):
         if not self._modify_expressions and isinstance(node, Expr):
             return node
 
-        self.node = node
         node_class = node.__class__
-        meth = self._cache.get(node_class, None)
 
-        if meth is None:
-            className = node_class.__name__
-            meth = getattr(self, 'modify' + className, None)
-            self._cache[node_class] = meth
+        try:
+            meth = self._dispatch_table[node_class]
+        except KeyError:
+            # None means there is no modify method for this node class
+            meth = getattr(self.__class__, 'modify' + node_class.__name__, None)
+            self._dispatch_table[node_class] = meth
 
         if meth is None:
             return node
 
-        self.depth += 1
-
-        try:
-            return meth(node, *args, **kwargs)
-        finally:
-            self.depth -= 1
-
-        return node
+        return meth(self, node, *args, **kwargs)
 
     def indent(self):
         return '  ' * self.depth
