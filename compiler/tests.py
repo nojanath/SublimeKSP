@@ -1788,6 +1788,34 @@ class HexNumberCheck(unittest.TestCase):
         output = do_compile(code)
         self.assertTrue('message(303)' in output)
 
+    def testInvalidExtendedSyntax(self):
+        code = '''
+            on init
+              declare a
+              a := 0x1G
+            end on'''
+
+        self.assertRaisesRegex(ParseException, r'Invalid hexadecimal number 0x1G!(.|\n)*line 4\b', do_compile, code)
+
+    def testInvalidStandardSyntax(self):
+        code = '''
+            on init
+              declare a
+              a := 0FGh
+            end on'''
+
+        self.assertRaisesRegex(ParseException, r'Invalid hexadecimal number 0FGh!(.|\n)*line 4\b', do_compile, code)
+
+    def testIdentifierStartingWithDigitNotHex(self):
+        code = '''
+            on init
+              declare 16th
+              message(16th)
+            end on'''
+
+        output = do_compile(code)
+        self.assertTrue('message($16th)' in output)
+
     def testBinaryLSBRight(self):
         code = '''
             on init

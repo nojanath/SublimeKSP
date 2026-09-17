@@ -57,8 +57,8 @@ t_STRING = r"'.*?(?<!\\)'|" + r'".*?(?<!\\)"'
 t_SET_CONDITION = 'SET_CONDITION'
 t_RESET_CONDITION = 'RESET_CONDITION'
 
-hex_number_re1 = re.compile(r'0x[a-fA-f0-9]+')
-hex_number_re2 = re.compile(r'[0-9][a-fA-f0-9]+[hH]')
+hex_number_re1 = re.compile(r'0x[a-fA-F0-9]+$')
+hex_number_re2 = re.compile(r'[0-9][a-fA-F0-9]+[hH]$')
 lsb_right_bin_re1 = re.compile(r'[0-1]+[bB]$')
 lsb_left_bin_re1 = re.compile(r'[bB][0-1]+$')
 number_re = re.compile(r'-?\d+')
@@ -121,12 +121,17 @@ def t_ID(t):
 
     if t.value == 'mod': # modulo operator
         t.type = 'MOD'
-    elif t.value.lower().startswith('0x') and hex_number_re1.match(t.value): # hexadecimal number, e.g. 0x10
+    elif t.value.startswith('0x'): # hexadecimal number, e.g. 0x10
+        if not hex_number_re1.match(t.value):
+            raise_parse_exception(t, 'Invalid hexadecimal number %s!' % t.value)
+
         t.type = 'INTEGER'
         t.value = int(t.value, 16)
     elif t.value.lower().endswith('h') and hex_number_re2.match(t.value): # hexadecimal number, e.g. 010h
         t.type = 'INTEGER'
         t.value = int(t.value[1:-1], 16)
+    elif t.value.startswith('0') and t.value.lower().endswith('h'): # 0...h can only be meant as a hexadecimal number
+        raise_parse_exception(t, 'Invalid hexadecimal number %s!' % t.value)
     elif t.value.lower().startswith('b') and lsb_left_bin_re1.match(t.value): # binary number, LSB first, e.g. b010
         t.type = 'INTEGER'
         t.value = int(t.value.lower().replace('b','')[::-1], 2)
