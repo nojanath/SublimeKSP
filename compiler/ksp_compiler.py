@@ -1740,6 +1740,9 @@ class ASTModifierFunctionExpander(ASTModifierBase):
         # insert it as the first block
         node.blocks.insert(0, on_init_block)
 
+        self.module = node
+        self.integer_constants = None  # maps names of integer constants to their values, see integerConstantValue
+
         node = ASTModifierBase.modifyModule(self, node, *args, **kwargs)
         on_init_block.lines = on_init_block.lines + self.result_declarations
 
@@ -1969,13 +1972,60 @@ class ASTModifierFunctionExpander(ASTModifierBase):
         declaration = ksp_ast.DeclareStmt(li, ksp_ast.ID(li, str(placeholder.identifier)), modifiers = [])
         variables.add(str(placeholder.identifier).lower())
 
+        # the result starts out with the value of x, so that x keeps its value if the function doesn't assign the result
+        statements = [ksp_ast.AssignStmt(target.lexinfo, placeholder.copy(), target.copy())] + statements + \
+                     [ksp_ast.AssignStmt(target.lexinfo, target, placeholder)]
+
         # declarations in 'on init' need to come before the variable is used, elsewhere they are moved to 'on init'
         if is_inside_init_callback:
             statements = [declaration] + statements
         else:
             self.result_declarations.append(declaration)
 
-        return statements + [ksp_ast.AssignStmt(target.lexinfo, target, placeholder)]
+        return statements
+
+    def integerConstantValue(self, expr, visited = None):
+        '''Return the value of an integer expression made of literals and integer constants, or None if it isn't one'''
+        if isinstance(expr, ksp_ast.Integer):
+            return expr.value
+
+        elif isinstance(expr, ksp_ast.UnaryOp) and expr.op == '-':
+            value = self.integerConstantValue(expr.right, visited)
+            return None if value is None else -value
+
+        elif isinstance(expr, ksp_ast.BinOp) and expr.op in ('+', '-', '*'):
+            left = self.integerConstantValue(expr.left, visited)
+            right = None if left is None else self.integerConstantValue(expr.right, visited)
+
+            if right is None:
+                return None
+
+            return {'+': left + right, '-': left - right, '*': left * right}[expr.op]
+
+        elif isinstance(expr, ksp_ast.VarRef) and not expr.subscripts:
+            if self.integer_constants is None:
+                self.integer_constants = {}
+
+                def collect(node):
+                    if isinstance(node, ksp_ast.DeclareStmt):
+                        if 'const' in node.modifiers and node.variable.prefix == '$' and isinstance(node.initial_value, ksp_ast.Expr):
+                            self.integer_constants[str(node.variable).lower()] = node.initial_value
+                    elif isinstance(node, (ksp_ast.Module, ksp_ast.TopLevelBlock, ksp_ast.CompoundStmt)):
+                        for c in node.get_childnodes() or ():
+                            collect(c)
+
+                        for d in getattr(node, 'global_declaration_statements', []) + getattr(node, 'local_declaration_statements', []):
+                            collect(d)
+
+                collect(self.module)
+
+            name = str(expr.identifier).lower()
+            visited = visited or set()
+
+            if name in self.integer_constants and name not in visited:
+                return self.integerConstantValue(self.integer_constants[name], visited | {name})
+
+        return None
 
     def isTargetReadAfterResultAssignment(self, statements, placeholder, target):
         '''Check whether the inlined statements could read the variable of the assignment target after assigning the result placeholder.
@@ -1990,6 +2040,68 @@ class ASTModifierFunctionExpander(ASTModifierBase):
 
         def references_target(node):
             return is_variable(node, target_name) or any(references_target(c) for c in node.get_childnodes() if c is not None)
+
+        def split_constant(expr):
+            '''Split an expression like "$i+2" or "16*$i+CONST" into its non-constant part and its constant integer offset'''
+            value = self.integerConstantValue(expr)
+
+            if value is not None:
+                return ('', value)
+            elif isinstance(expr, ksp_ast.BinOp) and expr.op in ('+', '-'):
+                (left_rest, left_offset) = split_constant(expr.left)
+                right_value = self.integerConstantValue(expr.right)
+
+                if right_value is not None:
+                    return (left_rest, left_offset + right_value if expr.op == '+' else left_offset - right_value)
+                elif expr.op == '+' and left_rest == '':
+                    (right_rest, right_offset) = split_constant(expr.right)
+                    return (right_rest, left_offset + right_offset)
+
+            return (str(expr), 0)
+
+        def assigned_variables(node, names):
+            '''Collect the names of variables assigned within node (or None for "call", since the called function could assign anything)'''
+            if isinstance(node, ksp_ast.AssignStmt):
+                names.add(str(node.varref.identifier).lower())
+            elif isinstance(node, ksp_ast.FunctionCall) and node.is_procedure:
+                if node.function_name.identifier not in ksp_builtins.functions:
+                    return None
+
+                # builtins like inc() and dec() assign their arguments
+                names.update(str(p.identifier).lower() for p in node.parameters if isinstance(p, ksp_ast.VarRef))
+
+            for c in node.get_childnodes() or ():
+                if isinstance(c, ksp_ast.ASTNode) and assigned_variables(c, names) is None:
+                    return None
+
+            return names
+
+        def variable_names(node):
+            if isinstance(node, ksp_ast.VarRef):
+                yield str(node.identifier).lower()
+
+            for c in node.get_childnodes() or ():
+                if isinstance(c, ksp_ast.ASTNode):
+                    yield from variable_names(c)
+
+        # different elements of the target array can be told apart by their subscripts, as long as the variables in the target subscripts don't change
+        assigned = set()
+        subscripts_are_stable = all(assigned_variables(s, assigned) is not None for s in statements) and \
+                                not any(name in assigned for s in target.subscripts for name in variable_names(s))
+
+        def is_target_read(node):
+            if not is_variable(node, target_name):
+                return False
+
+            if subscripts_are_stable and len(node.subscripts) == len(target.subscripts):
+                for (read_subscript, target_subscript) in zip(node.subscripts, target.subscripts):
+                    (read_rest, read_offset) = split_constant(read_subscript)
+                    (target_rest, target_offset) = split_constant(target_subscript)
+
+                    if read_rest == target_rest and read_offset != target_offset:
+                        return False
+
+            return True
 
         # the target's own subscripts are evaluated again on each assignment of the result once the placeholder is replaced
         target_subscripts_reference_target = any(references_target(s) for s in target.subscripts)
@@ -2055,7 +2167,7 @@ class ASTModifierFunctionExpander(ASTModifierBase):
                 if any(is_variable(p, result_name) for p in node.parameters):
                     state['assigned'] = True
 
-            elif is_variable(node, target_name) and state['assigned']:
+            elif is_target_read(node) and state['assigned']:
                 state['read_after'] = True
 
             else:
