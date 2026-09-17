@@ -815,9 +815,10 @@ def sub_defines(lines, cur_line, define_cache):
         else:
             c.calling_lines = cur_line.calling_lines + [cur_line]
 
-def expand_macros(lines, macros, level = 0, replace_raw = True, define_cache = None):
+def expand_macros(lines, macros, level = 0, replace_raw = True, define_cache = None, lines_to_scan = None):
     '''Inline macro invocations by the body of the macro definition (with parameters properly replaced)
-        returns tuple (normal_lines, callback_lines) where the latter are callbacks'''
+        returns tuple (normal_lines, callback_lines) where the latter are callbacks.
+        If lines_to_scan (a set of line ids) is given, only those lines are checked for macro invocations.'''
     macro_call_re = re.compile(r'(?ms)^\s*([\w_.]+)\s*(\(.*\))?%s$' % white_space_re)
     name2macro = {}
 
@@ -834,9 +835,18 @@ def expand_macros(lines, macros, level = 0, replace_raw = True, define_cache = N
     new_callback_lines = []
     num_substitutions = 0
 
+    # Lines that were already checked at the previous recursion level and weren't macro invocations can only become one
+    # if the macro names change between levels, which happens for namespaced macros (their names get prefixed again above).
+    # Without those, only the lines inserted by this level need to be checked at the next level.
+    inserted_lines = None if any(m.lines[0].namespaces for m in macros) else set()
+
     while lines:
         line = lines.popleft()
         new_lines.append(line)
+
+        if lines_to_scan is not None and id(line) not in lines_to_scan:
+            continue
+
         m = macro_call_re.match(line.command)
 
         if m:
@@ -844,19 +854,16 @@ def expand_macros(lines, macros, level = 0, replace_raw = True, define_cache = N
             macro_name = prefix_with_ns(macro_name, line.namespaces)
 
             if args:
-                macro_name = append_overloaded_name(macro_name, utils.split_args(args[1:-1], line))
+                args = utils.split_args(args[1:-1], line)
             else:
-                macro_name = append_overloaded_name(macro_name, [])
+                args = []
+
+            macro_name = append_overloaded_name(macro_name, args)
 
             if macro_name in name2macro:
                 new_lines.pop()
 
                 macro = name2macro[macro_name]
-
-                if args:
-                    args = utils.split_args(args[1:-1], line)
-                else:
-                    args = []
 
                 # verify that the parameter count is correct
                 if len(macro.parameters) != len(args):
@@ -879,10 +886,14 @@ def expand_macros(lines, macros, level = 0, replace_raw = True, define_cache = N
                 new_lines.extend(normal_lines)
                 new_callback_lines.extend(callback_lines)
 
+                if inserted_lines is not None:
+                    inserted_lines.update(id(l) for l in normal_lines)
+                    inserted_lines.update(id(l) for l in callback_lines)
+
                 num_substitutions += 1
 
     if num_substitutions:
-        return expand_macros(new_lines + new_callback_lines, macros, level + 1, replace_raw, define_cache)
+        return expand_macros(new_lines + new_callback_lines, macros, level + 1, replace_raw, define_cache, inserted_lines)
     else:
         return (new_lines, new_callback_lines)
 
