@@ -1985,6 +1985,34 @@ class MacroDefineChecks(unittest.TestCase):
         output = do_compile(code, remove_preprocessor_vars = True)
         assert_equal(self, output, expected_output)
 
+    def testMacroDefineDotMatchesOnlyDot(self):
+        code = '''
+            define A.B := 5
+            define INC.BY(#v.a#) := (#v.a# + 1)
+            define C.D := CxD
+
+            on init
+                declare AxB
+                declare INCxBY
+                declare CxD
+                message(A.B & AxB)
+                message(INC.BY(1) & INCxBY)
+                message(C.D)
+            end on'''
+
+        expected_output = '''
+            on init
+              declare $AxB
+              declare $INCxBY
+              declare $CxD
+              message(5 & $AxB)
+              message(1+1 & $INCxBY)
+              message($CxD)
+            end on'''
+
+        output = do_compile(code, remove_preprocessor_vars = True)
+        assert_equal(self, output, expected_output)
+
     def testMacroDefineAppendAndPrepend(self):
         code = '''
             define FOO := age
