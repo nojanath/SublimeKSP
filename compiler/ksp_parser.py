@@ -738,12 +738,64 @@ def p_error(p):
     'error                 :'
     raise_parse_exception(p, 'Syntax error!')
 
+# tokens that consist of exactly one character, and whose character cannot start any other token
+single_char_tokens = {',': 'COMMA', ')': 'RPAREN', '[': 'LBRACK', ']': 'RBRACK', '+': 'PLUS', '*': 'TIMES', '&': 'CONCAT'}
+
+class SingleCharTokenLexer(lex.Lexer):
+    '''PLY lexer that returns newlines and single_char_tokens without trying the combined regex of all token rules.
+       These make up a large share of all tokens.'''
+
+    def token(self):
+        lexpos = self.lexpos
+        lexdata = self.lexdata
+
+        while lexpos < self.lexlen and lexdata[lexpos] in self.lexignore:
+            lexpos += 1
+
+        if lexpos < self.lexlen:
+            char = lexdata[lexpos]
+            token_type = single_char_tokens.get(char)
+
+            if token_type or char == '\n':
+                tok = lex.LexToken()
+                tok.value = char
+                tok.lineno = self.lineno
+                tok.lexpos = lexpos
+                self.lexpos = lexpos + 1
+
+                if token_type:
+                    tok.type = token_type
+                else:
+                    # same as t_NEWLINE
+                    tok.type = 'NEWLINE'
+                    tok.lexer = self
+                    self.lineno += 1
+
+                return tok
+
+        self.lexpos = lexpos
+
+        return lex.Lexer.token(self)
+
+def check_single_char_tokens(lexer):
+    '''Makes sure that the token rules still produce the tokens returned by SingleCharTokenLexer'''
+    for char, token_type in list(single_char_tokens.items()) + [('\n', 'NEWLINE')]:
+        lexer.input(char)
+        tok = lex.Lexer.token(lexer)
+
+        if tok is None or tok.type != token_type or tok.value != char:
+            raise Exception('Token rules no longer match single_char_tokens for %r!' % char)
+
+    lexer.lineno = 1
+
 def init(outputdir = None):
     outputdir = outputdir or os.path.dirname(__file__)
     current_module = sys.modules[__name__]
     debug = 0
     optimize = 0
     lexer = lex.lex(optimize = 0, debug = debug)
+    check_single_char_tokens(lexer)
+    lexer.__class__ = SingleCharTokenLexer
 
     return yacc.yacc(method = "LALR", optimize = optimize, debug = debug,
                      write_tables = 0, module = current_module, start = 'script',
