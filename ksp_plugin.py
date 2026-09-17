@@ -2,6 +2,7 @@ import sublime
 import sublime_plugin
 
 import traceback
+import html
 import io
 import os
 import re
@@ -23,6 +24,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), 'compiler'))
 
 import ksp_ast
 import ksp_compiler
+import ksp_declarations
 import preprocessor_plugins
 import subprocess
 import utils
@@ -521,6 +523,71 @@ def plugin_loaded():
 class KspCompletions(sublime_plugin.EventListener):
     '''Handles KSP autocompletions'''
 
+    declaration_scanner = ksp_declarations.DeclarationScanner()
+    parsed_views = {}  # view id -> (change count, declarations and imports parsed from that view)
+
+    def _parse_view(self, view):
+        cached = self.parsed_views.get(view.id())
+
+        if cached and cached[0] == view.change_count():
+            return cached[1]
+
+        parsed = ksp_declarations.parse_source(view.substr(sublime.Region(0, view.size())))
+        self.parsed_views[view.id()] = (view.change_count(), parsed)
+
+        return parsed
+
+    def _declarations(self, view):
+        parsed = self._parse_view(view)
+        filepath = view.file_name()
+
+        if not filepath:
+            return self.declaration_scanner.scan(None, None, parsed = parsed)
+
+        # imports are resolved relative to the script being compiled, so when the view is imported by another
+        # open script, resolve from there. Otherwise, guess where paths written for some other script might point
+        open_scripts = ((v.file_name(), self._parse_view(v))
+                        for w in sublime.windows() for v in w.views()
+                            if v.id() != view.id() and v.file_name() and v.match_selector(0, 'source.sksp'))
+
+        importer = self.declaration_scanner.find_importer(filepath, open_scripts)
+
+        if importer:
+            return self.declaration_scanner.scan(None, os.path.dirname(importer), filepath, parsed, guess_paths = False)
+
+        return self.declaration_scanner.scan(None, os.path.dirname(filepath), filepath, parsed)
+
+    def _declaration_completions(self, declarations):
+        completions = []
+
+        for d in declarations:
+            trigger = ksp_declarations.trigger(d)
+            snippet = ksp_declarations.snippet(d)
+
+            if sublime_version >= 4000:
+                details = []
+
+                if d.returns:
+                    details.append('<b>Returns</b>: %s' % html.escape(d.returns))
+                if d.filename:
+                    details.append('<b>Declared in</b>: %s' % html.escape(d.filename))
+
+                kind = sublime.KIND_FUNCTION if d.kind != 'macro' else (sublime.KIND_ID_FUNCTION, 'm', 'Macro')
+
+                completions.append(sublime.CompletionItem(trigger = trigger,
+                                                          annotation = d.kind,
+                                                          completion = snippet,
+                                                          details = ', '.join(details),
+                                                          completion_format = sublime.COMPLETION_FORMAT_SNIPPET,
+                                                          kind = kind))
+            else:
+                completions.append(('%s\t%s' % (trigger, d.kind), snippet))
+
+        return completions
+
+    def on_close(self, view):
+        self.parsed_views.pop(view.id(), None)
+
     def _extract_completions(self, view, prefix, point):
         # the sublime view.extract_completions implementation doesn't seem to allow for
         # the . character to be included in the prefix irrespectively of the "word_separators" setting
@@ -557,14 +624,18 @@ class KspCompletions(sublime_plugin.EventListener):
         if re.match(r' *declare .*', line) and ':=' not in line:
             compl = []
         elif re.match(r'.*-> ?[a-zA-Z_]*$', line): # if the line ends with something like '->' or '-> value'
-            compl.clear
             compl = magic_control_and_event_pars
         else:
+            declarations = self._declarations(view)
+            declared_names = set(d.name for d in declarations)
+
             compl = self._extract_completions(view, prefix, pt)
             compl = [(item + "\tdefault", item.replace('$', '\\$', 1))
                      for item in compl
-                         if len(item) > 3 and item not in builtins
+                         if len(item) > 3 and item not in builtins and item not in declared_names
                     ]
+
+            compl.extend(self._declaration_completions(declarations))
 
             if '.' not in prefix:
                 bc = []
@@ -575,9 +646,7 @@ class KspCompletions(sublime_plugin.EventListener):
             if sublime_version >= 4000:
                 compl.extend(builtin_snippets)
 
-        if sublime_version >= 4000:
-            sublime.CompletionList(compl, sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETIONS)
-        else:
+        if sublime_version < 4000:
             compl = self.unique(compl)
 
         return (compl, sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETIONS)
