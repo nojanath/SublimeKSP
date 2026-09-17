@@ -14,6 +14,7 @@
 
 import ply.lex as lex
 import ply.yacc as yacc
+from lr_parser import LineNumberLRParser
 import re
 from parser_utils import *
 from ksp_ast import *
@@ -797,9 +798,12 @@ def init(outputdir = None):
     check_single_char_tokens(lexer)
     lexer.__class__ = SingleCharTokenLexer
 
-    return yacc.yacc(method = "LALR", optimize = optimize, debug = debug,
-                     write_tables = 0, module = current_module, start = 'script',
-                     outputdir = outputdir, tabmodule = 'ksp_parser_tab')
+    parser = yacc.yacc(method = "LALR", optimize = optimize, debug = debug,
+                       write_tables = 0, module = current_module, start = 'script',
+                       outputdir = outputdir, tabmodule = 'ksp_parser_tab')
+    parser.__class__ = LineNumberLRParser
+
+    return parser
 
 parser = init()
 
