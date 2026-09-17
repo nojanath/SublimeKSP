@@ -17,6 +17,7 @@ import io
 import os
 import copy
 import collections
+import gc
 from collections import OrderedDict
 import ksp_ast
 import ksp_ast_processing
@@ -2800,6 +2801,18 @@ class KSPCompiler(object):
         return varname_re.sub(sub_func, compiled_code)
 
     def compile(self, callback = None):
+        # Compiling allocates a huge number of short-lived objects while the lines and AST nodes of the whole script stay alive,
+        # so with the default thresholds the garbage collector keeps rescanning all of them. Collect much less often while
+        # compiling, and restore the thresholds afterwards since they apply to the whole process (e.g. Sublime Text's plugin host).
+        gc_thresholds = gc.get_threshold()
+        gc.set_threshold(100000, 50, 100)
+
+        try:
+            return self.run_compile_tasks(callback)
+        finally:
+            gc.set_threshold(*gc_thresholds)
+
+    def run_compile_tasks(self, callback = None):
         global variables
 
         clear_global_context()
