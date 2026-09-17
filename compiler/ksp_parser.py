@@ -213,6 +213,8 @@ precedence = (
 
 def p_script(p):
     'script               : newlines-opt toplevels'
+    # toplevels is right-recursive and collects blocks in reverse order
+    p[2].reverse()
     p[0] = Module(p, blocks = p[2])
 
 def p_script_error(p):
@@ -221,7 +223,8 @@ def p_script_error(p):
 
 def p_toplevels(p):
     'toplevels             : toplevel toplevels'
-    p[0] = [p[1]] + p[2]
+    p[2].append(p[1])
+    p[0] = p[2]
 
 def p_toplevels_empty(p):
     'toplevels             : empty'
@@ -276,6 +279,8 @@ def p_override_opt_empty(p):
 
 def p_stmts_opt(p):
     'stmts-opt             : stmts'
+    # stmts is right-recursive and collects statements in reverse order
+    p[1].reverse()
     p[0] = p[1]
 
 def p_stmts_opt_empty(p):
@@ -293,10 +298,11 @@ def p_stmts(p):
 def p_stmts_more(p):
     'stmts                 : stmt stmts'
 
-    if p[1] is None:
-        p[0] = p[2]
-    else:
-        p[0] = [p[1]] + p[2]
+    # appending (and reversing once in stmts-opt) avoids copying the list for every statement
+    if p[1] is not None:
+        p[2].append(p[1])
+
+    p[0] = p[2]
 
 def p_stmt(p):
     '''stmt                : declaration NEWLINE
