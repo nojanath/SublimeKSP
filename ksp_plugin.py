@@ -77,7 +77,7 @@ class CompileKspCliCommand(sublime_plugin.ApplicationCommand):
             return
 
         try:
-            subprocess.Popen(['python', '-i', path, fn])
+            subprocess.Popen(['python', '-i', path, input_file])
         except Exception as e:
             print(e)
 
