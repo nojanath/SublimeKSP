@@ -5436,5 +5436,57 @@ class DeclarationCompletions(unittest.TestCase):
         scanner = ksp_declarations.DeclarationScanner()
         self.assertEqual(scanner.scan('import "test_imports/namespace2.ksp"', None), [])
 
+class WithoutRemovedAstNodes(object):
+    '''Makes the ast node classes that Python 3.14 removed unavailable, as they are there'''
+    removed = ('Num', 'Str', 'Bytes', 'NameConstant', 'Ellipsis')
+
+    def __enter__(self):
+        import ast
+
+        def missing(name):
+            raise AttributeError("module 'ast' has no attribute %r" % name)
+
+        self.saved = {name: ast.__dict__[name] for name in self.removed + ('__getattr__',) if name in ast.__dict__}
+
+        for name in self.removed:
+            ast.__dict__.pop(name, None)
+
+        ast.__getattr__ = missing
+
+        return self
+
+    def __exit__(self, *exc_info):
+        import ast
+
+        del ast.__getattr__
+        ast.__dict__.update(self.saved)
+
+class Python314Compatibility(unittest.TestCase):
+    def testIterateMacroRangeWithDefine(self):
+        code = '''
+            define NUM_TAGS := 23
+            on init
+                declare ui_button Tag[NUM_TAGS]
+                iterate_macro(make_persistent(Tag#n#)) := 0 to NUM_TAGS - 1
+            end on'''
+
+        with WithoutRemovedAstNodes():
+            output = do_compile(code)
+
+        self.assertIn('make_persistent($Tag0)', output)
+        self.assertIn('make_persistent($Tag22)', output)
+
+    def testDefineValueIsEvaluated(self):
+        code = '''
+            define SIZE := 2 + 3
+            on init
+                declare arr[SIZE]
+            end on'''
+
+        with WithoutRemovedAstNodes():
+            output = do_compile(code)
+
+        self.assertIn('declare %arr[5]', output)
+
 if __name__ == '__main__':
     unittest.main()

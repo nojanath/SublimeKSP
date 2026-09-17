@@ -205,15 +205,8 @@ class SimpleEval(object): # pylint: disable=too-few-public-methods
 
         # literals:
 
-        if isinstance(node, ast.Num): # <number>
-            return node.n
-        elif isinstance(node, ast.Str): # <string>
-            return node.s
-
-        # python 3 compatibility:
-
-        elif (hasattr(ast, 'NameConstant') and
-                isinstance(node, ast.NameConstant)): # <bool>
+        # numbers, strings and booleans (ast.Num, ast.Str and ast.NameConstant were removed in Python 3.14)
+        if isinstance(node, ast.Constant):
             return node.value
 
         # operators, functions, etc:
