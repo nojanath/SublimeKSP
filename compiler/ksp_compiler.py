@@ -1718,8 +1718,11 @@ class ASTModifierFunctionExpander(ASTModifierBase):
     '''Handle function usage'''
     def __init__(self, ast):
         ASTModifierBase.__init__(self, modify_expressions = True)
-        self.result_declarations = []     # declarations of temporary result variables used outside of 'on init'
-        self.result_placeholders = set() # names of result placeholders of the function calls currently being inlined
+        self.init_result_declarations = [] # declarations of temporary variables used in 'on init'
+        self.result_declarations = []      # declarations of temporary variables used outside of 'on init'
+        self.result_placeholders = set()   # names of temporary variables that are reserved but not declared yet
+        self.temporary_names = set()       # names of all temporary variables
+        self.hoisted_statements = []       # stack of lists collecting the statements to insert before the statement being modified (None where not possible)
         self.traverse(ast, parent_toplevel = None, function_stack = [])
 
     def modifyModule(self, node, *args, **kwargs):
@@ -1744,7 +1747,7 @@ class ASTModifierFunctionExpander(ASTModifierBase):
         self.integer_constants = None  # maps names of integer constants to their values, see integerConstantValue
 
         node = ASTModifierBase.modifyModule(self, node, *args, **kwargs)
-        on_init_block.lines = on_init_block.lines + self.result_declarations
+        on_init_block.lines = self.init_result_declarations + on_init_block.lines + self.result_declarations
 
         return node
 
@@ -1795,9 +1798,7 @@ class ASTModifierFunctionExpander(ASTModifierBase):
             as a parameter to the function call handler. This effectively passes the lhs as a parameter to the function and replaces
             the whole assignment by the inlined function body. This allows myfunc to be a multi-line function.
             Please note that this only applies if the function call is the only thing on the right hand side.
-            In the case of for example "x := myfunc(...) + 1" the inlining of the function is handled in the context of
-            an expression handler and in that context only functions whose body consists of a single assignment are allowed (the right
-            hand side expression of that assignment is then what gets inlined into the expression. '''
+            In the case of for example "x := myfunc(...) + 1" the function is inlined in the context of an expression (see inlineIntoExpression). '''
 
         if not isinstance(node.varref, ksp_ast.VarRef):
             raise ksp_ast.ParseException(node, 'The left hand side of the assignment needs to be a variable reference!')
@@ -1826,15 +1827,19 @@ class ASTModifierFunctionExpander(ASTModifierBase):
         # if the right-hand-side is function call
         if isinstance(expression, ksp_ast.FunctionCall) and expression.function_name.identifier not in ksp_builtins.functions and not disallow_function_in_rhs:
             # the left hand side is only substituted into the function body after that has been inlined, so inline calls in its subscripts first
-            node.varref.subscripts = [self.modify(s, parent_toplevel = parent_toplevel, function_stack = function_stack) for s in node.varref.subscripts]
+            def modify_subscripts():
+                node.varref.subscripts = [self.modify(s, parent_toplevel = parent_toplevel, function_stack = function_stack) for s in node.varref.subscripts]
+                return []
+
+            statements = self.modifyStatementWithHoisting(modify_subscripts)
 
             # invocations of built-in functions are not checked at this compilation stage
-            return self.modifyFunctionCall(expression,
-                                           parent_toplevel = parent_toplevel,
-                                           function_stack = function_stack,
-                                           assign_stmt_lhs = node.varref)
+            return statements + self.modifyFunctionCall(expression,
+                                                        parent_toplevel = parent_toplevel,
+                                                        function_stack = function_stack,
+                                                        assign_stmt_lhs = node.varref)
         else:
-            return ASTModifierBase.modifyAssignStmt(self, node, parent_toplevel = parent_toplevel, function_stack = function_stack)
+            return self.modifyStatementWithHoisting(lambda: ASTModifierBase.modifyAssignStmt(self, node, parent_toplevel = parent_toplevel, function_stack = function_stack))
 
     def doFunctionCallChecks(self, node, function_name, func, is_inside_init_callback, function_stack, assign_stmt_lhs):
         ''' Make various checks that a function call is correct (e.g. function exists, parameters match, not recursive, invoked from a valid context).
@@ -1940,10 +1945,9 @@ class ASTModifierFunctionExpander(ASTModifierBase):
 
         return (prologue, epilogue)
 
-    def createResultPlaceholder(self, func, assign_stmt_lhs):
-        '''Create a reference to a variable that stands in for the result variable of func while it's inlined as "x := func(...)".
-           Its name is unique regardless of prefix, since it gets substituted by name only'''
-        base_name = '_%s_%s' % (func.name.identifier.replace('.', '__'), func.return_value.identifier)
+    def createTemporaryVariable(self, base_name, prefix, lexinfo):
+        '''Create a reference to a compiler-generated variable. Its name is unique regardless of prefix, since it may get substituted by name only.
+           The name stays reserved until the variable is declared or released'''
         name = base_name
         i = 2
 
@@ -1952,37 +1956,281 @@ class ASTModifierFunctionExpander(ASTModifierBase):
             i += 1
 
         self.result_placeholders.add(name.lower())
+        self.temporary_names.add(name.lower())
 
+        return ksp_ast.VarRef(lexinfo, ksp_ast.ID(lexinfo, prefix + name))
+
+    def declareTemporaryVariable(self, varref, is_inside_init_callback):
+        '''Declare a variable created by createTemporaryVariable at the start of 'on init' if it's used there, otherwise at the end'''
+        li = varref.lexinfo
+        self.result_placeholders.discard(varref.identifier.identifier.lower())
+        variables.add(str(varref.identifier).lower())
+        declaration = ksp_ast.DeclareStmt(li, ksp_ast.ID(li, str(varref.identifier)), modifiers = [])
+
+        if is_inside_init_callback:
+            self.init_result_declarations.append(declaration)
+        else:
+            self.result_declarations.append(declaration)
+
+    def resultBaseName(self, func):
+        return '_%s_%s' % (func.name.identifier.replace('.', '__'), func.return_value.identifier)
+
+    def createResultPlaceholder(self, func, assign_stmt_lhs):
+        '''Create a reference to a variable that stands in for the result variable of func while it's inlined as "x := func(...)"'''
         # the temporary result variable holds a single value of the same type as the assignment target (integer if the target has no prefix)
         prefix = {'%': '$', '?': '~', '!': '@'}.get(assign_stmt_lhs.identifier.prefix, assign_stmt_lhs.identifier.prefix) or '$'
-        li = assign_stmt_lhs.lexinfo
 
-        return ksp_ast.VarRef(li, ksp_ast.ID(li, prefix + name))
+        return self.createTemporaryVariable(self.resultBaseName(func), prefix, assign_stmt_lhs.lexinfo)
 
     def resolveResultPlaceholder(self, statements, placeholder, target, is_inside_init_callback):
         '''Inlining "x := func(...)" assigns the result of func directly to x. That's only correct if the inlined body doesn't read x after
            assigning the result, since it would then see the result instead of the old value of x (e.g. x := clamp(x + 1, 0, 100)).
            Replace the placeholder by x if that can't happen, otherwise keep it as a temporary variable and assign it to x at the end'''
-        self.result_placeholders.discard(placeholder.identifier.identifier.lower())
-
         if not self.isTargetReadAfterResultAssignment(statements, placeholder, target):
+            self.result_placeholders.discard(placeholder.identifier.identifier.lower())
             return flatten([ASTModifierVarRefSubstituter({placeholder.identifier.identifier: target}).modify(s) for s in statements])
 
-        li = placeholder.lexinfo
-        declaration = ksp_ast.DeclareStmt(li, ksp_ast.ID(li, str(placeholder.identifier)), modifiers = [])
-        variables.add(str(placeholder.identifier).lower())
+        self.declareTemporaryVariable(placeholder, is_inside_init_callback)
 
         # the result starts out with the value of x, so that x keeps its value if the function doesn't assign the result
-        statements = [ksp_ast.AssignStmt(target.lexinfo, placeholder.copy(), target.copy())] + statements + \
-                     [ksp_ast.AssignStmt(target.lexinfo, target, placeholder)]
+        return [ksp_ast.AssignStmt(target.lexinfo, placeholder.copy(), target.copy())] + statements + \
+               [ksp_ast.AssignStmt(target.lexinfo, target, placeholder)]
 
-        # declarations in 'on init' need to come before the variable is used, elsewhere they are moved to 'on init'
-        if is_inside_init_callback:
-            statements = [declaration] + statements
+    def modifyWithHoisting(self, node, parent_toplevel, function_stack):
+        '''Modify an expression and return it along with the statements of the multi-line functions inlined from it (see inlineIntoExpression)'''
+        self.hoisted_statements.append([])
+
+        try:
+            node = self.modify(node, parent_toplevel = parent_toplevel, function_stack = function_stack)
+        finally:
+            statements = self.hoisted_statements.pop()
+
+        return (statements, node)
+
+    def modifyStatementWithHoisting(self, modify_statement):
+        '''Call modify_statement and put the statements of the multi-line functions inlined from its expressions in front of its result'''
+        self.hoisted_statements.append([])
+
+        try:
+            result = modify_statement()
+        finally:
+            statements = self.hoisted_statements.pop()
+
+        return statements + result
+
+    def modifyWithoutHoisting(self, modify_node):
+        '''Call modify_node in a context where statements can't be inserted, so only single-line functions can be inlined into expressions'''
+        self.hoisted_statements.append(None)
+
+        try:
+            return modify_node()
+        finally:
+            self.hoisted_statements.pop()
+
+    def modifyCondition(self, condition, parent_toplevel, function_stack):
+        '''Modify the condition of an if or while statement and return it along with the statements to execute before it.
+           The right operand of "and"/"or" is only evaluated when needed, so if multi-line functions are inlined from it, they are inlined
+           into an if statement testing the left operand, and the result of the operation is stored in a temporary variable'''
+        if isinstance(condition, ksp_ast.BinOp) and condition.op.lower() in ('and', 'or'):
+            (left_statements, condition.left) = self.modifyCondition(condition.left, parent_toplevel, function_stack)
+            (right_statements, condition.right) = self.modifyCondition(condition.right, parent_toplevel, function_stack)
+
+            if not right_statements:
+                return (left_statements, condition)
+
+            li = condition.lexinfo
+            op = condition.op.lower()
+            is_inside_init_callback = isinstance(parent_toplevel, ksp_ast.Callback) and parent_toplevel.name == 'init'
+
+            flag = self.createTemporaryVariable('_%s_result' % op, '$', li)
+            self.declareTemporaryVariable(flag, is_inside_init_callback)
+
+            def set_flag(value):
+                return ksp_ast.AssignStmt(li, flag.copy(), ksp_ast.Integer(li, value))
+
+            evaluate_right = right_statements + [ksp_ast.IfStmt(li, [(condition.right, [set_flag(1)])])]
+
+            if op == 'and':
+                branches = [(condition.left, evaluate_right)]
+            else:
+                branches = [(condition.left, [set_flag(1)]), (None, evaluate_right)]
+
+            statements = left_statements + [set_flag(0), ksp_ast.IfStmt(li, branches)]
+
+            return (statements, ksp_ast.BinOp(li, flag.copy(), '=', ksp_ast.Integer(li, 1)))
+
+        elif isinstance(condition, ksp_ast.UnaryOp) and condition.op.lower() == 'not':
+            (statements, condition.right) = self.modifyCondition(condition.right, parent_toplevel, function_stack)
+
+            return (statements, condition)
+
         else:
-            self.result_declarations.append(declaration)
+            return self.modifyWithHoisting(condition, parent_toplevel, function_stack)
 
-        return statements
+    def modifyIfStmt(self, node, parent_toplevel = None, function_stack = None):
+        '''Insert the statements of multi-line functions inlined from a condition before the if statement,
+           or inside the else part for the condition of an else if'''
+        (condition, stmts) = node.condition_stmts_tuples[0]
+        (statements, condition) = self.modifyCondition(condition, parent_toplevel, function_stack)
+        stmts = flatten([self.modify(s, parent_toplevel = parent_toplevel, function_stack = function_stack) for s in stmts])
+        branches = [(condition, stmts)]
+        rest = node.condition_stmts_tuples[1:]
+
+        if rest and rest[0][0] is None:
+            branches.append((None, flatten([self.modify(s, parent_toplevel = parent_toplevel, function_stack = function_stack) for s in rest[0][1]])))
+        elif rest:
+            else_if = self.modifyIfStmt(ksp_ast.IfStmt(rest[0][0].lexinfo, rest), parent_toplevel, function_stack)
+
+            if len(else_if) == 1:
+                branches.extend(else_if[0].condition_stmts_tuples)
+            else:
+                branches.append((None, else_if))
+
+        node.condition_stmts_tuples = branches
+
+        return statements + [node]
+
+    def modifyWhileStmt(self, node, parent_toplevel = None, function_stack = None):
+        '''Insert the statements of multi-line functions inlined from the condition before the loop and at the end of its body'''
+        (statements, node.condition) = self.modifyCondition(node.condition, parent_toplevel, function_stack)
+        node.statements = ksp_ast_processing.stripFalse(flatten([self.modify(s, parent_toplevel = parent_toplevel, function_stack = function_stack) for s in node.statements]))
+        node.statements = node.statements + [s.copy() for s in statements]
+
+        return statements + [node]
+
+    def modifySelectStmt(self, node, parent_toplevel = None, function_stack = None):
+        '''Insert the statements of multi-line functions inlined from the select expression before the select statement'''
+        (statements, node.expression) = self.modifyWithHoisting(node.expression, parent_toplevel, function_stack)
+        range_stmts_tuples = []
+
+        for ((start, stop), stmts) in node.range_stmts_tuples:
+            # case values need to be constant
+            (start, stop) = self.modifyWithoutHoisting(lambda: (self.modify(start, parent_toplevel = parent_toplevel, function_stack = function_stack),
+                                                                self.modify(stop, parent_toplevel = parent_toplevel, function_stack = function_stack)))
+            stmts = flatten([self.modify(s, parent_toplevel = parent_toplevel, function_stack = function_stack) for s in stmts])
+
+            if stmts:
+                range_stmts_tuples.append(((start, stop), stmts))
+
+        if not range_stmts_tuples:
+            return statements
+
+        node.range_stmts_tuples = range_stmts_tuples
+
+        return statements + [node]
+
+    def modifyDeclareStmt(self, node, *args, **kwargs):
+        '''Declarations that still have values at this point need constant values (declarations with initial values that can be assigned
+           have already been split into a declaration and an assignment), so multi-line functions can't be inlined there'''
+        return self.modifyWithoutHoisting(lambda: ASTModifierBase.modifyDeclareStmt(self, node, *args, **kwargs))
+
+    def inferValueType(self, statements, name):
+        '''Return the variable prefix ($, ~ or @) for the type of the values assigned to the variable with the given name, or None if unknown'''
+        prefixes = {'$': '$', '%': '$', '~': '~', '?': '~', '@': '@', '!': '@'}
+        return_types = {'integer': '$', 'real': '~', 'string': '@'}
+
+        def expression_type(expr):
+            if isinstance(expr, ksp_ast.Integer):
+                return '$'
+            elif isinstance(expr, ksp_ast.Real):
+                return '~'
+            elif isinstance(expr, ksp_ast.String):
+                return '@'
+            elif isinstance(expr, ksp_ast.VarRef):
+                # temporary variables are integers until their type has been inferred
+                if expr.identifier.identifier.lower() in self.temporary_names:
+                    return None
+
+                return prefixes.get(expr.identifier.prefix)
+            elif isinstance(expr, ksp_ast.BinOp):
+                if expr.op == '&':
+                    return '@'
+
+                return expression_type(expr.left) or expression_type(expr.right)
+            elif isinstance(expr, ksp_ast.UnaryOp):
+                return expression_type(expr.right)
+            elif isinstance(expr, ksp_ast.FunctionCall):
+                function_name = expr.function_name.identifier
+
+                if function_name in ('abs', 'sgn') and expr.parameters:
+                    return expression_type(expr.parameters[0])
+
+                types = set(return_types.get(return_type) for (params, return_type) in ksp_builtins.function_signatures.get(function_name, [])
+                            if len(params) == len(expr.parameters))
+
+                return types.pop() if len(types) == 1 else None
+
+            return None
+
+        def assigned_type(node):
+            if isinstance(node, ksp_ast.AssignStmt) and node.varref.identifier.identifier.lower() == name:
+                value_type = expression_type(node.expression)
+
+                if value_type:
+                    return value_type
+
+            for child in node.get_childnodes() or ():
+                if isinstance(child, ksp_ast.ASTNode):
+                    value_type = assigned_type(child)
+
+                    if value_type:
+                        return value_type
+
+            return None
+
+        for stmt in statements:
+            value_type = assigned_type(stmt)
+
+            if value_type:
+                return value_type
+
+        return None
+
+    def inlineIntoExpression(self, node, func, parent_toplevel, function_stack, is_inside_init_callback):
+        '''Inline a call of a function that is used within an expression by inlining it as "temp := func(...)", and insert the resulting
+           statements before the statement containing the expression, which then refers to temp. So the multi-line functions used in a statement
+           are executed in order before it, while the rest of the statement is evaluated afterwards.
+           Functions consisting of a single "result := <expr>" line are part of that rest, so their expression is returned instead
+           (after inserting the statements of the multi-line functions used in it)'''
+        li = node.lexinfo
+        is_single_line = len(func.lines) == 1 and isinstance(func.lines[0], ksp_ast.AssignStmt) and not func.lines[0].varref.subscripts and \
+                         func.lines[0].varref.identifier.identifier.lower() == func.return_value.identifier.lower()
+        temp = self.createTemporaryVariable(self.resultBaseName(func), '$', li)
+        name = temp.identifier.identifier.lower()
+
+        try:
+            statements = self.modifyFunctionCall(node, parent_toplevel = parent_toplevel, function_stack = function_stack, assign_stmt_lhs = temp)
+        finally:
+            self.result_placeholders.discard(name)
+
+        def references_temp(n):
+            return (isinstance(n, ksp_ast.VarRef) and n.identifier.identifier.lower() == name) or \
+                   any(references_temp(c) for c in (n.get_childnodes() or ()) if isinstance(c, ksp_ast.ASTNode))
+
+        last = statements[-1] if statements else None
+
+        if is_single_line and isinstance(last, ksp_ast.AssignStmt) and not last.varref.subscripts and last.varref.identifier.identifier.lower() == name and \
+           not references_temp(last.expression) and not any(references_temp(s) for s in statements[:-1]):
+            (statements, expression) = (statements[:-1], last.expression)
+        else:
+            prefix = self.inferValueType(statements, name) or '$'
+
+            if prefix != '$':
+                typed_temp = ksp_ast.VarRef(li, ksp_ast.ID(li, prefix + temp.identifier.identifier))
+                statements = flatten([ASTModifierVarRefSubstituter({temp.identifier.identifier: typed_temp}).modify(s) for s in statements])
+                temp = typed_temp
+
+            self.declareTemporaryVariable(temp, is_inside_init_callback)
+            expression = temp
+
+        if statements:
+            if not self.hoisted_statements or self.hoisted_statements[-1] is None:
+                raise ksp_ast.ParseException(node, \
+                      'The definition of function %s needs to consist of a single line (e.g. "result := <expr>") in order to be used in this context!' % func.name.identifier)
+
+            self.hoisted_statements[-1].extend(statements)
+
+        return expression
 
     def integerConstantValue(self, expr, visited = None):
         '''Return the value of an integer expression made of literals and integer constants, or None if it isn't one'''
@@ -2209,7 +2457,14 @@ class ASTModifierFunctionExpander(ASTModifierBase):
             if function_name == 'wait' and isinstance(parent_toplevel, ksp_ast.FunctionDef):
                 functions_invoking_wait.add(parent_toplevel.name.identifier)
 
-            return ASTModifierBase.modifyFunctionCall(self, node, parent_toplevel = parent_toplevel, function_stack = function_stack, assign_stmt_lhs = assign_stmt_lhs)
+            def modify_builtin_call():
+                return ASTModifierBase.modifyFunctionCall(self, node, parent_toplevel = parent_toplevel, function_stack = function_stack, assign_stmt_lhs = assign_stmt_lhs)
+
+            # a procedure call is a statement of its own, so multi-line functions inlined from its arguments are inserted before it
+            if node.is_procedure:
+                return self.modifyStatementWithHoisting(modify_builtin_call)
+            else:
+                return modify_builtin_call()
 
         # get a reference to the function node and run error checks
         func = functions.get(function_name, None)
@@ -2239,6 +2494,10 @@ class ASTModifierFunctionExpander(ASTModifierBase):
         # if 'call' keyword is used
         elif node.using_call_keyword:
             result = [node]
+
+        # if this function call is embedded within some expression
+        elif not (assign_stmt_lhs or node.is_procedure):
+            return self.inlineIntoExpression(node, func, parent_toplevel, function_stack, is_inside_init_callback)
 
         # else if we're inlining the function start out with an empty result since the line of invocation itself will be replaced
         else:
@@ -2272,15 +2531,6 @@ class ASTModifierFunctionExpander(ASTModifierBase):
 
             if assign_stmt_lhs:
                 result = self.resolveResultPlaceholder(result, result_placeholder, assign_stmt_lhs, is_inside_init_callback)
-
-            # if this function call is embedded within some expression
-            if not (assign_stmt_lhs or node.is_procedure):
-                # if the inlined function body consists of just a single statement on the format: result := <expr> where 'result' is the result variable of the function
-                if len(result) == 1 and isinstance(result[0], ksp_ast.AssignStmt) and result[0].varref.identifier.identifier == func.return_value.identifier:
-                    return result[0].expression  # return the right-hand side of that single assignment
-                else:
-                    raise ksp_ast.ParseException(node, \
-                          'The definition of function %s needs to consist of a single line (e.g. "result := <expr>") in order to be used in this context!' % function_name)
 
         return result
 
