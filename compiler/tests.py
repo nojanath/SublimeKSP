@@ -2878,10 +2878,13 @@ class FunctionInlining(unittest.TestCase):
             end function
 
             on init
-                message(scale_up(5+4))    { scale_up needs to be a one-liner when invoked like this }
+                message(scale_up(5+4))
             end on'''
 
-        self.assertRaises(ParseException, do_compile, code)
+        output = do_compile(code)
+        self.assertIn('message(5+4)', output)
+        self.assertIn('$_scale_up_result := (5+4)*100', output)
+        self.assertIn('message($_scale_up_result)', output)
 
     def testFamilyPassedAsParameter(self):
         code = '''
@@ -2974,7 +2977,9 @@ class FunctionInlining(unittest.TestCase):
                 end if
             end function'''
 
-        self.assertRaisesRegex(ParseException, 'needs to consist of a single line', do_compile, code)
+        output = do_compile(code)
+        self.assertIn('$_max_result := $x', output)
+        self.assertIn('message($_max_result)', output)
 
     def testSameFunctionCalledInArgument(self):
         code = '''
@@ -3027,6 +3032,316 @@ class FunctionInlining(unittest.TestCase):
             end function'''
 
         self.assertRaisesRegex(ParseException, 'Recursive functions calls', do_compile, code)
+
+class MultilineFunctionsInExpressions(unittest.TestCase):
+    '''A function whose body isn't a single "result := <expr>" line is inlined into a temporary variable before the statement
+       that uses it, and the expression refers to that variable instead'''
+
+    CLAMP = '''
+        function clamp(value, lo, hi) -> result
+            result := value
+            if value < lo
+                result := lo
+            else if value > hi
+                result := hi
+            end if
+        end function
+        '''
+
+    CLAMP_X = ['$_clamp_result := $x',
+               'if ($x<0)',
+               '$_clamp_result := 0',
+               'else',
+               'if ($x>100)',
+               '$_clamp_result := 100',
+               'end if',
+               'end if']
+
+    def callbackBody(self, output, callback):
+        lines = [l.strip() for l in output.split('\n') if l.strip()]
+        start = lines.index(callback)
+        return lines[start + 1:lines.index('end on', start)]
+
+    def compileNote(self, code, declarations = 'declare x\ndeclare y'):
+        output = do_compile(self.CLAMP + '''
+            on init
+                %s
+            end on
+
+            on note
+                %s
+            end on''' % (declarations, code))
+
+        return output, self.callbackBody(output, 'on note')
+
+    def testProcedureArgument(self):
+        output, body = self.compileNote('message(clamp(x, 0, 100))')
+        self.assertIn('declare $_clamp_result', output)
+        self.assertEqual(body, self.CLAMP_X + ['message($_clamp_result)'])
+
+    def testAssignmentExpression(self):
+        output, body = self.compileNote('y := clamp(x, 0, 100) + clamp(y, 0, 10)')
+        self.assertIn('declare $_clamp_result2', output)
+        self.assertEqual(body[:len(self.CLAMP_X)], self.CLAMP_X)
+        self.assertEqual(body[len(self.CLAMP_X)], '$_clamp_result2 := $y')
+        self.assertEqual(body[-1], '$y := $_clamp_result+$_clamp_result2')
+
+    def testIfCondition(self):
+        output, body = self.compileNote('if clamp(x, 0, 100) = 50\n message(1)\n end if')
+        self.assertEqual(body, self.CLAMP_X + ['if ($_clamp_result=50)', 'message(1)', 'end if'])
+
+    def testCallInLeftOperandIsNotNested(self):
+        output, body = self.compileNote('if clamp(x, 0, 100) = 50 and y > 0\n message(1)\n end if')
+        self.assertNotIn('_and_result', output)
+        self.assertEqual(body, self.CLAMP_X + ['if ($_clamp_result=50 and ($y>0))', 'message(1)', 'end if'])
+
+    def testShortCircuitAnd(self):
+        output, body = self.compileNote('if y > 0 and clamp(x, 0, 100) = 50\n message(1)\n else\n message(2)\n end if')
+        self.assertIn('declare $_and_result', output)
+        self.assertEqual(body, ['$_and_result := 0',
+                                'if ($y>0)'] +
+                               self.CLAMP_X +
+                               ['if ($_clamp_result=50)',
+                                '$_and_result := 1',
+                                'end if',
+                                'end if',
+                                'if ($_and_result=1)',
+                                'message(1)',
+                                'else',
+                                'message(2)',
+                                'end if'])
+
+    def testShortCircuitOr(self):
+        output, body = self.compileNote('if y > 0 or clamp(x, 0, 100) = 50\n message(1)\n end if')
+        self.assertEqual(body, ['$_or_result := 0',
+                                'if ($y>0)',
+                                '$_or_result := 1',
+                                'else'] +
+                               self.CLAMP_X +
+                               ['if ($_clamp_result=50)',
+                                '$_or_result := 1',
+                                'end if',
+                                'end if',
+                                'if ($_or_result=1)',
+                                'message(1)',
+                                'end if'])
+
+    def testShortCircuitNestedInNot(self):
+        output, body = self.compileNote('if not (y > 0 and clamp(x, 0, 100) = 50) and y < 10\n message(1)\n end if')
+        self.assertEqual(body[0], '$_and_result := 0')
+        self.assertEqual(body[-3:], ['if (not ($_and_result=1) and ($y<10))', 'message(1)', 'end if'])
+
+    def testShortCircuitBothOperands(self):
+        output, body = self.compileNote('if clamp(y, 0, 5) = 5 or clamp(x, 0, 100) = 50\n message(1)\n end if')
+        self.assertEqual(body[0], '$_clamp_result := $y')
+        self.assertIn('$_or_result := 0', body)
+        self.assertLess(body.index('$_or_result := 0'), body.index('$_clamp_result2 := $x'))
+        self.assertEqual(body[-3], 'if ($_or_result=1)')
+
+    def testElseIfCondition(self):
+        output, body = self.compileNote('if y = 1\n message(1)\n else if clamp(x, 0, 100) = 50\n message(2)\n end if')
+        self.assertEqual(body, ['if ($y=1)',
+                                'message(1)',
+                                'else'] +
+                               self.CLAMP_X +
+                               ['if ($_clamp_result=50)',
+                                'message(2)',
+                                'end if',
+                                'end if'])
+
+    def testWhileCondition(self):
+        output, body = self.compileNote('while clamp(x, 0, 100) < 100\n inc(x)\n end while')
+        self.assertEqual(body, self.CLAMP_X +
+                               ['while ($_clamp_result<100)',
+                                'inc($x)'] +
+                               self.CLAMP_X +
+                               ['end while'])
+
+    def testForLoopBound(self):
+        output, body = self.compileNote('for y := 0 to clamp(x, 0, 100)\n message(y)\n end for')
+        self.assertEqual(body[0], '$y := 0')
+        self.assertEqual(body[1:1 + len(self.CLAMP_X)], self.CLAMP_X)
+        self.assertEqual(body[1 + len(self.CLAMP_X)], 'while ($y<=$_clamp_result)')
+        self.assertEqual(body[-1 - len(self.CLAMP_X):], self.CLAMP_X + ['end while'])
+
+    def testSelectExpression(self):
+        output, body = self.compileNote('select clamp(x, 0, 100)\n case 0\n message(0)\n end select')
+        self.assertEqual(body, self.CLAMP_X + ['select ($_clamp_result)', 'case 0', 'message(0)', 'end select'])
+
+    def testArgumentInlinedWhereParameterIsUsed(self):
+        # like any other argument, a function call is passed by name, so it's inlined wherever the parameter is used
+        output, body = self.compileNote('y := clamp(clamp(x, 0, 100), 0, 10)')
+        clamp_x = [l.replace('_clamp_result', '_clamp_result2') for l in self.CLAMP_X]
+        self.assertEqual(body[:len(self.CLAMP_X) + len(clamp_x) + 1],
+                         [l.replace('$_clamp_result', '$y') for l in self.CLAMP_X] +
+                         clamp_x +
+                         ['if ($_clamp_result2<0)'])
+        self.assertIn('if ($_clamp_result3>10)', body)
+
+    def testMultilineFunctionsExecuteBeforeStatement(self):
+        code = '''
+            function next_count() -> result
+                inc(counter)
+                result := counter
+            end function
+
+            on init
+                declare counter
+            end on
+
+            on note
+                message(next_count() + next_count())
+            end on'''
+
+        body = self.callbackBody(do_compile(code), 'on note')
+        self.assertEqual(body, ['inc($counter)',
+                                '$_next_count_result := $counter',
+                                'inc($counter)',
+                                '$_next_count_result2 := $counter',
+                                'message($_next_count_result+$_next_count_result2)'])
+
+    def testArgumentOfSingleLineFunction(self):
+        code = self.CLAMP + '''
+            function scale_up(value) -> result
+                result := value * 100
+            end function
+
+            on init
+                declare x
+            end on
+
+            on note
+                message(scale_up(clamp(x, 0, 100)))
+            end on'''
+
+        body = self.callbackBody(do_compile(code), 'on note')
+        self.assertEqual(body, self.CLAMP_X + ['message($_clamp_result*100)'])
+
+    def testCallInsideInlinedFunctionBody(self):
+        code = self.CLAMP + '''
+            function report(value)
+                if clamp(value, 0, 100) = 100
+                    message("max")
+                end if
+            end function
+
+            on init
+                declare x
+            end on
+
+            on note
+                report(x)
+            end on'''
+
+        body = self.callbackBody(do_compile(code), 'on note')
+        self.assertEqual(body, self.CLAMP_X + ['if ($_clamp_result=100)', 'message("max")', 'end if'])
+
+    def testInitCallback(self):
+        code = self.CLAMP + '''
+            on init
+                declare x
+                message(clamp(x, 0, 100))
+            end on'''
+
+        body = self.callbackBody(do_compile(code), 'on init')
+        self.assertLess(body.index('declare $_clamp_result'), body.index('$_clamp_result := $x'))
+        self.assertEqual(body[-1], 'message($_clamp_result)')
+
+    def testDeclarationInitialValue(self):
+        code = self.CLAMP + '''
+            on init
+                declare x
+                declare y := clamp(x, 0, 100) + 1
+            end on'''
+
+        body = self.callbackBody(do_compile(code), 'on init')
+        self.assertEqual(body[-len(self.CLAMP_X) - 2:], ['declare $y'] + self.CLAMP_X + ['$y := $_clamp_result+1'])
+
+    def testTemporaryVariableTypes(self):
+        code = '''
+            function fclamp(value, hi) -> result
+                result := value
+                if value > hi
+                    result := hi
+                end if
+            end function
+
+            function exclaim(value) -> result
+                result := value
+                result := result & "!"
+            end function
+
+            function halve(value) -> result
+                result := value
+                result := result / 2
+            end function
+
+            on init
+                declare ~r
+                declare @s
+            end on
+
+            on note
+                if fclamp(~r * 2.0, 1.0) > 0.5
+                    message(exclaim(@s))
+                end if
+                message(halve(real_to_int(~r)))
+            end on'''
+
+        output = do_compile(code)
+        self.assertIn('declare ~_fclamp_result', output)
+        self.assertIn('declare @_exclaim_result', output)
+        self.assertIn('declare $_halve_result', output)
+        self.assertIn('if (~_fclamp_result>0.5)', output)
+        self.assertIn('message(@_exclaim_result)', output)
+
+    def testPropertyGetter(self):
+        code = self.CLAMP + '''
+            on init
+                declare x
+                property clamped_x
+                    function get() -> result
+                        result := clamp(x, 0, 100)
+                    end function
+                end property
+            end on
+
+            on note
+                message(clamped_x)
+            end on'''
+
+        body = self.callbackBody(do_compile(code), 'on note')
+        self.assertEqual(body, [l.replace('_clamp_result', '_clamped_x__get_result') for l in self.CLAMP_X] +
+                               ['message($_clamped_x__get_result)'])
+
+    def testSingleLineFunctionUnchanged(self):
+        code = '''
+            function scale_up(value) -> result
+                result := value * 100
+            end function
+
+            on init
+                declare x
+            end on
+
+            on note
+                if scale_up(x) > 5 and scale_up(x) < 10
+                    message(scale_up(x))
+                end if
+            end on'''
+
+        output = do_compile(code)
+        self.assertNotIn('_result', output)
+        self.assertEqual(self.callbackBody(output, 'on note'),
+                         ['if ($x*100>5 and ($x*100<10))', 'message($x*100)', 'end if'])
+
+    def testConstantContextNotSupported(self):
+        code = self.CLAMP + '''
+            on init
+                declare const LIMIT := clamp(5, 0, 3)
+            end on'''
+
+        self.assertRaisesRegex(ParseException, 'needs to consist of a single line', do_compile, code)
 
 class FunctionResultAliasing(unittest.TestCase):
     '''When "x := f(...)" is inlined, the result variable of f becomes x. If the function body reads x after
