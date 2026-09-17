@@ -3370,6 +3370,20 @@ class NamespacePrefixing(unittest.TestCase):
         self.assertTrue('message("macro with no arguments")' in output)
         self.assertTrue('message("macro with 2 arguments")' in output)
 
+    def testNestedMacroImportedPrefixed(self):
+        code = '''
+            import 'test_imports/namespace5.ksp' as mymodule
+
+            on init
+                mymodule.outer(1)
+                mymodule.outer_iterated
+            end on'''
+
+        output = do_compile(code)
+        self.assertTrue('message(1)' in output)
+        self.assertTrue('message(2)' in output)
+        self.assertTrue('message(3)' in output)
+
 class PragmaTests(unittest.TestCase):
     def testPragma(self):
         code = '''

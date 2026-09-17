@@ -316,10 +316,9 @@ class Macro:
     '''Macro object used for handling macros before Ply lex/yacc parser'''
     def __init__(self, lines):
         self.lines = lines
-        self.name, self.parameters = self.get_macro_name_and_parameters()
-
-    def get_name_prefixed_by_namespace(self):
-        return prefix_with_ns(self.name, self.lines[0].namespaces)
+        name, self.parameters = self.get_macro_name_and_parameters()
+        # prefix the name only once, so that it stays the same at every level of macro expansion
+        self.name = prefix_with_ns(name, lines[0].namespaces)
 
     def get_overloaded_name(self):
         return append_overloaded_name(self.name, self.parameters)
@@ -830,7 +829,6 @@ def expand_macros(lines, macros, level = 0, replace_raw = True, define_cache = N
     name2macro = {}
 
     for m in macros:
-        m.name = m.get_name_prefixed_by_namespace()
         name = m.get_overloaded_name()
 
         if not (name == 'tcm.init' and name in name2macro):
@@ -842,10 +840,9 @@ def expand_macros(lines, macros, level = 0, replace_raw = True, define_cache = N
     new_callback_lines = []
     num_substitutions = 0
 
-    # Lines that were already checked at the previous recursion level and weren't macro invocations can only become one
-    # if the macro names change between levels, which happens for namespaced macros (their names get prefixed again above).
-    # Without those, only the lines inserted by this level need to be checked at the next level.
-    inserted_lines = None if any(m.lines[0].namespaces for m in macros) else set()
+    # Lines that were already checked at this level and weren't macro invocations can't become one at the next level,
+    # so only the lines inserted by this level need to be checked there
+    inserted_lines = set()
 
     while lines:
         line = lines.popleft()
@@ -893,9 +890,8 @@ def expand_macros(lines, macros, level = 0, replace_raw = True, define_cache = N
                 new_lines.extend(normal_lines)
                 new_callback_lines.extend(callback_lines)
 
-                if inserted_lines is not None:
-                    inserted_lines.update(id(l) for l in normal_lines)
-                    inserted_lines.update(id(l) for l in callback_lines)
+                inserted_lines.update(id(l) for l in normal_lines)
+                inserted_lines.update(id(l) for l in callback_lines)
 
                 num_substitutions += 1
 
