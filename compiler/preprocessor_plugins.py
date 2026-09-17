@@ -136,27 +136,39 @@ def countFamily(lineText, famCount):
 
     return(famCount)
 
-def inspectFamilyState(lines, textLineno):
-    ''' If the given line is in at least 1 family, return the family prefixes. '''
-    currentFamilyNames = []
+class FamilyState(object):
+    ''' Tracks the families enclosing lines of a handler pass. Lookups for increasing line numbers continue scanning
+        from the previous one instead of starting over from the first line, so lines must not change during the pass. '''
+    def __init__(self, lines):
+        self.lines = lines
+        self.scannedLines = 0
+        self.familyNames = []
 
-    for i in range(len(lines)):
-        if i == textLineno:
-            if currentFamilyNames:
-                return (".".join(currentFamilyNames) + ".")
-            else:
-                return (None)
-            break
+    def prefix(self, textLineno):
+        ''' If the given line is in at least 1 family, return the family prefixes. '''
+        if textLineno < self.scannedLines:
+            self.scannedLines = 0
+            self.familyNames = []
 
-        line = lines[i].command.strip()
+        numLines = min(textLineno, len(self.lines))
 
-        if "family" in line:
-            m = re.search(familyStartRe, line)
+        for i in range(self.scannedLines, numLines):
+            line = self.lines[i].command.strip()
 
-            if m:
-                currentFamilyNames.append(m.group("famname"))
-            elif re.search(familyEndRe, line):
-                currentFamilyNames.pop()
+            if "family" in line:
+                m = re.search(familyStartRe, line)
+
+                if m:
+                    self.familyNames.append(m.group("famname"))
+                elif re.search(familyEndRe, line):
+                    self.familyNames.pop()
+
+        self.scannedLines = numLines
+
+        if textLineno >= len(self.lines) or not self.familyNames:
+            return (None)
+
+        return (".".join(self.familyNames) + ".")
 
 #=================================================================================================
 
@@ -600,6 +612,7 @@ def handleMultidimensionalArrays(lines):
 
     newLines = collections.deque()
     famCount = 0
+    familyState = FamilyState(lines)
 
     for lineIdx in range(len(lines)):
         line = lines[lineIdx].command.strip()
@@ -614,7 +627,7 @@ def handleMultidimensionalArrays(lines):
                 famPrefix = ""
 
                 if famCount != 0:
-                    famPrefix = inspectFamilyState(lines, lineIdx)
+                    famPrefix = familyState.prefix(lineIdx)
 
                 name = m.group("name")
                 multiDim = MultiDimensionalArray(name,                   \
@@ -716,6 +729,7 @@ def handleSameLineDeclaration(lines):
         moved over to the next line. '''
     newLines = collections.deque()
     famCount = 0
+    familyState = FamilyState(lines)
 
     for lineIdx in range(len(lines)):
         line = lines[lineIdx].command.strip()
@@ -741,7 +755,7 @@ def handleSameLineDeclaration(lines):
                     variableName = m.group("name")
 
                     if famCount != 0:
-                        variableName = inspectFamilyState(lines, lineIdx) + variableName
+                        variableName = familyState.prefix(lineIdx) + variableName
 
                     newLines.append(lines[lineIdx].copy(preAssignmentText))
                     newLines.append(lines[lineIdx].copy(variableName + " " + line[line.find(":=") :]))
@@ -1019,6 +1033,7 @@ def handleLists(lines):
     addInitVar = False
     openBlocks = [] # "loop" or "if" for each for, while and if statement the current line is in
     famCount = 0
+    familyState = FamilyState(lines)
 
     for lineIdx in range(len(lines)):
         line = lines[lineIdx].command.strip()
@@ -1091,7 +1106,7 @@ def handleLists(lines):
                     famPre = ""
 
                     if famCount != 0:
-                        famPre = inspectFamilyState(lines, lineIdx)
+                        famPre = familyState.prefix(lineIdx)
 
                     isMatrix = False
 
@@ -1181,6 +1196,7 @@ def handleStringArrayInitialisation(lines, placeholders):
     stringListRe = r"\s*%s(\s*,\s*%s)*\s*" % (stringOrPlaceholderRe, stringOrPlaceholderRe)
     newLines = collections.deque()
     famCount = 0
+    familyState = FamilyState(lines)
 
     for i in range(len(lines)):
         line = lines[i].command.strip()
@@ -1207,7 +1223,7 @@ def handleStringArrayInitialisation(lines, placeholders):
                     name = m.group("name")
 
                     if famCount != 0:
-                        name = inspectFamilyState(lines, i) + name
+                        name = familyState.prefix(i) + name
 
                     if m.group("prefix") != "!":
                         line = Line("declare !{}[{}]".format(m.group("name"), m.group("arraysize")))
@@ -1248,6 +1264,7 @@ def handlePersistence(lines):
     ''' Simply adds make_persistent() or read_perisitent_var() lines when the pers or read keywords are found. '''
     newLines = collections.deque()
     famCount = 0
+    familyState = FamilyState(lines)
 
     for i in range(len(lines)):
         line = lines[i].command.strip()
@@ -1265,7 +1282,7 @@ def handlePersistence(lines):
                     variableName = m.group("name")
 
                     if famCount != 0: # Counting the family state is much faster than inspecting on every line.
-                        famPre = inspectFamilyState(lines, i)
+                        famPre = familyState.prefix(i)
 
                         if famPre:
                             variableName = famPre + variableName.strip()
@@ -1778,6 +1795,7 @@ def handleUIArrays(lines):
     uiArrayTypeFirstRe = r"^declare\s+%s\s+%s\s*%s\s*\[(?P<arraysize>[^\]]+)\]\s*(?P<tablesize>\[[^\]]+\]\s*)?(?P<uiparams>\(.*)?" % (uiTypeRe, persistenceRe, variableNameRe)
     newLines = collections.deque()
     famCount = 0
+    familyState = FamilyState(lines)
 
     for lineNum in range(len(lines)):
         line = lines[lineNum].command.strip()
@@ -1801,7 +1819,7 @@ def handleUIArrays(lines):
                 famPre = None
 
                 if famCount != 0:
-                    famPre = inspectFamilyState(lines, lineNum)
+                    famPre = familyState.prefix(lineNum)
 
                 if ((uiType == "ui_table" or uiType == "ui_xy") and r.group("tablesize")) or (uiType != "ui_table" and uiType != "ui_xy"):
                     arrayObj = UIArray(r.group("name"),
