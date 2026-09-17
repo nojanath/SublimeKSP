@@ -2598,6 +2598,29 @@ end on'''
 
         self.assertRaisesRegex(ParseException, 'Unterminated string', do_compile, code)
 
+class UnexpectedEndOfScript(unittest.TestCase):
+    def testMissingEndOn(self):
+        code = '''
+on init
+    message(1)
+'''
+
+        self.assertRaisesRegex(ParseException, r'Unexpected end of script(.|\n)*line 3\b', do_compile, code)
+
+    def testMissingEndIf(self):
+        code = '''
+on init
+    message(1)
+end on
+
+on note
+    if 1 = 1
+        message(2)
+
+'''
+
+        self.assertRaisesRegex(ParseException, r'Unexpected end of script(.|\n)*line 8\b', do_compile, code)
+
 class ArgumentListErrors(unittest.TestCase):
     def testUnmatchedParenthesisInMacroCall(self):
         code = '''

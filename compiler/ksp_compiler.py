@@ -2931,7 +2931,9 @@ class KSPCompiler(object):
         except ksp_ast.ParseException as e:
             messages = []
 
-            if isinstance(e.node, lex.LexToken):
+            if e.node is None:
+                line_numbers = [len(self.lines) - 1]
+            elif isinstance(e.node, lex.LexToken):
                 line_numbers = [e.node.lineno]
             else:
                 line_numbers = [e.node.lineno] + [n.lineno for n in e.node.lexinfo[2]]
