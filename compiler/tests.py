@@ -13,6 +13,7 @@
 # GNU General Public License for more details.
 
 from ksp_compiler import ParseException, KSPCompiler
+import ksp_declarations
 import os.path
 import unittest
 
@@ -4962,6 +4963,162 @@ class K5_6Features(unittest.TestCase):
 
         output = do_compile(code, extra_syntax_checks = True, optimize = True)
         assert_equal(self, output, expected_output)
+
+class DeclarationCompletions(unittest.TestCase):
+    def declarations(self, code):
+        return [(d.kind, d.name, d.params) for d in ksp_declarations.parse_source(code)[0]]
+
+    def testFunctionsTaskfuncsAndMacros(self):
+        code = '''
+            function no_args
+            end function
+
+            function empty_parens() -> result
+            end function
+
+            function sum(x, y) -> result override
+            end function
+
+            taskfunc tf(var a, out b, c) -> r
+            end taskfunc
+
+            macro m(#name#, $value)
+            end macro'''
+
+        self.assertEqual(self.declarations(code), [('function', 'no_args', []),
+                                                   ('function', 'empty_parens', []),
+                                                   ('function', 'sum', ['x', 'y']),
+                                                   ('taskfunc', 'tf', ['a', 'b', 'c']),
+                                                   ('macro', 'm', ['#name#', '$value'])])
+
+    def testCommentsTemplatesAndContinuations(self):
+        code = '''
+            { function in_brace_comment(x) }
+            // macro in_line_comment(x)
+            (* function in_block_comment(x)
+               macro also_in_block_comment *)
+            function name_#suffix#(x)
+            end function
+            message("function in_string(x)")
+            function continued(a, ...
+                               b)
+            end function'''
+
+        self.assertEqual(self.declarations(code), [('function', 'continued', ['a', 'b'])])
+
+    def testMacroOverloads(self):
+        code = '''
+            macro foo
+            end macro
+
+            macro foo(a, b)
+            end macro'''
+
+        self.assertEqual(self.declarations(code), [('macro', 'foo', []), ('macro', 'foo', ['a', 'b'])])
+
+    def testSnippets(self):
+        decls = ksp_declarations.parse_source('''
+            function no_args
+            end function
+            function empty_parens()
+            end function
+            macro m(#name#, $value)
+            end macro''')[0]
+
+        self.assertEqual([ksp_declarations.trigger(d) for d in decls], ['no_args', 'empty_parens()', 'm(#name#, $value)'])
+        self.assertEqual([ksp_declarations.snippet(d) for d in decls], ['no_args', 'empty_parens()', 'm(${1:#name#}, ${2:\\$value})'])
+
+    def testImportsWithNamespaces(self):
+        code = '''
+            import "test_imports/namespace2.ksp" as mymodule
+            import 'test_imports/namespace4.ksp'
+            import "test_imports/folder_import"
+            import "test_imports/circular_import.ksp" as mymodule
+            import "test_imports/does_not_exist.ksp"
+            import "https://example.com/remote.ksp"
+
+            function local_function(x)
+            end function'''
+
+        scanner = ksp_declarations.DeclarationScanner()
+        decls = [(d.kind, d.name, d.params, d.filename) for d in scanner.scan(code, os.path.dirname(__file__))]
+
+        self.assertEqual(decls, [('function', 'local_function', ['x'], None),
+                                 ('function', 'mymodule.max', ['x', 'y'], 'namespace2.ksp'),
+                                 ('macro', 'foo', [], 'namespace4.ksp'),
+                                 ('macro', 'foo', ['a', 'b'], 'namespace4.ksp'),
+                                 ('function', 'folder_import_a', [], 'a.ksp'),
+                                 ('function', 'folder_import_c', [], 'c.ksp')])
+
+    def testImportsFromLibraryFiles(self):
+        # a library file opened on its own has import paths written relative to the script that imports it,
+        # e.g. engine/core.ksp importing "_ENGINE/modules/" or "_ENGINE/lib.ksp"
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as root:
+            os.makedirs(os.path.join(root, '_ENGINE', 'modules', 'gui'))
+
+            with open(os.path.join(root, '_ENGINE', 'modules', 'gui', 'page.ksp'), 'w') as f:
+                f.write('taskfunc gui.disp.predelay(value)\nend taskfunc\n')
+
+            with open(os.path.join(root, '_ENGINE', 'lib.ksp'), 'w') as f:
+                f.write('macro lib_macro(x)\nend macro\n')
+
+            scanner = ksp_declarations.DeclarationScanner()
+            engine = os.path.join(root, '_ENGINE')
+
+            # resolved by dropping the leading _ENGINE folder
+            decls = scanner.scan('import "_ENGINE/modules/"', engine)
+            self.assertEqual([(d.name, d.params) for d in decls], [('gui.disp.predelay', ['value'])])
+
+            # resolved from the parent folder
+            decls = scanner.scan('import "_ENGINE/lib.ksp"', os.path.join(engine, 'modules'))
+            self.assertEqual([(d.name, d.params) for d in decls], [('lib_macro', ['x'])])
+
+            # but not when paths should be resolved exactly like the compiler does
+            self.assertEqual(scanner.scan('import "_ENGINE/modules/"', engine, guess_paths = False), [])
+
+    def testFindImporter(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as root:
+            engine = os.path.join(root, 'Engine')
+            code = os.path.join(root, 'Product', 'Code')
+            os.makedirs(os.path.join(engine, 'modules'))
+            os.makedirs(code)
+
+            core = os.path.join(engine, 'core.ksp')
+            core_source = 'import "_ENGINE/modules/"\n'
+
+            with open(core, 'w') as f:
+                f.write(core_source)
+
+            with open(os.path.join(engine, 'modules', 'page.ksp'), 'w') as f:
+                f.write('function page_function(x)\nend function\n')
+
+            # the product imports the engine through a folder link
+            try:
+                os.symlink(engine, os.path.join(code, '_ENGINE'), target_is_directory = True)
+            except (OSError, NotImplementedError):
+                self.skipTest('Creating symlinks is not permitted')
+
+            build = os.path.join(code, 'build.ksp')
+            other = os.path.join(root, 'Product', 'other.ksp')
+            scripts = [(other, ksp_declarations.parse_source('function unrelated\nend function')),
+                       (core, ksp_declarations.parse_source(core_source)),
+                       (build, ksp_declarations.parse_source('import "_ENGINE/core.ksp" as engine'))]
+
+            scanner = ksp_declarations.DeclarationScanner()
+            importer = scanner.find_importer(core, scripts)
+            self.assertEqual(importer, build)
+            self.assertEqual(scanner.find_importer(other, scripts), None)
+
+            decls = scanner.scan(core_source, os.path.dirname(importer), core, guess_paths = False)
+            self.assertEqual([(d.name, d.filename) for d in decls], [('page_function', 'page.ksp')])
+
+    def testImportsNeedBasepath(self):
+        scanner = ksp_declarations.DeclarationScanner()
+        self.assertEqual(scanner.scan('import "test_imports/namespace2.ksp"', None), [])
 
 if __name__ == '__main__':
     unittest.main()
