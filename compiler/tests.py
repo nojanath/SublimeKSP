@@ -2647,7 +2647,73 @@ on note
 
 '''
 
-        self.assertRaisesRegex(ParseException, r'Unexpected end of script(.|\n)*line 8\b', do_compile, code)
+        self.assertRaisesRegex(ParseException, r"Unexpected end of script! Expected 'end if'!(.|\n)*line 8\b", do_compile, code)
+
+class MissingBlockEndErrors(unittest.TestCase):
+    def testMissingEndIfBeforeEndOn(self):
+        code = '''
+on init
+    if 1 = 1
+        message(1)
+end on'''
+
+        self.assertRaisesRegex(ParseException, r"Expected 'end if'!(.|\n)*line 5\b", do_compile, code)
+
+    def testMissingEndIfBeforeEndWhile(self):
+        code = '''
+on init
+    declare i
+    while i < 2
+        if i = 1
+            message(i)
+        inc(i)
+    end while
+end on'''
+
+        self.assertRaisesRegex(ParseException, r"Expected 'end if'!(.|\n)*line 8\b", do_compile, code)
+
+    def testMissingEndSelect(self):
+        code = '''
+on init
+    declare i
+    select i
+        case 1
+            message(i)
+end on'''
+
+        self.assertRaisesRegex(ParseException, r"Expected 'end select'!(.|\n)*line 7\b", do_compile, code)
+
+    def testMissingEndFunction(self):
+        code = '''
+function f
+    message(1)
+
+on init
+    f
+end on'''
+
+        self.assertRaisesRegex(ParseException, r"Expected 'end function'!(.|\n)*line 5\b", do_compile, code)
+
+    def testMissingEndOnBeforeNextCallback(self):
+        code = '''
+on init
+    message(1)
+
+on note
+    message(2)
+end on'''
+
+        self.assertRaisesRegex(ParseException, r"Expected 'end on'!(.|\n)*line 5\b", do_compile, code)
+
+    def testOtherErrorsInsideBlockStaySyntaxErrors(self):
+        code = '''
+on init
+    if 1 =
+        message(1)
+    end if
+end on'''
+
+        self.assertRaisesRegex(ParseException, r"Syntax error!(.|\n)*line 3\b", do_compile, code)
 
 class ArgumentListErrors(unittest.TestCase):
     def testUnmatchedParenthesisInMacroCall(self):
