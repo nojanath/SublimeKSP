@@ -78,9 +78,18 @@ def post_macro_iter_functions(lines, placeholders=placeholders):
 def post_macro_functions(lines):
     ''' This function is called after the regular macros have been expanded.
         lines is a deque of Line objects - see ksp_compiler.py. '''
-    handleIncrementer(lines)
+    # START_INC and struct blocks are rarely used, so skip their handlers if the code doesn't contain them
+    # (neither the incrementer nor const blocks can generate struct blocks)
+    code = "\n".join(l.command for l in lines)
+
+    if "_INC" in code:
+        handleIncrementer(lines)
+
     handleConstBlock(lines)
-    handleStructs(lines)
+
+    if "struct" in code:
+        handleStructs(lines)
+
     handleUIArrays(lines)
     handleSameLineDeclaration(lines)
     handleMultidimensionalArrays(lines)
