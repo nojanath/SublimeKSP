@@ -1544,7 +1544,7 @@ class DefineConstant(object):
 
         self.line = line
 
-        if re.search(r"\b%s\b" % self.name, self.value):
+        if re.search(r"\b%s\b" % re.escape(self.name), self.value):
             raise ParseException(self.line, "Define constant cannot call itself!")
 
     def getName(self):
@@ -1577,12 +1577,14 @@ class DefineConstant(object):
         newCommand = command
 
         if self.name in command:
+            nameRe = r"\b%s\b" % re.escape(self.name)
+
             if not self.args:
-                newCommand = re.sub(r"\b%s\b" % self.name, self.value, command)
+                newCommand = re.sub(nameRe, self.value, command)
             else:
                 lineObj = line or self.line
 
-                matchIt = re.finditer(r"\b%s\b" % self.name, command)
+                matchIt = re.finditer(nameRe, command)
 
                 for match in matchIt:
                     # Parse the match
@@ -1630,9 +1632,9 @@ class DefineConstant(object):
 
                     for argIdx, arg in enumerate(self.args):
                         if arg.startswith("#") and arg.endswith("#"):
-                            newVal = re.sub(arg, foundArgs[argIdx], newVal)
+                            newVal = re.sub(re.escape(arg), foundArgs[argIdx], newVal)
                         else:
-                            newVal = re.sub(r"\b%s\b" % arg, foundArgs[argIdx], newVal)
+                            newVal = re.sub(r"\b%s\b" % re.escape(arg), foundArgs[argIdx], newVal)
 
                     newCommand = newCommand.replace(foundString, newVal)
 
@@ -1644,9 +1646,9 @@ class DefineConstantList(collections.deque):
 
 class DefineSubstitutionIndex(object):
     ''' Tells which define constants can occur in a line, so that substituteValue only needs to be tried for those.
-        substituteValue matches \\bNAME\\b using the name as a regex, in which a dot matches any character.
-        A match therefore starts a word (\\w+ token) of the line with the part of the name before the first dot,
-        and a name without dots can only match a whole token. Names with other characters are always tried. '''
+        substituteValue matches \\bNAME\\b, so a match starts a word (\\w+ token) of the line with the part
+        of the name before the first dot, and a name without dots can only match a whole token.
+        Names with other characters are always tried. '''
     def __init__(self, defineConstants):
         self.defines = list(defineConstants)
         self.byName = {}
