@@ -3237,6 +3237,28 @@ class FunctionResultAliasing(unittest.TestCase):
         self.assertIn('declare $_clamp_result2', output)
         self.assertIn('$x := $_clamp_result2', output)
 
+    def testFunctionCallInTargetSubscript(self):
+        code = '''
+            function next_index(i) -> result
+                result := i + 1
+            end function
+
+            function doubled(value) -> result
+                result := value
+                result := result * 2
+            end function
+
+            on init
+                declare arr[5]
+                declare y
+                arr[next_index(y)] := doubled(y)
+            end on'''
+
+        output = do_compile(code)
+        self.assertEqual(self.callbackBody(output, 'on init')[-2:],
+                         ['%arr[$y+1] := $y',
+                          '%arr[$y+1] := %arr[$y+1]*2'])
+
     def testNoTemporaryVariableWithoutAliasing(self):
         code = self.CLAMP + '''
             function plus_one(value) -> result
