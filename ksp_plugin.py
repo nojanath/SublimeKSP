@@ -621,7 +621,7 @@ class KspCompletions(sublime_plugin.EventListener):
 
         compl = self._extract_completions(view, prefix, pt)
 
-        if re.match(r' *declare .*', line) and ':=' not in line:
+        if ksp_declarations.is_typing_declared_name(line):
             compl = []
         elif re.match(r'.*-> ?[a-zA-Z_]*$', line): # if the line ends with something like '->' or '-> value'
             compl = magic_control_and_event_pars
