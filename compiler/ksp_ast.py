@@ -185,7 +185,17 @@ def deepcopy_ast(x, memo):
         state = y.__dict__
 
         for k, v in x.__dict__.items():
-            state[k] = deepcopy_ast(v, memo)
+            if k == 'lexinfo' and type(v) is tuple and len(v) == 4:
+                # (filename, line number, inlined function calls, namespaces): only the list of inlined function calls is ever
+                # modified, and the calls in it are only read for their line numbers, so only that list needs copying
+                lexinfo = memo.get(id(v))
+
+                if lexinfo is None:
+                    lexinfo = memo[id(v)] = (v[0], v[1], list(v[2]), v[3])
+
+                state[k] = lexinfo
+            else:
+                state[k] = deepcopy_ast(v, memo)
     else:
         y = copy.deepcopy(x, memo)
         memo[id(x)] = y
