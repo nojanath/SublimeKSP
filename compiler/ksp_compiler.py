@@ -910,10 +910,10 @@ class ASTModifierBase(ksp_ast_processing.ASTModifier):
 
     def modifyFunctionCall(self, node, *args, **kwargs):
         '''there are some functions/preprocessor directives for which the first parameter should always be left as is'''
-        if node.function_name.identifier in ['SET_CONDITION', 'RESET_CONDITION', 'USE_CODE_IF', 'USE_CODE_IF_NOT',
+        if node.function_name.identifier in {'SET_CONDITION', 'RESET_CONDITION', 'USE_CODE_IF', 'USE_CODE_IF_NOT',
                                              '_pgs_create_key', '_pgs_key_exists', '_pgs_set_key_val', '_pgs_get_key_val',
                                              'pgs_create_key', 'pgs_key_exists', 'pgs_set_key_val', 'pgs_get_key_val',
-                                             'pgs_create_str_key', 'pgs_str_key_exists', 'pgs_set_str_key_val', 'pgs_get_str_key_val']:
+                                             'pgs_create_str_key', 'pgs_str_key_exists', 'pgs_set_str_key_val', 'pgs_get_str_key_val'}:
             first_parameter_to_change = 1
         else:
             first_parameter_to_change = 0
@@ -2784,18 +2784,9 @@ class KSPCompiler(object):
         self.module.emit(emitter)
         self.compiled_code = buffer.getvalue()
 
-        lines = self.compiled_code.split('\n')
-
-        new_lines = []
         if self.add_compiled_date_comment:
             localtime = time.asctime( time.localtime(time.time()) )
-            new_lines.append("{ Compiled on " + localtime + " }")
-
-        init_block = False
-        for l in lines:
-            new_lines.append(l)
-
-        self.compiled_code = '\n'.join(new_lines)
+            self.compiled_code = "{ Compiled on " + localtime + " }\n" + self.compiled_code
 
     def uncompress_variable_names(self, compiled_code):
         def sub_func(match_obj):

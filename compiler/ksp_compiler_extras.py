@@ -261,6 +261,20 @@ def highest_precision(type1, type2):
     else:
         return 'integer'
 
+parameter_descriptions = {}
+
+def describe_parameter(param_descriptor):
+    '''Returns the parameter descriptor of a builtin function signature without angle brackets,
+       and whether the parameter is a text parameter. Results are cached, as there are only a few distinct descriptors.'''
+    description = parameter_descriptions.get(param_descriptor)
+
+    if description is None:
+        stripped = param_descriptor.replace('<', '').replace('>', '')
+        is_text = 'text' in stripped or stripped.endswith('name') or stripped.endswith('path')
+        description = parameter_descriptions[param_descriptor] = (stripped, is_text)
+
+    return description
+
 class ASTVisitorDetermineExpressionTypes(ASTVisitor):
     def __init__(self, ast, functions):
         ASTVisitor.__init__(self)
@@ -291,8 +305,7 @@ class ASTVisitorDetermineExpressionTypes(ASTVisitor):
                     matches_param_count = True
 
                 for (param_descriptor, passed_param) in zip(params, passed_params):
-                    param_descriptor = param_descriptor.replace('<', '').replace('>', '')
-                    is_text = 'text' in param_descriptor or param_descriptor.endswith('name') or param_descriptor.endswith('path')
+                    param_descriptor, is_text = describe_parameter(param_descriptor)
 
                     if not is_text:
                         # special case: these three functions return an integer or real depending on what param type is given

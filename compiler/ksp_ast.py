@@ -61,6 +61,17 @@ class Emitter:
         self.indent_num -= self.compiled_code_tab_size
 
     def _write_string(self, s):
+        # most strings are a single token without line breaks
+        if '\n' not in s:
+            if s:
+                if self.beginning_of_line and not self.compact:
+                    self.out.write(' ' * self.indent_num)
+
+                self.out.write(s)
+                self.beginning_of_line = False
+
+            return
+
         lines = s.split('\n')
 
         if self.compact:
