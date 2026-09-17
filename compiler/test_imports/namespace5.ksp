@@ -1,0 +1,11 @@
+macro inner(#v#)
+  message(#v#)
+end macro
+
+macro outer(#v#)
+  inner(#v#)
+end macro
+
+macro outer_iterated
+  iterate_macro(inner) := 2 to 3
+end macro
