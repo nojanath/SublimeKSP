@@ -223,10 +223,6 @@ def p_script(p):
     p[2].reverse()
     p[0] = Module(p, blocks = p[2])
 
-def p_script_error(p):
-    'script               : newlines-opt error'
-    raise_parse_exception(p, 'Syntax error!')
-
 def p_toplevels(p):
     'toplevels             : toplevel toplevels'
     p[2].append(p[1])
@@ -341,10 +337,6 @@ def p_if_stmt(p):
     'if-stmt               : IF expression NEWLINE stmts-opt else-if-opt END IF'
     p[0] = IfStmt(p, condition_stmts_tuples = [(p[2], p[4])] + p[5])
 
-def p_if_stmt_error(p):
-    'if-stmt               : IF expression NEWLINE stmts-opt else-if-opt error'
-    raise_parse_exception(p, "Expected 'end if'!")
-
 def p_else_if_opt(p):
     'else-if-opt           : ELSE else-if-condition-opt NEWLINE stmts-opt else-if-opt'
     p[0] = [(p[2], p[4])] + p[5] # [(condition, stmts), ...
@@ -365,10 +357,6 @@ def p_while_stmt(p):
     'while-stmt            : WHILE expression NEWLINE stmts-opt END WHILE'
     p[0] = WhileStmt(p, p[2], p[4])
 
-def p_while_stmt_error(p):
-    'while-stmt            : WHILE expression NEWLINE stmts-opt error'
-    raise_parse_exception(p, "Expected 'end while'!")
-
 def p_for_stmt(p):
     'for-stmt              : FOR varref ASSIGN expression updownto expression NEWLINE stmts-opt END FOR'
     p[0] = ForStmt(p, p[2], p[4], p[6], p[8], downto = p[5])
@@ -376,10 +364,6 @@ def p_for_stmt(p):
 def p_for_stmt_with_step(p):
     'for-stmt              : FOR varref ASSIGN expression updownto expression STEP expression NEWLINE stmts-opt END FOR'
     p[0] = ForStmt(p, p[2], p[4], p[6], p[10], downto = p[5], step = p[8])
-
-def p_for_stmt_error(p):
-    'for-stmt              : FOR varref ASSIGN expression updownto expression NEWLINE stmts-opt error'
-    raise_parse_exception(p, "Expected 'end for'!")
 
 def p_updownto(p):
     '''updownto            : TO
@@ -389,10 +373,6 @@ def p_updownto(p):
 def p_select_stmt(p):
     'select-stmt           : SELECT expression NEWLINE select-cases END SELECT'
     p[0] = SelectStmt(p, p[2], p[4])
-
-def p_select_stmt_error(p):
-    'select-stmt           : SELECT expression NEWLINE select-cases error'
-    raise_parse_exception(p, "Expected 'end select'!")
 
 def p_select_cases(p):
     'select-cases          : select-case select-cases'
@@ -553,10 +533,6 @@ def p_declaration2(p):
 def p_family_declaration(p):
     'family-declaration    : FAMILY ident NEWLINE stmts-opt END FAMILY'
     p[0] = FamilyStmt(p, name = p[2], statements = p[4])
-
-def p_family_declaration_error(p):
-    'family-declaration    : FAMILY ident NEWLINE stmts-opt error'
-    raise_parse_exception(p, "Expected 'end family'!")
 
 def p_global_modifier_opt(p):
     '''global-modifier-opt   : LOCAL
@@ -740,8 +716,33 @@ def p_empty(p):
     'empty                 :'
     p[0] = p[0]
 
+# the 'end ...' line that closes each block, by the token that opens the block
+block_end_lines = {'BEGIN_CALLBACK': 'end on', 'FUNCTION': 'end function', 'TASKFUNC': 'end taskfunc', 'IF': 'end if',
+                   'WHILE': 'end while', 'FOR': 'end for', 'SELECT': 'end select', 'FAMILY': 'end family'}
+
+# tokens that can't continue any block, so a syntax error at one of them means that the innermost open block wasn't closed
+block_breaking_tokens = {'BEGIN_CALLBACK', 'END_CALLBACK', 'FUNCTION', 'TASKFUNC', 'IMPORT'}
+
+def get_missing_block_end_line(p):
+    '''Returns the 'end ...' line of the innermost block that is still open at a syntax error at token p,
+       or None if the error is not at a place where a block should have been closed'''
+    symstack = parser.symstack
+
+    if not (p is None or p.type in block_breaking_tokens or symstack[-1].type == 'END'):
+        return None
+
+    # a completed block is reduced as soon as its end line is read, so the opening tokens left on the stack belong to open blocks
+    for i in range(len(symstack) - 1, 0, -1):
+        if symstack[i].type in block_end_lines and symstack[i - 1].type not in ('ELSE', 'END'):
+            return block_end_lines[symstack[i].type]
+
+    return None
+
 def p_error(p):
     'error                 :'
+    missing_end_line = get_missing_block_end_line(p)
+    expected = "Expected '%s'!" % missing_end_line if missing_end_line else None
+
     if p is None:
         # PLY passes no token when the error is at the end of the script, so point at its last non-blank line instead
         lines = lex.lexer.lines
@@ -750,9 +751,9 @@ def p_error(p):
         end_token.value = ''
         end_token.lineno = next((i for i in range(len(lines) - 1, -1, -1) if lines[i].command.strip()), 0)
         end_token.lexpos = 0
-        raise ParseException(end_token, "Unexpected end of script! Maybe an 'end on', 'end if' or similar line is missing?")
+        raise ParseException(end_token, 'Unexpected end of script!' + (' ' + expected if expected else ''))
 
-    raise_parse_exception(p, 'Syntax error!')
+    raise_parse_exception(p, expected or 'Syntax error!')
 
 # tokens that consist of exactly one character, and whose character cannot start any other token
 single_char_tokens = {',': 'COMMA', ')': 'RPAREN', '[': 'LBRACK', ']': 'RBRACK', '+': 'PLUS', '*': 'TIMES', '&': 'CONCAT'}
