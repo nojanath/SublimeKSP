@@ -73,7 +73,7 @@ class CompileKspCliCommand(sublime_plugin.ApplicationCommand):
             return
 
         if (os.path.splitext(input_file)[1] not in all_exts):
-            utils.log_message('Attempted compilation of an unsupported file type! Make sure the extension is .ksp, .txt or .log and that syntax is set to KSP!')
+            utils.log_message('Attempted compilation of an unsupported file type! Make sure the extension is .ksp, .txt or .log and that syntax is set to KSP.')
             return
 
         try:

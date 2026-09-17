@@ -343,10 +343,10 @@ class ASTVisitorDetermineExpressionTypes(ASTVisitor):
             if matches_param_count == False:
                 if len(ksp_builtins.function_signatures[function_name]) > 1:
                     raise ParseException(node,                                                                                                     \
-                        'Wrong number of parameters for %s()! This function has multiple overloads, neither of which expect %d parameter%s given!' \
-                        % (function_name, len(passed_params), 's that were' if len(passed_params) > 1 else ' that was' ))
+                        'Wrong number of parameters for %s() - none of its overloads expect %d parameter%s!' \
+                        % (function_name, len(passed_params), 's' if len(passed_params) != 1 else ''))
                 else:
-                    raise ParseException(node, 'Wrong number of parameters for %s(): expected %d, got %d!' % (function_name, len(params), len(passed_params)))
+                    raise ParseException(node, 'Wrong number of parameters for %s() - expected %d, got %d!' % (function_name, len(params), len(passed_params)))
 
         return False
 

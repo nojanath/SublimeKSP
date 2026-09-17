@@ -1562,7 +1562,7 @@ class UIPropertyFunctions(unittest.TestCase):
                 set_knob_properties(knob, "a", 5, 6)
             end on'''
 
-        self.assertRaisesRegex(ParseException, 'Too many arguments! Maximum is 2, got 3', do_compile, code)
+        self.assertRaisesRegex(ParseException, 'Too many arguments - maximum is 2, got 3!', do_compile, code)
 
     def testUIPropertyFunctionWithoutProperties(self):
         code = '''
@@ -2647,7 +2647,7 @@ on note
 
 '''
 
-        self.assertRaisesRegex(ParseException, r"Unexpected end of script! Expected 'end if'!(.|\n)*line 8\b", do_compile, code)
+        self.assertRaisesRegex(ParseException, r"Unexpected end of script - expected 'end if'!(.|\n)*line 8\b", do_compile, code)
 
 class MissingBlockEndErrors(unittest.TestCase):
     def testMissingEndIfBeforeEndOn(self):

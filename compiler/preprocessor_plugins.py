@@ -129,7 +129,7 @@ def tryStringEval(expression, line, name):
         final = stringEvaluator.eval(str(expression).strip())
     except:
         raise ParseException(line,
-            "Invalid syntax in %s value! This number must able to be evaluated to a single number at compile time. Please use only define constants, numbers or math operations here!\n" % name)
+            "Invalid syntax in %s value! This number must be able to be evaluated to a single number at compile time, so please use only define constants, numbers or math operations here.\n" % name)
 
     return (final)
 
@@ -412,7 +412,7 @@ def handleIncrementer(lines):
                 lines[i].command = ""
                 iterObjs.append(Incrementer(mm.group(1), tryStringEval(mm.group(4), lines[i], "start"), tryStringEval(mm.group(5), lines[i], "step"), lines[i]))
             else:
-                raise ParseException(lines[i], "Incorrect parameters for START_INC! Expected: START_INC(<name>, <start-num>, <step-num>)\n")
+                raise ParseException(lines[i], "Incorrect parameters for START_INC - expected START_INC(<name>, <start-num>, <step-num>)!\n")
         # If any incremeter has ended, pop the last object off the array.
         elif line == "END_INC":
             found_end = True
@@ -671,7 +671,7 @@ class UIPropertyFunction:
         self.args  = args[1:]
 
         if len(self.args) > len(functionType.args):
-            raise ParseException(line, "Too many arguments! Maximum is %d, got %d.\n" % (len(functionType.args), len(self.args)))
+            raise ParseException(line, "Too many arguments - maximum is %d, got %d!\n" % (len(functionType.args), len(self.args)))
         elif len(self.args) == 0:
             raise ParseException(line, "Function requires at least 2 arguments!\n")
 
@@ -1625,7 +1625,7 @@ class DefineConstant(object):
                         foundArgs = utils.split_args(argsString, lineObj)
 
                         if len(foundArgs) != len(self.args):
-                            raise ParseException(lineObj, "Incorrect number of arguments in define macro: %s! Expected %d, got %d.\n" % (foundString, len(self.args), len(foundArgs)))
+                            raise ParseException(lineObj, "Incorrect number of arguments in define macro %s - expected %d, got %d!\n" % (foundString, len(self.args), len(foundArgs)))
 
                     # Build the new value using the given args
                     newVal = self.value

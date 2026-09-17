@@ -319,4 +319,4 @@ class LineNumberLRParser(LRParser):
 
                 continue
 
-            raise RuntimeError('yacc: internal parser error!!!\n')
+            raise RuntimeError('yacc: internal parser error!\n')
