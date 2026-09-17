@@ -737,6 +737,16 @@ def p_empty(p):
 
 def p_error(p):
     'error                 :'
+    if p is None:
+        # PLY passes no token when the error is at the end of the script, so point at its last non-blank line instead
+        lines = lex.lexer.lines
+        end_token = lex.LexToken()
+        end_token.type = '$end'
+        end_token.value = ''
+        end_token.lineno = next((i for i in range(len(lines) - 1, -1, -1) if lines[i].command.strip()), 0)
+        end_token.lexpos = 0
+        raise ParseException(end_token, "Unexpected end of script! Maybe an 'end on', 'end if' or similar line is missing?")
+
     raise_parse_exception(p, 'Syntax error!')
 
 # tokens that consist of exactly one character, and whose character cannot start any other token

@@ -124,6 +124,8 @@ class ParseException(SyntaxError):
         if msg is None:
             msg = 'Syntax Error'
 
+        self.node = None
+
         if node:
             lineno = node.lineno
 
