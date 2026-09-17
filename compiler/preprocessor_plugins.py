@@ -1654,36 +1654,47 @@ class DefineSubstitutionIndex(object):
 
         self.firstNamePartLengths = sorted(set(len(part) for part in self.byFirstNamePart))
 
-    def substitute(self, lines, defineConstants):
-        for line in lines:
-            command = line.command
-            candidates = set(self.alwaysTried)
+        # matches wherever a word starts with any of the names or first name parts, so a text without a match has no candidates
+        self.anyNameRe = None
+        names = list(self.byName) + list(self.byFirstNamePart)
 
-            for token in set(wordRe.findall(command)):
-                candidates.update(self.byName.get(token, ()))
+        if names and not self.alwaysTried:
+            self.anyNameRe = re.compile(r"\b(?:%s)" % "|".join(re.escape(name) for name in names))
 
-                for length in self.firstNamePartLengths:
-                    if length > len(token):
-                        break
+    def substituteText(self, text, defineConstants, line = None):
+        ''' Returns the text with all define constants substituted, as if substituteValue was called for each of them in order. '''
+        if self.anyNameRe is not None and not self.anyNameRe.search(text):
+            return text
 
-                    candidates.update(self.byFirstNamePart.get(token[:length], ()))
+        candidates = set(self.alwaysTried)
 
-            # try the candidates in the order of the define constants
-            for i in sorted(candidates):
-                newCommand = self.defines[i].substituteValue(command, defineConstants, line)
+        for token in set(wordRe.findall(text)):
+            candidates.update(self.byName.get(token, ()))
 
-                if newCommand != command:
-                    # the substituted value can contain any of the following define constants, so try all of them
-                    for dc in self.defines[i + 1:]:
-                        newCommand = dc.substituteValue(newCommand, defineConstants, line)
-
-                    command = newCommand
+            for length in self.firstNamePartLengths:
+                if length > len(token):
                     break
 
-            line.command = command
+                candidates.update(self.byFirstNamePart.get(token[:length], ()))
 
-def substituteDefineConstants(lines, defineConstants):
-    ''' Replaces all occurences of the define constants in the given lines, trying them in order. '''
+        # try the candidates in the order of the define constants
+        for i in sorted(candidates):
+            newText = self.defines[i].substituteValue(text, defineConstants, line)
+
+            if newText != text:
+                # the substituted value can contain any of the following define constants, so try all of them
+                for dc in self.defines[i + 1:]:
+                    newText = dc.substituteValue(newText, defineConstants, line)
+
+                return newText
+
+        return text
+
+    def substitute(self, lines, defineConstants):
+        for line in lines:
+            line.command = self.substituteText(line.command, defineConstants, line)
+
+def getDefineSubstitutionIndex(defineConstants):
     index = getattr(defineConstants, "substitutionIndex", None)
 
     if index is None or len(index.defines) != len(defineConstants):
@@ -1692,7 +1703,11 @@ def substituteDefineConstants(lines, defineConstants):
         if isinstance(defineConstants, DefineConstantList):
             defineConstants.substitutionIndex = index
 
-    index.substitute(lines, defineConstants)
+    return index
+
+def substituteDefineConstants(lines, defineConstants):
+    ''' Replaces all occurences of the define constants in the given lines, trying them in order. '''
+    getDefineSubstitutionIndex(defineConstants).substitute(lines, defineConstants)
 
 def handleDefineConstants(lines, define_cache = None):
     defineRe = r"^define\s+%s\s*(?:\((?P<args>.+)\))?\s*:=(?P<val>.+)$" % variableNameRe
@@ -1769,11 +1784,11 @@ def handleDefineConstants(lines, define_cache = None):
         if defineConstants:
             # Replace all occurences where other defines are used in define values - do it a few times to catch some deeper nested defines.
             if define_cache is None:
+                index = getDefineSubstitutionIndex(defineConstants)
+
                 for n in range(0, 3):
                     for dc_i in defineConstants:
-                        for dc_j in defineConstants:
-                            dc_i.setValue(dc_j.substituteValue(dc_i.getValue(), defineConstants))
-
+                        dc_i.setValue(index.substituteText(dc_i.getValue(), defineConstants))
                         dc_i.evaluateValue()
 
             substituteDefineConstants(newLines, defineConstants)
