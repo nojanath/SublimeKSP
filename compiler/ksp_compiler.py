@@ -575,7 +575,8 @@ def convert_strings_to_placeholders(lines):
     # substitute strings with placeholders
     if hasattr(lines, '__iter__'):
         for l in lines:
-            l.command = string_re.sub(replace_func, l.command)
+            if '"' in l.command or "'" in l.command:
+                l.command = string_re.sub(replace_func, l.command)
     else:
         lines.command = string_re.sub(replace_func, lines.command)
 
@@ -801,19 +802,24 @@ def sub_defines(lines, cur_line, define_cache):
     convert_strings_to_placeholders(lines)
     substituteDefines(lines, define_cache)
 
-    while macro_iter_functions(lines, placeholders):
-        convert_strings_to_placeholders(lines)
-        substituteDefines(lines, define_cache)
+    # iterate_macro, literate_macro and their post_macro variants only change lines if one of them is used
+    if any('terate_' in l.command for l in lines):
+        while macro_iter_functions(lines, placeholders):
+            convert_strings_to_placeholders(lines)
+            substituteDefines(lines, define_cache)
 
-    while post_macro_iter_functions(lines, placeholders):
-        convert_strings_to_placeholders(lines)
-        substituteDefines(lines, define_cache)
+        while post_macro_iter_functions(lines, placeholders):
+            convert_strings_to_placeholders(lines)
+            substituteDefines(lines, define_cache)
 
+    if not cur_line.calling_lines:
+        calling_lines = [cur_line]
+    else:
+        calling_lines = cur_line.calling_lines + [cur_line]
+
+    # the list is shared by all lines, as it is never modified
     for c in lines:
-        if not cur_line.calling_lines:
-            c.calling_lines = [cur_line]
-        else:
-            c.calling_lines = cur_line.calling_lines + [cur_line]
+        c.calling_lines = calling_lines
 
 def expand_macros(lines, macros, level = 0, replace_raw = True, define_cache = None, lines_to_scan = None):
     '''Inline macro invocations by the body of the macro definition (with parameters properly replaced)
