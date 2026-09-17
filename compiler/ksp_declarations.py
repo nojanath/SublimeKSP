@@ -54,6 +54,14 @@ import_re = re.compile(r'''
 
 ignore_re = re.compile(r'^[ \t]*__IGNORE__', re.MULTILINE)
 
+# text before the cursor while typing the name (or modifiers) of a declared variable, but not yet its size or arguments
+declared_name_re = re.compile(r'^\s*declare\b(?!.*:=)[^\[(]*$')
+
+def is_typing_declared_name(line):
+    '''Returns True if line (the text before the cursor) ends in the part of a declare statement where a new name is written,
+       so completions shouldn't be offered there'''
+    return bool(declared_name_re.match(line))
+
 def strip_comments(source):
     '''Removes comments (keeping line breaks, strings and everything else) and joins continued lines'''
     def replace(m):

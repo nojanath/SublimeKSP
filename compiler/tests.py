@@ -5116,6 +5116,14 @@ class DeclarationCompletions(unittest.TestCase):
             decls = scanner.scan(core_source, os.path.dirname(importer), core, guess_paths = False)
             self.assertEqual([(d.name, d.filename) for d in decls], [('page_function', 'page.ksp')])
 
+    def testNoCompletionsForDeclaredNames(self):
+        for line in ['declare ', 'declare arr', '\tdeclare polyphonic $x', '    declare ui_knob Fo']:
+            self.assertTrue(ksp_declarations.is_typing_declared_name(line), line)
+
+        for line in ['declare arr[', 'declare arr[NUM_', 'declare ui_knob Foo (0, ', 'declare x := ',
+                     'declare arr[5] := (1, ', 'message(declare', 'declared_count := ']:
+            self.assertFalse(ksp_declarations.is_typing_declared_name(line), line)
+
     def testImportsNeedBasepath(self):
         scanner = ksp_declarations.DeclarationScanner()
         self.assertEqual(scanner.scan('import "test_imports/namespace2.ksp"', None), [])
