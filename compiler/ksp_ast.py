@@ -196,23 +196,26 @@ class ASTNode:
     '''The very base node comprised in all AST objects'''
 
     def __init__(self, lexinfo):
-        self.lexinfo = None
-        self.env = None
+        # lexinfo is either an existing lexinfo tuple or the parser production (checking its type avoids the costlier truth test)
+        if type(lexinfo) is tuple:
+            if not lexinfo:
+                raise Exception('Missing lexinfo!')
 
-        if lexinfo:
-            if type(lexinfo) is tuple:
-                self.lexinfo = lexinfo
+            self.lexinfo = lexinfo
+        elif lexinfo is not None:
+            lineno = lexinfo.lineno(1)
+            line = lexinfo.lexer.lines[lineno]
+            line_filename = line.locations[0][0]
+
+            if line_filename is None:
+                # the penultimate element is a list of function nodes related to inlining of functions
+                self.lexinfo = (lexinfo.lexer.filename, lineno, [], None)
             else:
-                line_filename = lexinfo.lexer.lines[lexinfo.lineno(1)].locations[0][0]
-                line_namespaces = lexinfo.lexer.lines[lexinfo.lineno(1)].namespaces # Add namespaces as lexinfo
-
-                if line_filename is None:
-                    # the penultimate element is a list of function nodes related to inlining of functions
-                    self.lexinfo = (lexinfo.lexer.filename, lexinfo.lineno(1), [], None)
-                else:
-                    self.lexinfo = (line_filename, lexinfo.lineno(1), [], line_namespaces)
+                self.lexinfo = (line_filename, lineno, [], line.namespaces) # Add namespaces as lexinfo
         else:
             raise Exception('Missing lexinfo!')
+
+        self.env = None
 
     @property
     def lineno(self):
@@ -744,9 +747,6 @@ class SelectStmt(CompoundStmt):
 
 class Expr(ASTNode):
     '''Parent node for: BinOp, UnaryOp, Integer, Real, String, Boolean, ID, VarRef, RawArrayInitializer'''
-
-    def __init__(self, lexinfo):
-        ASTNode.__init__(self, lexinfo)
 
 class BinOp(Expr):
     '''Node for binary operators e.g 4 < 5'''
