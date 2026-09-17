@@ -3061,7 +3061,8 @@ class FunctionResultAliasing(unittest.TestCase):
         output = do_compile(code)
         self.assertIn('declare $_clamp_result', output)
         self.assertEqual(self.callbackBody(output, 'on note'),
-                         ['$_clamp_result := $x+1',
+                         ['$_clamp_result := $x',
+                          '$_clamp_result := $x+1',
                           'if ($x+1<0)',
                           '$_clamp_result := 0',
                           'else',
@@ -3090,7 +3091,8 @@ class FunctionResultAliasing(unittest.TestCase):
 
         output = do_compile(code)
         self.assertEqual(self.callbackBody(output, 'on note'),
-                         ['$_over_limit_result := 0',
+                         ['$_over_limit_result := $x',
+                          '$_over_limit_result := 0',
                           'if ($x>5)',
                           '$_over_limit_result := 1',
                           'end if',
@@ -3200,7 +3202,7 @@ class FunctionResultAliasing(unittest.TestCase):
 
         output = do_compile(code)
         body = self.callbackBody(output, 'on init')
-        self.assertLess(body.index('declare $_clamp_result'), body.index('$_clamp_result := $x+1'))
+        self.assertLess(body.index('declare $_clamp_result'), body.index('$_clamp_result := $x'))
         self.assertEqual(body[-1], '$x := $_clamp_result')
 
     def testNestedInlining(self):
@@ -3219,7 +3221,7 @@ class FunctionResultAliasing(unittest.TestCase):
 
         output = do_compile(code)
         body = self.callbackBody(output, 'on note')
-        self.assertEqual(body[0], '$_bump_result := $x+1')
+        self.assertEqual(body[:2], ['$_bump_result := $x', '$_bump_result := $x+1'])
         self.assertEqual(body[-1], '$x := $_bump_result')
 
     def testUniqueTemporaryVariableName(self):
@@ -3258,6 +3260,95 @@ class FunctionResultAliasing(unittest.TestCase):
         self.assertEqual(self.callbackBody(output, 'on init')[-2:],
                          ['%arr[$y+1] := $y',
                           '%arr[$y+1] := %arr[$y+1]*2'])
+
+    def testUnassignedResultKeepsTargetValue(self):
+        code = '''
+            function find(value) -> result
+                i := 0
+                while i < 4
+                    if arr[i] = value
+                        result := i
+                    end if
+                    inc(i)
+                end while
+            end function
+
+            on init
+                declare arr[4]
+                declare i
+                declare x
+            end on
+
+            on note
+                x := find(x + 1)
+            end on'''
+
+        body = self.callbackBody(do_compile(code), 'on note')
+        self.assertEqual(body[0], '$_find_result := $x')
+        self.assertEqual(body[-1], '$x := $_find_result')
+
+    def testDifferentElementsOfSameArray(self):
+        code = self.CLAMP + '''
+            on init
+                declare arr[4]
+                declare i
+                family field
+                    declare const FIRST := 1
+                    declare const SECOND := field.FIRST + 1
+                end family
+            end on
+
+            on note
+                arr[i + 1] := clamp(arr[i], 0, 100)
+                arr[0] := clamp(arr[1], 0, 100)
+                arr[2 * i] := clamp(arr[2 * i + 1], 0, 100)
+                arr[4 * i + field.FIRST] := clamp(arr[4 * i + field.SECOND], 0, 100)
+            end on'''
+
+        output = do_compile(code)
+        self.assertNotIn('_clamp_result', output)
+        self.assertIn('%arr[4*$i+$field__FIRST] := %arr[4*$i+$field__SECOND]', output)
+        self.assertIn('%arr[$i+1] := %arr[$i]', output)
+        self.assertIn('%arr[0] := %arr[1]', output)
+        self.assertIn('%arr[2*$i] := %arr[2*$i+1]', output)
+
+    def testPossiblySameElementOfArray(self):
+        code = self.CLAMP + '''
+            on init
+                declare arr[4]
+                declare i
+                declare j
+            end on
+
+            on note
+                arr[i] := clamp(arr[j], 0, 100)
+            end on'''
+
+        body = self.callbackBody(do_compile(code), 'on note')
+        self.assertEqual(body[0], '$_clamp_result := %arr[$i]')
+        self.assertEqual(body[-1], '%arr[$i] := $_clamp_result')
+
+    def testTargetSubscriptChangedInFunctionBody(self):
+        code = '''
+            function shift(value) -> result
+                result := 0
+                inc(i)
+                if value > 0
+                    result := 1
+                end if
+            end function
+
+            on init
+                declare arr[4]
+                declare i
+            end on
+
+            on note
+                arr[i] := shift(arr[i - 1])
+            end on'''
+
+        body = self.callbackBody(do_compile(code), 'on note')
+        self.assertEqual(body[-1], '%arr[$i] := $_shift_result')
 
     def testNoTemporaryVariableWithoutAliasing(self):
         code = self.CLAMP + '''
