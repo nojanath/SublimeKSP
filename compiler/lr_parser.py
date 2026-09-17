@@ -22,6 +22,7 @@ It differs from ply.yacc.LRParser.parseopt with tracking enabled in two ways:
 import sys
 
 from ply.yacc import LRParser, YaccSymbol, YaccProduction, call_errorfunc, error_count
+from ksp_ast import ParseException
 
 PASS_FIRST = 1
 PASS_SECOND = 2
@@ -191,6 +192,8 @@ class LineNumberLRParser(LRParser):
                             symstack.append(sym)
                             state = goto[statestack[-1]][pname]
                             statestack.append(state)
+                        except ParseException:
+                            raise
                         except SyntaxError:
                             lookaheadstack.append(lookahead)
                             symstack.extend(targ[1:-1])
@@ -222,6 +225,8 @@ class LineNumberLRParser(LRParser):
                             symstack.append(sym)
                             state = goto[statestack[-1]][pname]
                             statestack.append(state)
+                        except ParseException:
+                            raise
                         except SyntaxError:
                             lookaheadstack.append(lookahead)
                             statestack.pop()
