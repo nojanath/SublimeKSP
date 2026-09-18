@@ -735,6 +735,41 @@ def handleUIFunctions(lines):
 
 #=================================================================================================
 
+def blankOutNestedExpressions(value):
+    ''' Blank out everything inside parentheses and brackets, leaving only the top level of the expression.
+        What is nested inside a function call or a subscript says nothing about the type of the expression
+        as a whole, e.g. lookup("pre_" & $i) is an integer despite the string concatenation inside it. '''
+    result = []
+    depth = 0
+
+    for char in value:
+        if char in "([":
+            depth += 1
+        elif char in ")]":
+            depth -= 1
+        elif depth == 0:
+            result.append(char)
+
+    return "".join(result)
+
+def inferPrefixFromValue(value):
+    ''' Guess the type prefix of a scalar declaration from the text of its initial value, so that the prefix
+        can be left out the way it can be for arrays. Strings have already been replaced by placeholders by
+        the time this runs, so neither & nor . can turn up inside string contents here.
+        Returns an empty string when the type cannot be told from the text alone. '''
+    topLevel = blankOutNestedExpressions(value)
+
+    # & is only ever concatenation in KSP (bitwise AND is spelled .and.), and a concatenation at the top level
+    # always yields a string, whatever the types of its operands are
+    if "&" in topLevel or re.match(r"^%s$" % stringOrPlaceholderRe, value):
+        return "@"
+
+    # a real literal or a reference to a real variable (~ is only ever a variable prefix, .not. is bitwise NOT)
+    if re.search(r"~|(?<![\w.])(?:\d+\.\d+|\.\d+|\d+\.)", topLevel):
+        return "~"
+
+    return ""
+
 def handleSameLineDeclaration(lines):
     ''' When a variable is declared and initialised on the same line, check to see if the value needs to be
         moved over to the next line. '''
@@ -751,7 +786,7 @@ def handleSameLineDeclaration(lines):
 
             if m and not re.search(r"\b%s\s*\(" % concatSyntax, line):
                 valueIsConstantInteger = False
-                value = line[line.find(":=") + 2 :]
+                value = line[line.find(":=") + 2 :].strip()
 
                 if not re.search(stringOrPlaceholderRe, line):
                     try:
@@ -764,6 +799,14 @@ def handleSameLineDeclaration(lines):
                 if not valueIsConstantInteger:
                     preAssignmentText = line[: line.find(":=")]
                     variableName = m.group("name")
+
+                    # the declaration is about to lose its initial value, so if no prefix was given, infer one
+                    # from the value here, while it is still around to look at
+                    if not m.group("prefix"):
+                        inferredPrefix = inferPrefixFromValue(value)
+
+                        if inferredPrefix:
+                            preAssignmentText = preAssignmentText[: m.start("name")] + inferredPrefix + preAssignmentText[m.start("name") :]
 
                     if famCount != 0:
                         variableName = familyState.prefix(lineIdx) + variableName

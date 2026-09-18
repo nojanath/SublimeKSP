@@ -1429,18 +1429,23 @@ class ASTModifierNodesToNativeKSP(ASTModifierBase):
                         node.variable.prefix = '%'
 
             else:
-                if 'const' not in node.modifiers:
+                try:
                     expr_eval = comp_extras.evaluate_expression(node.initial_value)
+                except:
+                    # constants can refer to other constants, which aren't known yet at this stage
+                    expr_eval = None
 
-                    # this won't work because of handleSameLineDeclaration() in the preprocessor, alas
-                    #if isinstance(expr_eval, str):
-                    #   node.variable.prefix = '@'
-                    if isinstance(expr_eval, Decimal):
-                        node.variable.prefix = '~'
-                    else:
-                        node.variable.prefix = '$'
+                # scalar strings never get this far unless they are constant, since handleSameLineDeclaration()
+                # in the preprocessor splits any other string declaration up and infers the prefix itself
+                if isinstance(expr_eval, str):
+                    node.variable.prefix = '@'
+                elif isinstance(expr_eval, Decimal):
+                    node.variable.prefix = '~'
                 else:
                     node.variable.prefix = '$'
+
+        if 'const' in node.modifiers and node.variable.prefix == '@':
+            raise ksp_ast.ParseException(node, 'Constants cannot be strings, unsupported by Kontakt!')
 
         # is this declaration made inside of a function?
         if kwargs['parent_function']:

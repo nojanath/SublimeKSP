@@ -1026,6 +1026,176 @@ class VariableDeclarationCheck(unittest.TestCase):
         output = do_compile(code, remove_preprocessor_vars = True)
         assert_equal(self, output, expected_output)
 
+class InferredVariablePrefixes(unittest.TestCase):
+    def testInferredStringDeclaration(self):
+        code = '''
+            on init
+                declare s := "test"
+            end on
+            '''
+
+        output = do_compile(code)
+        self.assertTrue('declare @s' in output)
+        self.assertTrue('@s := "test"' in output)
+
+    def testInferredStringConcatDeclaration(self):
+        code = '''
+            on init
+                declare $x := 1
+                declare s := "value: " & $x
+            end on
+            '''
+
+        output = do_compile(code)
+        self.assertTrue('declare @s' in output)
+        self.assertTrue('@s := "value: " & $x' in output)
+
+    def testInferredStringConcatWithLeadingVariable(self):
+        code = '''
+            on init
+                declare $x := 1
+                declare s := $x & " dB"
+            end on
+            '''
+
+        output = do_compile(code)
+        self.assertTrue('declare @s' in output)
+        self.assertTrue('@s := $x & " dB"' in output)
+
+    def testConcatNestedInCallDoesNotInferString(self):
+        # only the top level of the expression says anything about its type: the call returns
+        # an integer, however much string concatenation goes on inside its arguments
+        code = '''
+            function lookup(n) -> result
+                result := 1
+            end function
+
+            on init
+                declare $i := 0
+                declare x := lookup("pre_" & $i)
+            end on
+            '''
+
+        output = do_compile(code)
+        self.assertTrue('declare $x' in output)
+
+    def testRealNestedInCallDoesNotInferReal(self):
+        code = '''
+            function truncate(r) -> result
+                result := 1
+            end function
+
+            on init
+                declare x := truncate(2.5)
+            end on
+            '''
+
+        output = do_compile(code)
+        self.assertTrue('declare $x' in output)
+
+    def testInferredPersistentStringDeclaration(self):
+        code = '''
+            on init
+                declare pers s := "test"
+            end on
+            '''
+
+        output = do_compile(code)
+        self.assertTrue('declare @s' in output)
+        self.assertTrue('make_persistent(@s)' in output)
+
+    def testInferredStringDeclarationInFamily(self):
+        code = '''
+            on init
+                family f
+                    declare s := "test"
+                end family
+            end on
+            '''
+
+        output = do_compile(code)
+        self.assertTrue('declare @f__s' in output)
+        self.assertTrue('@f__s := "test"' in output)
+
+    def testInferredStringDeclarationInFunction(self):
+        code = '''
+            function f
+                declare s := "test"
+                message(s)
+            end function
+
+            on init
+                f
+            end on
+            '''
+
+        output = do_compile(code)
+        self.assertTrue('declare @_s' in output)
+        self.assertTrue('@_s := "test"' in output)
+
+    def testInferredRealDeclarationFromPrefixedConstant(self):
+        code = '''
+            on init
+                declare const ~PI := 3.14
+                declare r := ~PI * 2.0
+            end on
+            '''
+
+        output = do_compile(code)
+        self.assertTrue('declare ~r' in output)
+
+    def testInferredRealDeclarationFromRealLiteral(self):
+        code = '''
+            on init
+                declare const ~PI := 3.14
+                declare r := PI * 2.0
+            end on
+            '''
+
+        output = do_compile(code)
+        self.assertTrue('declare ~r' in output)
+
+    def testInferredRealConstantDeclaration(self):
+        code = '''
+            on init
+                declare const r := 1.5
+                message(r)
+            end on
+            '''
+
+        output = do_compile(code)
+        self.assertTrue('declare const ~r := 1.5' in output)
+
+    def testInferredIntDeclarationStillInt(self):
+        code = '''
+            on init
+                declare $y := 2
+                declare x := $y * 2
+            end on
+            '''
+
+        output = do_compile(code)
+        self.assertTrue('declare $x' in output)
+        self.assertTrue('$x := $y*2' in output)
+
+    def testStringConstantRaisesError(self):
+        code = '''
+            on init
+                declare const foo := "FOO"
+            end on
+            '''
+
+        self.assertRaises(ParseException, do_compile, code)
+
+    def testExplicitStringConstantRaisesError(self):
+        code = '''
+            on init
+                declare const @foo := "FOO"
+            end on
+            '''
+
+        self.assertRaises(ParseException, do_compile, code)
+
 class LocalVariableCheck(unittest.TestCase):
     def testLocalVariableDeclaration(self):
         # make sure that each local variable is separate from other with the same name in other functions
@@ -1836,9 +2006,11 @@ class HexNumberCheck(unittest.TestCase):
 
 class TypeChecks(unittest.TestCase):
     def testAssignStringToIntVar1(self):
+        # note that the prefix has to be explicit here, since without one the declaration
+        # would have its type inferred from the string and become a string variable
         code = '''
             on init
-                declare x := 'test'
+                declare $x := 'test'
             end on'''
 
         self.assertRaises(ParseException, do_compile, code, extra_syntax_checks=True)
