@@ -75,5 +75,73 @@
                 "operand": false
             }
         ]
+    },
+    {
+        "keys": ["keypad_enter"],
+        "command": "ksp_on_enter",
+        "context":
+        [
+            {
+                "key": "selector",
+                "operator": "equal",
+                "operand": "source.sksp"
+            },
+            {
+                "key": "auto_complete_visible",
+                "operator": "equal",
+                "operand": false
+            }
+        ]
+    },
+    {
+        "keys": ["tab"],
+        "command": "next_field",
+        "context":
+        [
+            {
+                "key": "selector",
+                "operator": "equal",
+                "operand": "source.sksp"
+            },
+            {
+                "key": "has_next_field",
+                "operator": "equal",
+                "operand": true
+            }
+        ]
+    },
+    {
+        "keys": ["enter"],
+        "command": "commit_completion",
+        "context":
+        [
+            {
+                "key": "selector",
+                "operator": "equal",
+                "operand": "source.sksp"
+            },
+            {
+                "key": "auto_complete_visible",
+                "operator": "equal",
+                "operand": true
+            }
+        ]
+    },
+    {
+        "keys": ["keypad_enter"],
+        "command": "commit_completion",
+        "context":
+        [
+            {
+                "key": "selector",
+                "operator": "equal",
+                "operand": "source.sksp"
+            },
+            {
+                "key": "auto_complete_visible",
+                "operator": "equal",
+                "operand": true
+            }
+        ]
     }
 ]
