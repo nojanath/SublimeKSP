@@ -1,0 +1,149 @@
+Version 1.27.0
+---------------------------------------------------
+
+This is a big one! Long-standing feature requests, much faster compilation, far more helpful error messages, and a pile of old bugs squashed - many of them reported years ago.
+
+
+## Highlights
+
+- Variables can be declared in any callback, and multidimensional arrays work outside of `on init`
+- Multi-line functions with a return value can be used anywhere in an expression
+- The `@` and `~` prefixes can be left out when a scalar is initialized on its declaration line
+- Much faster compilation, especially for large macro- and define-heavy scripts
+- Syntax errors name the missing `end` line, and many compiler crashes are now proper error messages
+- User functions, taskfuncs and macros show up with their arguments ready to tab through in completions list
+- Old bugs fixed: comment markers inside strings (#46), wrong values from inlined functions (#556), broken TCM stack after `exit` in taskfuncs (#296), and more
+
+
+## New Language Features
+
+- ADDED Variables can now be declared in any callback, not just in functions (issue #56). Just like in functions, they are local by default and get moved to `on init`. Use `declare global` to keep the name unprefixed. Declaring UI controls outside of `on init` is still an error.
+
+- ADDED Multidimensional arrays can now be declared outside of `on init`: in functions called from `on init` (like `on_init_*` style functions), and as local arrays in functions and callbacks (issue #90). Their `.SIZE_D1`, `.SIZE_D2`... constants work there too.
+
+- ADDED Multidimensional arrays can now be accessed with a variable prefix, e.g. `%foo[1, 1]`, `?curve[0, 64]` or `!fam.names[1, 0]` (issue #373). Using the wrong prefix is reported as an error.
+
+- ADDED A function whose body is more than a single `result := ...` line can now be used anywhere in an expression, not just alone on the right hand side of an assignment (issue #397). Such a function is inlined into a temporary variable before the statement that uses it. The right operand of `and` and `or` is still only evaluated when it is needed, `while` conditions are evaluated again at the end of the loop body, and `else if` conditions are evaluated inside the `else` part.
+
+- ADDED The same file can now be imported several times under different namespaces, and each import gets its own copy of the variables, functions and callbacks:
+
+- ADDED The variable type prefix can now be left out when a scalar string or real is initialized on its declaration line, the way it already could be for arrays. A string value makes it `@`, a real value makes it `~`. Only the top level of the value is looked at: `&` is always concatenation and so always produces a string, while a real literal or a `~` reference means the value is real. Anything nested inside a function call or a subscript is ignored, so `declare x := lookup("pre_" & $i)` is still an integer. The prefix is still needed whenever the type cannot be told from the value alone.
+
+
+## Editor
+
+- ADDED Your own functions, taskfuncs and macros now show up as snippet completions, with their arguments ready to tab through, just like built-in functions (issue #391). Declarations are picked up from the current file and from everything it imports, with import namespaces applied.
+
+- IMPROVED Completions are now offered inside the brackets and parentheses of `declare` statements (array sizes, UI control arguments). Before, they were suppressed on the whole line. Tab-indented `declare` lines are recognized properly too.
+
+- IMPROVED <kbd>Tab</kbd> now always moves to the next field of a snippet, even when the completion panel is open. Before, the panel took <kbd>Tab</kbd> over and inlined the completion instead, which was easy to run into while typing the arguments of a `declare ui_*` snippet. <kbd>Enter</kbd> commits the completion in its place, and both work with the numeric keypad's <kbd>Enter</kbd> as well.
+
+- FIXED Syntax highlighting now ends strings exactly the way Kontakt does (issue #548). Kontakt treats a quote with a backslash before it as escaped, no matter how many backslashes come first, so `"C:\\"` is *not* a closed string, while `"C:\\""` is. Escaped quotes and `<` inside f-strings no longer break their highlighting either.
+
+
+## Compilation Speed
+
+- IMPROVED Compilation is significantly faster, with large, macro- and define-heavy scripts benefiting the most. The work went into define and macro expansion, the lexer and parser, copying function bodies for inlining, the preprocessor passes, and how often Python collects garbage while compiling. Compiled code is unchanged by these optimizations.
+
+
+## Error Messages
+
+- IMPROVED A missing `end` line is now reported by name, e.g. `Expected 'end if'!`, instead of a plain "Syntax error!".
+
+- FIXED A script that ends in the middle of a block (e.g. without its final `end on`) crashed the compiler with a Python `AttributeError`. It now reports `Unexpected end of script - expected 'end on'!` at the last line of the script.
+
+- FIXED Invalid hexadecimal numbers such as `0x1G` or `0FGh` crashed the compiler with a Python `ValueError`. They are now reported as `Invalid hexadecimal number 0x1G!`. Identifiers that just start with a digit, like `16th`, are not affected.
+
+- FIXED Declaring a constant array (`declare const arr[2] := (1, 2)`), or an array of a struct that has a constant member, crashed the compiler. It now reports `A constant can have only one value assigned, it cannot be an array!`
+
+- FIXED "Empty argument in function call" and "Unmatched parenthesis in function call" errors crashed with a Python `TypeError`, without a file or line number. They are now shown properly.
+
+- FIXED Errors raised before parsing showed placeholders like `{0}` where the script had a string. The actual strings are now shown.
+
+- FIXED Line numbers of errors in imported files were one line too high, so jumping to the error landed on the wrong line. Errors about `import_nckp()` also pointed at a line that didn't exist, without the file name. Both now point at the right file and line.
+
+
+## Fixes
+
+### Imports and Namespaces
+
+- FIXED With "Combine Duplicate Callbacks" enabled, `on ui_control` callbacks from files imported with `as` weren't combined with the matching callbacks from the main script (issue #349).
+
+- FIXED Importing the same file a second time under a different namespace was silently skipped, so the second namespace's variables were never declared. (A file that imports itself is still only imported once.)
+
+- FIXED A macro calling another macro from the same file, when that file was imported with `as`, failed with `ns.inner has not been declared!`. The same happened when a macro in the main script called an imported macro, and for `iterate_macro()` over an imported macro.
+
+- FIXED Features that declare their own helper variables, like `concat()` or lists, failed with e.g. `concat_offset has not been declared!` if the first `on init` of the script came from a file imported with `as`.
+
+### Macros and Defines
+
+- FIXED Inline `literate_macro()` and `iterate_macro()` (and their `_post_` variants) now work when the `#l#` or `#n#` placeholder only appears inside a string (issue #387).
+
+- FIXED The dot in a define constant's name was treated as "any character", so `define A.B := 5` also replaced `AxB` on lines containing `A.B`, and `define NUM.KEYS := NUM_KEYS * 2` was rejected with "Define constant cannot call itself!". Define names (and their arguments) are now matched literally.
+
+### Functions and Taskfuncs
+
+- FIXED Inlining a function whose result is assigned to a variable that the function also reads produced wrong values (issue #556). The result was written into the target variable right away, so later reads saw the partial result instead of the old value. For example, with `x` being 200, `x := clamp(x - 150, x - 100, 100)` produced 50 instead of 100. A temporary variable is now used where needed, and the output is unchanged otherwise.
+
+- FIXED Calling a function in an argument of the same function, e.g. `twice(twice(1))`, was rejected as a recursive function call.
+
+- FIXED `exit` inside a taskfunc (including one inlined from a regular function) skipped restoring the TCM stack pointers, so each early exit shifted the stack by one frame until indices went out of bounds (issue #296).
+
+- FIXED Inlining a function that calls a taskfunc with arguments failed with "Wrong number of parameters" when the function was defined before the callbacks (issue #97).
+
+- FIXED "Sanitize Behavior of 'exit' Command" failed on scripts without `on init`, or whose `on init` lives in a file imported with `as` (issue #485). The dummy variable is now only declared when `exit` is actually used, and taskfuncs don't need the dummy assignment at all.
+
+### Lists and Arrays
+
+- FIXED Arrays declared in a second (or later) `on init` couldn't be added to a list of lists, failing with "Expected expression of integer type, got integer array type instead!". Multiple `on init` callbacks are common with imports and "Combine Duplicate Callbacks".
+
+- CHANGED `list_add()` inside a `for` or `while` loop is now reported as an error. A list's size is fixed at compile time, so every loop iteration silently overwrote the same element, leaving a list with only one element. `list_add()` inside `if` is still allowed.
+
+### Strings and Comments
+
+- FIXED `{...}`, `(*...*)` and `/*...*/` inside strings were removed as comments, and a comment could even span several strings or lines, silently deleting the code in between (issue #46). A `{` inside a `//` comment had the same effect. Now `message("Hold {Shift} to fine-tune")` compiles as written. A string that isn't closed on its line is reported as an unterminated string, and pragmas are only read from `{}` comments.
+
+### Other
+
+- FIXED A string constant, e.g. `declare const @foo := "FOO"`, compiled into output that Kontakt rejects. Constants in KSP are always initialized on their declaration line and strings cannot be, so there is no such thing as a string constant. This is now reported as `Constants cannot be strings, unsupported by Kontakt!`
+
+- FIXED The `compile_ksp_cli` command (compiling the current script through the command line compiler, available for binding to a key) never launched the compiler since version 1.24.0.
+
+
+## Behavior Changes
+
+Only edge cases that were silently broken before:
+
+- `list_add()` inside loops is now an error
+- String constants, e.g. `declare const @foo := "FOO"`, are now an error
+- Braces and `(* *)` inside strings are kept, and unclosed strings are an error
+- A dot in a define constant's name only matches a dot
+- Inlined functions that could read their own partial result use a temporary variable
+- With "Sanitize Behavior of 'exit' Command" enabled, `$sksp_dummy` is only declared when `exit` is used
+
+
+## Under the Hood
+
+- Test coverage was greatly extended (issue #266): structs, lists, array concatenation, UI property functions, string array initialisation, persistence, and every feature documented in the wiki are now covered by tests.
+- The parser no longer silently swallows errors raised while building the syntax tree, and some dead grammar rules and an ineffective duplicate check in array concatenation were cleaned up.
+
+
+That's all - have fun!
+
+
+---------------------------------------------------
+
+If you would like to roll back a version of SublimeKSP for time critical work prevented by a new bug:
+
+First, remove SublimeKSP from Sublime Package Control:
+1. Press `Ctrl + Shift + P` on Windows and Linux, or `Cmd + Shift + P` on Mac.
+2. Type "Remove Package" and select it, then select the "KSP (Kontakt Script Processor)" entry.
+
+Next, download the version you'd like [here](https://github.com/nojanath/SublimeKSP/releases).
+
+After the download, you can install it as a user package in Sublime following these instructions:
+
+1. Open the Preferences menu in Sublime Text and click Browse Packages. A folder will open up.
+2. Extract the ZIP archive you have downloaded and place it into this folder.
+3. IMPORTANT: Rename the unpacked folder to `KSP (Kontakt Script Processor)` (this is important so that your settings from Package Control version are retained)!
+4. Restart Sublime Text. Alternatively, make sure you have [Automatic​Package​Reloader](https://packagecontrol.io/packages/AutomaticPackageReloader) package installed.
