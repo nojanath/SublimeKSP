@@ -13,6 +13,7 @@
 # GNU General Public License for more details.
 
 from ksp_compiler import ParseException, KSPCompiler
+from simple_eval import SimpleEval
 import ksp_declarations
 import os.path
 import unittest
@@ -5923,9 +5924,9 @@ class DeclarationCompletions(unittest.TestCase):
         scanner = ksp_declarations.DeclarationScanner()
         self.assertEqual(scanner.scan('import "test_imports/namespace2.ksp"', None), [])
 
-class WithoutRemovedAstNodes(object):
-    '''Makes the ast node classes that Python 3.14 removed unavailable, as they are there'''
-    removed = ('Num', 'Str', 'Bytes', 'NameConstant', 'Ellipsis')
+class WithoutAstNodes(object):
+    '''Makes the ast node classes named in 'removed' unavailable, as some Python versions have them'''
+    removed = ()
 
     def __enter__(self):
         import ast
@@ -5947,6 +5948,14 @@ class WithoutRemovedAstNodes(object):
 
         del ast.__getattr__
         ast.__dict__.update(self.saved)
+
+class WithoutRemovedAstNodes(WithoutAstNodes):
+    '''The literal node classes that Python 3.14 removed'''
+    removed = ('Num', 'Str', 'Bytes', 'NameConstant', 'Ellipsis')
+
+class WithoutAstConstant(WithoutAstNodes):
+    '''ast.Constant, which only exists from Python 3.6 on - Sublime Text 3 runs Python 3.3'''
+    removed = ('Constant',)
 
 class Python314Compatibility(unittest.TestCase):
     def testIterateMacroRangeWithDefine(self):
@@ -5974,6 +5983,52 @@ class Python314Compatibility(unittest.TestCase):
             output = do_compile(code)
 
         self.assertIn('declare %arr[5]', output)
+
+class Python33Compatibility(unittest.TestCase):
+    def testIterateMacroRangeWithDefine(self):
+        code = '''
+            define NUM_TAGS := 23
+            on init
+                declare ui_button Tag[NUM_TAGS]
+                iterate_macro(make_persistent(Tag#n#)) := 0 to NUM_TAGS - 1
+            end on'''
+
+        with WithoutAstConstant():
+            output = do_compile(code)
+
+        self.assertIn('make_persistent($Tag0)', output)
+        self.assertIn('make_persistent($Tag22)', output)
+
+    def testDefineValueIsEvaluated(self):
+        code = '''
+            define SIZE := 2 + 3
+            on init
+                declare arr[SIZE]
+            end on'''
+
+        with WithoutAstConstant():
+            output = do_compile(code)
+
+        self.assertIn('declare %arr[5]', output)
+
+    def testLiteralNodesOfOlderPythonVersions(self):
+        # stand-ins for the nodes Python 3.7 and older parse literals into - the real ones
+        # cannot be built here, since this Python's parser only produces ast.Constant
+        class Num(object):
+            n = 42
+
+        class Str(object):
+            s = 'text'
+
+        class NameConstant(object):
+            value = True
+
+        evaluator = SimpleEval()
+
+        with WithoutAstConstant():
+            self.assertEqual(evaluator._eval(Num()), 42)
+            self.assertEqual(evaluator._eval(Str()), 'text')
+            self.assertEqual(evaluator._eval(NameConstant()), True)
 
 if __name__ == '__main__':
     unittest.main()

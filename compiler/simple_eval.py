@@ -156,6 +156,9 @@ DEFAULT_OPERATORS = {ast.Add: op.add, ast.Sub: op.sub, ast.Mult: op.mul,
                      ast.USub: op.neg,
                      ast.UAdd: op.pos}
 
+# the attribute each literal node class keeps its value in, keyed by node class name
+LITERAL_VALUE_ATTRIBUTES = {'Constant': 'value', 'Num': 'n', 'Str': 's', 'NameConstant': 'value'}
+
 DEFAULT_FUNCTIONS = {"rand": random, "randint": random_int,
                      "int": int, "float": float, "str": str if PYTHON3 else unicode}
 
@@ -205,9 +208,14 @@ class SimpleEval(object): # pylint: disable=too-few-public-methods
 
         # literals:
 
-        # numbers, strings and booleans (ast.Num, ast.Str and ast.NameConstant were removed in Python 3.14)
-        if isinstance(node, ast.Constant):
-            return node.value
+        # Numbers, strings and booleans. Python 3.8 and newer parse all of them into ast.Constant,
+        # older versions into ast.Num, ast.Str or ast.NameConstant. Both have to work: Sublime Text 3
+        # runs the plugin on Python 3.3, which has no ast.Constant, and Sublime Text 4 on 3.14, which
+        # removed the three older classes. Matching the node class name names neither of them.
+        value_attribute = LITERAL_VALUE_ATTRIBUTES.get(type(node).__name__)
+
+        if value_attribute:
+            return getattr(node, value_attribute)
 
         # operators, functions, etc:
 
@@ -274,7 +282,9 @@ class SimpleEval(object): # pylint: disable=too-few-public-methods
             # If it is neither, raise an exception
             # raise AttributeDoesNotExist(node.attr, self.expr)
 
-        elif isinstance(node, ast.Index):
+        # Python 3.8 and older wrap a subscript in ast.Index, which is deprecated and
+        # scheduled for removal, so match it by name here as well
+        elif type(node).__name__ == 'Index':
             return self._eval(node.value)
         elif isinstance(node, ast.Slice):
             lower = upper = step = None
